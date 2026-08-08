@@ -54,7 +54,8 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "strict": true
   },
   "include": [
     "src",

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
-import { Send, Sparkles, X, User, Bot, Loader2, Paperclip, File, Check, Terminal, Activity, Code, Cpu, Play, CheckCircle2, CircleAlert, Wand2, Mic, Plus } from 'lucide-react';
+import { isBlank } from '@sdkwork/utils';
+import { Sparkles, X, Loader2, File, Check, CheckCircle2, CircleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AiModelSelector } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
 import { DocumentMeta, FolderNode } from './services/document';
@@ -43,7 +43,7 @@ export interface AiAssistantPanelProps {
 
 export function AiAssistantPanel({
   aiWidth, isDraggingAi, onMouseDownDrag, onClose, docContent, docs = [], activeDoc, activeKbId,
-  headerHeightClass = 'h-[40px]', onSendMessage, selectedArticle, workspaceMode = 'standard',
+  headerHeightClass = 'h-[40px]', onSendMessage, workspaceMode = 'standard',
 }: AiAssistantPanelProps) {
   const { t } = useTranslation(['editor', 'mcp']);
   const aiEnabled = isKnowledgebaseWorkspaceAiEnabled(workspaceMode);

@@ -1,5 +1,5 @@
 import type { KnowledgeBrowserNode } from 'sdkwork-knowledgebase-pc-core';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import * as KnowledgeSpaceSettingsService from './knowledgeSpaceSettingsService';
 import {
   applyDriveBrowserNodeUpdates,
@@ -28,8 +28,10 @@ import {
   ensureKnowledgeBrowserFolderLoaded,
   findKnowledgeBrowserNodeByDocumentId,
   getLoadedKnowledgeBrowserNodes,
+  hasMoreKnowledgeBrowserNodes,
   listKnowledgeBrowserNodesPage,
   listLoadedKnowledgeBrowserNodes,
+  loadMoreKnowledgeBrowserNodes,
   invalidateKnowledgeBrowserNodeCacheForKbIds,
   invalidateKnowledgeBrowserNodeCacheForSpaceIds,
   resolveBrowserDocumentId,
@@ -466,6 +468,19 @@ export async function ensureFolderChildrenLoaded(
 ): Promise<void> {
   const spaceId = requireWorkspaceSpaceId(kbId);
   await ensureKnowledgeBrowserFolderLoaded(spaceId, folderId);
+}
+
+export function hasMoreFolderChildren(kbId: string, folderId: string | null): boolean {
+  const spaceId = requireWorkspaceSpaceId(kbId);
+  return hasMoreKnowledgeBrowserNodes(spaceId, folderId);
+}
+
+export async function loadMoreFolderChildren(
+  kbId: string,
+  folderId: string | null,
+): Promise<boolean> {
+  const spaceId = requireWorkspaceSpaceId(kbId);
+  return loadMoreKnowledgeBrowserNodes(spaceId, folderId);
 }
 
 async function readIndexedDocumentContent(

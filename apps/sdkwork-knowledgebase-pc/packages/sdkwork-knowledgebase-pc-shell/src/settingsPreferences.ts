@@ -1,4 +1,3 @@
-import { isBlank, trim } from '@sdkwork/utils';
 import {
   SETTINGS_NAV_ITEMS,
   SETTINGS_STORAGE_KEYS,

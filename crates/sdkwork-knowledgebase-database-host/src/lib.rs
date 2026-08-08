@@ -1,10 +1,18 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use sdkwork_database_config::DatabaseConfig;
+use sdkwork_database_config::{DatabaseConfig, DatabaseEngine};
 use sdkwork_database_lifecycle::{lifecycle_options_from_env, LifecycleOrchestrator};
 use sdkwork_database_spi::{DatabaseAssetProvider, DatabaseManifest, DefaultDatabaseModule};
 use sdkwork_database_sqlx::{create_pool_from_config, DatabasePool};
+
+pub mod postgres_scope;
+
+pub use postgres_scope::{
+    postgres_url_with_deployment_scope, require_postgres_rls_organization_id,
+    require_postgres_rls_tenant_id, POSTGRES_ORGANIZATION_SESSION_KEY,
+    POSTGRES_TENANT_SESSION_KEY,
+};
 
 pub struct KnowledgebaseDatabaseHost {
     pool: DatabasePool,
@@ -53,8 +61,20 @@ pub async fn bootstrap_knowledgebase_database(
 pub async fn bootstrap_knowledgebase_database_from_env() -> Result<KnowledgebaseDatabaseHost, String>
 {
     let _ = dotenvy::dotenv();
-    let config = DatabaseConfig::from_env("KNOWLEDGEBASE")
+    let mut config = DatabaseConfig::from_env("KNOWLEDGEBASE")
         .map_err(|error| format!("read knowledgebase database config failed: {error}"))?;
+    if config.engine == DatabaseEngine::Postgres {
+        let tenant_id = require_postgres_rls_tenant_id()
+            .map_err(|error| error.to_string())?;
+        let organization_id = require_postgres_rls_organization_id()
+            .map_err(|error| error.to_string())?;
+        config.url = postgres_url_with_deployment_scope(&config.url, tenant_id, organization_id)
+            .map_err(|error| error.to_string())?;
+    } else {
+        return Err(
+            "knowledgebase server persistence requires a PostgreSQL database url".to_string(),
+        );
+    }
     let pool = create_pool_from_config(config)
         .await
         .map_err(|error| format!("create knowledgebase database pool failed: {error}"))?;

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   X, Cloud, Folder, FileText,
   FileSpreadsheet, ChevronRight, Search, LayoutGrid,
-  List, Check, CheckSquare, Square, Home, Users,
+  List, CheckSquare, Square, Home, Users,
   Clock, Star, RefreshCw, Layers, ServerIcon, Download, AlertCircle, Video
 } from 'lucide-react';
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Folder, ChevronRight, File, Book, Globe, Search, ArrowLeft, ArrowRight, Copy, FolderOutput, Check } from 'lucide-react';
+import { X, Folder, ChevronRight, File, Book, Globe, ArrowLeft, ArrowRight, Copy, FolderOutput, Check } from 'lucide-react';
 import { DocumentMeta, FolderNode, KnowledgeBase, DocumentService } from './services/document';
 
 interface MoveCopyModalProps {
@@ -61,7 +61,6 @@ export function MoveCopyModal({ action, item, activeKb, onClose, onSubmit }: Mov
     }
   };
 
-  const currentFolderPathStr = navigationStack.map(n => n.title).join(' / ');
   const selectedKbTitle = [...(kbs?.team || []), ...(kbs?.personal || []), ...(kbs?.public || [])]
     .find(k => k.id === selectedKbId)?.title || '';
 

@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Search, X, FileUp, Plus, FolderUp, MessageSquare, Lightbulb, Link, FileEdit, ChevronRight, FileText, Cloud, Notebook, Mic, FolderPlus } from 'lucide-react';
+import React, { } from 'react';
+import { Search, X } from 'lucide-react';
 import { KnowledgeBase } from './services/document';
 import { useTranslation } from 'react-i18next';
 import { KnowledgeFileAddMenu } from './KnowledgeFileAddMenu';
@@ -36,7 +36,6 @@ export function KnowledgeFileHeader({
   isSearchOpen, setIsSearchOpen,
   searchQuery, setSearchQuery,
   isAddMenuOpen, setIsAddMenuOpen,
-  isMultiSelectMode, setIsMultiSelectMode,
   addMenuRef, fileInputRef, audioInputRef, musicInputRef, folderInputRef,
   currentFolderId,
   onMenuCreate,

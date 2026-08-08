@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronDown, CheckCircle2, Loader2 } from 'lucide-react';
 import type { SearchMessage } from '../types';
 

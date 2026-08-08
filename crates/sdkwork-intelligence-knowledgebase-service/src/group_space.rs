@@ -242,14 +242,24 @@ impl<'a> KnowledgeGroupKnowledgeSpaceService<'a> {
                 // A failed compensation remains lease-owned while archive is in progress. That
                 // prevents terminal archival until a durable worker can repeat the final Drive
                 // ACL sweep; an active binding still follows the normal failed-projection path.
-                let _ = self
+                // The compensation outcome is observable: a durable failure is recorded so an
+                // operator can investigate instead of the error vanishing silently.
+                let binding_id = command.target.knowledgebase_binding_id;
+                if let Err(compensation_error) = self
                     .binding_store
                     .fail_group_membership_sync(
                         command,
                         &synchronization_lease_token,
                         "group_membership_acl_projection_failed",
                     )
-                    .await;
+                    .await
+                {
+                    tracing::error!(
+                        %compensation_error,
+                        binding_id,
+                        "group membership sync compensation failed; binding stays lease-owned"
+                    );
+                }
             }
             return Err(error);
         }

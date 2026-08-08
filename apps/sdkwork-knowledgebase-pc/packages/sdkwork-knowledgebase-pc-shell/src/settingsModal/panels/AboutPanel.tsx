@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BookOpen, Check, Copy, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';

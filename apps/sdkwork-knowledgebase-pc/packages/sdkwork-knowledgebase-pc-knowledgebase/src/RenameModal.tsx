@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { X, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

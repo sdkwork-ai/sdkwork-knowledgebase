@@ -21,8 +21,9 @@ use crate::public_web_search::{
 };
 use sdkwork_knowledgebase_contract::rag::{
     KnowledgeCitation, KnowledgeContextFragment, KnowledgeContextPack, KnowledgeContextPackRequest,
-    KnowledgeMemoryContextFragment, KnowledgeRetrievalBinding, KnowledgeRetrievalMethod,
-    KnowledgeRetrievalRequest, KnowledgeRetrievalResult, KnowledgeRetrievalTrace,
+    KnowledgeFilter, KnowledgeMemoryContextFragment, KnowledgeRetrievalBinding,
+    KnowledgeRetrievalMethod, KnowledgeRetrievalRequest, KnowledgeRetrievalResult,
+    KnowledgeRetrievalTrace,
 };
 use sdkwork_knowledgebase_observability::{
     record_context_pack_completed, record_retrieval_completed,
@@ -305,7 +306,7 @@ impl<'a> KnowledgeRetrievalService<'a> {
                 retrieval_profile_id: request.retrieval_profile_id,
                 query_hash_sha256_hex: sha256_hash(normalized_query.as_bytes()),
                 query_text_redacted: Some(redact_query(normalized_query)),
-                request_payload_json: serde_json::to_string(request).ok(),
+                request_payload_json: redacted_request_payload(request, normalized_query),
                 latency_ms,
                 result_count: fragments.len() as u32,
                 status: "succeeded".to_string(),
@@ -391,7 +392,7 @@ fn validate_request(
 
 fn sorted_bindings(bindings: &[KnowledgeRetrievalBinding]) -> Vec<KnowledgeRetrievalBinding> {
     let mut bindings = bindings.to_vec();
-    bindings.sort_by(|left, right| right.priority.cmp(&left.priority));
+    bindings.sort_by_key(|binding| std::cmp::Reverse(binding.priority));
     bindings
 }
 
@@ -492,8 +493,49 @@ fn estimate_memory_fragment_tokens(fragment: &KnowledgeMemoryContextFragment) ->
         .unwrap_or_else(|| fragment.content.split_whitespace().count().max(1) as u32)
 }
 
+/// Field-whitelisted snapshot of a retrieval request persisted on the trace.
+///
+/// The raw `query` (user content, potentially PII) and the `actor_id` are never stored;
+/// the query is represented only by its SHA-256 hash and a bounded snippet. Bindings are
+/// reduced to a count so scope keys cannot leak into the trace payload.
+#[derive(Debug, serde::Serialize)]
+struct RedactedRetrievalRequestPayload {
+    tenant_id: u64,
+    retrieval_profile_id: Option<u64>,
+    methods: Vec<KnowledgeRetrievalMethod>,
+    top_k: Option<u32>,
+    include_citations: bool,
+    include_trace: bool,
+    context_budget_tokens: Option<u32>,
+    metadata: Vec<KnowledgeFilter>,
+    binding_count: usize,
+    query_hash_sha256_hex: String,
+}
+
+fn redacted_request_payload(
+    request: &KnowledgeRetrievalRequest,
+    normalized_query: &str,
+) -> Option<String> {
+    serde_json::to_string(&RedactedRetrievalRequestPayload {
+        tenant_id: request.tenant_id,
+        retrieval_profile_id: request.retrieval_profile_id,
+        methods: request.methods.clone(),
+        top_k: request.top_k,
+        include_citations: request.include_citations,
+        include_trace: request.include_trace,
+        context_budget_tokens: request.context_budget_tokens,
+        metadata: request.metadata.clone(),
+        binding_count: request.bindings.len(),
+        query_hash_sha256_hex: sha256_hash(normalized_query.as_bytes()),
+    })
+    .ok()
+}
+
+/// Bounded, operator-readable query snippet persisted on the trace. This is a deliberate
+/// privacy trade-off: full query text never enters the trace, and the snippet stays far
+/// below the threshold of reconstructable user content.
 fn redact_query(value: &str) -> String {
-    const MAX_QUERY_TRACE_CHARS: usize = 512;
+    const MAX_QUERY_TRACE_CHARS: usize = 128;
     value.chars().take(MAX_QUERY_TRACE_CHARS).collect()
 }
 

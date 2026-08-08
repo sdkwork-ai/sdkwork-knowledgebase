@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { useState, useMemo } from 'react';
+import { isBlank } from '@sdkwork/utils';
 import { createPortal } from 'react-dom';
 import { 
-  X, Search, MessageSquare, CheckSquare, Square, 
-  MessageCircle, Users, User, ArrowRight, Sparkles, Check
+  X, Search, MessageSquare, 
+  MessageCircle, Sparkles, Check
 } from 'lucide-react';
 
 interface ChatDialogModalProps {
@@ -209,7 +209,6 @@ export function ChatDialogModal({ isOpen, onClose, onConfirm }: ChatDialogModalP
             {/* Chat detail lists styled exactly as an elegant mockup messenger flow */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0 bg-[#fafafa]/50 dark:bg-[var(--color-kb-panel)]/3">
               {currentDialogueDetails?.messages.map((msg, index) => {
-                const isMe = msg.sender === 'Me';
                 return (
                   <div key={index} className="flex flex-col">
                     <div className="flex items-center gap-2.5 mb-2 px-1">

@@ -13,6 +13,9 @@ const MAX_QUERY_LEN: usize = 256;
 /// Cap on provider response bodies so a misbehaving DuckDuckGo/searxng
 /// instance cannot exhaust process memory.
 const MAX_PUBLIC_SEARCH_RESPONSE_BYTES: usize = 512 * 1024;
+/// One bounded retry for transient provider failures (connect/HTTP errors); a flapping
+/// public search backend must not stall retrieval for longer than the request budget.
+const PUBLIC_SEARCH_MAX_RETRIES: u32 = 1;
 /// Total request budget (DNS, connect, TLS, response) for provider calls so a
 /// hung upstream can never pin a retrieval/agent-chat task or DB connection.
 const PUBLIC_SEARCH_TIMEOUT_SECS: u64 = 10;
@@ -87,11 +90,26 @@ pub async fn search_public_web(
         )));
     }
 
-    if let Some(base_url) = configured_searxng_base_url() {
-        return search_via_searxng(base_url, normalized, top_k).await;
+    let mut last_error = PublicWebSearchError::Provider(
+        "public web search provider is unavailable".to_string(),
+    );
+    for attempt in 0..=PUBLIC_SEARCH_MAX_RETRIES {
+        let result = if let Some(base_url) = configured_searxng_base_url() {
+            search_via_searxng(base_url, normalized, top_k).await
+        } else {
+            search_via_duckduckgo(normalized, top_k).await
+        };
+        match result {
+            Ok(hits) => return Ok(hits),
+            Err(error) => {
+                last_error = error;
+                if attempt < PUBLIC_SEARCH_MAX_RETRIES {
+                    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+                }
+            }
+        }
     }
-
-    search_via_duckduckgo(normalized, top_k).await
+    Err(last_error)
 }
 
 fn metadata_flag(metadata: &[KnowledgeFilter], key: &str) -> bool {

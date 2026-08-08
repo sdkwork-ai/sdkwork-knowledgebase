@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { X, Settings2, Edit3, Key, Globe, Server, Plus, Trash2, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { OfficialAccount } from '../../services/wechat';

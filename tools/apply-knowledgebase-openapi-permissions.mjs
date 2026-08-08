@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { APP_API_PERMISSION_BY_OPERATION } from '../scripts/patch-app-route-permissions.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(scriptDir, '..');
@@ -17,6 +18,12 @@ const targets = [
     tenantScope: 'tenant',
     dataScope: 'organization',
   },
+  {
+    relativePath: 'sdks/sdkwork-knowledgebase-app-sdk/openapi/knowledgebase-app-api.openapi.json',
+    permissionByOperation: APP_API_PERMISSION_BY_OPERATION,
+    tenantScope: 'tenant',
+    dataScope: 'organization',
+  },
 ];
 
 const httpMethods = new Set(['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']);
@@ -26,7 +33,7 @@ function isProtectedOperation(operation) {
   return Array.isArray(security) && security.length > 0;
 }
 
-function applyPermissions(document, { permission, auditEvent, tenantScope, dataScope }) {
+function applyPermissions(document, { permission, permissionByOperation, auditEvent, tenantScope, dataScope }) {
   let changed = false;
 
   for (const pathItem of Object.values(document.paths ?? {})) {
@@ -39,11 +46,21 @@ function applyPermissions(document, { permission, auditEvent, tenantScope, dataS
         continue;
       }
 
-      if (operation['x-sdkwork-permission'] !== permission) {
-        operation['x-sdkwork-permission'] = permission;
+      const operationPermission =
+        permissionByOperation?.[operation.operationId] ??
+        permission ??
+        (permissionByOperation
+          ? (() => {
+              throw new Error(
+                `missing app-api permission mapping for operation ${operation.operationId}`,
+              );
+            })()
+          : undefined);
+      if (operation['x-sdkwork-permission'] !== operationPermission) {
+        operation['x-sdkwork-permission'] = operationPermission;
         changed = true;
       }
-      if (operation['x-sdkwork-audit-event'] !== auditEvent) {
+      if (auditEvent && operation['x-sdkwork-audit-event'] !== auditEvent) {
         operation['x-sdkwork-audit-event'] = auditEvent;
         changed = true;
       }

@@ -15,7 +15,6 @@ import type {
   SearchMediaItem,
   SearchMediaTab,
   SearchNavigateToFilePayload,
-  SearchNavigateToKbPayload,
   SearchRelatedMedia
 } from '../types';
 import { getMediaItemsForTab, getMediaTabDefs, hasRelatedMedia } from '../utils/mediaResults';

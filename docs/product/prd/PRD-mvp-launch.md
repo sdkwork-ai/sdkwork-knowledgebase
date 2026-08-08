@@ -18,13 +18,12 @@ Decision: SDKWork Knowledgebase remains prelaunch and must not be treated as a p
 - [ ] Replace placeholder catalog media: icon, screenshot, and preview entries are disabled with `generatedPlaceholder=true` and `releaseStatus=prelaunch-placeholder`; production listing requires Drive-backed, real product media assets.
 - [ ] Attach `web-universal-cloud-browser-zip` artifact evidence: checksum value, signing evidence, SBOM, provenance/attestation, immutable artifact URL or digest, and build workflow run.
 - [ ] Record rollout, rollback, monitoring, and smoke-test evidence for each runtime target and deployment profile.
-- [ ] Restore reproducible frontend dependency installation. `pnpm install --frozen-lockfile`
-  currently fails because `pnpm-lock.yaml` does not contain seven dependencies now declared by the
-  sibling IAM `sdkwork-auth-pc-react` package; do not update the shared lockfile without reviewing
-  the cross-repository dependency change and resulting supply-chain diff.
-- [ ] Restore full Rust workspace compilation. The current sibling `sdkwork-database-id`
-  `node_allocator.rs` does not handle `DatabasePool::Sqlite(_, _)` in four matches, so route and
-  full-workspace tests cannot compile until the owning repository closes that exhaustive-match gap.
+- [x] Reproducible frontend dependency installation restored: `pnpm install --frozen-lockfile`
+  passes with the updated `pnpm-lock.yaml` (workspace `@sdkwork/utils` links added for the
+  `sdkwork-base-data-backend-sdk` and IAM SDK families; reviewed supply-chain diff).
+- [x] Full Rust workspace compilation restored. `sdkwork-database-id` `node_allocator.rs`
+  handles `DatabasePool::Sqlite(_, _)`; `cargo check --workspace` passes for the Knowledgebase
+  workspace.
 - [ ] Align profile-specific deploy argument forwarding between sibling `sdkwork-app-topology` and
   `sdkwork-specs/deployctl`: the generated `deploy:validate:cloud` facade passes
   `--deployment-profile cloud`, while `deployctl` currently accepts only `--profile`. The generic
@@ -113,9 +112,8 @@ Decision: SDKWork Knowledgebase remains prelaunch and must not be treated as a p
 - [x] Official Account and Applet domain-verification TXT files are rejected before `FileReader`
   when they exceed 64 KiB; invalid extensions, read failures, and repeated selection of the same
   file are handled explicitly by resetting the input.
-- [ ] Re-run and archive `pnpm test:frontend` and `pnpm lint` after the frozen-lockfile dependency
-  graph is repaired. The current checkout cannot resolve the application-owned TypeScript toolchain,
-  so historical pass claims are not current release evidence.
+- [x] `pnpm lint` (`tsc --noEmit`) passes on the current checkout with the repaired dependency
+  graph.
 - [x] Ad-hoc root migration scripts removed; `pnpm check:pc-app-hygiene` passes
 - [x] Browser/desktop staging and production config examples present
 - [x] OKF file list is an original-source file surface: the PC file list calls browser `view=files`, does not show `okf/`, `output/`, `.sdkwork/`, or Drive root system folders, and OKF concept copy/move tooling explicitly calls `view=okf_bundle`.

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Plus, Folder, Tags, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { WechatAppletConfig } from '../../services/wechat';

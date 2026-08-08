@@ -1,7 +1,7 @@
 import React from 'react';
-import { FileText, FolderPlus, FileUp, FolderUp, Cloud, Link, Edit2, Trash2, Pin, Tag, UserCog, Copy, ChevronRight, ExternalLink, History, ArrowRight, FolderOutput, Mic, Music } from 'lucide-react';
-import { DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from './components/ui/dropdown-menu';
-import { ContextMenuItem, ContextMenuSeparator, ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent } from './components/ui/context-menu';
+import { FileText, FolderPlus, FileUp, FolderUp, Cloud, Link, Edit2, Trash2, Pin, Tag, UserCog, Copy, ExternalLink, History, FolderOutput, Mic, Music } from 'lucide-react';
+import { DropdownMenuItem, DropdownMenuSeparator } from './components/ui/dropdown-menu';
+import { ContextMenuItem, ContextMenuSeparator } from './components/ui/context-menu';
 
 export interface NodeMenuItemsProps {
   isFolder: boolean;

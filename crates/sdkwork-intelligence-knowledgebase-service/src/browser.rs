@@ -19,11 +19,10 @@ use sdkwork_knowledgebase_contract::browser::{
     KnowledgeBrowserPage, KnowledgeBrowserView, ListKnowledgeBrowserRequest,
 };
 use sdkwork_knowledgebase_contract::rag::KnowledgeAgentKnowledgeMode;
+use sdkwork_utils_rust::{DEFAULT_LIST_PAGE_SIZE, MAX_LIST_PAGE_SIZE};
 use std::collections::HashMap;
 use thiserror::Error;
 
-const DEFAULT_BROWSER_PAGE_SIZE: u32 = 50;
-const MAX_BROWSER_PAGE_SIZE: u32 = 200;
 const FILES_VIEW_OKF_ROOT_PATH: &str = "sources/raw";
 const OKF_VIEW_ROOT_PATH: &str = "okf";
 const OUTPUTS_VIEW_ROOT_PATH: &str = "output";
@@ -76,12 +75,10 @@ impl<'a> KnowledgeBrowserService<'a> {
         // silently degrading to tenant-scoped visibility only.
         let access_control = self
             .access_control
-            .ok_or_else(|| KnowledgeBrowserServiceError::AccessControlNotConfigured)?;
-        let access = access.ok_or_else(|| {
-            KnowledgeBrowserServiceError::InvalidRequest(
-                "authenticated browser access context is required".to_string(),
-            )
-        })?;
+            .ok_or(KnowledgeBrowserServiceError::AccessControlNotConfigured)?;
+        let access = access.ok_or(KnowledgeBrowserServiceError::InvalidRequest(
+            "authenticated browser access context is required".to_string(),
+        ))?;
         let drive_space_id = space.drive_space_id.as_ref().ok_or_else(|| {
             KnowledgeBrowserServiceError::InvalidRequest(
                 "drive space is not bound for knowledge space".to_string(),
@@ -107,7 +104,7 @@ impl<'a> KnowledgeBrowserService<'a> {
                 "drive space is not bound for knowledge space".to_string(),
             )
         })?;
-        let page_size = normalize_page_size(request.page_size);
+        let page_size = normalize_page_size(request.page_size)?;
 
         let parent_resolution = self
             .resolve_view_parent_id(
@@ -337,10 +334,14 @@ fn view_name(view: KnowledgeBrowserView) -> &'static str {
     }
 }
 
-fn normalize_page_size(page_size: Option<u32>) -> u32 {
-    page_size
-        .unwrap_or(DEFAULT_BROWSER_PAGE_SIZE)
-        .clamp(1, MAX_BROWSER_PAGE_SIZE)
+fn normalize_page_size(page_size: Option<u32>) -> Result<u32, KnowledgeBrowserServiceError> {
+    let page_size = page_size.unwrap_or(DEFAULT_LIST_PAGE_SIZE as u32);
+    if !(1..=MAX_LIST_PAGE_SIZE as u32).contains(&page_size) {
+        return Err(KnowledgeBrowserServiceError::InvalidRequest(format!(
+            "page_size must be between 1 and {MAX_LIST_PAGE_SIZE}"
+        )));
+    }
+    Ok(page_size)
 }
 
 fn drive_node_to_browser_node(

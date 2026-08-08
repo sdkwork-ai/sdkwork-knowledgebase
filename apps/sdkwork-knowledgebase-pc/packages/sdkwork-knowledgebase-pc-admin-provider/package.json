@@ -21,7 +21,7 @@
     "lucide-react": "^0.546.0",
     "react": "^19.0.1",
     "react-i18next": "^17.0.8",
-    "react-router-dom": "^7.17.0",
+    "react-router-dom": "^7.18.2",
     "sdkwork-knowledgebase-pc-admin-core": "workspace:*",
     "sdkwork-knowledgebase-pc-core": "workspace:*"
   },

@@ -22,16 +22,19 @@ use sdkwork_knowledgebase_contract::rag::KnowledgeAgentKnowledgeMode;
 use sdkwork_knowledgebase_contract::space::{
     CreateKnowledgeSpaceRequest, KnowledgeSpace, UpdateKnowledgeSpaceRequest,
 };
-use sdkwork_utils_rust::is_blank;
+use sdkwork_utils_rust::{is_blank, DEFAULT_LIST_PAGE_SIZE, MAX_LIST_PAGE_SIZE};
 use thiserror::Error;
 
-const MAX_SPACE_MEMBERS_PAGE_SIZE: u32 = 200;
-const DEFAULT_SPACE_MEMBERS_PAGE_SIZE: u32 = 50;
-
-fn normalize_space_members_page_size(page_size: Option<u32>) -> u32 {
-    page_size
-        .unwrap_or(DEFAULT_SPACE_MEMBERS_PAGE_SIZE)
-        .clamp(1, MAX_SPACE_MEMBERS_PAGE_SIZE)
+fn normalize_space_members_page_size(
+    page_size: Option<u32>,
+) -> Result<u32, KnowledgeSpaceServiceError> {
+    let page_size = page_size.unwrap_or(DEFAULT_LIST_PAGE_SIZE as u32);
+    if !(1..=MAX_LIST_PAGE_SIZE as u32).contains(&page_size) {
+        return Err(KnowledgeSpaceServiceError::InvalidRequest(format!(
+            "page_size must be between 1 and {MAX_LIST_PAGE_SIZE}"
+        )));
+    }
+    Ok(page_size)
 }
 
 fn knowledge_drive_space_owner(knowledge_space_uuid: &str) -> (String, String) {
@@ -459,7 +462,7 @@ impl<'a> KnowledgeSpaceService<'a> {
                     drive_space_id: drive_space_id.clone(),
                     drive_node_id: None,
                     cursor,
-                    page_size: Some(normalize_space_members_page_size(page_size)),
+                    page_size: Some(normalize_space_members_page_size(page_size)?),
                 },
             )
             .await
@@ -498,7 +501,7 @@ impl<'a> KnowledgeSpaceService<'a> {
                     drive_space_id: drive_space_id.clone(),
                     drive_node_id: None,
                     cursor,
-                    page_size: Some(normalize_space_members_page_size(page_size)),
+                    page_size: Some(normalize_space_members_page_size(page_size)?),
                 },
             )
             .await

@@ -57,7 +57,7 @@ pub const SPACE_MEMBERS: &str = "/app/v3/api/knowledge/spaces/{space_id}/members
 pub const CONTEXT_BINDING: &str = "/app/v3/api/knowledge/context_bindings/{binding_id}";
 pub const WECHAT_OFFICIAL_ACCOUNTS: &str = "/app/v3/api/knowledge/wechat/official_accounts";
 pub const WECHAT_OFFICIAL_ACCOUNT_FAN_TAGS: &str =
-    "/app/v3/api/knowledge/wechat/official_accounts/{account_id}/fan_tags";
+    "/app/v3/api/knowledge/wechat/official_accounts/{accountId}/fan_tags";
 pub const WECHAT_APPLETS: &str = "/app/v3/api/knowledge/wechat/applets";
 pub const WECHAT_ARTICLES_PUBLISH: &str = "/app/v3/api/knowledge/wechat/articles/publish";
 pub const WECHAT_ARTICLES_PREVIEW: &str = "/app/v3/api/knowledge/wechat/articles/preview";

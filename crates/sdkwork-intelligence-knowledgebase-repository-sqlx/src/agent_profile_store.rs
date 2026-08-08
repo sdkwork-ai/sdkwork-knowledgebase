@@ -274,6 +274,10 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
         let profile_id_i64 = to_i64("profile_id", profile_id)?;
         let now = utc_sql_timestamp_text().map_err(agent_internal_error)?;
 
+        // Archive the profile and its bindings in one transaction so a partial failure can
+        // never leave an active binding for an archived profile.
+        let mut transaction = self.pool.begin().await.map_err(agent_sqlx_error)?;
+
         let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$2");
         let query = format!(
             r#"
@@ -291,7 +295,7 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
             .bind(organization_id)
             .bind(profile_id_i64)
             .bind(agent_status_code(KnowledgeAgentStatus::Archived))
-            .execute(&self.pool)
+            .execute(&mut *transaction)
             .await
             .map_err(agent_sqlx_error)?;
 
@@ -316,10 +320,11 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
             .bind(organization_id)
             .bind(profile_id_i64)
             .bind(ACTIVE_ROW_STATUS)
-            .execute(&self.pool)
+            .execute(&mut *transaction)
             .await
             .map_err(agent_sqlx_error)?;
 
+        transaction.commit().await.map_err(agent_sqlx_error)?;
         Ok(())
     }
 

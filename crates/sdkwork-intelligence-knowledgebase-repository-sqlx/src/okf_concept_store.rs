@@ -458,7 +458,7 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
             FROM kb_okf_concept
             WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3 AND status = $4
               AND publish_state = 'published'
-            ORDER BY concept_type ASC, title ASC, id ASC
+            ORDER BY concept_id ASC
             LIMIT $5
             "#,
         )
@@ -591,13 +591,16 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
             RETURNING okf_log_sequence_counter
             "#,
         );
+        // The counter increment and the log row share one transaction so a failed insert
+        // cannot consume a sequence number without producing a log entry.
+        let mut transaction = self.pool.begin().await.map_err(sqlx_error)?;
         let sequence_no: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(sequence_query.as_str()))
             .bind(now.clone())
             .bind(tenant_id)
             .bind(organization_id)
             .bind(space_id)
             .bind(ACTIVE_STATUS)
-            .fetch_one(&self.pool)
+            .fetch_one(&mut *transaction)
             .await
             .map_err(sqlx_error)?;
 
@@ -655,10 +658,11 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
             .bind(now.clone())
             .bind(now)
             .bind(INITIAL_VERSION)
-            .fetch_one(&self.pool)
+            .fetch_one(&mut *transaction)
             .await
             .map_err(sqlx_error)?;
 
+        transaction.commit().await.map_err(sqlx_error)?;
         log_entry_from_row(&row)
     }
 

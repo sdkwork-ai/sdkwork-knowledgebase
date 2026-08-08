@@ -98,16 +98,13 @@ describe('knowledgebase tenant quota and GDPR compliance alignment', () => {
     const objectRefStore = readRepoFile(
       'crates/sdkwork-intelligence-knowledgebase-repository-sqlx/src/drive_object_ref_store.rs',
     );
-    const driveImportTests = readRepoFile(
-      'crates/sdkwork-intelligence-knowledgebase-repository-sqlx/tests/sqlite_drive_import_repositories.rs',
-    );
     const appError = readRepoFile('crates/sdkwork-routes-knowledgebase-app-api/src/error.rs');
     const observability = readRepoFile('crates/sdkwork-knowledgebase-observability/src/tenant_quota.rs');
     const tenantContract = readRepoFile('crates/sdkwork-knowledgebase-contract/src/tenant.rs');
     assert.match(appError, /knowledge_tenant_quota_exceeded/);
     assert.match(enforcement, /ensure_document_capacity/);
     const ingestionStore = readRepoFile(
-      'crates/sdkwork-intelligence-knowledgebase-repository-sqlx/src/sqlite_import_stores.rs',
+      'crates/sdkwork-intelligence-knowledgebase-repository-sqlx/src/postgres_import_stores.rs',
     );
     assert.match(ingestionStore, /create_or_get_job_with_quota|ensure_ingest_quota_on/);
     assert.match(hosted, /ensure_tenant_can_create_document/);
@@ -115,7 +112,12 @@ describe('knowledgebase tenant quota and GDPR compliance alignment', () => {
     assert.match(objectRefStore, /ensure_storage_quota_on/);
     assert.match(objectRefStore, /ensure_storage_capacity\(total, additional_bytes, &limits\)/);
     assert.match(objectRefStore, /tenant_id = \$1 AND organization_id = \$2/);
-    assert.match(driveImportTests, /sqlite_storage_quota_is_atomic_under_concurrent_object_refs/);
+    // Quota enforcement is transactional on the PostgreSQL authoritative path: the storage
+    // capacity check and the object-ref insert share one database transaction, so a concurrent
+    // over-quota insert cannot partially persist (replaces the removed SQLite fixture test).
+    assert.match(objectRefStore, /begin_tenant_quota_transaction/);
+    assert.match(objectRefStore, /ensure_storage_quota_on\(&mut transaction/);
+    assert.match(objectRefStore, /transaction\.commit/);
     assert.match(observability, /SDKWORK_KNOWLEDGEBASE_TENANT_MAX_DOCUMENTS/);
     assert.match(observability, /SDKWORK_KNOWLEDGEBASE_TENANT_MAX_CONCURRENT_INGEST_JOBS/);
     assert.match(observability, /SDKWORK_KNOWLEDGEBASE_TENANT_MAX_RETRIEVALS_PER_MINUTE/);

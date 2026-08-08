@@ -1,14 +1,13 @@
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { isBlank, trim } from '@sdkwork/utils';
-import { Search, X, FileUp, Plus, FolderUp, MessageSquare, Lightbulb, Link, FileEdit, ChevronRight, FileText, Mic, FolderPlus, Trash2, Folder, Hash, Image as ImageIcon, Video, Music, ChevronDown, MoreHorizontal, Edit2, Cloud, Notebook, CheckSquare, BookOpen } from 'lucide-react';
+import { isBlank } from '@sdkwork/utils';
+import { KnowledgeFileItem } from './KnowledgeFileItem';
+import { X, FileUp, Link, FileEdit, ChevronRight, FileText, FolderPlus, Trash2, BookOpen } from 'lucide-react';
 import { FolderNode, DocumentMeta, KnowledgeBase, DocumentService } from './services/document';
 import { isKnowledgebaseApiAvailable, KnowledgebaseErrorCodes, assertKnowledgebasePreviewFeature, throwKnowledgebaseError } from 'sdkwork-knowledgebase-pc-core';
 import { toast } from './components/ui/toast-manager';
 import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
 import { useTranslation } from 'react-i18next';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from './components/ui/dropdown-menu';
-import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from './components/ui/context-menu';
 
 import { LinkModal } from './LinkModal';
 import { CloudDriveModal } from './CloudDriveModal';
@@ -16,9 +15,7 @@ import { NotesAppModal } from './NotesAppModal';
 import { PersonalKbModal } from './PersonalKbModal';
 import { ChatFileModal } from './ChatFileModal';
 import { ChatDialogModal } from './ChatDialogModal';
-import { NodeDropdownItems, NodeContextItems } from './NodeMenuContent';
 import { KnowledgeFileHeader } from './KnowledgeFileHeader';
-import { KnowledgeFileItem } from './KnowledgeFileItem';
 import { MoveCopyModal } from './MoveCopyModal';
 import { TagsModal } from './TagsModal';
 import { PermissionsModal } from './PermissionsModal';
@@ -183,8 +180,7 @@ export function KnowledgeFileList({
     count: currentDocs.length,
     getScrollElement: () => listScrollRef.current,
     estimateSize: () => FILE_ROW_HEIGHT,
-    overscan: 8,
-  });
+    overscan: 8});
 
   const renderFileItem = useCallback((item: FolderNode | DocumentMeta) => (
     <KnowledgeFileItem
@@ -274,16 +270,6 @@ export function KnowledgeFileList({
       virtualizer.measure();
     }
   }, [shouldVirtualize, treeSize.width, treeSize.height, currentDocs.length, virtualizer]);
-
-  const handleMove = async ({ dragIds, parentId, index }: any) => {
-    for (const dragId of dragIds) {
-       await DocumentService.updateDocument(dragId, { 
-          parentId: parentId || null, 
-          order: index 
-       });
-    }
-    if (onUpdateDocs) onUpdateDocs();
-  };
 
   return (
     <div 
@@ -434,8 +420,7 @@ export function KnowledgeFileList({
                   style={{
                     height: virtualizer.getTotalSize(),
                     position: 'relative',
-                    width: '100%',
-                  }}
+                    width: '100%'}}
                 >
                   {virtualizer.getVirtualItems().map((virtualRow) => {
                     const item = currentDocs[virtualRow.index];
@@ -448,8 +433,7 @@ export function KnowledgeFileList({
                           top: 0,
                           left: 0,
                           width: '100%',
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
+                          transform: `translateY(${virtualRow.start}px)`}}
                       >
                         {renderFileItem(item)}
                       </div>
@@ -642,8 +626,7 @@ export function KnowledgeFileList({
                       targetKbId,
                       newParentId,
                       {
-                        titleSuffix: originalItem.id === moveCopyConfig.item.id ? t('copySuffix') : undefined,
-                      },
+                        titleSuffix: originalItem.id === moveCopyConfig.item.id ? t('copySuffix') : undefined},
                     );
                     return;
                   }
@@ -654,8 +637,7 @@ export function KnowledgeFileList({
                       ? `${originalItem.title}${t('copySuffix')}`
                       : originalItem.title,
                     kbId: targetKbId,
-                    parentId: newParentId,
-                  });
+                    parentId: newParentId});
                   const children = flatDocs.filter((doc) => doc.parentId === originalItem.id);
                   for (const child of children) {
                     await copyItem(child, newDoc.id);

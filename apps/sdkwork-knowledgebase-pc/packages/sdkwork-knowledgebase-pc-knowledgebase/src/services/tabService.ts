@@ -25,6 +25,10 @@ export interface KnowledgebaseTabCache {
 
 export class TabCacheService {
   private static STORAGE_KEY = 'app-tabs-cache-v2';
+  /** Bounded open-tab window per Knowledge Base so the localStorage payload cannot grow
+   *  without limit; the oldest tab is evicted when the window overflows. */
+  private static MAX_TABS_PER_KB = 50;
+  private static MAX_CACHED_KBS = 20;
 
   /**
    * Defines a unified service and methods to facilitate future desktop application compatibility.
@@ -41,7 +45,27 @@ export class TabCacheService {
   }
 
   private static saveCache(data: Record<string, TabCacheEntry>) {
+    // Bound the total persisted window across Knowledge Bases.
+    const keys = Object.keys(data);
+    if (keys.length > this.MAX_CACHED_KBS) {
+      for (const key of keys.slice(0, keys.length - this.MAX_CACHED_KBS)) {
+        delete data[key];
+      }
+    }
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+  }
+
+  private static trimKbWindow(cache: TabCacheEntry): void {
+    if (cache.docs.length <= this.MAX_TABS_PER_KB) {
+      return;
+    }
+    const activeId = cache.activeId;
+    const overflow = cache.docs.length - this.MAX_TABS_PER_KB;
+    const evicted = new Set(cache.docs.slice(0, overflow).map((doc) => doc.id));
+    cache.docs = cache.docs.slice(overflow);
+    if (activeId !== null && evicted.has(activeId)) {
+      cache.activeId = cache.docs[cache.docs.length - 1]?.id ?? null;
+    }
   }
 
   public static dispose(): void {
@@ -71,6 +95,7 @@ export class TabCacheService {
     const cache = this.loadCache();
     if (!cache[kbId]) cache[kbId] = { docs: [], activeId: null };
     cache[kbId].docs = docs;
+    this.trimKbWindow(cache[kbId]);
     this.saveCache(cache);
   }
 
@@ -91,7 +116,8 @@ export class TabCacheService {
         cache[kbId].docs.push(doc);
       }
     }
-    
+    this.trimKbWindow(cache[kbId]);
+
     cache[kbId].activeId = doc.id;
     this.saveCache(cache);
   }

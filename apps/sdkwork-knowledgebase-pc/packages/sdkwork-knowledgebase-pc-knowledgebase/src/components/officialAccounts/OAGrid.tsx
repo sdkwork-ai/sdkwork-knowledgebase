@@ -1,4 +1,3 @@
-import React from 'react';
 import { Settings2, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { OfficialAccount } from '../../services/wechat';
@@ -13,7 +12,6 @@ interface Props {
 
 export function OAGrid({
   filteredList,
-  viewMode,
   selectedOfficialAccountIds,
   setSelectedOfficialAccountIds,
   openEditor

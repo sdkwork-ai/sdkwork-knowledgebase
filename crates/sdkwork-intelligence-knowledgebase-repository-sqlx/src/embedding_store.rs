@@ -195,39 +195,6 @@ impl PostgresKnowledgeEmbeddingStore {
         Ok(content)
     }
 
-    pub async fn list_active_chunk_ids_for_space(
-        &self,
-        space_id: u64,
-    ) -> Result<Vec<u64>, PostgresKnowledgeEmbeddingStoreError> {
-        let tenant_id = to_i64("tenant_id", self.tenant_id)?;
-        let organization_id = to_i64("organization_id", self.organization_id)?;
-        let space_id = to_i64("space_id", space_id)?;
-        let rows = sqlx::query_scalar::<_, i64>(
-            r#"
-            SELECT id
-            FROM kb_chunk
-            WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3 AND status = $4
-            ORDER BY id ASC
-            LIMIT 2000
-            "#,
-        )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(space_id)
-        .bind(ACTIVE_STATUS)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(sqlx_error)?;
-
-        rows.into_iter()
-            .map(|value| {
-                u64::try_from(value).map_err(|_| {
-                    PostgresKnowledgeEmbeddingStoreError::Internal("chunk id overflow".to_string())
-                })
-            })
-            .collect()
-    }
-
     pub async fn list_active_chunk_id_content_page(
         &self,
         space_id: u64,
@@ -392,15 +359,6 @@ impl KnowledgeEmbeddingStore for PostgresKnowledgeEmbeddingStore {
         chunk_id: u64,
     ) -> Result<Option<String>, KnowledgeEmbeddingStoreError> {
         PostgresKnowledgeEmbeddingStore::load_chunk_content(self, chunk_id)
-            .await
-            .map_err(|error| KnowledgeEmbeddingStoreError::Internal(error.to_string()))
-    }
-
-    async fn list_active_chunk_ids_for_space(
-        &self,
-        space_id: u64,
-    ) -> Result<Vec<u64>, KnowledgeEmbeddingStoreError> {
-        PostgresKnowledgeEmbeddingStore::list_active_chunk_ids_for_space(self, space_id)
             .await
             .map_err(|error| KnowledgeEmbeddingStoreError::Internal(error.to_string()))
     }

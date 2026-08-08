@@ -154,7 +154,7 @@ const newPaths = {
       ...extensions,
     },
     post: {
-      operationId: "spaces.contextBindings.contextBindings",
+      operationId: "spaces.contextBindings.create",
       tags: ["knowledge"],
       summary: "Create a knowledge space context binding",
       parameters: [int64PathParam("spaceId")],
@@ -244,7 +244,7 @@ const newRoutes = [
   {
     method: "POST",
     path: "/app/v3/api/knowledge/spaces/{spaceId}/context_bindings",
-    operationId: "spaces.contextBindings.contextBindings",
+    operationId: "spaces.contextBindings.create",
   },
   {
     method: "GET",

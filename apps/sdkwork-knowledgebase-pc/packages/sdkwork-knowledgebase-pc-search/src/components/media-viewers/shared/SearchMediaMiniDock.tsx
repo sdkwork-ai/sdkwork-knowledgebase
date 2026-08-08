@@ -1,4 +1,3 @@
-import React from 'react';
 import { Headphones, Loader2, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import type { SearchMediaItem } from '../../../types';
 import type { MediaPlaylistControls } from '../types';

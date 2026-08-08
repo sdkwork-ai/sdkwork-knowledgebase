@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 import { DocumentMeta, KnowledgeBase } from './services/document';
 import { ImageViewer } from './components/players/ImageViewer';
@@ -26,12 +26,9 @@ export interface MediaViewerProps {
 
 export function MediaViewer({ 
   activeDoc, 
-  docContent, 
-  onContentChange, 
   isTranscribing,
   onTranscribeStart,
   onTranscribeComplete,
-  onTitleChange,
   activeKb,
   onUpdateDocs,
   workspaceMode = 'standard',

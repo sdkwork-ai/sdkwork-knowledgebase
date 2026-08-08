@@ -355,7 +355,7 @@ impl KnowledgeRetrievalBackend for MockRetrievalBackend {
 
 #[tokio::test]
 async fn default_registry_registers_native_engines() {
-    let engines = build_default_registry(KnowledgeEngineRuntimeDeps {
+    let engines = wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(
             Arc::new(MockOkfConceptStore {
@@ -406,7 +406,7 @@ async fn default_registry_registers_native_engines() {
 async fn runtime_registers_explicit_ragflow_adapter() {
     use sdkwork_knowledgebase_engine_ragflow::{RagflowConnectorConfig, RagflowKnowledgeEngine};
 
-    let engines = build_default_registry(KnowledgeEngineRuntimeDeps {
+    let engines = wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(
             Arc::new(MockOkfConceptStore {
@@ -446,7 +446,7 @@ async fn runtime_registers_explicit_ragflow_adapter() {
 async fn runtime_registers_explicit_dify_adapter() {
     use sdkwork_knowledgebase_engine_dify::{DifyConnectorConfig, DifyKnowledgeEngine};
 
-    let engines = build_default_registry(KnowledgeEngineRuntimeDeps {
+    let engines = wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(
             Arc::new(MockOkfConceptStore {
@@ -698,3 +698,12 @@ async fn rag_native_rebuild_index_without_wiring_is_unsupported() {
         .expect_err("rebuild without wiring");
     assert!(matches!(error, KnowledgeEngineError::Unsupported(_)));
 }
+
+
+/// Builds the default engine registry for tests, unwrapping the fallible builder.
+fn wrap_build_default_registry(
+    deps: sdkwork_intelligence_knowledgebase_service::knowledge_engine::KnowledgeEngineRuntimeDeps,
+) -> sdkwork_intelligence_knowledgebase_service::knowledge_engine::DefaultKnowledgeEngineRegistry {
+    build_default_registry(deps).expect("default knowledge engine registry must build")
+}
+

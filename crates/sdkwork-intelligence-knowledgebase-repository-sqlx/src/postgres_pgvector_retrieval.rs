@@ -50,6 +50,11 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
                 "pgvector search requires query_embedding".to_string(),
             )
         })?;
+        if query_embedding.iter().any(|value| !value.is_finite()) {
+            return Err(KnowledgeRetrievalBackendError::Internal(
+                "query embedding contains a non-finite value".to_string(),
+            ));
+        }
         let vector_literal = format_pgvector_literal(query_embedding);
         let tenant_id = backend_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = backend_to_i64("organization_id", self.organization_id)?;
@@ -188,6 +193,12 @@ pub fn format_pgvector_literal(vector: &[f32]) -> String {
     for (index, value) in vector.iter().enumerate() {
         if index > 0 {
             output.push(',');
+        }
+        // NaN/±Inf cannot round-trip through the Postgres `vector` type and would turn a
+        // valid retrieval into a server-side parse error; bounded embeddings are written
+        // verbatim, non-finite values are rejected as invalid input instead.
+        if !value.is_finite() {
+            return String::new();
         }
         output.push_str(&value.to_string());
     }

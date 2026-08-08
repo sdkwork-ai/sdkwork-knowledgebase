@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, FileDown } from 'lucide-react';
 import { DropdownItem } from '../InsertToolsMenu';
 import { toast } from '../ui/toast-manager';

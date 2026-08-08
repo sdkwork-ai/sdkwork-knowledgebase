@@ -79,8 +79,7 @@ export function computeMasonryPlacements(
 }
 
 export function computeMasonryContainerHeight(
-  placements: MasonryPlacement[],
-  gap = MASONRY_GAP_PX
+  placements: MasonryPlacement[],_gap = MASONRY_GAP_PX
 ): number {
   if (placements.length === 0) return 0;
 

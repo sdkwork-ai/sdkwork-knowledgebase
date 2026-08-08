@@ -181,7 +181,8 @@ fn core_migrations_use_kb_prefix_for_defined_database_objects() {
 
 #[test]
 fn drive_object_ref_migrations_store_stable_locator_metadata_not_delivery_secrets() {
-    for migration in [POSTGRES_CORE_MIGRATION] {
+    {
+        let migration = POSTGRES_CORE_MIGRATION;
         assert!(migration.contains("drive_provider_kind"));
         assert!(migration.contains("drive_bucket"));
         assert!(migration.contains("drive_object_key"));
@@ -240,7 +241,8 @@ fn core_migrations_define_uuid_unique_indexes_for_all_uuid_tables() {
 
 #[test]
 fn core_migrations_define_document_identity_scope_strategy() {
-    for migration in [POSTGRES_CORE_MIGRATION] {
+    {
+        let migration = POSTGRES_CORE_MIGRATION;
         assert!(migration.contains("identity_scope"));
         assert!(migration.contains("source_only"));
         assert!(migration.contains("source_and_original_drive_node"));
@@ -256,7 +258,8 @@ fn core_migrations_harden_nullable_identity_columns() {
     assert!(POSTGRES_CORE_MIGRATION.contains("okf_log_sequence_counter BIGINT NOT NULL DEFAULT 0"));
     assert!(POSTGRES_CORE_MIGRATION.contains("revision_counter BIGINT NOT NULL DEFAULT 0"));
 
-    for migration in [POSTGRES_CORE_MIGRATION] {
+    {
+        let migration = POSTGRES_CORE_MIGRATION;
         assert!(migration.contains("COALESCE(drive_object_version"));
     }
 }
@@ -484,7 +487,8 @@ fn chunk_fts_migrations_define_keyword_search_primitives() {
 fn performance_index_migrations_target_outbox_event_table() {
     use sdkwork_intelligence_knowledgebase_repository_sqlx::migrations::POSTGRES_PERFORMANCE_INDEXES_MIGRATION;
 
-    for migration in [POSTGRES_PERFORMANCE_INDEXES_MIGRATION] {
+    {
+        let migration = POSTGRES_PERFORMANCE_INDEXES_MIGRATION;
         assert!(migration.contains("idx_kb_ingestion_job_tenant_state_status"));
         assert!(migration.contains("idx_kb_outbox_stale_claim"));
         assert!(migration.contains("kb_outbox_event"));
@@ -673,7 +677,8 @@ fn runtime_sql_value_bindings_are_generated_by_database_dialect() {
 fn audit_event_migrations_define_kb_audit_event_table() {
     use sdkwork_intelligence_knowledgebase_repository_sqlx::migrations::POSTGRES_AUDIT_EVENT_MIGRATION;
 
-    for migration in [POSTGRES_AUDIT_EVENT_MIGRATION] {
+    {
+        let migration = POSTGRES_AUDIT_EVENT_MIGRATION;
         let tables = defined_database_objects(migration, "CREATE TABLE IF NOT EXISTS ");
         assert!(tables.contains("kb_audit_event"));
         assert!(migration.contains("idx_kb_audit_event_tenant_created"));
@@ -685,7 +690,8 @@ fn audit_event_migrations_define_kb_audit_event_table() {
 fn outbox_claim_migrations_add_claimed_at_column() {
     use sdkwork_intelligence_knowledgebase_repository_sqlx::migrations::POSTGRES_OUTBOX_CLAIM_MIGRATION;
 
-    for migration in [POSTGRES_OUTBOX_CLAIM_MIGRATION] {
+    {
+        let migration = POSTGRES_OUTBOX_CLAIM_MIGRATION;
         assert!(migration.contains("claimed_at"));
         assert!(migration.contains("kb_outbox_event"));
     }

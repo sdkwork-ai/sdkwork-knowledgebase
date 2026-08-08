@@ -55,7 +55,7 @@ export const Audio = Node.create({
   },
 
   addNodeView() {
-    return ({ node, HTMLAttributes }) => {
+    return ({ HTMLAttributes }) => {
       const dom = document.createElement('audio');
       Object.entries(HTMLAttributes).forEach(([key, value]) => {
         if (value !== null) {

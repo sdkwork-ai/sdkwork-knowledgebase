@@ -11,7 +11,6 @@ use crate::id::{default_knowledge_id_generator, KnowledgeIdGenerator};
 use crate::keyword_search::KeywordSearchBackend;
 
 /// Safety cap for in-process document content assembly (PAGINATION_SPEC store-level bound).
-const MAX_CHUNKS_PER_DOCUMENT_LOAD: i64 = 2000;
 
 #[derive(Debug, Clone)]
 pub struct PostgresKnowledgeChunkStore {
@@ -104,28 +103,51 @@ impl KnowledgeChunkStore for PostgresKnowledgeChunkStore {
         let organization_id = chunk_to_i64("organization_id", self.organization_id)?;
         let version_id = chunk_to_i64("document_version_id", document_version_id)?;
         const ACTIVE_STATUS: i64 = 1;
-        let rows = sqlx::query_scalar::<_, i64>(
-            r#"
-            SELECT id
-            FROM kb_chunk
-            WHERE tenant_id = $1
-              AND organization_id = $2
-              AND document_version_id = $3
-              AND status = $4
-            ORDER BY chunk_index ASC
-            LIMIT $5
-            "#,
-        )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(version_id)
-        .bind(ACTIVE_STATUS)
-        .bind(MAX_CHUNKS_PER_DOCUMENT_LOAD)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|error| KnowledgeChunkStoreError::Internal(error.to_string()))?;
+        const CHUNK_PAGE_SIZE: i64 = 512;
+        let mut chunk_ids = Vec::new();
+        // Keyset loop by chunk_index so documents with more chunks than any single-page
+        // limit are never silently truncated (a document version is unbounded). The next
+        // bound is the last observed chunk_index, never an assumed page offset.
+        let mut after_chunk_index = -1i64;
+        loop {
+            let rows = sqlx::query(
+                r#"
+                SELECT id, chunk_index
+                FROM kb_chunk
+                WHERE tenant_id = $1
+                  AND organization_id = $2
+                  AND document_version_id = $3
+                  AND status = $4
+                  AND chunk_index > $5
+                ORDER BY chunk_index ASC
+                LIMIT $6
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(version_id)
+            .bind(ACTIVE_STATUS)
+            .bind(after_chunk_index)
+            .bind(CHUNK_PAGE_SIZE)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|error| KnowledgeChunkStoreError::Internal(error.to_string()))?;
+            if rows.is_empty() {
+                break;
+            }
+            let page_len = rows.len() as i64;
+            after_chunk_index = rows
+                .last()
+                .and_then(|row| row.try_get::<i64, _>("chunk_index").ok())
+                .unwrap_or(after_chunk_index + page_len);
+            chunk_ids.extend(rows.iter().filter_map(|row| row.try_get::<i64, _>("id").ok()));
+            if page_len < CHUNK_PAGE_SIZE {
+                break;
+            }
+        }
 
-        rows.into_iter()
+        chunk_ids
+            .into_iter()
             .map(|id| {
                 u64::try_from(id).map_err(|_| {
                     KnowledgeChunkStoreError::Internal("chunk id exceeds u64 range".to_string())
@@ -142,28 +164,51 @@ impl KnowledgeChunkStore for PostgresKnowledgeChunkStore {
         let organization_id = chunk_to_i64("organization_id", self.organization_id)?;
         let version_id = chunk_to_i64("document_version_id", document_version_id)?;
         const ACTIVE_STATUS: i64 = 1;
-        let rows = sqlx::query_scalar::<_, String>(
-            r#"
-            SELECT content_text
-            FROM kb_chunk
-            WHERE tenant_id = $1
-              AND organization_id = $2
-              AND document_version_id = $3
-              AND status = $4
-            ORDER BY chunk_index ASC
-            LIMIT $5
-            "#,
-        )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(version_id)
-        .bind(ACTIVE_STATUS)
-        .bind(MAX_CHUNKS_PER_DOCUMENT_LOAD)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|error| KnowledgeChunkStoreError::Internal(error.to_string()))?;
+        const CHUNK_PAGE_SIZE: i64 = 512;
+        let mut chunk_texts = Vec::new();
+        // Keyset loop by chunk_index so a document version is never silently truncated.
+        let mut after_chunk_index = -1i64;
+        loop {
+            let rows = sqlx::query(
+                r#"
+                SELECT content_text, chunk_index
+                FROM kb_chunk
+                WHERE tenant_id = $1
+                  AND organization_id = $2
+                  AND document_version_id = $3
+                  AND status = $4
+                  AND chunk_index > $5
+                ORDER BY chunk_index ASC
+                LIMIT $6
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(version_id)
+            .bind(ACTIVE_STATUS)
+            .bind(after_chunk_index)
+            .bind(CHUNK_PAGE_SIZE)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|error| KnowledgeChunkStoreError::Internal(error.to_string()))?;
+            if rows.is_empty() {
+                break;
+            }
+            let page_len = rows.len() as i64;
+            after_chunk_index = rows
+                .last()
+                .and_then(|row| row.try_get::<i64, _>("chunk_index").ok())
+                .unwrap_or(after_chunk_index + page_len);
+            chunk_texts.extend(
+                rows.iter()
+                    .filter_map(|row| row.try_get::<String, _>("content_text").ok()),
+            );
+            if page_len < CHUNK_PAGE_SIZE {
+                break;
+            }
+        }
 
-        Ok(rows)
+        Ok(chunk_texts)
     }
 
     async fn list_chunk_id_content_for_document_version(
@@ -174,28 +219,49 @@ impl KnowledgeChunkStore for PostgresKnowledgeChunkStore {
         let organization_id = chunk_to_i64("organization_id", self.organization_id)?;
         let version_id = chunk_to_i64("document_version_id", document_version_id)?;
         const ACTIVE_STATUS: i64 = 1;
-        let rows = sqlx::query(
-            r#"
-            SELECT id, content_text
-            FROM kb_chunk
-            WHERE tenant_id = $1
-              AND organization_id = $2
-              AND document_version_id = $3
-              AND status = $4
-            ORDER BY chunk_index ASC
-            LIMIT $5
-            "#,
-        )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(version_id)
-        .bind(ACTIVE_STATUS)
-        .bind(MAX_CHUNKS_PER_DOCUMENT_LOAD)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|error| KnowledgeChunkStoreError::Internal(error.to_string()))?;
+        const CHUNK_PAGE_SIZE: i64 = 512;
+        let mut chunk_rows = Vec::new();
+        // Keyset loop by chunk_index so a document version is never silently truncated.
+        let mut after_chunk_index = -1i64;
+        loop {
+            let rows = sqlx::query(
+                r#"
+                SELECT id, content_text, chunk_index
+                FROM kb_chunk
+                WHERE tenant_id = $1
+                  AND organization_id = $2
+                  AND document_version_id = $3
+                  AND status = $4
+                  AND chunk_index > $5
+                ORDER BY chunk_index ASC
+                LIMIT $6
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(version_id)
+            .bind(ACTIVE_STATUS)
+            .bind(after_chunk_index)
+            .bind(CHUNK_PAGE_SIZE)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|error| KnowledgeChunkStoreError::Internal(error.to_string()))?;
+            if rows.is_empty() {
+                break;
+            }
+            let page_len = rows.len() as i64;
+            after_chunk_index = rows
+                .last()
+                .and_then(|row| row.try_get::<i64, _>("chunk_index").ok())
+                .unwrap_or(after_chunk_index + page_len);
+            chunk_rows.extend(rows);
+            if page_len < CHUNK_PAGE_SIZE {
+                break;
+            }
+        }
 
-        rows.into_iter()
+        chunk_rows
+            .into_iter()
             .map(|row| {
                 let chunk_id = row
                     .try_get::<i64, _>("id")

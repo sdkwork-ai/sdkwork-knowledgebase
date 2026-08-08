@@ -145,6 +145,17 @@ export class DocumentService {
     return withKnowledgebaseApi(() => KnowledgebaseDocumentApiBridge.ensureFolderChildrenLoaded(kbId, folderId));
   }
 
+  static hasMoreFolderChildren(kbId: string, folderId: string | null): boolean {
+    return KnowledgebaseDocumentApiBridge.hasMoreFolderChildren(kbId, folderId);
+  }
+
+  static async loadMoreFolderChildren(
+    kbId: string,
+    folderId: string | null,
+  ): Promise<boolean> {
+    return withKnowledgebaseApi(() => KnowledgebaseDocumentApiBridge.loadMoreFolderChildren(kbId, folderId));
+  }
+
   static async getDocumentContent(id: string): Promise<string> {
     return withKnowledgebaseApi(() => KnowledgebaseDocumentApiBridge.getDocumentContent(id));
   }

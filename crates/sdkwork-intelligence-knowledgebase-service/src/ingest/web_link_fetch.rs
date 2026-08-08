@@ -316,10 +316,7 @@ fn strip_tag_blocks(input: &str, tag: &str) -> String {
     let mut output = input.to_string();
     let open = format!("<{tag}");
     let close = format!("</{tag}>");
-    loop {
-        let Some(start) = output.to_ascii_lowercase().find(&open) else {
-            break;
-        };
+    while let Some(start) = output.to_ascii_lowercase().find(&open) {
         let Some(relative_end) = output[start..].to_ascii_lowercase().find(&close) else {
             output.replace_range(start.., "");
             break;

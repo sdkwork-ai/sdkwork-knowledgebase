@@ -53,7 +53,6 @@
   "email": "Email",
   "tenant": "Tenant",
   "environment": "Environment",
-  "deploymentProfile": "Deployment profile",
   "signOut": "Sign out",
   "search": "Search",
   "about": "About",
@@ -262,5 +261,7 @@
   "adminConsoleMemberRole": "Role",
   "adminConsoleMemberInherited": "Inherited",
   "adminConsoleYes": "Yes",
-  "adminConsoleNo": "No"
+  "adminConsoleNo": "No",
+  "adminConsoleLoadMore": "Load more",
+  "adminConsoleLoadingMore": "Loading…"
 }

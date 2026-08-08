@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { useState, useEffect, useMemo } from 'react';
+import { isBlank } from '@sdkwork/utils';
 import { createPortal } from 'react-dom';
 import { 
-  X, Search, Library, Folder, FileText, Hash, Image as ImageIcon, 
-  Video, Music, ChevronRight, CheckSquare, Square, FolderArchive,
-  Inbox, Database, HelpCircle, ShieldAlert, Sparkles, RefreshCw
+  X, Search, Library, FileText, Hash, Image as ImageIcon, 
+  Video, Music, CheckSquare, Square,
+  Inbox, RefreshCw
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { DocumentService, KnowledgeBase, DocumentMeta } from './services/document';
+import { DocumentService, KnowledgeBase } from './services/document';
 
 interface PersonalKbModalProps {
   isOpen: boolean;

@@ -42,7 +42,7 @@ impl KnowledgeCommerceAppService for HostedCommerceService {
     ) -> ApiResult<SdkWorkPageData<KnowledgeMarketCatalogItem>> {
         ensure_runtime_tenant(&self.runtime, &context)?;
         let normalized_page_size = crate::pagination::normalize_api_page_size(page_size)?;
-        let cursor_id = crate::pagination::parse_u64_cursor(cursor.as_deref()).map_err(|_| {
+        let cursor_id = crate::pagination::parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
             ApiError::invalid_request("invalid_parameter", "cursor must be a valid listing id")
         })?;
         let (items, next_cursor, has_more) = self

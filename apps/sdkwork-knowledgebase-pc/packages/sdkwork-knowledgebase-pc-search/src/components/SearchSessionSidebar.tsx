@@ -1,5 +1,5 @@
 import React from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { Search, Sparkles, Plus, Trash2, Edit3, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SearchSession } from '../types';

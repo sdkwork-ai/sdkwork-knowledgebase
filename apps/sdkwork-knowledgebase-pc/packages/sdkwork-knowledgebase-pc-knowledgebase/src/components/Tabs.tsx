@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, ChevronDown, Search, FolderX, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, ChevronDown, Search, FolderX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export interface TabItem {

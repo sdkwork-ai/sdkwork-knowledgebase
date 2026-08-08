@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useAiModelSelection } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
 

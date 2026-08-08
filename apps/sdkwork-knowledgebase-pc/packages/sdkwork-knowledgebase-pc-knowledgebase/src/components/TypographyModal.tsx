@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, LayoutTemplate, Wand2, Check, Sparkles, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { isKnowledgebaseApiAvailable } from 'sdkwork-knowledgebase-pc-core';
@@ -349,7 +349,7 @@ export function TypographyModal({ isOpen, onClose, originalContent, onConfirm, a
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      const rewritten = activeContent.replace(/<p[^>]*>([\s\S]*?)<\/p>/g, (match, p1) => {
+      const rewritten = activeContent.replace(/<p[^>]*>([\s\S]*?)<\/p>/g, (_match, p1) => {
         return `<p>${p1}${t('aiRewrittenFeedback', { defaultValue: '【此段内容已通过微信金句引擎优化润色】' })}</p>`;
       });
       setActiveContent(rewritten);

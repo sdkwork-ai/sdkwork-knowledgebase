@@ -1,4 +1,4 @@
-import React, { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface AdminDialogProps {

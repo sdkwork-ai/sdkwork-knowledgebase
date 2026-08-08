@@ -1,4 +1,3 @@
-import React from 'react';
 import { X } from 'lucide-react';
 import { KnowledgeBaseMarketView } from './KnowledgeBaseMarketView';
 import { useTranslation } from 'react-i18next';

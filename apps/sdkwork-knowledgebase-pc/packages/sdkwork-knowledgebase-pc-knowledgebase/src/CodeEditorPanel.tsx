@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { DocumentMeta } from './services/document';
 import { CodeEditor } from './CodeEditor';
-import { Columns, FileCode2, Eye, MonitorSmartphone, Smartphone, Tablet, RefreshCw, Maximize, Code } from 'lucide-react';
+import { FileCode2, Eye, MonitorSmartphone, Smartphone, Tablet, RefreshCw, Maximize } from 'lucide-react';
 import type { ReactKeyedComponentProps } from '@sdkwork/sdkwork-knowledgebase-pc-commons/reactKeyedProps';
 import { buildSandboxedHtmlPreview } from './services/sandboxedHtmlPreview';
 
@@ -15,7 +15,7 @@ export interface CodeEditorPanelProps extends ReactKeyedComponentProps {
 export function CodeEditorPanel({ activeDoc, docContent, onContentChange }: CodeEditorPanelProps) {
   const [viewMode, setViewMode] = useState<'code' | 'preview'>('preview');
   const [device, setDevice] = useState<'current' | 'mobile' | 'tablet'>('current');
-  const [deviceMenuOpen, setDeviceMenuOpen] = useState(false);
+  const [, setDeviceMenuOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

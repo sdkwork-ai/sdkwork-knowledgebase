@@ -180,6 +180,9 @@
         "summary": "Create a knowledge retrieval",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "api-key",
+        "x-sdkwork-permission": "knowledge.retrievals.write",
+        "x-sdkwork-tenant-scope": "tenant",
+        "x-sdkwork-data-scope": "organization",
         "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
       }
     },
@@ -354,6 +357,9 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-open-api",
         "summary": "Retrieve a knowledge retrieval result",
         "x-sdkwork-auth-mode": "api-key",
+        "x-sdkwork-permission": "knowledge.retrievals.read",
+        "x-sdkwork-tenant-scope": "tenant",
+        "x-sdkwork-data-scope": "organization",
         "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
       }
     },
@@ -527,6 +533,9 @@
         "summary": "Create a knowledge context pack",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "api-key",
+        "x-sdkwork-permission": "knowledge.context_packs.write",
+        "x-sdkwork-tenant-scope": "tenant",
+        "x-sdkwork-data-scope": "organization",
         "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
       }
     },
@@ -700,6 +709,9 @@
         "summary": "Create an ingestion job",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "api-key",
+        "x-sdkwork-permission": "knowledge.ingests.write",
+        "x-sdkwork-tenant-scope": "tenant",
+        "x-sdkwork-data-scope": "organization",
         "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
       }
     },
@@ -875,6 +887,9 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-open-api",
         "summary": "Retrieve an ingestion job",
         "x-sdkwork-auth-mode": "api-key",
+        "x-sdkwork-permission": "knowledge.ingests.read",
+        "x-sdkwork-tenant-scope": "tenant",
+        "x-sdkwork-data-scope": "organization",
         "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
       }
     },
@@ -1079,6 +1094,9 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-open-api",
         "summary": "List knowledge documents",
         "x-sdkwork-auth-mode": "api-key",
+        "x-sdkwork-permission": "knowledge.documents.read",
+        "x-sdkwork-tenant-scope": "tenant",
+        "x-sdkwork-data-scope": "organization",
         "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
       }
     },
@@ -1254,6 +1272,9 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-open-api",
         "summary": "Retrieve a knowledge document",
         "x-sdkwork-auth-mode": "api-key",
+        "x-sdkwork-permission": "knowledge.documents.read",
+        "x-sdkwork-tenant-scope": "tenant",
+        "x-sdkwork-data-scope": "organization",
         "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
       }
     },
@@ -1468,6 +1489,9 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-open-api",
         "summary": "List knowledge browser view",
         "x-sdkwork-auth-mode": "api-key",
+        "x-sdkwork-permission": "knowledge.spaces.read",
+        "x-sdkwork-tenant-scope": "tenant",
+        "x-sdkwork-data-scope": "organization",
         "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
       }
     }

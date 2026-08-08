@@ -2,9 +2,7 @@ import type { KnowledgeAccessLevel, KnowledgeSpaceContextBinding } from 'sdkwork
 import { isBlank } from '@sdkwork/utils';
 import {
   getKnowledgebaseAppSdkClient,
-  readRegisteredSpaces,
-  requireKnowledgebaseTenantId,
-} from 'sdkwork-knowledgebase-pc-core';
+  requireKnowledgebaseTenantId} from 'sdkwork-knowledgebase-pc-core';
 
 import type { KnowledgeBase } from './document';
 import { normalizeSdkWorkListPage } from './sdkWorkListPage';
@@ -88,11 +86,6 @@ function mapAccessLevel(
     return 'writer';
   }
   return 'reader';
-}
-
-function resolveGuestContextId(): string {
-  const tenantId = requireKnowledgebaseTenantId();
-  return `tenant-${tenantId}`;
 }
 
 function isLegacyContractProfile(profile: {

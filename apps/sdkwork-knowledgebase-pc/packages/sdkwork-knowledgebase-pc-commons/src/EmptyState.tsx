@@ -1,4 +1,3 @@
-import React from 'react';
 import { FileX, FolderOpen, Search, Plus } from 'lucide-react';
 import { cn } from './utils';
 

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { DocumentExportMenu } from './DocumentExportMenu';
 import type { DocumentExportMenuProps } from './DocumentExportMenu';
 import {

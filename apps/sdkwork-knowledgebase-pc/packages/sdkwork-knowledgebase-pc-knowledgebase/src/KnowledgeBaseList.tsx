@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
-import { Plus, Box, MoreHorizontal, Edit2, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Box, ChevronDown, ChevronRight } from 'lucide-react';
 import { KnowledgeBase, DocumentService } from './services/document';
 import { useTranslation } from 'react-i18next';
 import { RenameModal } from './RenameModal';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './components/ui/dropdown-menu';
-import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from './components/ui/context-menu';
-import { KbDropdownItems, KbContextItems } from './KbMenuContent';
 import { KnowledgeBaseItem } from './KnowledgeBaseItem';
 
 interface KnowledgeBaseListProps {

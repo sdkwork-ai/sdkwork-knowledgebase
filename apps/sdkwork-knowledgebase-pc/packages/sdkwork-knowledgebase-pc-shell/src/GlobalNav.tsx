@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { BookOpen, Shield, Store, Settings, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createRuntimeConfig, type KnowledgebaseAccountViewModel } from 'sdkwork-knowledgebase-pc-core';
@@ -23,7 +23,6 @@ export function GlobalNav({
   onTabChange,
   onOpenSettings,
   onOpenProfile,
-  onOpenAccountSettings,
   showAdminConsole = false,
   onOpenAdminConsole,
 }: GlobalNavProps) {

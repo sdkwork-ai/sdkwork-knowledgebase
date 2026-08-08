@@ -1,6 +1,5 @@
 import { sanitizeEditorHtml } from '@sdkwork/sdkwork-knowledgebase-pc-commons/htmlSanitizer';
 import { getDocumentExportCapabilities } from './documentExportCapabilities';
-import { isBlank, trim } from '@sdkwork/utils';
 import { KnowledgebaseErrorCodes, throwKnowledgebaseError } from 'sdkwork-knowledgebase-pc-core';
 import { tryNativeDocumentPdfExport } from './documentExportNative';
 import { prepareExportHtml, prepareExportImages, stripHtmlText } from './exportContentUtils';

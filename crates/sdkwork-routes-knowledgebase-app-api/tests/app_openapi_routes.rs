@@ -345,7 +345,7 @@ fn app_openapi_exposes_standard_rag_and_knowledge_agent_operations() {
             "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings",
         ),
         (
-            "agentProfiles.bindings.bindings",
+            "agentProfiles.bindings.create",
             "post",
             "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings",
         ),
@@ -360,12 +360,12 @@ fn app_openapi_exposes_standard_rag_and_knowledge_agent_operations() {
             "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings/{bindingId}",
         ),
         (
-            "agentProfiles.retrievalPreview.retrievalPreview",
+            "agentProfiles.retrievalPreview.create",
             "post",
             "/app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview",
         ),
         (
-            "agentProfiles.chat.chat",
+            "agentProfiles.chat.create",
             "post",
             "/app/v3/api/knowledge/agent_profiles/{profileId}/chat",
         ),
@@ -710,7 +710,7 @@ fn request_body(operation_id: &str) -> &'static str {
         "documents.create" | "documents.update" => {
             r#"{"spaceId":7,"collectionId":0,"title":"Document","mimeType":"text/markdown"}"#
         }
-        "documents.versions.versions" => {
+        "documents.versions.create" => {
             r#"{"documentId":13,"originalObjectRefId":23,"sizeBytes":128,"mimeType":"text/markdown"}"#
         }
         "okf.queries.create" => r#"{"spaceId":7,"query":"What changed?"}"#,
@@ -733,19 +733,19 @@ fn request_body(operation_id: &str) -> &'static str {
         "agentProfiles.create" | "agentProfiles.update" => {
             r#"{"tenantId":"100001","name":"Support Agent","systemInstruction":"Answer with citations.","modelProviderId":"provider.model.openai","modelId":"gpt-4.1","status":"active"}"#
         }
-        "agentProfiles.bindings.bindings" | "agentProfiles.bindings.update" => {
+        "agentProfiles.bindings.create" | "agentProfiles.bindings.update" => {
             r#"{"tenantId":"100001","profileId":"41","spaceId":"7","priority":10,"enabled":true}"#
         }
-        "agentProfiles.retrievalPreview.retrievalPreview" => {
+        "agentProfiles.retrievalPreview.create" => {
             r#"{"tenantId":"100001","query":"Quarterly report","bindings":[{"spaceId":"7","priority":10}],"methods":["hybrid"],"includeCitations":true,"includeTrace":true}"#
         }
-        "agentProfiles.chat.chat" => {
+        "agentProfiles.chat.create" => {
             r#"{"tenantId":"100001","message":"What changed in the quarterly report?","mode":"okf_bundle"}"#
         }
-        "spaces.contextBindings.contextBindings" => {
+        "spaces.contextBindings.create" => {
             r#"{"spaceId":"7","contextType":"chat_group","contextId":"grp-ops","accessLevel":"reader"}"#
         }
-        "spaces.members.members" => {
+        "spaces.members.create" => {
             r#"{"subjectType":"user","subjectId":"editor@company.com","role":"writer"}"#
         }
         "contextBindings.update" => r#"{"accessLevel":"writer"}"#,

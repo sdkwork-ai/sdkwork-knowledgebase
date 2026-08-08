@@ -1,8 +1,9 @@
-import type { KnowledgeSpaceMemberList } from './knowledge-space-member-list';
+import type { KnowledgeSpaceMember } from './knowledge-space-member';
+import type { PageInfo } from './page-info';
 
 export interface SpacesMembersListResponse {
   code: 0;
-  data: unknown & { item: KnowledgeSpaceMemberList; };
+  data: unknown & { items: KnowledgeSpaceMember[]; pageInfo: PageInfo; };
   /** Server-owned request correlation id. */
   traceId: string;
 }

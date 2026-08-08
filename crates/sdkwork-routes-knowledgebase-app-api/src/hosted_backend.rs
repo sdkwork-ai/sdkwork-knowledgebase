@@ -35,7 +35,7 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeIndexList, KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfBundleFileList,
     KnowledgeOkfProfileRequest, KnowledgeProviderHealth, KnowledgeRetrievalProfile,
     KnowledgeRetrievalProfileRequest, KnowledgeRetrievalTrace, KnowledgeRetrievalTraceList,
-    KnowledgeSource, KnowledgeSourceList, KnowledgeSpace, KnowledgeSpaceMemberList,
+    KnowledgeSource, KnowledgeSourceList, KnowledgeSpace, KnowledgeSpaceMember,
     KnowledgeTenantStatus, KnowledgeTenantStatusEnum, OkfBundleExportRequest,
     OkfBundleImportRequest, OkfBundleImportResult, OkfCandidateResult, OkfCandidateResultList,
     OkfCandidateReviewRequest, OkfCompileJobRequest, OkfConceptPublishRequest, OkfConceptSummary,
@@ -242,8 +242,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                next_cursor,
-                has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
                 page_size,
             ),
         )
@@ -373,8 +372,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                next_cursor,
-                has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
                 page_size,
             ),
         )
@@ -563,8 +561,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                next_cursor,
-                has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
                 page_size,
             ),
         )
@@ -742,8 +739,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                next_cursor,
-                has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
                 page_size,
             ),
         )
@@ -937,8 +933,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                next_cursor,
-                has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
                 page_size,
             ),
         )
@@ -1444,8 +1439,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                next_cursor,
-                has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
                 normalized_page_size,
             ),
         )
@@ -1456,7 +1450,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         space_id: u64,
         cursor: Option<String>,
         page_size: Option<u32>,
-    ) -> BackendApiResult<KnowledgeSpaceMemberList> {
+    ) -> BackendApiResult<sdkwork_utils_rust::SdkWorkPageData<KnowledgeSpaceMember>> {
         list_space_members_admin_with_runtime(&self.runtime, space_id, cursor, page_size)
             .await
             .map_err(map_api_error)
@@ -1546,7 +1540,7 @@ fn parse_backend_cursor(cursor: Option<String>) -> BackendApiResult<Option<u64>>
             BackendApiError::new(
                 axum::http::StatusCode::BAD_REQUEST,
                 "invalid_parameter",
-                "cursor must be a valid numeric id",
+                "cursor must be a valid cursor token",
             )
         })
 }

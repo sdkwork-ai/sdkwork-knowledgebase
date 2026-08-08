@@ -9,9 +9,7 @@ import {
 import type { DocumentMeta } from './document';
 import {
   listKnowledgeBrowserNodesPage,
-  invalidateKnowledgeBrowserNodeCacheForKbIds,
-  invalidateKnowledgeBrowserNodeCacheForSpaceIds,
-} from './knowledgeBrowserListService';
+  invalidateKnowledgeBrowserNodeCacheForSpaceIds} from './knowledgeBrowserListService';
 
 const OKF_BUNDLE_BROWSER_VIEW = 'okf_bundle' as const;
 

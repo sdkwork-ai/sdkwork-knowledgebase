@@ -13,6 +13,23 @@ export function extractSdkWorkListItems(
   );
 }
 
+/**
+ * Returns the opaque next-cursor of a standard `{ items, pageInfo }` list payload, or
+ * `undefined` when the page is exhausted. Consumers drive interactive pagination with
+ * this cursor — they must never aggregate full collections client-side.
+ */
+export function extractNextCursor(payload: unknown): string | undefined {
+  const pageInfo = getPath(payload, 'pageInfo');
+  if (typeof pageInfo !== 'object' || pageInfo === null) {
+    return undefined;
+  }
+  const nextCursor = (pageInfo as Record<string, unknown>).nextCursor;
+  if (typeof nextCursor === 'string' && nextCursor.length > 0) {
+    return nextCursor;
+  }
+  return undefined;
+}
+
 export function extractSdkWorkMemberItems(
   payload: unknown,
 ): Record<string, unknown>[] {

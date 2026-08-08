@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { isBlank, trim } from '@sdkwork/utils';
-import { X, GitBranch, Share, CheckCircle, Database, HelpCircle, Loader2, ArrowRight, ShieldCheck, Check } from 'lucide-react';
+import { X, GitBranch, Share, Loader2, ArrowRight, ShieldCheck, Check } from 'lucide-react';
 import { KnowledgeBase, DocumentService } from '../services/document';
 import { isKnowledgebaseApiAvailable, KnowledgebaseErrorCodes, resolveUserFacingErrorMessage, shouldUseKnowledgebaseDemoFallback, throwKnowledgebaseError } from 'sdkwork-knowledgebase-pc-core';
 import { useTranslation } from 'react-i18next';

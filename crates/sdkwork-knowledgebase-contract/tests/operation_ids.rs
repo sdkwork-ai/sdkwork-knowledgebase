@@ -38,7 +38,7 @@ fn source_document_ingest_operation_ids_follow_sdkwork_resource_tree() {
     assert_eq!(DOCUMENTS_LIST, "documents.list");
     assert_eq!(DOCUMENTS_CREATE, "documents.create");
     assert_eq!(DOCUMENTS_RETRIEVE, "documents.retrieve");
-    assert_eq!(DOCUMENTS_VERSIONS_CREATE, "documents.versions.versions");
+    assert_eq!(DOCUMENTS_VERSIONS_CREATE, "documents.versions.create");
     assert_eq!(DRIVE_IMPORTS_CREATE, "driveImports.create");
     assert_eq!(INGESTS_CREATE, "ingests.create");
     assert_eq!(INGESTS_RETRIEVE, "ingests.retrieve");
@@ -57,7 +57,7 @@ fn rag_and_knowledge_agent_operation_ids_follow_sdkwork_resource_tree() {
     assert_eq!(AGENT_PROFILES_BINDINGS_LIST, "agentProfiles.bindings.list");
     assert_eq!(
         AGENT_PROFILES_BINDINGS_CREATE,
-        "agentProfiles.bindings.bindings"
+        "agentProfiles.bindings.create"
     );
     assert_eq!(
         AGENT_PROFILES_BINDINGS_UPDATE,
@@ -69,6 +69,6 @@ fn rag_and_knowledge_agent_operation_ids_follow_sdkwork_resource_tree() {
     );
     assert_eq!(
         AGENT_PROFILES_RETRIEVAL_PREVIEW_CREATE,
-        "agentProfiles.retrievalPreview.retrievalPreview"
+        "agentProfiles.retrievalPreview.create"
     );
 }

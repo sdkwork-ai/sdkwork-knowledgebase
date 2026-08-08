@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search, Globe, FileText, BookOpen, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CHAT_LAYOUT_MAX, PRESET_PROMPTS } from '../constants';

@@ -291,12 +291,12 @@ impl KnowledgeEngineRuntimeDeps {
     }
 }
 
-pub fn build_default_registry(deps: KnowledgeEngineRuntimeDeps) -> DefaultKnowledgeEngineRegistry {
+pub fn build_default_registry(
+    deps: KnowledgeEngineRuntimeDeps,
+) -> Result<DefaultKnowledgeEngineRegistry, KnowledgeEngineError> {
     let mut registry = InMemoryKnowledgeEngineRegistry::new();
     let okf_native = Arc::new(OkfNativeKnowledgeEngine::from_deps(deps.okf));
-    registry
-        .register(okf_native.clone())
-        .expect("OKF native knowledge engine registration must be unique");
+    registry.register(okf_native.clone())?;
 
     let mut rag_engine = RagNativeKnowledgeEngine::new(
         deps.tenant_id,
@@ -314,21 +314,17 @@ pub fn build_default_registry(deps: KnowledgeEngineRuntimeDeps) -> DefaultKnowle
         });
     }
     let rag_native = Arc::new(rag_engine);
-    registry
-        .register(rag_native.clone())
-        .expect("RAG native knowledge engine registration must be unique");
+    registry.register(rag_native.clone())?;
 
     for engine in deps.external_engines {
-        registry.register(engine).unwrap_or_else(|error| {
-            panic!("external knowledge engine registration failed: {error}")
-        });
+        registry.register(engine)?;
     }
-    DefaultKnowledgeEngineRegistry {
+    Ok(DefaultKnowledgeEngineRegistry {
         registry,
         okf_native,
         rag_native,
         tenant_id: deps.tenant_id,
-    }
+    })
 }
 
 #[async_trait::async_trait]

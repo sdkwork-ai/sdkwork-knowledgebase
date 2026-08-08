@@ -1,4 +1,3 @@
-import React from 'react';
 import { CHAT_LAYOUT_MAX } from '../constants';
 import type {
   SearchMessage,

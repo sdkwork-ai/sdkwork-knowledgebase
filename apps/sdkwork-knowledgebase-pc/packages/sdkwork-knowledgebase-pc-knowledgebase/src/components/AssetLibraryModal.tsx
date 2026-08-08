@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Search, Image as ImageIcon, Music, Video, Plus, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { isKnowledgebaseApiAvailable } from 'sdkwork-knowledgebase-pc-core';

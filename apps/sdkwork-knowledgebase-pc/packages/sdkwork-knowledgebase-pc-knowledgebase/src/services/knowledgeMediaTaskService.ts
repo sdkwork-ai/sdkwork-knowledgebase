@@ -1,15 +1,12 @@
 import { isBlank, trim } from '@sdkwork/utils';
 import {
-  getKnowledgebaseTenantId,
   KnowledgebaseErrorCodes,
   parseKnowledgeSpaceId,
-  readRegisteredSpaces,
   requireKnowledgebaseAppSdkHttpClient,
   requireKnowledgebaseTenantId,
   requireNonEmptyString,
   requirePrimaryRegisteredSpaceId,
-  throwKnowledgebaseError,
-} from 'sdkwork-knowledgebase-pc-core';
+  throwKnowledgebaseError} from 'sdkwork-knowledgebase-pc-core';
 import { getActiveEphemeralFixedKnowledgebaseWorkspaceSpaceId } from '../workspaceMode';
 
 export interface MediaTaskContext {
@@ -58,8 +55,7 @@ export async function runSpeechToTextTask(
     spaceId: resolveSpaceId(context),
     taskType: 'speech_to_text',
     sourceUrl: trim(audioUrl) || undefined,
-    documentId: parseDocumentId(context?.documentId),
-  });
+    documentId: parseDocumentId(context?.documentId)});
 
   if (result.accepted !== true || isBlank(result.text)) {
     throwKnowledgebaseError(KnowledgebaseErrorCodes.SPEECH_NO_RESULT);
@@ -82,8 +78,7 @@ export async function runImageGenerationTask(
     taskType: 'generate_image',
     prompt: trimmedPrompt,
     aspectMode: trim(aspectMode) || '1:1',
-    styleMode: trim(styleMode) || 'default',
-  });
+    styleMode: trim(styleMode) || 'default'});
 
   if (result.accepted !== true || isBlank(result.url)) {
     throwKnowledgebaseError(KnowledgebaseErrorCodes.IMAGE_URL_MISSING);
@@ -93,6 +88,5 @@ export async function runImageGenerationTask(
     url: result.url ?? '',
     resolution: result.resolution || '1024x1024',
     suggestions: result.suggestions,
-    similars: result.similars,
-  };
+    similars: result.similars};
 }

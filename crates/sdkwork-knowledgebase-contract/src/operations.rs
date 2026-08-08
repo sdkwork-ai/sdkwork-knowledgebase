@@ -7,7 +7,7 @@ pub const DOCUMENTS_CREATE: &str = "documents.create";
 pub const DOCUMENTS_RETRIEVE: &str = "documents.retrieve";
 pub const DOCUMENTS_UPDATE: &str = "documents.update";
 pub const DOCUMENTS_DELETE: &str = "documents.delete";
-pub const DOCUMENTS_VERSIONS_CREATE: &str = "documents.versions.versions";
+pub const DOCUMENTS_VERSIONS_CREATE: &str = "documents.versions.create";
 pub const DOCUMENTS_VERSIONS_LIST: &str = "documents.versions.list";
 pub const DOCUMENTS_CONTENT_RETRIEVE: &str = "documents.content.list";
 pub const DRIVE_IMPORTS_CREATE: &str = "driveImports.create";
@@ -22,12 +22,12 @@ pub const AGENT_PROFILES_RETRIEVE: &str = "agentProfiles.retrieve";
 pub const AGENT_PROFILES_UPDATE: &str = "agentProfiles.update";
 pub const AGENT_PROFILES_DELETE: &str = "agentProfiles.delete";
 pub const AGENT_PROFILES_BINDINGS_LIST: &str = "agentProfiles.bindings.list";
-pub const AGENT_PROFILES_BINDINGS_CREATE: &str = "agentProfiles.bindings.bindings";
+pub const AGENT_PROFILES_BINDINGS_CREATE: &str = "agentProfiles.bindings.create";
 pub const AGENT_PROFILES_BINDINGS_UPDATE: &str = "agentProfiles.bindings.update";
 pub const AGENT_PROFILES_BINDINGS_DELETE: &str = "agentProfiles.bindings.delete";
 pub const AGENT_PROFILES_RETRIEVAL_PREVIEW_CREATE: &str =
-    "agentProfiles.retrievalPreview.retrievalPreview";
-pub const AGENT_PROFILES_CHAT_CREATE: &str = "agentProfiles.chat.chat";
+    "agentProfiles.retrievalPreview.create";
+pub const AGENT_PROFILES_CHAT_CREATE: &str = "agentProfiles.chat.create";
 pub const OKF_CONCEPTS_LIST: &str = "okf.concepts.list";
 pub const OKF_CONCEPTS_RETRIEVE: &str = "okf.concepts.retrieve";
 pub const OKF_CONCEPTS_UPSERT: &str = "okf.concepts.update";
@@ -65,7 +65,7 @@ pub const CONTEXT_BINDINGS_RETRIEVE: &str = "contextBindings.retrieve";
 pub const CONTEXT_BINDINGS_UPDATE: &str = "contextBindings.update";
 pub const CONTEXT_BINDINGS_DELETE: &str = "contextBindings.delete";
 pub const SPACES_CONTEXT_BINDINGS_LIST: &str = "spaces.contextBindings.list";
-pub const SPACES_CONTEXT_BINDINGS_CREATE: &str = "spaces.contextBindings.contextBindings";
+pub const SPACES_CONTEXT_BINDINGS_CREATE: &str = "spaces.contextBindings.create";
 pub const PROVIDER_HEALTH_RETRIEVE: &str = "providerHealth.list";
 
 pub const ALL_OPERATION_IDS: &[&str] = &[

@@ -1,4 +1,3 @@
-import React from 'react';
 import type { SearchMediaCategory, SearchMediaItem } from '../../types';
 import type { MediaPlaylistControls } from './types';
 import { SearchAudioPlayerContent } from './SearchAudioPlayerContent';

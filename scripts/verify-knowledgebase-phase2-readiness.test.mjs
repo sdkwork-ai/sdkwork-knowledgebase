@@ -74,10 +74,17 @@ describe('knowledgebase Phase 2 commercial readiness alignment', () => {
     const tenantSession = readRepoFile(
       'crates/sdkwork-intelligence-knowledgebase-repository-sqlx/src/db/postgres_tenant_session.rs',
     );
+    // The RLS session keys and the scope-injection helper live in the shared database host
+    // (`postgres_scope.rs`); the repository bootstrap reuses them via `pub use`.
+    const postgresScope = readRepoFile(
+      'crates/sdkwork-knowledgebase-database-host/src/postgres_scope.rs',
+    );
     const phase2Prd = readRepoFile('docs/product/prd/PRD-phase2-commercial-saas.md');
+    assert.match(postgresScope, /POSTGRES_TENANT_SESSION_KEY/);
+    assert.match(postgresScope, /postgres_url_with_deployment_scope/);
+    assert.match(postgresScope, /require_postgres_rls_organization_id/);
     assert.match(bootstrap, /postgres_url_with_deployment_scope/);
     assert.match(bootstrap, /require_postgres_rls_organization_id/);
-    assert.match(bootstrap, /POSTGRES_TENANT_SESSION_KEY/);
     assert.match(bootstrap, /create_pool_from_config/);
     assert.doesNotMatch(bootstrap, /PgPoolOptions|after_connect/);
     assert.match(tenantSession, /deployment-bound tenant id/);

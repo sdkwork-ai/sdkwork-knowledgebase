@@ -181,7 +181,7 @@ export async function generateCitationsAndResults(
   relatedMedia: import('../types').SearchRelatedMedia;
   responseText: string;
 }> {
-  const lower = query.toLowerCase();
+void (query.toLowerCase());
   let localSources: SearchSource[] = [];
   let searchDocs: Awaited<ReturnType<typeof DocumentService.searchAll>>['docs'] = [];
 

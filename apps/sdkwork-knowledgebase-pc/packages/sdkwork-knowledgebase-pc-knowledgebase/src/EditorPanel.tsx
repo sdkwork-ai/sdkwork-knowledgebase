@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { BookOpen, Share2, Pin, Sparkles, FileUp, Music, Video, FileText, Box, Code, Image as ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Share2, Pin, Sparkles, Music, Video, FileText, Code, Image as ImageIcon } from 'lucide-react';
 import { Tabs } from './components/Tabs';
 import { DocumentMeta, KnowledgeBase, FolderNode } from './services/document';
 import { useTranslation } from 'react-i18next';
@@ -11,8 +11,7 @@ import { AssetLibraryModal } from './components/AssetLibraryModal';
 import { sanitizeEditorHtml } from '@sdkwork/sdkwork-knowledgebase-pc-commons/htmlSanitizer';
 import {
   isKnowledgebaseWorkspaceAiEnabled,
-  type KnowledgebaseWorkspaceMode,
-} from './workspaceMode';
+  type KnowledgebaseWorkspaceMode} from './workspaceMode';
 
 const MediaViewer = React.lazy(async () => {
   const module = await import('./MediaViewer');
@@ -91,8 +90,7 @@ export function EditorPanel({
   isDraggingAi = false,
   onMouseDownDragAi,
   publishEnabled = true,
-  workspaceMode = 'standard',
-}: EditorPanelProps) {
+  workspaceMode = 'standard'}: EditorPanelProps) {
   const { t } = useTranslation('editor');
   const aiEnabled = isKnowledgebaseWorkspaceAiEnabled(workspaceMode);
 

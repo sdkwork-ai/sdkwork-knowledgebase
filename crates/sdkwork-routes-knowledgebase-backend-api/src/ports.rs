@@ -16,7 +16,7 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeIndexList, KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfBundleFileList,
     KnowledgeOkfProfileRequest, KnowledgeProviderHealth, KnowledgeRetrievalProfile,
     KnowledgeRetrievalProfileRequest, KnowledgeRetrievalTrace, KnowledgeRetrievalTraceList,
-    KnowledgeSource, KnowledgeSourceList, KnowledgeSpace, KnowledgeSpaceMemberList,
+    KnowledgeSource, KnowledgeSourceList, KnowledgeSpace, KnowledgeSpaceMember,
     KnowledgeTenantStatus, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult,
     OkfCandidateResult, OkfCandidateResultList, OkfCandidateReviewRequest, OkfCompileJobRequest,
     OkfConceptPublishRequest, OkfConceptSummary, OkfIndexDocument, OkfIndexRebuildRequest,
@@ -52,24 +52,12 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
     async fn list_sources_page(
         &self,
         _cursor: Option<String>,
-        page_size: Option<u32>,
+        _page_size: Option<u32>,
     ) -> BackendApiResult<SdkWorkPageData<KnowledgeSource>> {
-        let legacy = self.list_sources().await?;
-        Ok(crate::pagination::cursor_page_data(
-            legacy.items,
-            None,
-            false,
-            crate::pagination::normalize_page_size(page_size).map_err(|_| {
-                BackendApiError::new(
-                    axum::http::StatusCode::BAD_REQUEST,
-                    "invalid_parameter",
-                    format!(
-                        "page_size must be between 1 and {}",
-                        sdkwork_utils_rust::MAX_LIST_PAGE_SIZE
-                    ),
-                )
-            })?,
-        ))
+        // Default implementations MUST NOT wrap unbounded legacy lists into a
+        // cursor-shaped page (PAGINATION_SPEC §2.1/§2.2 forbids facade in-process
+        // pagination). Implementers override this method with a store-level keyset query.
+        Err(BackendApiError::unsupported_operation("sources.list"))
     }
 
     async fn create_source(
@@ -99,25 +87,15 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
 
     async fn list_okf_candidates_page(
         &self,
-        space_id: u64,
+        _space_id: u64,
         _cursor: Option<String>,
-        page_size: Option<u32>,
+        _page_size: Option<u32>,
     ) -> BackendApiResult<SdkWorkPageData<OkfCandidateResult>> {
-        let legacy = self.list_okf_candidates(space_id).await?;
-        Ok(crate::pagination::cursor_page_data(
-            legacy.items,
-            None,
-            false,
-            crate::pagination::normalize_page_size(page_size).map_err(|_| {
-                BackendApiError::new(
-                    axum::http::StatusCode::BAD_REQUEST,
-                    "invalid_parameter",
-                    format!(
-                        "page_size must be between 1 and {}",
-                        sdkwork_utils_rust::MAX_LIST_PAGE_SIZE
-                    ),
-                )
-            })?,
+        // Default implementations MUST NOT wrap unbounded legacy lists into a
+        // cursor-shaped page (PAGINATION_SPEC §2.1/§2.2 forbids facade in-process
+        // pagination). Implementers override this method with a store-level keyset query.
+        Err(BackendApiError::unsupported_operation(
+            "okf.candidates.list",
         ))
     }
 
@@ -217,23 +195,13 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
     async fn list_okf_bundle_files_page(
         &self,
         _cursor: Option<String>,
-        page_size: Option<u32>,
+        _page_size: Option<u32>,
     ) -> BackendApiResult<SdkWorkPageData<KnowledgeOkfBundleFile>> {
-        let legacy = self.list_okf_bundle_files().await?;
-        Ok(crate::pagination::cursor_page_data(
-            legacy.items,
-            None,
-            false,
-            crate::pagination::normalize_page_size(page_size).map_err(|_| {
-                BackendApiError::new(
-                    axum::http::StatusCode::BAD_REQUEST,
-                    "invalid_parameter",
-                    format!(
-                        "page_size must be between 1 and {}",
-                        sdkwork_utils_rust::MAX_LIST_PAGE_SIZE
-                    ),
-                )
-            })?,
+        // Default implementations MUST NOT wrap unbounded legacy lists into a
+        // cursor-shaped page (PAGINATION_SPEC §2.1/§2.2 forbids facade in-process
+        // pagination). Implementers override this method with a store-level keyset query.
+        Err(BackendApiError::unsupported_operation(
+            "okf.bundle.files.list",
         ))
     }
 
@@ -262,24 +230,12 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
     async fn list_indexes_page(
         &self,
         _cursor: Option<String>,
-        page_size: Option<u32>,
+        _page_size: Option<u32>,
     ) -> BackendApiResult<SdkWorkPageData<KnowledgeIndex>> {
-        let legacy = self.list_indexes().await?;
-        Ok(crate::pagination::cursor_page_data(
-            legacy.items,
-            None,
-            false,
-            crate::pagination::normalize_page_size(page_size).map_err(|_| {
-                BackendApiError::new(
-                    axum::http::StatusCode::BAD_REQUEST,
-                    "invalid_parameter",
-                    format!(
-                        "page_size must be between 1 and {}",
-                        sdkwork_utils_rust::MAX_LIST_PAGE_SIZE
-                    ),
-                )
-            })?,
-        ))
+        // Default implementations MUST NOT wrap unbounded legacy lists into a
+        // cursor-shaped page (PAGINATION_SPEC §2.1/§2.2 forbids facade in-process
+        // pagination). Implementers override this method with a store-level keyset query.
+        Err(BackendApiError::unsupported_operation("indexes.list"))
     }
 
     async fn create_index(
@@ -338,23 +294,13 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
     async fn list_retrieval_traces_page(
         &self,
         _cursor: Option<String>,
-        page_size: Option<u32>,
+        _page_size: Option<u32>,
     ) -> BackendApiResult<SdkWorkPageData<KnowledgeRetrievalTrace>> {
-        let legacy = self.list_retrieval_traces().await?;
-        Ok(crate::pagination::cursor_page_data(
-            legacy.items,
-            None,
-            false,
-            crate::pagination::normalize_page_size(page_size).map_err(|_| {
-                BackendApiError::new(
-                    axum::http::StatusCode::BAD_REQUEST,
-                    "invalid_parameter",
-                    format!(
-                        "page_size must be between 1 and {}",
-                        sdkwork_utils_rust::MAX_LIST_PAGE_SIZE
-                    ),
-                )
-            })?,
+        // Default implementations MUST NOT wrap unbounded legacy lists into a
+        // cursor-shaped page (PAGINATION_SPEC §2.1/§2.2 forbids facade in-process
+        // pagination). Implementers override this method with a store-level keyset query.
+        Err(BackendApiError::unsupported_operation(
+            "retrievalTraces.list",
         ))
     }
 
@@ -581,7 +527,7 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
         _space_id: u64,
         _cursor: Option<String>,
         _page_size: Option<u32>,
-    ) -> BackendApiResult<KnowledgeSpaceMemberList> {
+    ) -> BackendApiResult<SdkWorkPageData<KnowledgeSpaceMember>> {
         Err(BackendApiError::unsupported_operation(
             "spaces.members.list",
         ))

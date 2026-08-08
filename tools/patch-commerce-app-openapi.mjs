@@ -40,6 +40,31 @@ const sdkworkExtensions = {
   'x-sdkwork-auth-mode': 'dual-token',
 };
 
+// Commerce paths are applied after permission materialization, so each operation must
+// carry the same authorization metadata as the authored manifest routes.
+const commercePermissionExtensions = {
+  'market.listings.list': {
+    'x-sdkwork-permission': 'knowledge.market.read',
+    'x-sdkwork-tenant-scope': 'tenant',
+    'x-sdkwork-data-scope': 'organization',
+  },
+  'market.subscriptions.create': {
+    'x-sdkwork-permission': 'knowledge.market.write',
+    'x-sdkwork-tenant-scope': 'tenant',
+    'x-sdkwork-data-scope': 'organization',
+  },
+  'market.subscriptions.delete': {
+    'x-sdkwork-permission': 'knowledge.market.write',
+    'x-sdkwork-tenant-scope': 'tenant',
+    'x-sdkwork-data-scope': 'organization',
+  },
+  'mediaTasks.create': {
+    'x-sdkwork-permission': 'knowledge.media.write',
+    'x-sdkwork-tenant-scope': 'tenant',
+    'x-sdkwork-data-scope': 'organization',
+  },
+};
+
 const int64StringSchema = {
   type: 'string',
   format: 'uint64',
@@ -66,6 +91,7 @@ const commercePaths = {
         200: jsonResponse(listEnvelope('#/components/schemas/KnowledgeMarketCatalogItem')),
       },
       ...sdkworkExtensions,
+      ...commercePermissionExtensions['market.listings.list'],
     },
   },
   '/app/v3/api/knowledge/market/subscriptions': {
@@ -87,6 +113,7 @@ const commercePaths = {
         201: createdResponse(commandEnvelope('#/components/schemas/KnowledgeMarketSubscriptionResult')),
       },
       ...sdkworkExtensions,
+      ...commercePermissionExtensions['market.subscriptions.create'],
     },
   },
   '/app/v3/api/knowledge/market/subscriptions/{listingId}': {
@@ -108,6 +135,7 @@ const commercePaths = {
         204: { description: 'No Content' },
       },
       ...sdkworkExtensions,
+      ...commercePermissionExtensions['market.subscriptions.delete'],
     },
   },
   '/app/v3/api/knowledge/media_tasks': {
@@ -129,6 +157,7 @@ const commercePaths = {
         201: createdResponse(commandEnvelope('#/components/schemas/KnowledgeMediaTaskResult')),
       },
       ...sdkworkExtensions,
+      ...commercePermissionExtensions['mediaTasks.create'],
     },
   },
 };

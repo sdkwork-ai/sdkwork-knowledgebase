@@ -125,7 +125,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     ),
     knowledge_route(
         HttpMethod::Get,
-        "/app/v3/api/knowledge/wechat/official_accounts/{account_id}/fan_tags",
+        "/app/v3/api/knowledge/wechat/official_accounts/{accountId}/fan_tags",
         "wechat.officialAccounts.fanTags.list",
         "knowledge.wechat.manage",
     ),
@@ -210,7 +210,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     knowledge_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/documents/{documentId}/versions",
-        "documents.versions.versions",
+        "documents.versions.create",
         "knowledge.documents.write",
     ),
     knowledge_route(
@@ -360,7 +360,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     knowledge_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings",
-        "agentProfiles.bindings.bindings",
+        "agentProfiles.bindings.create",
         "knowledge.agent_profiles.write",
     ),
     knowledge_route(
@@ -378,13 +378,13 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview",
-        "agentProfiles.retrievalPreview.retrievalPreview",
+        "agentProfiles.retrievalPreview.create",
         "knowledge.agent_profiles.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/agent_profiles/{profileId}/chat",
-        "agentProfiles.chat.chat",
+        "agentProfiles.chat.create",
         "knowledge.agent_profiles.write",
     ),
     knowledge_route(
@@ -396,7 +396,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     knowledge_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/context_bindings",
-        "spaces.contextBindings.contextBindings",
+        "spaces.contextBindings.create",
         "knowledge.spaces.write",
     ),
     knowledge_route(
@@ -408,7 +408,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     knowledge_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/members",
-        "spaces.members.members",
+        "spaces.members.create",
         "knowledge.spaces.write",
     ),
     knowledge_route(

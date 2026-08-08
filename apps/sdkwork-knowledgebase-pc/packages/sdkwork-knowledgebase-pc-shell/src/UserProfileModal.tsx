@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { X, Camera, Mail, Phone, Briefcase, Info, Clock, Check, Edit2, AlertCircle, Sparkles, Smile, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLocalStorage } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
@@ -57,7 +57,7 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   statusText: '在架写作中 ✍️'
 };
 
-export function UserProfileModal({ account, isOpen, onClose }: UserProfileModalProps) {
+export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
   const { t } = useTranslation('shell');
   const [profile, setProfile] = useLocalStorage<UserProfile>('app-user-profile', DEFAULT_USER_PROFILE);
   const [isEditing, setIsEditing] = useState(false);

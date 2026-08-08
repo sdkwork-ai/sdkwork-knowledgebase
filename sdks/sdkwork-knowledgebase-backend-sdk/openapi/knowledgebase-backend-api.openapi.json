@@ -6638,12 +6638,20 @@
                       "properties": {
                         "data": {
                           "type": "object",
+                          "additionalProperties": false,
                           "required": [
-                            "item"
+                            "items",
+                            "pageInfo"
                           ],
                           "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/KnowledgeSpaceMemberList"
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/KnowledgeSpaceMember"
+                              }
+                            },
+                            "pageInfo": {
+                              "$ref": "#/components/schemas/PageInfo"
                             }
                           }
                         }

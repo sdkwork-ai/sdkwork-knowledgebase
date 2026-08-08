@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { FileText, Mic, Music2 } from 'lucide-react';
 import type { MediaTimedLine } from '../../../types';
 import { computeLineProgress, findActiveTimedLineIndex } from '../../../utils/mediaTimedText';

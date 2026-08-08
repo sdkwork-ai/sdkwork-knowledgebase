@@ -78,12 +78,6 @@ export function decodeBinaryResourcePayload(payload: BinaryResourcePayload): Uin
   return bytes;
 }
 
-function basenameFromPath(path: string): string {
-  const normalized = path.replace(/\\/g, '/');
-  const segments = normalized.split('/');
-  return segments[segments.length - 1] || path;
-}
-
 export function createHostAdapter(): HostAdapter {
   return {
     get isNativeHost() {

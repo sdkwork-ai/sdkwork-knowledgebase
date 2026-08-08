@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';

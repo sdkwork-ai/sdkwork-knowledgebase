@@ -33,7 +33,7 @@ fn hash_field(hasher: &mut Sha256, field_name: &str, value: Option<&str>) {
     match value {
         Some(value) => {
             hasher.update(value.len().to_string().as_bytes());
-            hasher.update([b':']);
+            hasher.update(b":");
             hasher.update(value.as_bytes());
         }
         None => hasher.update(b"null"),

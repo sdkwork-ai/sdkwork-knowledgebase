@@ -1,12 +1,10 @@
 import type { KnowledgeBrowserNode } from 'sdkwork-knowledgebase-pc-core';
 import {
-  KnowledgebaseErrorCodes,
   parseKnowledgeSpaceId,
   requireDriveApiClient,
   requireDriveNodeId,
   requireDriveSpaceIdFromKbSpace,
-  requireKnowledgebaseAppSdkHttpClient,
-} from 'sdkwork-knowledgebase-pc-core';
+  requireKnowledgebaseAppSdkHttpClient} from 'sdkwork-knowledgebase-pc-core';
 
 import type { DocumentMeta } from './document';
 import { resolveKnowledgeBrowserParentDriveNodeId } from './knowledgeBrowserParentResolver';
@@ -36,13 +34,11 @@ export async function createKnowledgeDriveFolder(input: {
     await requireDriveApiClient().drive.nodes.folders.create({
       spaceId: driveSpaceId,
       parentNodeId: input.parentDriveNodeId?.trim() || undefined,
-      nodeName: input.nodeName.trim(),
-    }),
+      nodeName: input.nodeName.trim()}),
   );
   return {
     driveNodeId: folder.id,
-    nodeName: folder.nodeName?.trim() || input.nodeName.trim(),
-  };
+    nodeName: folder.nodeName?.trim() || input.nodeName.trim()};
 }
 
 export async function applyDriveBrowserNodeUpdates(
@@ -55,8 +51,7 @@ export async function applyDriveBrowserNodeUpdates(
 
   if (updates.title !== undefined && updates.title.trim() !== node.name) {
     await drive.drive.nodes.update(driveNodeId, {
-      nodeName: updates.title.trim(),
-    });
+      nodeName: updates.title.trim()});
   }
 
   if (updates.parentId !== undefined) {
@@ -68,8 +63,7 @@ export async function applyDriveBrowserNodeUpdates(
         targetParent ?? null,
       );
       await drive.drive.nodes.move(driveNodeId, {
-        targetParentNodeId: targetDriveParent,
-      });
+        targetParentNodeId: targetDriveParent});
     }
   }
 
@@ -118,8 +112,7 @@ export async function ensureDriveFolderPath(
       await requireDriveApiClient().drive.nodes.folders.create({
         spaceId: driveSpaceId,
         parentNodeId: currentParent,
-        nodeName: folderName,
-      }),
+        nodeName: folderName}),
     );
     folderCache.set(pathAccumulator, folder.id);
     currentParent = folder.id;

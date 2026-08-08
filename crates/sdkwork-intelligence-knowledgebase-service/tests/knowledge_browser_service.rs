@@ -372,7 +372,9 @@ async fn browser_caps_page_size_to_prevent_unbounded_directory_scans() {
     let service = KnowledgeBrowserService::new(&spaces, &drive_tree, &projections)
         .with_access_control(&PERMISSIVE_ACCESS_CONTROL);
 
-    let page = service
+    // Oversized page sizes are rejected (PAGINATION_SPEC §10.1), never silently clamped,
+    // so an unbounded directory scan cannot hide behind a compliant-looking page size.
+    let error = service
         .list(
             Some(browser_access()),
             ListKnowledgeBrowserRequest {
@@ -384,11 +386,11 @@ async fn browser_caps_page_size_to_prevent_unbounded_directory_scans() {
             },
         )
         .await
-        .unwrap();
+        .expect_err("page_size above the maximum must be rejected");
 
-    assert_eq!(page.page_size, 200);
-    assert_eq!(drive_tree.last_page_size(), Some(200));
-    assert_eq!(drive_tree.resolved_paths(), vec!["sources/raw".to_string()]);
+    assert!(error.to_string().contains("page_size"));
+    assert_eq!(drive_tree.last_page_size(), None);
+    assert!(drive_tree.resolved_paths().is_empty());
 }
 
 #[tokio::test]

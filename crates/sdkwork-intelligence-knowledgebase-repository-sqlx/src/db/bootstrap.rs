@@ -7,12 +7,11 @@ use url::Url;
 
 pub use sdkwork_knowledgebase_database_host::{
     bootstrap_knowledgebase_database, bootstrap_knowledgebase_database_from_env,
-    KnowledgebaseDatabaseHost,
+    postgres_url_with_deployment_scope, KnowledgebaseDatabaseHost,
 };
 
 use crate::db::postgres_tenant_session::{
     require_postgres_rls_organization_id, require_postgres_rls_tenant_id,
-    POSTGRES_ORGANIZATION_SESSION_KEY, POSTGRES_TENANT_SESSION_KEY,
 };
 
 pub type KnowledgebaseDatabasePool = DatabasePool;
@@ -114,56 +113,6 @@ pub fn database_config_from_url(database_url: &str) -> Result<DatabaseConfig, Po
         config.postgres.ssl_mode = resolve_postgres_ssl_mode(&config.url)?;
     }
     Ok(config)
-}
-
-fn postgres_url_with_deployment_scope(
-    database_url: &str,
-    tenant_id: u64,
-    organization_id: u64,
-) -> Result<String, PoolError> {
-    let mut url = Url::parse(database_url)
-        .map_err(|error| PoolError::InvalidUrl(format!("invalid PostgreSQL URL: {error}")))?;
-    let mut query_pairs = url
-        .query_pairs()
-        .map(|(key, value)| (key.into_owned(), value.into_owned()))
-        .collect::<Vec<_>>();
-    let mut options_index = None;
-    for (index, (key, value)) in query_pairs.iter().enumerate() {
-        if !key.eq_ignore_ascii_case("options") {
-            continue;
-        }
-        if options_index.replace(index).is_some() {
-            return Err(PoolError::DatabaseConfig(
-                "PostgreSQL URL must not contain duplicate options parameters".to_string(),
-            ));
-        }
-        let normalized_options = value.to_ascii_lowercase();
-        if normalized_options.contains(POSTGRES_TENANT_SESSION_KEY)
-            || normalized_options.contains(POSTGRES_ORGANIZATION_SESSION_KEY)
-        {
-            return Err(PoolError::DatabaseConfig(
-                "PostgreSQL URL must not set deployment-owned tenant or organization scope"
-                    .to_string(),
-            ));
-        }
-    }
-
-    let scope_options = format!(
-        "-c {POSTGRES_TENANT_SESSION_KEY}={tenant_id} -c {POSTGRES_ORGANIZATION_SESSION_KEY}={organization_id} -c statement_timeout=30000"
-    );
-    if let Some(index) = options_index {
-        let existing = query_pairs[index].1.trim();
-        query_pairs[index].1 = if existing.is_empty() {
-            scope_options
-        } else {
-            format!("{existing} {scope_options}")
-        };
-    } else {
-        query_pairs.push(("options".to_string(), scope_options));
-    }
-
-    url.query_pairs_mut().clear().extend_pairs(query_pairs);
-    Ok(url.into())
 }
 
 fn resolve_postgres_ssl_mode(database_url: &str) -> Result<PgSslMode, PoolError> {
@@ -303,11 +252,9 @@ pub async fn create_and_bootstrap_knowledgebase_database_pool_from_env(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        ensure_url_ssl_mode, postgres_url_with_deployment_scope, process_pool_budget,
-        resolve_postgres_ssl_mode, KnowledgebaseProcessPoolBudget,
-    };
+    use super::{ensure_url_ssl_mode, process_pool_budget, resolve_postgres_ssl_mode, KnowledgebaseProcessPoolBudget};
     use sdkwork_database_config::{DatabaseEngine, PgSslMode};
+    use sdkwork_knowledgebase_database_host::postgres_url_with_deployment_scope;
     use url::Url;
 
     #[test]

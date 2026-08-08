@@ -19,7 +19,7 @@ use sdkwork_knowledgebase_contract::rag::{
 };
 use sdkwork_knowledgebase_contract::{
     ingest::IngestionJob, GrantKnowledgeSpaceMemberRequest, KnowledgeDocument, KnowledgeSpace,
-    KnowledgeSpaceMember, KnowledgeSpaceMemberList, KnowledgeSpaceMemberRole,
+    KnowledgeSpaceMember, KnowledgeSpaceMemberRole,
     KnowledgeSpaceMemberSubjectType, UpdateKnowledgeSpaceRequest,
 };
 use sdkwork_utils_rust::{is_blank, SdkWorkPageData};
@@ -520,7 +520,7 @@ pub(crate) async fn list_space_members_admin_with_runtime(
     space_id: u64,
     cursor: Option<String>,
     page_size: Option<u32>,
-) -> ApiResult<KnowledgeSpaceMemberList> {
+) -> ApiResult<sdkwork_utils_rust::SdkWorkPageData<KnowledgeSpaceMember>> {
     if is_group_managed_space(
         runtime,
         GroupKnowledgeSpaceScope {
@@ -537,18 +537,26 @@ pub(crate) async fn list_space_members_admin_with_runtime(
     let okf_initializer = OkfBundleInitializerService::new(runtime.drive_storage())
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
+    let normalized_page_size = crate::pagination::normalize_api_page_size(page_size)?;
     let members = space_service(runtime, &okf_initializer)
-        .list_space_members_admin(space_id, runtime.tenant_id_str(), cursor, page_size)
+        .list_space_members_admin(
+            space_id,
+            runtime.tenant_id_str(),
+            cursor,
+            Some(normalized_page_size),
+        )
         .await
         .map_err(ApiError::from)?;
-    Ok(KnowledgeSpaceMemberList {
-        members: members
+    Ok(crate::pagination::cursor_page_data(
+        members
             .members
             .into_iter()
             .map(map_contract_member)
             .collect(),
-        next_cursor: members.next_cursor,
-    })
+        members.next_cursor.clone(),
+        members.next_cursor.is_some(),
+        normalized_page_size,
+    ))
 }
 
 pub(crate) async fn grant_space_member_with_context(

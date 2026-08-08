@@ -264,6 +264,43 @@ export async function ensureKnowledgeBrowserFolderLoaded(
   });
 }
 
+/**
+ * True when the cached window for a folder (or the root when `folderId` is null) still
+ * has continuation pages. Interactive lists render a "load more" affordance from this
+ * signal instead of aggregating the full collection (PAGINATION_SPEC §8).
+ */
+export function hasMoreKnowledgeBrowserNodes(
+  spaceId: string,
+  folderId: string | null,
+  options?: { view?: KnowledgeBrowserView },
+): boolean {
+  const view = options?.view ?? DEFAULT_BROWSER_VIEW;
+  const entry = browserParentCache.get(parentCacheKey(spaceId, view, folderId));
+  return entry !== undefined && entry.hasMore;
+}
+
+/**
+ * Appends the next cursor page of a folder (or the root) to the cached window and
+ * returns whether more pages remain. The UI calls this on demand from a "load more"
+ * action; it never prefetches unbounded page aggregates.
+ */
+export async function loadMoreKnowledgeBrowserNodes(
+  spaceId: string,
+  folderId: string | null,
+  options?: { view?: KnowledgeBrowserView },
+): Promise<boolean> {
+  const view = options?.view ?? DEFAULT_BROWSER_VIEW;
+  const entry = browserParentCache.get(parentCacheKey(spaceId, view, folderId));
+  if (!entry || !entry.hasMore || !entry.nextCursor) {
+    return false;
+  }
+  const page = await listKnowledgeBrowserNodesPage(spaceId, folderId, {
+    cursor: entry.nextCursor,
+    view,
+  });
+  return page.hasMore;
+}
+
 export async function listLoadedKnowledgeBrowserNodes(
   spaceId: string,
   options?: { includeRoot?: boolean; view?: KnowledgeBrowserView },

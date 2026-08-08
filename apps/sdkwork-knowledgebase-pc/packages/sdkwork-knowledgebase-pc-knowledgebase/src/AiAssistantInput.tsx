@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { Send, Mic, Plus } from 'lucide-react';
 import { DocumentMeta } from './services/document';
 

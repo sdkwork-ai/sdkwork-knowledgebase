@@ -254,7 +254,7 @@ mod tests {
             .expect("body");
         let payload: serde_json::Value = serde_json::from_slice(&body).expect("json");
         assert_eq!(0, payload["code"].as_i64().unwrap());
-        assert_eq!(true, payload["data"]["accepted"].as_bool().unwrap());
+        assert!(payload["data"]["accepted"].as_bool().unwrap());
         assert!(payload["data"].get("item").is_none());
         assert!(payload["traceId"].as_str().is_some());
     }

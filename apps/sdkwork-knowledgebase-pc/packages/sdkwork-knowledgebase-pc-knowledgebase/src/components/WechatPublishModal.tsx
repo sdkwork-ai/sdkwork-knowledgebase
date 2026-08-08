@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, HelpCircle, Calendar, Users, Radio, CheckCircle2, ChevronDown, ChevronUp, RefreshCw, AlertCircle } from 'lucide-react';
 import { toast } from './ui/toast-manager';
@@ -30,7 +30,6 @@ export function WechatPublishModal({
   isPublishing,
   onConfirmPublish,
   officialAccountId,
-  officialAccountName,
   officialAccountType = 'subscription'
 }: WechatPublishModalProps) {
   const { t } = useTranslation(['editor', 'common', 'officialAccount']);

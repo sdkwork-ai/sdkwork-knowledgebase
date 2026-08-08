@@ -659,7 +659,6 @@ crates/sdkwork-intelligence-knowledgebase-service/tests/wiki_page_service.rs
 crates/sdkwork-intelligence-knowledgebase-service/tests/wiki_file_registry.rs
 crates/sdkwork-intelligence-knowledgebase-service/tests/llm_wiki_renderers.rs
 crates/sdkwork-intelligence-knowledgebase-repository-sqlx/src/wiki_page_store.rs
-crates/sdkwork-intelligence-knowledgebase-repository-sqlx/tests/sqlite_wiki_page_store.rs
 ```
 
 ### 16.3 禁止残留的符号与标识

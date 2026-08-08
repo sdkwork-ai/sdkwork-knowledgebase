@@ -445,9 +445,14 @@ fn resolve_wiki_drive_event_config(
                     )))
                 }
             };
+            let Some(current_secret) = current_secret else {
+                return Err(configuration_error(format!(
+                    "{DRIVE_EVENT_SIGNING_SECRET_FILE_ENV} is required for cloud deployment"
+                )));
+            };
             Some(KnowledgebaseDriveEventDeliveryConfig {
                 callback_url,
-                signing_master_secret: current_secret.expect("cloud signing secret is required"),
+                signing_master_secret: current_secret,
                 channel_ttl_seconds: ttl,
             })
         }
@@ -1004,29 +1009,37 @@ impl KnowledgebaseRuntime {
             .ok()
             .map(|client| CloudRouterEmbeddingClient::new(Arc::new(client)));
 
-        let knowledge_engines = Arc::new(build_default_registry(KnowledgeEngineRuntimeDeps {
-            tenant_id,
-            okf: KnowledgeEngineRuntimeDeps::okf_from_stores(
-                okf_concept_store.clone(),
-                drive_storage.clone(),
-                okf_revision_metadata_store.clone(),
-                object_ref_store.clone(),
-                okf_concept_link_store.clone(),
-                okf_candidate_store.clone(),
-                okf_bundle_file_store.clone(),
-                drive_workspace.clone(),
-                source_store.clone(),
-                space_store.clone(),
-            ),
-            rag_documents: document_store.clone(),
-            retrieval_backend: retrieval_backend.clone(),
-            retrieval_traces: retrieval_store.clone(),
-            rag_index_store: Some(index_store.clone()),
-            rag_embedding_store: Some(embedding_store.clone()),
-            rag_embedder,
-            external_engines:
-                crate::knowledge_engine_adapters::load_runtime_external_adapter_engines(),
-        }));
+        let knowledge_engines = Arc::new(
+            build_default_registry(KnowledgeEngineRuntimeDeps {
+                tenant_id,
+                okf: KnowledgeEngineRuntimeDeps::okf_from_stores(
+                    okf_concept_store.clone(),
+                    drive_storage.clone(),
+                    okf_revision_metadata_store.clone(),
+                    object_ref_store.clone(),
+                    okf_concept_link_store.clone(),
+                    okf_candidate_store.clone(),
+                    okf_bundle_file_store.clone(),
+                    drive_workspace.clone(),
+                    source_store.clone(),
+                    space_store.clone(),
+                ),
+                rag_documents: document_store.clone(),
+                retrieval_backend: retrieval_backend.clone(),
+                retrieval_traces: retrieval_store.clone(),
+                rag_index_store: Some(index_store.clone()),
+                rag_embedding_store: Some(embedding_store.clone()),
+                rag_embedder,
+                external_engines:
+                    crate::knowledge_engine_adapters::load_runtime_external_adapter_engines(),
+            })
+            .map_err(|error| {
+                sqlx::Error::Configuration(format!(
+                    "knowledge engine registry build failed: {error}"
+                )
+                .into())
+            })?,
+        );
 
         let audit_event_store = Arc::new(
             PostgresKnowledgeAuditEventStore::new(pool.clone(), tenant_id, organization_id)

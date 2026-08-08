@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { isBlank, trim } from '@sdkwork/utils';
 import { createPortal } from 'react-dom';
-import { X, Plus, Trash2, Send, History, Check, UserPlus, Loader2 } from 'lucide-react';
+import { X, Trash2, Send, History, Check, UserPlus, Loader2 } from 'lucide-react';
 import { toast } from './components/ui/toast-manager';
 import { useTranslation } from 'react-i18next';
 import {

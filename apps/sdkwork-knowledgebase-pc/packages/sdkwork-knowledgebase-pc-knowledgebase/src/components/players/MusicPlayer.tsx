@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Music, Play, Pause, Sparkles, Download, 
-  Volume2, VolumeX, Sliders, Shuffle, Repeat, 
+  Volume2, VolumeX, Sliders, Repeat, 
   SkipForward, SkipBack, Heart, ListMusic, Radio, 
-  Headphones, Smartphone, FileText, AlignLeft
+  Headphones, FileText, AlignLeft
 } from 'lucide-react';
 import { isKnowledgebaseApiAvailable, shouldUseKnowledgebaseDemoFallback } from 'sdkwork-knowledgebase-pc-core';
 import { DocumentMeta } from '../../services/document';

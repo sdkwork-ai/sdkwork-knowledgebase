@@ -1,4 +1,3 @@
-import React from 'react';
 import { MoreHorizontal, Users, User, Globe, BookOpen } from 'lucide-react';
 import { KnowledgeBase } from './services/document';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from './components/ui/dropdown-menu';

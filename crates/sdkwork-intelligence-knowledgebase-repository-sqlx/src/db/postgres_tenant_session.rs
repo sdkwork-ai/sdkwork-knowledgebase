@@ -1,52 +1,21 @@
 //! Postgres session tenant context for RLS policies (Phase 2.1/2.2).
+//!
+//! The RLS session keys and deployment-scope resolution live in
+//! `sdkwork-knowledgebase-database-host::postgres_scope` (single source of truth shared with
+//! the lifecycle bootstrap); this module re-exports them and adds per-connection session
+//! helpers.
 
-use sdkwork_database_sqlx::PoolError;
-use sdkwork_knowledgebase_contract::{
-    parse_canonical_nonnegative_signed_i64, parse_canonical_positive_signed_i64,
-};
-use sdkwork_knowledgebase_observability::{deployment_tenant_id, is_production_like_environment};
+use sdkwork_knowledgebase_observability::deployment_tenant_id;
 use sqlx::Executor;
 
-/// Session variable read by RLS policies on tenant-scoped tables.
-pub const POSTGRES_TENANT_SESSION_KEY: &str = "app.current_tenant_id";
-pub const POSTGRES_ORGANIZATION_SESSION_KEY: &str = "app.current_organization_id";
+pub use sdkwork_knowledgebase_database_host::postgres_scope::{
+    require_postgres_rls_organization_id, require_postgres_rls_tenant_id,
+    POSTGRES_ORGANIZATION_SESSION_KEY, POSTGRES_TENANT_SESSION_KEY,
+};
 
 /// Resolves the deployment-bound tenant id used for Postgres RLS session context.
 pub fn resolve_postgres_rls_tenant_id() -> u64 {
     deployment_tenant_id()
-}
-
-/// Returns the tenant id required for Postgres pool checkout, failing closed in production-like envs.
-pub fn require_postgres_rls_tenant_id() -> Result<u64, PoolError> {
-    match std::env::var("SDKWORK_KNOWLEDGEBASE_TENANT_ID") {
-        Ok(value) => parse_canonical_positive_signed_i64(&value).map_err(|_| {
-            PoolError::InvalidUrl(
-                "SDKWORK_KNOWLEDGEBASE_TENANT_ID must be a canonical positive signed BIGINT"
-                    .to_string(),
-            )
-        }),
-        Err(std::env::VarError::NotPresent) if !is_production_like_environment() => Ok(1),
-        Err(_) => Err(PoolError::InvalidUrl(
-            "SDKWORK_KNOWLEDGEBASE_TENANT_ID must be set for production-like Postgres deployments"
-                .to_string(),
-        )),
-    }
-}
-
-pub fn require_postgres_rls_organization_id() -> Result<u64, PoolError> {
-    match std::env::var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID") {
-        Ok(value) => parse_canonical_nonnegative_signed_i64(&value).map_err(|_| {
-            PoolError::InvalidUrl(
-                "SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID must be a canonical nonnegative signed BIGINT"
-                    .to_string(),
-            )
-        }),
-        Err(std::env::VarError::NotPresent) if !is_production_like_environment() => Ok(0),
-        Err(_) => Err(PoolError::InvalidUrl(
-            "SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID must be set for production-like Postgres deployments"
-                .to_string(),
-        )),
-    }
 }
 
 /// Sets `app.current_tenant_id` for explicit administrative or integration-test connections.

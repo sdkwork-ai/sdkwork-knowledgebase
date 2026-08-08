@@ -1,5 +1,5 @@
 import React from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { Send, Sparkles, Globe, Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AiModelSelector } from '@sdkwork/sdkwork-knowledgebase-pc-commons';

@@ -9,16 +9,16 @@ const target = path.join(
   'crates/sdkwork-routes-knowledgebase-app-api/src/http_route_manifest.rs',
 );
 
-const PERMISSION_BY_OPERATION = {
+export const APP_API_PERMISSION_BY_OPERATION = {
   'spaces.create': 'knowledge.spaces.write',
   'spaces.retrieve': 'knowledge.spaces.read',
   'spaces.update': 'knowledge.spaces.write',
   'spaces.delete': 'knowledge.spaces.write',
   'spaces.browser.list': 'knowledge.spaces.read',
   'spaces.contextBindings.list': 'knowledge.spaces.read',
-  'spaces.contextBindings.contextBindings': 'knowledge.spaces.write',
+  'spaces.contextBindings.create': 'knowledge.spaces.write',
   'spaces.members.list': 'knowledge.spaces.read',
-  'spaces.members.members': 'knowledge.spaces.write',
+  'spaces.members.create': 'knowledge.spaces.write',
   'spaces.members.delete': 'knowledge.spaces.write',
   'driveImports.create': 'knowledge.imports.write',
   'gitImports.create': 'knowledge.imports.write',
@@ -38,7 +38,7 @@ const PERMISSION_BY_OPERATION = {
   'documents.delete': 'knowledge.documents.write',
   'documents.content.list': 'knowledge.documents.read',
   'documents.versions.list': 'knowledge.documents.read',
-  'documents.versions.versions': 'knowledge.documents.write',
+  'documents.versions.create': 'knowledge.documents.write',
   'okf.concepts.list': 'knowledge.okf.read',
   'okf.concepts.update': 'knowledge.okf.write',
   'okf.concepts.retrieve': 'knowledge.okf.read',
@@ -62,11 +62,11 @@ const PERMISSION_BY_OPERATION = {
   'agentProfiles.update': 'knowledge.agent_profiles.write',
   'agentProfiles.delete': 'knowledge.agent_profiles.write',
   'agentProfiles.bindings.list': 'knowledge.agent_profiles.read',
-  'agentProfiles.bindings.bindings': 'knowledge.agent_profiles.write',
+  'agentProfiles.bindings.create': 'knowledge.agent_profiles.write',
   'agentProfiles.bindings.update': 'knowledge.agent_profiles.write',
   'agentProfiles.bindings.delete': 'knowledge.agent_profiles.write',
-  'agentProfiles.retrievalPreview.retrievalPreview': 'knowledge.agent_profiles.write',
-  'agentProfiles.chat.chat': 'knowledge.agent_profiles.write',
+  'agentProfiles.retrievalPreview.create': 'knowledge.agent_profiles.write',
+  'agentProfiles.chat.create': 'knowledge.agent_profiles.write',
   'contextBindings.retrieve': 'knowledge.context_bindings.read',
   'contextBindings.update': 'knowledge.context_bindings.write',
   'contextBindings.delete': 'knowledge.context_bindings.write',
@@ -74,6 +74,14 @@ const PERMISSION_BY_OPERATION = {
   'market.subscriptions.create': 'knowledge.market.write',
   'market.subscriptions.delete': 'knowledge.market.write',
   'mediaTasks.create': 'knowledge.media.write',
+  'groupLaunches.consume': 'knowledge.spaces.read',
+  'wikiPublications.retrieve': 'knowledge.spaces.read',
+  'wikiPublications.activate': 'knowledge.spaces.write',
+  'wikiPublications.pause': 'knowledge.spaces.write',
+  'wikiSourceFiles.publish': 'knowledge.spaces.write',
+  'wikiSourceFiles.unpublish': 'knowledge.spaces.write',
+  'wikiSourceFiles.visibility.update': 'knowledge.spaces.write',
+  'wechat.officialAccounts.fanTags.list': 'knowledge.wechat.manage',
 };
 
 let source = fs.readFileSync(target, 'utf8');
@@ -106,7 +114,7 @@ const HTTP_ROUTES`,
 source = source.replace(
   /HttpRoute::dual_token\(\s*HttpMethod::(\w+),\s*"([^"]+)",\s*"knowledge",\s*"([^"]+)",\s*\)/g,
   (_, method, routePath, operationId) => {
-    const permission = PERMISSION_BY_OPERATION[operationId];
+    const permission = APP_API_PERMISSION_BY_OPERATION[operationId];
     if (!permission) {
       throw new Error(`missing permission mapping for ${operationId}`);
     }
@@ -122,7 +130,7 @@ source = source.replace(
 source = source.replace(
   /abuse_sensitive_route\(\s*HttpMethod::(\w+),\s*"([^"]+)",\s*"knowledge",\s*"([^"]+)",\s*\)/g,
   (_, method, routePath, operationId) => {
-    const permission = PERMISSION_BY_OPERATION[operationId];
+    const permission = APP_API_PERMISSION_BY_OPERATION[operationId];
     if (!permission) {
       throw new Error(`missing permission mapping for ${operationId}`);
     }

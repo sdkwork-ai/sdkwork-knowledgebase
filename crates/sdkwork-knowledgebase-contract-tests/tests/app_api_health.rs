@@ -39,7 +39,7 @@ fn contract_context_binding_operations_are_declared() {
     for operation_id in [
         "documents.content.list",
         "spaces.contextBindings.list",
-        "spaces.contextBindings.contextBindings",
+        "spaces.contextBindings.create",
         "contextBindings.retrieve",
         "contextBindings.update",
         "contextBindings.delete",

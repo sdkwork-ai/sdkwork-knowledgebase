@@ -839,6 +839,9 @@ function composedAppSdkPackageJson(family) {
     },
     dependencies: {
       "@sdkwork/sdk-common": "^1.0.2",
+      // Generated transport code imports shared helpers (sha256Hash/getPath) from
+      // @sdkwork/utils; the workspace link must stay declared for type resolution.
+      "@sdkwork/utils": "workspace:*",
     },
     peerDependencies: {
       "@sdkwork/iam-app-sdk": "workspace:*",

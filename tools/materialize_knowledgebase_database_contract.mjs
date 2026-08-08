@@ -37,16 +37,19 @@ const prefixRegistry = {
   prefixes: [{ prefix: 'kb_', owner: 'knowledgebase-platform', domain: 'knowledgebase' }],
 };
 
+const manifestPath = path.join(root, 'database/database.manifest.json');
+const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
 const schemaYaml = [
   'schema_version: 1',
   'kind: sdkwork.database.schema',
+  'database_role: authoritative-server',
   'module_id: knowledgebase',
-  'contract_version: 1.0.0',
+  `contract_version: ${manifest.contractVersion ?? '1.0.0'}`,
   'owner_team: knowledgebase-platform',
   'compliance_level: L2',
   'engines:',
   '  - postgres',
-  '  - sqlite',
   'table_prefix: kb_',
   'tables:',
   ...tableNames.map(
@@ -66,12 +69,9 @@ fs.writeFileSync(
 );
 fs.writeFileSync(path.join(root, 'database/contract/schema.yaml'), schemaYaml);
 
-const manifestPath = path.join(root, 'database/database.manifest.json');
-const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-manifest.contractVersion = '1.0.0';
-manifest.lifecycle.autoMigrate = true;
-fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-
+// The manifest is the committed contract authority (postgres-only, autoMigrate=false);
+// this tool must never rewrite it, otherwise a regeneration would silently downgrade the
+// published contract.
 process.stdout.write(
   `materialized ${tableNames.length} tables into knowledgebase database contract\n`,
 );

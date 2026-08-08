@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { 
-  X, Search, MessageSquare, FileText, CheckSquare, Square, 
+  X, Search, MessageSquare, FileText, 
   FolderArchive, Image as ImageIcon, Video, Music, Link as LinkIcon, 
-  Globe, Calendar, Users, HelpCircle, FileJson, Check
+  Globe, FileJson, Check
 } from 'lucide-react';
 
 interface ChatFileModalProps {

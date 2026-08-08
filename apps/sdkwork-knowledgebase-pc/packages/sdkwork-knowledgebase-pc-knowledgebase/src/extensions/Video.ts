@@ -55,7 +55,7 @@ export const Video = Node.create({
   },
 
   addNodeView() {
-    return ({ node, HTMLAttributes }) => {
+    return ({ HTMLAttributes }) => {
       const dom = document.createElement('video');
       Object.entries(HTMLAttributes).forEach(([key, value]) => {
         if (value !== null) {

@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { Extension } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
-import { BubbleMenu } from '@tiptap/react/menus';
+import '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import { Markdown } from 'tiptap-markdown';
-import { Bot, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, List, ListOrdered, Undo, Redo, Sparkles, Languages, CheckCheck, PenTool, Type, FileType2, ChevronDown, Wand2, FilePlus2, Lightbulb, Image as ImageIcon, Video, Box, Code } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { WechatAppletModal } from './components/WechatAppletModal';
 import { UniversalToolbar, UniversalToolbarGroup } from './components/UniversalToolbar';
@@ -19,7 +19,7 @@ import { EditorBubbleMenu } from './EditorBubbleMenu';
 import { AIService } from './services/ai';
 import { DocumentService } from './services/document';
 import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
-import { toast } from './components/ui/toast-manager';
+import './components/ui/toast-manager';
 import { isKnowledgebaseApiAvailable, KnowledgebaseErrorCodes, shouldUseKnowledgebaseDemoFallback, throwKnowledgebaseError } from 'sdkwork-knowledgebase-pc-core';
 import { createTiptapExportContentProvider } from './components/DocumentExport';
 import { sanitizeEditorHtml } from '@sdkwork/sdkwork-knowledgebase-pc-commons/htmlSanitizer';
@@ -115,7 +115,7 @@ const StyleGlobalExtension = Extension.create({
 
 export function TiptapEditor({ 
   initialContent, mode = 'richtext', onChange, onEditorReady, docTitle = '', onTitleChange, hideTitle = false,
-  onOpenImageGallery, onWechatScan, onOpenAiImage, onAudioInsert, onAudioGallery, onVideoGallery, toolbarConfig,
+  onOpenImageGallery, onWechatScan, onOpenAiImage, onAudioGallery, onVideoGallery, toolbarConfig,
   kbId, parentFolderId, workspaceMode = 'standard',
 }: TiptapEditorProps) {
   const { t } = useTranslation('editor');
@@ -249,7 +249,7 @@ export function TiptapEditor({
         class: 'tiptap-editor outline-none focus:outline-none w-full min-h-[400px]',
       },
       transformPastedHTML: (html: string) => sanitizeEditorHtml(html),
-      handleDrop: (view, event, slice, moved) => {
+      handleDrop: (_view, event,_slice, moved) => {
         if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
           event.preventDefault();
           if (editorRef.current) {
@@ -259,7 +259,7 @@ export function TiptapEditor({
         }
         return false;
       },
-      handlePaste: (view, event, slice) => {
+      handlePaste: (_view, event,_slice) => {
         if (event.clipboardData && event.clipboardData.files && event.clipboardData.files.length > 0) {
           event.preventDefault();
           if (editorRef.current) {

@@ -163,15 +163,29 @@ fn decode_okf_cursor(cursor: Option<&str>) -> Result<Option<Vec<u8>>, SdkWorkRes
         .ok_or(SdkWorkResultCode::InvalidParameter)
 }
 
-/// Parse an opaque numeric id cursor for keyset pagination.
-pub fn parse_u64_cursor(cursor: Option<&str>) -> Result<Option<u64>, SdkWorkResultCode> {
+/// Encode a numeric keyset position into an opaque cursor token (PAGINATION_SPEC §3:
+/// cursor tokens must be opaque to clients; clients must not parse or construct them).
+pub fn encode_opaque_u64_cursor(value: u64) -> String {
+    base64url_encode(value.to_string().as_bytes())
+}
+
+/// Parse an opaque keyset cursor token back into the numeric position.
+pub fn parse_opaque_u64_cursor(cursor: Option<&str>) -> Result<Option<u64>, SdkWorkResultCode> {
     let Some(cursor) = cursor.map(str::trim).filter(|value| !is_blank(Some(value))) else {
         return Ok(None);
     };
-    cursor
-        .parse::<u64>()
+    let decoded = base64url_decode(cursor).ok_or(SdkWorkResultCode::InvalidParameter)?;
+    let text = String::from_utf8(decoded).map_err(|_| SdkWorkResultCode::InvalidParameter)?;
+    text.parse::<u64>()
         .map(Some)
         .map_err(|_| SdkWorkResultCode::InvalidParameter)
+}
+
+/// Encode a store-returned numeric next-cursor into the opaque wire form.
+pub fn encode_opaque_next_cursor(next_cursor: Option<String>) -> Option<String> {
+    next_cursor
+        .and_then(|value| value.parse::<u64>().ok())
+        .map(encode_opaque_u64_cursor)
 }
 
 /// Build cursor-mode `SdkWorkPageData` from a bounded page window.

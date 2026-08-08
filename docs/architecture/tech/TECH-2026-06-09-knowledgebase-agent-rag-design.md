@@ -82,10 +82,10 @@ App API adds:
 - `PATCH /app/v3/api/knowledge/agent_profiles/{profileId}` -> `agentProfiles.update`
 - `DELETE /app/v3/api/knowledge/agent_profiles/{profileId}` -> `agentProfiles.delete`
 - `GET /app/v3/api/knowledge/agent_profiles/{profileId}/bindings` -> `agentProfiles.bindings.list`
-- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/bindings` -> `agentProfiles.bindings.bindings`
+- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/bindings` -> `agentProfiles.bindings.create`
 - `PATCH /app/v3/api/knowledge/agent_profiles/{profileId}/bindings/{bindingId}` -> `agentProfiles.bindings.update`
 - `DELETE /app/v3/api/knowledge/agent_profiles/{profileId}/bindings/{bindingId}` -> `agentProfiles.bindings.delete`
-- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview` -> `agentProfiles.retrievalPreview.retrievalPreview`
+- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview` -> `agentProfiles.retrievalPreview.create`
 
 Backend API adds:
 

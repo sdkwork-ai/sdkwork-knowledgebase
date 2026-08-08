@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Image as ImageIcon, RotateCw, RotateCcw, 
-  FlipHorizontal, FlipVertical, ZoomIn, ZoomOut, 
-  Maximize, RefreshCw, Shrink, Zap, ArrowRight,
-  Sparkles, Check, Download, AlertCircle, Eye,
-  Sliders, Wand2, Crop, Hammer, ShieldAlert, Cpu, FolderOutput
+  FlipHorizontal, FlipVertical, ZoomIn, ZoomOut, RefreshCw, ArrowRight,
+  Sparkles, Download, Eye,
+  Sliders, Wand2, Crop, Hammer, Cpu, FolderOutput
 } from 'lucide-react';
 import { DocumentMeta, KnowledgeBase, DocumentService } from '../../services/document';
 import { shouldUseKnowledgebaseDemoFallback } from 'sdkwork-knowledgebase-pc-core';
@@ -32,11 +31,11 @@ export function ImageViewer({ activeDoc, activeKb, onUpdateDocs, onToastMessage 
   // Bottom Toolkit states
   const [activeTool, setActiveTool] = useState<ToolType>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [processLogs, setProcessLogs] = useState<string[]>([]);
+  const [, setProcessLogs] = useState<string[]>([]);
   const [processProgress, setProcessProgress] = useState<number>(0);
   const [processSuccess, setProcessSuccess] = useState<boolean>(false);
   const [showComparison, setShowComparison] = useState<boolean>(false);
-  const [resultImg, setResultImg] = useState<string | null>(null);
+  const [, setResultImg] = useState<string | null>(null);
   const [resultMeta, setResultMeta] = useState<{ sizeStr: string; width: number; height: number; savedPercent?: number } | null>(null);
 
   // Popup tool menu and save-as state
@@ -93,19 +92,19 @@ export function ImageViewer({ activeDoc, activeKb, onUpdateDocs, onToastMessage 
 
   // Tool parameter states
   // 1. Compression quality slider
-  const [compressLevel, setCompressLevel] = useState<number>(75);
-  const [compressFormat, setCompressFormat] = useState<'png' | 'jpeg' | 'webp'>('webp');
+void (useState<number>(75));
+void (useState<'png' | 'jpeg' | 'webp'>('webp'));
   // 2. Super_resolution scaling ratio
-  const [superScale, setSuperScale] = useState<'2x' | '4x'>('2x');
-  const [superModel, setSuperModel] = useState<'Real-ESRGAN' | 'Topaz Gigapixel v6'>('Real-ESRGAN');
-  const [superDenoise, setSuperDenoise] = useState<number>(30);
+void (useState<'2x' | '4x'>('2x'));
+void (useState<'Real-ESRGAN' | 'Topaz Gigapixel v6'>('Real-ESRGAN'));
+void (useState<number>(30));
   // 3. Repair Face weight
-  const [repairCodeformerWeight, setRepairCodeformerWeight] = useState<number>(0.75);
-  const [repairScratchFix, setRepairScratchFix] = useState<boolean>(true);
-  const [repairModel, setRepairModel] = useState<'GFP-GAN v1.4' | 'CodeFormer'>('GFP-GAN v1.4');
+void (useState<number>(0.75));
+void (useState<boolean>(true));
+void (useState<'GFP-GAN v1.4' | 'CodeFormer'>('GFP-GAN v1.4'));
   // 4. Background removal
-  const [samMethod, setSamMethod] = useState<'Meta SAM (v2)' | 'Remove.bg Ultra'>('Meta SAM (v2)');
-  const [transparentColor, setTransparentColor] = useState<string>('transparent');
+void (useState<'Meta SAM (v2)' | 'Remove.bg Ultra'>('Meta SAM (v2)'));
+void (useState<string>('transparent'));
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -194,7 +193,7 @@ export function ImageViewer({ activeDoc, activeKb, onUpdateDocs, onToastMessage 
 
     const interval = setInterval(() => {
       if (logIndex < currentLogs.length) {
-        setProcessProgress(prev => Math.round(Math.min(((logIndex + 1) / currentLogs.length) * 100, 100)));
+        setProcessProgress(_prev => Math.round(Math.min(((logIndex + 1) / currentLogs.length) * 100, 100)));
         logIndex++;
       } else {
         clearInterval(interval);
@@ -236,98 +235,6 @@ export function ImageViewer({ activeDoc, activeKb, onUpdateDocs, onToastMessage 
   };
 
   // Launch simulated pipeline
-  const runToolPipeline = () => {
-    if (isProcessing || !aiToolsEnabled) return;
-    setIsProcessing(true);
-    setProcessProgress(0);
-    setProcessSuccess(false);
-    setShowComparison(false);
-    setProcessLogs([]);
-
-    const logMessages: { [key: string]: string[] } = {
-      compress: [
-        '🚀 [TinyPNG Engine] 初始化 WebAssembly 编解码模块驱动...',
-        '📦 分析原图色彩深度与量化通道分布特点...',
-        `⚙️ 正在转换空间色彩模型并开始混缩比对 [品质目标: ${compressLevel}%]...`,
-        `🎯 应用 TinyPNG 智能损耗调色算法对 8位 Alpha 通道进行合并压缩...`,
-        `✨ 编码完毕，输出高品质 JPEG/PNG/WebP 替代。节省 65% 文件体积！`
-      ],
-      super_resolution: [
-        `🚀 [Topaz Photo AI] 加载人脸高清超分神经网络神经网络模型 (${superModel})...`,
-        `🖥️ 分配多线程纹理并拆分高维卷积计算矩阵为大像素块...`,
-        `🧠 正在智能补充高解析度细节，去除边缘彩噪 [噪声抑制: ${superDenoise}%]...`,
-        '✨ 2x/4x 画面高清插值完毕，已应用全局超频保真增强！'
-      ],
-      repair: [
-        `🚀 [Tencent ARC / CodeFormer] 初始化 ${repairModel} 神经网络人脸校准层...`,
-        `🔍 检测并对齐图像面部关键锚点 68 个多维度标志组...`,
-        repairScratchFix ? '🩹 正在利用多通道掩膜层执行智能划痕、折痕和噪点修复...' : '🔍 执行普通破损去除渲染...',
-        `🧬 正在以 ${Math.round(repairCodeformerWeight * 100)}% 权重权重融合生成对抗网络以重建面部边缘细节...`,
-        '✨ 智能老照片校色与皮肤、划痕深度复原大功告成！'
-      ],
-      bg_remove: [
-        `🚀 [Meta SAM v2 Engine] 启动 Segment Anything 端到端全卷积高能扣图模型...`,
-        '🔍 分析图层对比度与全局直方图，生成高置信度多重掩码...',
-        '🪄 正在进行微分辨率边缘边缘像素羽化与抠图精细化剥离...',
-        '✨ 图像主体与背景已被完美分离开来，极高精度边缘。'
-      ]
-    };
-
-    const currentLogs = logMessages[activeTool || 'compress'] || [];
-    let logIndex = 0;
-
-    if (pipelineIntervalRef.current) {
-      clearInterval(pipelineIntervalRef.current);
-    }
-
-    const interval = setInterval(() => {
-      if (logIndex < currentLogs.length) {
-        setProcessLogs(prev => [...prev, currentLogs[logIndex]]);
-        setProcessProgress(prev => Math.round(Math.min(((logIndex + 1) / currentLogs.length) * 100, 100)));
-        logIndex++;
-      } else {
-        clearInterval(interval);
-        pipelineIntervalRef.current = null;
-        // Pipeline success state setup
-        setTimeout(() => {
-          setIsProcessing(false);
-          setProcessSuccess(true);
-          setShowComparison(true);
-          
-          // Generate customized response stats
-          let mockUrl = activeDoc.url;
-          if (activeTool === 'compress') {
-            setResultMeta({
-              sizeStr: '425.8 KB',
-              width: imgMeta?.width || 1280,
-              height: imgMeta?.height || 720,
-              savedPercent: 68
-            });
-          } else if (activeTool === 'super_resolution') {
-            const mul = superScale === '2x' ? 2 : 4;
-            setResultMeta({
-              sizeStr: '11.4 MB',
-              width: (imgMeta?.width || 1280) * mul,
-              height: (imgMeta?.height || 720) * mul
-            });
-          } else if (activeTool === 'repair') {
-            setResultMeta({
-              sizeStr: '1.2 MB',
-              width: imgMeta?.width || 1280,
-              height: imgMeta?.height || 720
-            });
-          } else {
-            setResultMeta({
-              sizeStr: '880.4 KB',
-              width: imgMeta?.width || 1280,
-              height: imgMeta?.height || 720
-            });
-          }
-        }, 300);
-      }
-    }, 900);
-    pipelineIntervalRef.current = interval;
-  };
 
   const handleDownloadResult = () => {
     // Standard trigger for local download simulation

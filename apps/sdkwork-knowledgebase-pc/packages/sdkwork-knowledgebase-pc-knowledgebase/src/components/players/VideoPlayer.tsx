@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Video, Play, Pause, Sliders, Sparkles, Tv, Crop, Expand, Shrink, Minimize2,
-  Cpu, Music, ArrowRight, Download, Wand2, Eye, RefreshCw, Scissors, Film, FolderOutput
+  Video, Play, Pause, Sliders, Sparkles, Tv, Crop, Expand, Shrink,
+  Cpu, Music, Download, Wand2, Scissors, Film, FolderOutput
 } from 'lucide-react';
 import { DocumentMeta, KnowledgeBase, DocumentService } from '../../services/document';
 import { shouldUseKnowledgebaseDemoFallback } from 'sdkwork-knowledgebase-pc-core';
@@ -26,8 +26,8 @@ export function VideoPlayer({ activeDoc, activeKb, onUpdateDocs, onToastMessage 
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [, setDuration] = useState(0);
+  const [, setCurrentTime] = useState(0);
 
   // Default mode is 'adaptive' which maintains ratio perfectly and adaptively maximizes play area
   const [viewMode, setViewMode] = useState<'adaptive' | '16-9' | '4-3' | 'stretch' | 'zoom-cover'>('adaptive');
@@ -35,7 +35,7 @@ export function VideoPlayer({ activeDoc, activeKb, onUpdateDocs, onToastMessage 
   // Bottom Toolkit states
   const [activeTool, setActiveTool] = useState<VideoToolType>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [processLogs, setProcessLogs] = useState<string[]>([]);
+  const [, setProcessLogs] = useState<string[]>([]);
   const [processProgress, setProcessProgress] = useState<number>(0);
   const [processSuccess, setProcessSuccess] = useState<boolean>(false);
   const [resultMeta, setResultMeta] = useState<{ sizeStr: string; bitrate: string; fps: number; savedPercent?: number } | null>(null);
@@ -93,17 +93,17 @@ export function VideoPlayer({ activeDoc, activeKb, onUpdateDocs, onToastMessage 
 
   // Tool settings
   // 1. Compression quality (Mbps)
-  const [compressBitrate, setCompressBitrate] = useState<number>(3.5); // target Mbps
-  const [compressCodec, setCompressCodec] = useState<'H.264 (AVC)' | 'H.265 (HEVC)' | 'AV1 Ultra'>('H.264 (AVC)');
+  const [compressBitrate] = useState<number>(3.5); // target Mbps
+void (useState<'H.264 (AVC)' | 'H.265 (HEVC)' | 'AV1 Ultra'>('H.264 (AVC)'));
   // 2. Interpolation / resolution upscaling
-  const [targetFps, setTargetFps] = useState<'60 FPS' | '120 FPS'>('60 FPS');
-  const [superResModel, setSuperResModel] = useState<'Topaz Apollo (插帧)' | 'DAIN Superflow'>('Topaz Apollo (插帧)');
+void (useState<'60 FPS' | '120 FPS'>('60 FPS'));
+void (useState<'Topaz Apollo (插帧)' | 'DAIN Superflow'>('Topaz Apollo (插帧)'));
   // 3. Audio extractor settings
-  const [audioFormat, setAudioFormat] = useState<'mp3' | 'aac' | 'flac'>('mp3');
-  const [audioBitrate, setAudioBitrate] = useState<string>('320 kbps');
+  const [audioFormat] = useState<'mp3' | 'aac' | 'flac'>('mp3');
+void (useState<string>('320 kbps'));
   // 4. Format converter / Trimmer
-  const [convertTarget, setConvertTarget] = useState<'mp4' | 'webm' | 'gif'>('gif');
-  const [gifFramer, setGifFramer] = useState<number>(15);
+  const [convertTarget] = useState<'mp4' | 'webm' | 'gif'>('gif');
+void (useState<number>(15));
 
   const processIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const processTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -184,7 +184,7 @@ export function VideoPlayer({ activeDoc, activeKb, onUpdateDocs, onToastMessage 
 
     const interval = setInterval(() => {
       if (logIndex < currentLogs.length) {
-        setProcessProgress(prev => Math.round(Math.min(((logIndex + 1) / currentLogs.length) * 100, 100)));
+        setProcessProgress(_prev => Math.round(Math.min(((logIndex + 1) / currentLogs.length) * 100, 100)));
         logIndex++;
       } else {
         clearInterval(interval);

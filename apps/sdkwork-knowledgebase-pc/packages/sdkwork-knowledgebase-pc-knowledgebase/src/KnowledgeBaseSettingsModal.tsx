@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { useTranslation } from 'react-i18next';
 import { X, Shield, Settings, Sliders, UserPlus, Globe, Check, AlertCircle } from 'lucide-react';
 import { isKnowledgebaseApiAvailable } from 'sdkwork-knowledgebase-pc-core';

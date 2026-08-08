@@ -38,6 +38,10 @@ fn business_router(state: InternalApiState) -> Router {
             "/internal/v3/api/knowledgebase/wiki_publications/{publicationUuid}/pages/search",
             get(search_wiki_pages),
         )
+        // Internal wiki/Drive event payloads are bounded to 64 KiB — deliberately stricter
+        // than the 1 MiB transport limit on the app/backend/open surfaces — because every
+        // internal callback body is verified, HMAC-signed, and processed synchronously;
+        // oversized payloads must fail before signature verification.
         .layer(axum::extract::DefaultBodyLimit::max(65_536))
         .with_state(state)
 }

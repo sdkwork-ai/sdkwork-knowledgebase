@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Send, Check, AlertCircle } from 'lucide-react';
 import { isKnowledgebaseApiAvailable } from 'sdkwork-knowledgebase-pc-core';
 import { DocumentMeta } from './services/document';

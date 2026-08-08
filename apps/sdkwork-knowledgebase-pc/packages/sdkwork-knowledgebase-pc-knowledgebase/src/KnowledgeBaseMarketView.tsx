@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Check, Sparkles, Compass, ArrowRight, ShieldCheck, Tag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Check, Sparkles, Compass, ArrowRight, ShieldCheck } from 'lucide-react';
 import { DocumentService, MarketKnowledgeBase } from './services/document';
 import { useLocalStorage } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
 

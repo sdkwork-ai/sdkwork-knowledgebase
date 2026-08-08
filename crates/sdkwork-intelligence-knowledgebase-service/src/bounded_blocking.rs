@@ -41,7 +41,7 @@ impl BoundedBlockingExecutor {
         // (`spawn_blocking` cannot be cancelled). Normal completions hold the permit for
         // the whole task duration, so the concurrency cap stays strict except for
         // evicted (zombie) tasks, which is exactly the intended eviction semantics.
-        let task = tokio::task::spawn_blocking(move || operation());
+        let task = tokio::task::spawn_blocking(operation);
         match tokio::time::timeout(timeout, task).await {
             Ok(Ok(result)) => {
                 drop(permit);

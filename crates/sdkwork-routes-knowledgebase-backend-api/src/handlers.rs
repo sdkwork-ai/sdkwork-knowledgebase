@@ -56,7 +56,7 @@ fn parse_cursor(cursor: Option<&str>) -> Result<Option<u64>, BackendApiProblem> 
         BackendApiProblem::from(crate::error::BackendApiError::new(
             axum::http::StatusCode::BAD_REQUEST,
             "invalid_parameter",
-            "cursor must be a valid numeric id",
+            "cursor must be a valid cursor token",
         ))
     })
 }
@@ -916,7 +916,7 @@ pub(crate) async fn list_space_members(
     Query(query): Query<ListSpaceMembersQuery>,
 ) -> Result<Response, BackendApiProblem> {
     require_backend_context(&state, context)?;
-    ok_json(
+    ok_list_json(
         state
             .api
             .list_space_members(space_id, query.cursor, query.page_size)

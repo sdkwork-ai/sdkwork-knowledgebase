@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SearchNavigateToFilePayload } from '../types';
 import {
   SEARCH_OPEN_MEDIA_VIEWER_EVENT,

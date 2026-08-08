@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { useNavigate } from 'react-router-dom';
 import {
   clearKbNavIntent,
@@ -130,6 +130,7 @@ export function KnowledgeBaseApp({
   // discarded so fast doc/KB switching can never render one document under another.
   const docRequestSeqRef = useRef(0);
   const kbRequestSeqRef = useRef(0);
+  const kbRetryTimerRef = useRef<number | null>(null);
   const [docsWidth, setDocsWidth] = useLocalStorage<number>(
     'app-docs-width',
     340,
@@ -207,6 +208,7 @@ export function KnowledgeBaseApp({
 
   useEffect(() => {
     let cancelled = false;
+    let tenantRetryAttempts = 0;
 
     const loadKnowledgeBases = async () => {
       if (isEphemeralFixedWorkspace && (!fixedKnowledgeBase || !fixedKnowledgeBaseId)) {
@@ -216,9 +218,18 @@ export function KnowledgeBaseApp({
       }
 
       if (!getKnowledgebaseTenantId()) {
-        window.setTimeout(() => {
-          void loadKnowledgeBases();
-        }, 300);
+        // The tenant id may not be materialized yet right after login. Retry with a
+        // bounded, cancellable timer (50 attempts ≈ 15 s) so a missing tenant can never
+        // produce an infinite polling loop after the component unmounts.
+        if (kbRetryTimerRef.current === null && tenantRetryAttempts < 50) {
+          tenantRetryAttempts += 1;
+          kbRetryTimerRef.current = window.setTimeout(() => {
+            kbRetryTimerRef.current = null;
+            void loadKnowledgeBases();
+          }, 300);
+        } else {
+          setLoadingKbs(false);
+        }
         return;
       }
 
@@ -261,6 +272,10 @@ export function KnowledgeBaseApp({
     void loadKnowledgeBases();
     return () => {
       cancelled = true;
+      if (kbRetryTimerRef.current !== null) {
+        window.clearTimeout(kbRetryTimerRef.current);
+        kbRetryTimerRef.current = null;
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -287,16 +302,24 @@ export function KnowledgeBaseApp({
     if (doc.type === 'richtext' || doc.type === 'code' || doc.type === 'markdown') {
       const seq = ++docRequestSeqRef.current;
       setDocContent('Loading...');
-      const content = await DocumentService.getDocumentContent(doc.id);
-      if (seq !== docRequestSeqRef.current) {
-        return;
+      try {
+        const content = await DocumentService.getDocumentContent(doc.id);
+        if (seq !== docRequestSeqRef.current) {
+          return;
+        }
+        setDocContent(content);
+      } catch (error) {
+        if (seq !== docRequestSeqRef.current) {
+          return;
+        }
+        toastKnowledgebaseError(error, t);
+        setDocContent('');
       }
-      setDocContent(content);
     } else {
       docRequestSeqRef.current += 1;
       setDocContent('');
     }
-  }, [activeKb, tabCache]);
+  }, [activeKb, tabCache, t]);
 
   const handleSelectKb = useCallback((kb: KnowledgeBase, preserveState = false) => {
     if (fixedKnowledgeBaseId && kb.id !== fixedKnowledgeBaseId) {

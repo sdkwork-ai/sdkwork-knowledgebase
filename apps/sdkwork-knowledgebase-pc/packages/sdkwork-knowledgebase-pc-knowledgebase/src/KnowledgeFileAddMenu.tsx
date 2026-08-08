@@ -1,7 +1,7 @@
 import React from 'react';
 import { FileUp, FolderUp, MessageSquare, Lightbulb, Link, FileEdit, Cloud, Notebook, Mic, FolderPlus, Plus, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { createRuntimeConfig, isKnowledgebaseApiAvailable, KnowledgebaseErrorCodes, throwKnowledgebaseError } from 'sdkwork-knowledgebase-pc-core';
+import { createRuntimeConfig, KnowledgebaseErrorCodes, throwKnowledgebaseError } from 'sdkwork-knowledgebase-pc-core';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuGroup, DropdownMenuLabel } from './components/ui/dropdown-menu';
 import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
 
@@ -30,9 +30,7 @@ export function KnowledgeFileAddMenu({
   currentFolderId,
   onMenuCreate,
   setIsLinkModalOpen, setLinkUrl,
-  setIsCloudDriveOpen, setIsNotesAppOpen, setIsPersonalKbOpen, setIsChatFileOpen, setIsChatDialogOpen,
-  setRenameItem
-}: KnowledgeFileAddMenuProps) {
+  setIsCloudDriveOpen, setIsNotesAppOpen, setIsPersonalKbOpen, setIsChatFileOpen, setIsChatDialogOpen}: KnowledgeFileAddMenuProps) {
   const { t } = useTranslation(['kb', 'common']);
   const featureFlags = createRuntimeConfig().featureFlags;
 

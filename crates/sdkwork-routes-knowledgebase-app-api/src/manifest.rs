@@ -98,7 +98,7 @@ pub const ROUTES: &[RouteManifestEntry] = &[
     },
     RouteManifestEntry {
         method: "GET",
-        path: "/app/v3/api/knowledge/wechat/official_accounts/{account_id}/fan_tags",
+        path: "/app/v3/api/knowledge/wechat/official_accounts/{accountId}/fan_tags",
         operation_id: "wechat.officialAccounts.fanTags.list",
     },
     RouteManifestEntry {
@@ -169,7 +169,7 @@ pub const ROUTES: &[RouteManifestEntry] = &[
     RouteManifestEntry {
         method: "POST",
         path: "/app/v3/api/knowledge/documents/{documentId}/versions",
-        operation_id: "documents.versions.versions",
+        operation_id: "documents.versions.create",
     },
     RouteManifestEntry {
         method: "GET",
@@ -294,7 +294,7 @@ pub const ROUTES: &[RouteManifestEntry] = &[
     RouteManifestEntry {
         method: "POST",
         path: "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings",
-        operation_id: "agentProfiles.bindings.bindings",
+        operation_id: "agentProfiles.bindings.create",
     },
     RouteManifestEntry {
         method: "PATCH",
@@ -309,12 +309,12 @@ pub const ROUTES: &[RouteManifestEntry] = &[
     RouteManifestEntry {
         method: "POST",
         path: "/app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview",
-        operation_id: "agentProfiles.retrievalPreview.retrievalPreview",
+        operation_id: "agentProfiles.retrievalPreview.create",
     },
     RouteManifestEntry {
         method: "POST",
         path: "/app/v3/api/knowledge/agent_profiles/{profileId}/chat",
-        operation_id: "agentProfiles.chat.chat",
+        operation_id: "agentProfiles.chat.create",
     },
     RouteManifestEntry {
         method: "GET",
@@ -324,7 +324,7 @@ pub const ROUTES: &[RouteManifestEntry] = &[
     RouteManifestEntry {
         method: "POST",
         path: "/app/v3/api/knowledge/spaces/{spaceId}/context_bindings",
-        operation_id: "spaces.contextBindings.contextBindings",
+        operation_id: "spaces.contextBindings.create",
     },
     RouteManifestEntry {
         method: "GET",
@@ -334,7 +334,7 @@ pub const ROUTES: &[RouteManifestEntry] = &[
     RouteManifestEntry {
         method: "POST",
         path: "/app/v3/api/knowledge/spaces/{spaceId}/members",
-        operation_id: "spaces.members.members",
+        operation_id: "spaces.members.create",
     },
     RouteManifestEntry {
         method: "DELETE",

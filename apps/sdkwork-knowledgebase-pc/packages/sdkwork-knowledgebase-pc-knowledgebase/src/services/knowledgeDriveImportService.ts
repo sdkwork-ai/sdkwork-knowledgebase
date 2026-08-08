@@ -1,14 +1,12 @@
 import type { DriveNode, KnowledgeBrowserNode } from 'sdkwork-knowledgebase-pc-core';
 import { isBlank } from '@sdkwork/utils';
 import {
-  isKnowledgebaseDriveApiAvailable,
   KnowledgebaseErrorCodes,
   parseKnowledgeSpaceId,
   requireDriveApiClient,
   requireKnowledgebaseAppSdkHttpClient,
   requireRegisteredSpaceId,
-  throwKnowledgebaseError,
-} from 'sdkwork-knowledgebase-pc-core';
+  throwKnowledgebaseError} from 'sdkwork-knowledgebase-pc-core';
 
 import { invalidateKnowledgeBrowserNodeCacheForKbIds } from './knowledgeBrowserListService';
 import { placeDocumentInParentFolder } from './knowledgebaseDocumentApiBridge';
@@ -99,8 +97,7 @@ function mapDriveNode(node: DriveNode): CloudDriveBrowserItem {
     driveStorageProviderId: null,
     driveBucket: null,
     driveObjectKey: null,
-    documentId: null,
-  };
+    documentId: null};
 }
 
 const DRIVE_COLLECTION_PAGE_SIZE = 100;
@@ -118,8 +115,7 @@ async function listDriveCollectionPage(
   return {
     items: page.items.map(mapDriveNode),
     nextCursor: page.nextCursor,
-    hasMore: page.hasMore,
-  };
+    hasMore: page.hasMore};
 }
 
 function mapBrowserNode(node: KnowledgeBrowserNode): CloudDriveBrowserItem {
@@ -136,8 +132,7 @@ function mapBrowserNode(node: KnowledgeBrowserNode): CloudDriveBrowserItem {
     driveStorageProviderId: node.driveStorageProviderId,
     driveBucket: node.driveBucket,
     driveObjectKey: node.driveObjectKey,
-    documentId: node.documentId ? String(node.documentId) : null,
-  };
+    documentId: node.documentId ? String(node.documentId) : null};
 }
 
 function mapMimeToLegacyType(name: string, mimeType?: string | null): string {
@@ -179,14 +174,12 @@ export async function listCloudDriveBrowserItemsPage(
       view: 'files',
       parentId: parentId ?? null,
       cursor,
-      pageSize: 100,
-    }),
+      pageSize: 100}),
   );
   return {
     items: page.items.map(mapBrowserNode),
     nextCursor: page.nextCursor,
-    hasMore: page.hasMore,
-  };
+    hasMore: page.hasMore};
 }
 
 export async function listStarredCloudDriveItemsPage(
@@ -198,8 +191,7 @@ export async function listStarredCloudDriveItemsPage(
     drive.drive.favorites.list({
       spaceId: driveSpaceId,
       pageSize: String(DRIVE_COLLECTION_PAGE_SIZE),
-      cursor: pageCursor,
-    }));
+      cursor: pageCursor}));
 }
 
 export async function listRecentCloudDriveItemsPage(
@@ -211,8 +203,7 @@ export async function listRecentCloudDriveItemsPage(
     drive.drive.recent.list({
       spaceId: driveSpaceId,
       pageSize: String(DRIVE_COLLECTION_PAGE_SIZE),
-      cursor: pageCursor,
-    }));
+      cursor: pageCursor}));
 }
 
 export async function listSharedCloudDriveItemsPage(
@@ -224,8 +215,7 @@ export async function listSharedCloudDriveItemsPage(
     drive.drive.sharedWithMe.list({
       spaceId: driveSpaceId,
       pageSize: String(DRIVE_COLLECTION_PAGE_SIZE),
-      cursor: pageCursor,
-    }));
+      cursor: pageCursor}));
 }
 
 function buildIdempotencyKey(spaceId: string, item: CloudDriveBrowserItem): string {
@@ -253,15 +243,13 @@ async function importDriveFile(
     idempotencyKey: buildIdempotencyKey(numericSpaceId, item),
     driveSpaceId,
     driveNodeId,
-    language: null,
-  });
+    language: null});
 
   return {
     title: result.document.title,
     type: mapMimeToLegacyType(item.name, item.mimeType),
     documentId: result.document.id,
-    content: `# ${result.document.title}\n\nImported from enterprise drive.`,
-  };
+    content: `# ${result.document.title}\n\nImported from enterprise drive.`};
 }
 
 export async function importCloudDriveItems(
@@ -291,8 +279,7 @@ export async function importCloudDriveItems(
     } catch (error) {
       failures.push({
         title: item.name,
-        message: error instanceof Error ? error.message : String(error),
-      });
+        message: error instanceof Error ? error.message : String(error)});
     }
   }
 

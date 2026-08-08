@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Search, Sparkles, Bot, PenTool, Database, Code, Image as ImageIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -26,7 +26,7 @@ const AGENTS = [
 ];
 
 export function AgentSelectorModal({ onClose, onSelect }: AgentSelectorModalProps) {
-  const { t } = useTranslation();
+void (useTranslation());
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 

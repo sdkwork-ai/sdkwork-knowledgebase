@@ -9,7 +9,6 @@ import { CloudDriveModal } from './CloudDriveModal';
 import { GitIntegrationModal } from './components/GitIntegrationModal';
 import { DocumentService, type DocumentMeta, type KnowledgeBase } from './services/document';
 import type { CloudDriveImportResultItem } from './services/cloudDriveService';
-import { toast } from './components/ui/toast-manager';
 import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
 
 export interface KnowledgeBaseAppModalsProps {

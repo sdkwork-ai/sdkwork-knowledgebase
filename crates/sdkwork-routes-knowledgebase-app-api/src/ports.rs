@@ -666,7 +666,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _space_id: u64,
         _request: GrantKnowledgeSpaceMemberRequest,
     ) -> ApiResult<()> {
-        Err(ApiError::unsupported_operation("spaces.members.members"))
+        Err(ApiError::unsupported_operation("spaces.members.create"))
     }
 
     async fn revoke_space_member(
@@ -787,7 +787,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _request: CreateKnowledgeDocumentVersionRequest,
     ) -> ApiResult<KnowledgeDocumentVersion> {
         Err(ApiError::unsupported_operation(
-            "documents.versions.versions",
+            "documents.versions.create",
         ))
     }
 
@@ -1010,7 +1010,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _request: KnowledgeAgentBindingRequest,
     ) -> ApiResult<KnowledgeAgentBinding> {
         Err(ApiError::unsupported_operation(
-            "agentProfiles.bindings.bindings",
+            "agentProfiles.bindings.create",
         ))
     }
 
@@ -1044,7 +1044,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _request: KnowledgeRetrievalRequest,
     ) -> ApiResult<KnowledgeRetrievalResult> {
         Err(ApiError::unsupported_operation(
-            "agentProfiles.retrievalPreview.retrievalPreview",
+            "agentProfiles.retrievalPreview.create",
         ))
     }
 
@@ -1054,7 +1054,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _profile_id: u64,
         _request: KnowledgeAgentChatRequest,
     ) -> ApiResult<KnowledgeAgentChatResponse> {
-        Err(ApiError::unsupported_operation("agentProfiles.chat.chat"))
+        Err(ApiError::unsupported_operation("agentProfiles.chat.create"))
     }
 
     async fn list_space_context_bindings(
@@ -1077,7 +1077,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _request: CreateKnowledgeSpaceContextBindingRequest,
     ) -> ApiResult<KnowledgeSpaceContextBinding> {
         Err(ApiError::unsupported_operation(
-            "spaces.contextBindings.contextBindings",
+            "spaces.contextBindings.create",
         ))
     }
 

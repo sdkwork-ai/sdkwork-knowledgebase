@@ -517,7 +517,7 @@ impl KnowledgeOutboxStore for PostgresKnowledgeOutboxStore {
 fn outbox_retry_backoff_seconds(retry_count: u32) -> i64 {
     let exponent = i64::from(retry_count.saturating_sub(1)).min(7);
     let backoff = 30i64.saturating_mul(1i64 << exponent);
-    backoff.min(3_600).max(30)
+    backoff.clamp(30, 3_600)
 }
 
 fn pending_event_from_row(

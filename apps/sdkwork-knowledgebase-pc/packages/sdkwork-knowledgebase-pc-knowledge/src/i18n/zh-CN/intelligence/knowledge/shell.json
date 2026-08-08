@@ -48,12 +48,11 @@
   "accountSessionInfo": "会话信息",
   "accountDangerZone": "账号操作",
   "signOutDescription": "退出后将清除当前登录会话，需要重新登录才能继续使用。",
-  "deploymentProfile": "部署配置",
+  "deploymentProfile": "部署模式",
   "displayName": "显示名称",
   "email": "邮箱",
   "tenant": "租户",
   "environment": "环境",
-  "deploymentProfile": "部署模式",
   "signOut": "退出登录",
   "search": "全库搜索",
   "about": "关于应用",
@@ -262,5 +261,7 @@
   "adminConsoleMemberRole": "角色",
   "adminConsoleMemberInherited": "继承",
   "adminConsoleYes": "是",
-  "adminConsoleNo": "否"
+  "adminConsoleNo": "否",
+  "adminConsoleLoadMore": "加载更多",
+  "adminConsoleLoadingMore": "加载中…"
 }

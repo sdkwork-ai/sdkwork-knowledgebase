@@ -1,4 +1,3 @@
-import React from 'react';
 import { Smartphone, Check, Settings2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { WechatAppletConfig } from '../../services/wechat';
@@ -13,7 +12,6 @@ interface Props {
 
 export function AppletGrid({
   filteredApplets,
-  viewMode,
   selectedAppletId,
   setSelectedAppletId,
   openEditor

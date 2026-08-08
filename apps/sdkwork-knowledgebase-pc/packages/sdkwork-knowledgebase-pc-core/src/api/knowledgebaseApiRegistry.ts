@@ -40,19 +40,15 @@ function readBooleanEnv(value: string | undefined): boolean | undefined {
   return undefined;
 }
 
-/** Explicit demo/offline UX is allowed only in development or when VITE_SDKWORK_KNOWLEDGEBASE_ENABLE_DEMO_MODE is set. */
+/** Demo/offline UX requires the explicit `VITE_SDKWORK_KNOWLEDGEBASE_ENABLE_DEMO_MODE`
+ * flag in every environment. Demo mode fabricates content (search answers, imported
+ * notes/chat records, media previews) that must never reach real users, so it is never
+ * enabled by default — not even in development. */
 export function isKnowledgebaseDemoModeEnabled(
   env: Record<string, string | undefined> = import.meta.env as Record<string, string | undefined>,
 ): boolean {
-  if (import.meta.env.PROD) {
-    const explicit = readBooleanEnv(env.VITE_SDKWORK_KNOWLEDGEBASE_ENABLE_DEMO_MODE);
-    return explicit === true;
-  }
   const explicit = readBooleanEnv(env.VITE_SDKWORK_KNOWLEDGEBASE_ENABLE_DEMO_MODE);
-  if (explicit !== undefined) {
-    return explicit;
-  }
-  return import.meta.env.DEV;
+  return explicit === true;
 }
 
 export function shouldUseKnowledgebaseDemoFallback(

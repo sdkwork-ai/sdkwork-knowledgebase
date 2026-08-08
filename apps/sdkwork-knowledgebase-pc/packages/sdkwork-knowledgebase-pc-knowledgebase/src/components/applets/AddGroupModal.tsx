@@ -1,5 +1,4 @@
-import React from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

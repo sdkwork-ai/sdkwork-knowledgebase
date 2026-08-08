@@ -1,4 +1,3 @@
-import React from 'react';
 import { LogOut, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { KnowledgebaseAccountViewModel } from 'sdkwork-knowledgebase-pc-core';

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Disc3, Headphones, ListMusic, Repeat, Repeat1, Shuffle, Video } from 'lucide-react';
 import type { SearchMediaItem } from '../../../types';
 import { hasSyncedTimedText } from '../../../utils/mediaTimedText';

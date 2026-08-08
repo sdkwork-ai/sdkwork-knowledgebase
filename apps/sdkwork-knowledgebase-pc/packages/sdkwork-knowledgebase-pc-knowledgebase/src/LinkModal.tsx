@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { useRef, useEffect } from 'react';
+import { isBlank } from '@sdkwork/utils';
 import { createPortal } from 'react-dom';
 import { X, Link as LinkIcon, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

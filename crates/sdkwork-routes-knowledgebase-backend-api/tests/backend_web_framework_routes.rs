@@ -5,7 +5,8 @@ use axum::http::{Request as HttpRequest, StatusCode};
 use axum::middleware::{self, Next};
 use axum::Router;
 use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
-use sdkwork_knowledgebase_contract::KnowledgeSourceList;
+use sdkwork_knowledgebase_contract::{KnowledgeSource, KnowledgeSourceList};
+use sdkwork_utils_rust::SdkWorkPageData;
 use sdkwork_routes_knowledgebase_backend_api::{
     backend_route_manifest, build_router_with_backend_api, manifest,
     wrap_router_with_web_framework, BackendApiResult, KnowledgeBackendApi,
@@ -259,5 +260,20 @@ struct OkBackendApi;
 impl KnowledgeBackendApi for OkBackendApi {
     async fn list_sources(&self) -> BackendApiResult<KnowledgeSourceList> {
         Ok(KnowledgeSourceList { items: vec![] })
+    }
+
+    async fn list_sources_page(
+        &self,
+        _cursor: Option<String>,
+        _page_size: Option<u32>,
+    ) -> BackendApiResult<SdkWorkPageData<KnowledgeSource>> {
+        // Auth tests exercise the router boundary; the page method must return an empty
+        // page instead of relying on the (now forbidden) unbounded facade default.
+        Ok(sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
+            vec![],
+            None,
+            false,
+            20,
+        ))
     }
 }

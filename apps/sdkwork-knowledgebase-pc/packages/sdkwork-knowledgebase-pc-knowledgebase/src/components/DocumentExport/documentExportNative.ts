@@ -1,5 +1,5 @@
 import { getDocumentExportCapabilities } from './documentExportCapabilities';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { prepareExportHtml } from './exportContentUtils';
 import { getTauriInvoke, invokeTauriCommand } from './exportRuntime';
 import type { DocumentExportContent, DocumentPdfExportEngine } from './types';

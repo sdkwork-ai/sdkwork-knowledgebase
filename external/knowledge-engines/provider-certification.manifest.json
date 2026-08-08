@@ -60,8 +60,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "93ea4c6e17b25b711bfc26bd426097b8b6e06cccc34a1703a2af734e3bdd356d",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "93c74294e13c01b096fe8e92dc23d31ff326e8493cd7c9f8efea8d1440632931",
         "command": {
           "program": "cargo",
           "args": [
@@ -104,8 +104,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "27895cd5871ad6bd42cdd0546b888377dacb729b7de06e00b4a0da6543d6a484",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "8e1124f20ab105d4cc9af908b0b4afc3a71726985b44c35e322410c737269d61",
         "command": {
           "program": "cargo",
           "args": [
@@ -148,8 +148,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "021747d2c7fe535ac42bf32da66d6779a418b7a10ed26a0d4b0b5ae54564ca56",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "06eedb2ac06b8bbfc6820b49595d0d0400a92b735cdf82c7c30e8b0d2fdb325f",
         "command": {
           "program": "cargo",
           "args": [
@@ -190,8 +190,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "907026cb8289580206659d35a099ccbf871424b9db27336003a3cae33c01a722",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "20afb92fe6158701777d6652b7b464f92d154d6a31801b2acbcac72dd23b6d8c",
         "command": {
           "program": "cargo",
           "args": [
@@ -232,8 +232,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "271ae075311df8adf686ba3b07bb8446a3218fb35a3e929bffca640cbb118b4b",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "663fb02a56650147dabec3419a0f94db9b8a3355f4670c05c88c9d3a6c5a792d",
         "command": {
           "program": "cargo",
           "args": [
@@ -274,8 +274,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "f9bcd78fa981cfc2982c1335821d6b8ccebd56a40cce04ed8d4fb2437877c14b",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "2ef5061b50d66dd5c5044a5f57c2d5f1823724b58ce9062932528ab7bc0b4582",
         "command": {
           "program": "cargo",
           "args": [
@@ -316,8 +316,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "3367bfb613d9b1e11004cfcbde128c62a843bf1dc2ecc9dd33ebf14830e331ec",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "60bc67769263c57e5f152ef77fec22a7321da8061ec825bdbd26794f3331ee38",
         "command": {
           "program": "cargo",
           "args": [
@@ -358,8 +358,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "02062aa7b067fdd761942d345394e317c74b115dd7e9e723ab5f185c3011d166",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "c70657584e60dcca8bbaa5ad8d61b8d22e9dd0f66a806d1ee07210f02bc046b4",
         "command": {
           "program": "cargo",
           "args": [
@@ -400,8 +400,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "7932d71bc439815ef4526a27cfc8134c19767ff7e116d8d3d7e1f9deed2d2a70",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "c8d8eb9d9f8dfb7959358d2e92635851a8bddef7faf5cc8dc14bd4ba88214713",
         "command": {
           "program": "cargo",
           "args": [
@@ -442,8 +442,8 @@
       "contractCertification": {
         "status": "passed",
         "suiteVersion": "1.0.0",
-        "verifiedAt": "2026-07-31",
-        "sourceFingerprint": "9b3cace0ee7c54d2e55b9dab1eef99b07e676fcf007bdd8ed8f03a89d3ad04cb",
+        "verifiedAt": "2026-08-08",
+        "sourceFingerprint": "03f5bbc71e109c403ef5f3861244336a8367596f553c6dd4f23f8f16cebc4a0e",
         "command": {
           "program": "cargo",
           "args": [

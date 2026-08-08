@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { useState } from 'react';
+import { isBlank } from '@sdkwork/utils';
 import { BubbleMenu } from '@tiptap/react/menus';
 import { Sparkles, PenTool, Type, FileType2, Languages, Bold, Italic, Strikethrough, CornerDownLeft, Loader2, Minimize2, Maximize2, CheckCheck, Lightbulb, HelpCircle } from 'lucide-react';
 import { Editor } from '@tiptap/core';

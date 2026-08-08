@@ -49,11 +49,6 @@ pub trait KnowledgeEmbeddingStore: Send + Sync {
         chunk_id: u64,
     ) -> Result<Option<String>, KnowledgeEmbeddingStoreError>;
 
-    async fn list_active_chunk_ids_for_space(
-        &self,
-        space_id: u64,
-    ) -> Result<Vec<u64>, KnowledgeEmbeddingStoreError>;
-
     async fn list_active_chunk_id_content_page(
         &self,
         space_id: u64,

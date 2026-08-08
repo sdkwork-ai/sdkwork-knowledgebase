@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { isBlank } from '@sdkwork/utils';
 import { toast } from '../ui/toast-manager';
 import { getDocumentExportCapabilities } from './documentExportCapabilities';
 import {

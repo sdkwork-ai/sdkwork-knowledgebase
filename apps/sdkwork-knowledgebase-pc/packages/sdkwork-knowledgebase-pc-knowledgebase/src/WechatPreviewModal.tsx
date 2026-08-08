@@ -1,4 +1,3 @@
-import React from 'react';
 import { WechatArticle } from './services/wechat';
 import { Share, MoreHorizontal, ChevronLeft, X } from 'lucide-react';
 import { sanitizePreviewHtml } from './utils/htmlSanitizer';

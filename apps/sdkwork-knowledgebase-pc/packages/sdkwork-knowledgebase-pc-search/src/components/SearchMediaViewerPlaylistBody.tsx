@@ -1,4 +1,3 @@
-import React from 'react';
 import type { SearchMediaItem } from '../types';
 import { SearchMediaViewerContentRouter } from './media-viewers/SearchMediaViewerContentRouter';
 import { MediaPlaylistPanel } from './media-viewers/shared/MediaPlaylistPanel';

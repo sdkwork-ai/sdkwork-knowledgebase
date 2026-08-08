@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { useEffect, useState } from 'react';
 import { X, Settings2, LayoutList, LayoutGrid, Plus, Check } from 'lucide-react';
 import { useTranslation, Trans } from 'react-i18next';
 import {
@@ -85,19 +84,6 @@ export function OfficialAccountModal({
 
     setOfficialAccounts(newAccounts);
     closeEditor();
-  };
-
-  const handleDeleteOA = (id: string) => {
-    if (officialAccounts.length <= 1) {
-       toast.error(t('errors.minOneAccount'));
-       return;
-    }
-    const newAccounts = officialAccounts.filter(app => app.id !== id);
-    setOfficialAccounts(newAccounts);
-    setSelectedOfficialAccountIds(selectedOfficialAccountIds.filter(x => x !== id));
-    if (oaEditingId === id) {
-      closeEditor();
-    }
   };
 
   const handleGroupDelete = (grp: string) => {

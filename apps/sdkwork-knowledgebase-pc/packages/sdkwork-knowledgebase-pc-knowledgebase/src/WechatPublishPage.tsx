@@ -1,14 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { 
-  X, ChevronUp, ChevronDown, Plus, Trash2, Image as ImageIcon, 
-  Settings2, Eye, FileText, RotateCcw, RotateCw, Paintbrush, 
-  Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, 
-  AlignRight, AlignJustify, List, ListOrdered, Quote, Search,
-  Sparkles, Notebook, Video, ArrowLeft, ArrowUp, ArrowDown, Cloud,
-  Check, Globe, Key, Upload, Folder, Tags, Wand2
+import { ChevronDown, Plus, Trash2, 
+  Settings2, FileText,
+  Sparkles, Notebook, ArrowLeft, ArrowUp, ArrowDown, Cloud, Wand2
 } from 'lucide-react';
 import {
   getKnowledgebaseTenantId,
@@ -17,18 +12,13 @@ import {
   KnowledgebaseErrorCodes,
   readRegisteredSpaces,
   resolveUserFacingErrorMessage,
-  type ErrorTranslateFn,
-} from 'sdkwork-knowledgebase-pc-core';
+  type ErrorTranslateFn} from 'sdkwork-knowledgebase-pc-core';
 import {
   resolvePrimaryKnowledgebaseKbId,
-  uploadKnowledgebaseMediaUrl,
-} from './services/knowledgeFileUploadService';
+  uploadKnowledgebaseMediaUrl} from './services/knowledgeFileUploadService';
 import { DocumentMeta } from './services/document';
 import { AiAssistantPanel } from './AiAssistantPanel';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './components/ui/dropdown-menu';
-import { marked } from 'marked';
 
-import { WechatWidgetTemplates } from './utils/wechatWidgetTemplates';
 import { sanitizeEditorHtml } from '@sdkwork/sdkwork-knowledgebase-pc-commons/htmlSanitizer';
 import { TiptapEditor } from './TiptapEditor';
 import { WechatArticleSettings } from './WechatArticleSettings';
@@ -39,7 +29,9 @@ import { CloudDriveModal } from './CloudDriveModal';
 import { WechatImageCropperModal } from './components/WechatImageCropperModal';
 import { WechatAiImageModal } from './components/WechatAiImageModal';
 import { WechatScanModal } from './components/WechatScanModal';
-import { InsertToolsMenu, DropdownItem, DropdownDivider } from './components/InsertToolsMenu';
+import { marked } from 'marked';
+import { WechatWidgetTemplates } from './utils/wechatWidgetTemplates';
+import { InsertToolsMenu } from './components/InsertToolsMenu';
 import { AssetLibraryModal, AssetType } from './components/AssetLibraryModal';
 import { OfficialAccountModal } from './components/OfficialAccountModal';
 import { WechatAppletModal } from './components/WechatAppletModal';
@@ -63,11 +55,6 @@ export interface WechatPublishPageProps {
 }
 
 // 顶部插入工具栏
-const INSERT_TOOLS = [
-  '图片', '视频', '音频', '超链接', '小程序', '卡券', '模板', 
-  '投票', '搜索', '地理位置', '视频号', '问答', '收入变现', 
-  '账号名片', '礼物', '...'
-];
 
 function getWechatWordCount(content: string | undefined): number {
   if (!content) return 0;
@@ -164,9 +151,9 @@ export function WechatPublishPage({ documents: defaultDocuments = [], onClose }:
 
   // Official Accounts state and default values block with grouping support
   const [oaGroups, setOaGroups] = useState<string[]>(t('oaGroups', { returnObjects: true }) as string[]);
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
-  const [showGroupManager, setShowGroupManager] = useState<boolean>(false);
-  const [newGroupNameInput, setNewGroupNameInput] = useState<string>('');
+  void useState<string>('all');
+  void useState<boolean>(false);
+  void useState<string>('');
 
   const [officialAccounts, setOfficialAccounts] = useState<OfficialAccount[]>([]);
   const [selectedOfficialAccountIds, setSelectedOfficialAccountIds] = useState<string[]>([]);
@@ -293,8 +280,8 @@ export function WechatPublishPage({ documents: defaultDocuments = [], onClose }:
   const [cropperSource, setCropperSource] = useState<'body' | 'gallery' | null>(null);
 
   // States for typesetting (formatting) progress
-  const [isFormattingInProgress, setIsFormattingInProgress] = useState(false);
-  const [formattingStep, setFormattingStep] = useState('');
+  const [isFormattingInProgress] = useState(false);
+  const [formattingStep] = useState('');
 
   // States for cover upload and actions
   const [isCoverFromBodyOpen, setIsCoverFromBodyOpen] = useState(false);
@@ -404,7 +391,7 @@ export function WechatPublishPage({ documents: defaultDocuments = [], onClose }:
   };
 
   const insertImageInputRef = useRef<HTMLInputElement>(null);
-  const domainVerifyInputRef = useRef<HTMLInputElement>(null);
+void (useRef<HTMLInputElement>(null));
   const handleInsertImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
@@ -671,28 +658,23 @@ export function WechatPublishPage({ documents: defaultDocuments = [], onClose }:
         const nameLower = item.title.toLowerCase();
         let extensionBg = 'rgba(7, 193, 96, 0.08)';
         let extensionColor = '#07c160';
-        let extensionLabel = t('zipArchive', { defaultValue: 'ZIP 归档' });
         let actionBtnText = t('previewFile', { defaultValue: '预览文件' });
 
         if (itemType === 'folder') {
           extensionBg = 'rgba(217, 119, 6, 0.08)';
           extensionColor = '#d97706';
-          extensionLabel = t('sharedFolder', { defaultValue: '共享文件夹' });
           actionBtnText = t('enterDriveFolder', { defaultValue: '进入网盘文件夹' });
         } else if (nameLower.endsWith('.pdf')) {
           extensionBg = 'rgba(239, 68, 68, 0.08)';
           extensionColor = '#ef4444';
-          extensionLabel = t('pdfDocument', { defaultValue: 'PDF 电子档' });
           actionBtnText = t('fastPreviewOnline', { defaultValue: '在线极速预览' });
         } else if (nameLower.endsWith('.zip')) {
           extensionBg = 'rgba(147, 51, 234, 0.08)';
           extensionColor = '#9333ea';
-          extensionLabel = t('zipPackage', { defaultValue: 'ZIP 软件包' });
           actionBtnText = t('extractedResource', { defaultValue: '提取资源内容' });
         } else if (nameLower.endsWith('.mp4') || nameLower.endsWith('.mov')) {
           extensionBg = 'rgba(249, 115, 22, 0.08)';
           extensionColor = '#f97316';
-          extensionLabel = t('mp4Video', { defaultValue: 'MP4 超清音视频' });
           actionBtnText = t('hdTheaterPlayback', { defaultValue: '高清剧场版播放' });
         }
 
@@ -774,8 +756,7 @@ export function WechatPublishPage({ documents: defaultDocuments = [], onClose }:
     setIsSavingDraft(true);
     try {
       await WechatService.publishArticles(selectedOfficialAccountIds, articles, {
-        sendNotification: false,
-      });
+        sendNotification: false});
       toast.success(t('saveSuccess', { defaultValue: '保存成功' }));
     } catch (error) {
       console.error(error);

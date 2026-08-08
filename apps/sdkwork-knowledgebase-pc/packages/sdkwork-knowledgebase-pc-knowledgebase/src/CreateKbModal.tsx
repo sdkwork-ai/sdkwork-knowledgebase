@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { isBlank, trim } from '@sdkwork/utils';
+import { useState } from 'react';
+import { isBlank } from '@sdkwork/utils';
 import { X, Plus, GitBranch, FolderGit2, BookPlus, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

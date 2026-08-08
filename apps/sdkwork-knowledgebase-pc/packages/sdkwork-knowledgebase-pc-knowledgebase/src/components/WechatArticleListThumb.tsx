@@ -1,4 +1,3 @@
-import React from 'react';
 import { Image as ImageIcon } from 'lucide-react';
 import { WechatArticle } from '../services/wechat';
 import { useTranslation } from 'react-i18next';

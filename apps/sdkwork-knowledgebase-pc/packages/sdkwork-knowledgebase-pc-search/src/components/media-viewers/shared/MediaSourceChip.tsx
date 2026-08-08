@@ -1,4 +1,3 @@
-import React from 'react';
 import { ExternalLink, Library } from 'lucide-react';
 import type { SearchMediaItem } from '../../../types';
 

@@ -1,10 +1,13 @@
 use axum::{
-    extract::{rejection::JsonRejection, OriginalUri, Path, Query, State},
-    http::StatusCode,
+    extract::{
+        rejection::JsonRejection, FromRequestParts, OriginalUri, Path, Query, State,
+    },
+    http::{request::Parts, StatusCode},
     response::Response,
     routing::{delete, get, patch, post, put},
     Json, Router,
 };
+use serde::de::DeserializeOwned;
 use sdkwork_knowledgebase_contract::{
     context_binding::{
         CreateKnowledgeSpaceContextBindingRequest, UpdateKnowledgeSpaceContextBindingRequest,
@@ -297,7 +300,7 @@ fn build_business_router(api: Arc<dyn KnowledgeAppApi>) -> Router {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ListDocumentsQuery {
     space_id: u64,
     cursor: Option<String>,
@@ -306,7 +309,7 @@ struct ListDocumentsQuery {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ListDocumentVersionsQuery {
     cursor: Option<String>,
     #[serde(rename = "page_size")]
@@ -314,7 +317,7 @@ struct ListDocumentVersionsQuery {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ListContextBindingsQuery {
     cursor: Option<String>,
     #[serde(rename = "page_size")]
@@ -323,7 +326,7 @@ struct ListContextBindingsQuery {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ListMarketListingsQuery {
     cursor: Option<String>,
     #[serde(rename = "page_size")]
@@ -473,7 +476,7 @@ async fn change_wiki_source_file_visibility(
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RevokeSpaceMemberQuery {
     subject_type: KnowledgeSpaceMemberSubjectType,
     subject_id: String,
@@ -484,7 +487,7 @@ async fn list_space_members(
     context: RequiredAppContext,
     Path(space_id): Path<u64>,
     OriginalUri(uri): OriginalUri,
-    Query(query): Query<ListSpaceMembersQuery>,
+    CheckedQuery(query): CheckedQuery<ListSpaceMembersQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     reject_forbidden_pagination_aliases(uri.query())?;
@@ -515,7 +518,7 @@ async fn revoke_space_member(
     State(state): State<AppState>,
     context: RequiredAppContext,
     Path(space_id): Path<u64>,
-    Query(query): Query<RevokeSpaceMemberQuery>,
+    CheckedQuery(query): CheckedQuery<RevokeSpaceMemberQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     state
@@ -640,7 +643,7 @@ async fn list_market_listings(
     State(state): State<AppState>,
     context: RequiredAppContext,
     OriginalUri(uri): OriginalUri,
-    Query(query): Query<ListMarketListingsQuery>,
+    CheckedQuery(query): CheckedQuery<ListMarketListingsQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     reject_forbidden_pagination_aliases(uri.query())?;
@@ -706,7 +709,7 @@ async fn list_documents(
     State(state): State<AppState>,
     context: RequiredAppContext,
     OriginalUri(uri): OriginalUri,
-    Query(query): Query<ListDocumentsQuery>,
+    CheckedQuery(query): CheckedQuery<ListDocumentsQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     reject_forbidden_pagination_aliases(uri.query())?;
@@ -784,7 +787,7 @@ async fn list_document_versions(
     context: RequiredAppContext,
     Path(document_id): Path<u64>,
     OriginalUri(uri): OriginalUri,
-    Query(query): Query<ListDocumentVersionsQuery>,
+    CheckedQuery(query): CheckedQuery<ListDocumentVersionsQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     reject_forbidden_pagination_aliases(uri.query())?;
@@ -889,7 +892,7 @@ async fn list_okf_concept_revisions(
 async fn retrieve_okf_index(
     State(state): State<AppState>,
     context: RequiredAppContext,
-    Query(query): Query<ListOkfConceptsQuery>,
+    CheckedQuery(query): CheckedQuery<ListOkfConceptsQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     ok_json(state.api.retrieve_okf_index(context, query.space_id).await)
@@ -898,7 +901,7 @@ async fn retrieve_okf_index(
 async fn retrieve_okf_log(
     State(state): State<AppState>,
     context: RequiredAppContext,
-    Query(query): Query<ListOkfConceptsQuery>,
+    CheckedQuery(query): CheckedQuery<ListOkfConceptsQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     ok_json(state.api.retrieve_okf_log(context, query.space_id).await)
@@ -907,7 +910,7 @@ async fn retrieve_okf_log(
 async fn retrieve_okf_schema(
     State(state): State<AppState>,
     context: RequiredAppContext,
-    Query(query): Query<ListOkfConceptsQuery>,
+    CheckedQuery(query): CheckedQuery<ListOkfConceptsQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     ok_json(state.api.retrieve_okf_schema(context, query.space_id).await)
@@ -987,7 +990,7 @@ async fn list_browser(
     context: RequiredAppContext,
     Path(space_id): Path<u64>,
     OriginalUri(uri): OriginalUri,
-    Query(query): Query<ListBrowserQuery>,
+    CheckedQuery(query): CheckedQuery<ListBrowserQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     reject_forbidden_pagination_aliases(uri.query())?;
@@ -1230,7 +1233,7 @@ async fn list_space_context_bindings(
     context: RequiredAppContext,
     Path(space_id): Path<u64>,
     OriginalUri(uri): OriginalUri,
-    Query(query): Query<ListContextBindingsQuery>,
+    CheckedQuery(query): CheckedQuery<ListContextBindingsQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     reject_forbidden_pagination_aliases(uri.query())?;
@@ -1388,6 +1391,34 @@ const FORBIDDEN_PAGINATION_QUERY_ALIASES: &[(&str, &str)] = &[
     ("size", "page_size"),
 ];
 
+/// Query extractor that rejects forbidden pagination aliases (PAGINATION_SPEC
+/// §3.1) BEFORE serde deserialization, and converts deserialization failures
+/// into the standard problem+json envelope instead of axum's plain-text 400,
+/// so API consumers always receive the documented error contract.
+struct CheckedQuery<T>(T);
+
+impl<S, T> FromRequestParts<S> for CheckedQuery<T>
+where
+    S: Send + Sync,
+    T: DeserializeOwned,
+{
+    type Rejection = ApiProblem;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        reject_forbidden_pagination_aliases(parts.uri.query())?;
+        let query = Query::<T>::from_request_parts(parts, state)
+            .await
+            .map_err(|rejection| {
+                ApiProblem::new(
+                    StatusCode::BAD_REQUEST,
+                    "invalid_parameter",
+                    rejection.to_string(),
+                )
+            })?;
+        Ok(Self(query.0))
+    }
+}
+
 fn reject_forbidden_pagination_aliases(query: Option<&str>) -> Result<(), ApiProblem> {
     let Some(query) = query else {
         return Ok(());
@@ -1503,7 +1534,7 @@ fn invalid_query_parameter(detail: impl Into<String>) -> ApiProblem {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ListSpaceMembersQuery {
     cursor: Option<String>,
     #[serde(rename = "page_size")]
@@ -1511,7 +1542,7 @@ struct ListSpaceMembersQuery {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ListBrowserQuery {
     view: Option<String>,
     parent_id: Option<String>,

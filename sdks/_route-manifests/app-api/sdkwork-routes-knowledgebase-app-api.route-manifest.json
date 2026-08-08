@@ -369,7 +369,7 @@
     },
     {
       "method": "GET",
-      "path": "/app/v3/api/knowledge/wechat/official_accounts/{account_id}/fan_tags",
+      "path": "/app/v3/api/knowledge/wechat/official_accounts/{accountId}/fan_tags",
       "operationId": "wechat.officialAccounts.fanTags.list",
       "tags": [
         "knowledge"
@@ -678,7 +678,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/knowledge/documents/{documentId}/versions",
-      "operationId": "documents.versions.versions",
+      "operationId": "documents.versions.create",
       "tags": [
         "knowledge"
       ],
@@ -1228,7 +1228,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings",
-      "operationId": "agentProfiles.bindings.bindings",
+      "operationId": "agentProfiles.bindings.create",
       "tags": [
         "knowledge"
       ],
@@ -1294,7 +1294,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview",
-      "operationId": "agentProfiles.retrievalPreview.retrievalPreview",
+      "operationId": "agentProfiles.retrievalPreview.create",
       "tags": [
         "knowledge"
       ],
@@ -1316,7 +1316,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/knowledge/agent_profiles/{profileId}/chat",
-      "operationId": "agentProfiles.chat.chat",
+      "operationId": "agentProfiles.chat.create",
       "tags": [
         "knowledge"
       ],
@@ -1360,7 +1360,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/knowledge/spaces/{spaceId}/context_bindings",
-      "operationId": "spaces.contextBindings.contextBindings",
+      "operationId": "spaces.contextBindings.create",
       "tags": [
         "knowledge"
       ],
@@ -1404,7 +1404,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/knowledge/spaces/{spaceId}/members",
-      "operationId": "spaces.members.members",
+      "operationId": "spaces.members.create",
       "tags": [
         "knowledge"
       ],

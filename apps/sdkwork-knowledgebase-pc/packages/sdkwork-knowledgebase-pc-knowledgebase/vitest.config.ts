@@ -1,18 +1,14 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-import { appRoot, vitestSharedAliases } from '../../vitest.shared';
+import { vitestSharedAliases } from '../../vitest.shared';
 
-const packageRoot = path.dirname(fileURLToPath(import.meta.url));
+void (path.dirname(fileURLToPath(import.meta.url)));
 
 export default defineConfig({
   resolve: {
     alias: {
-      ...vitestSharedAliases,
-    },
-  },
+      ...vitestSharedAliases}},
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
-  },
-});
+    include: ['src/**/*.test.ts']}});

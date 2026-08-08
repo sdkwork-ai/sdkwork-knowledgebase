@@ -1,5 +1,4 @@
-import React from 'react';
-import { FileText, FileUp, Briefcase } from 'lucide-react';
+import { FileText, FileUp } from 'lucide-react';
 import { DocumentMeta } from '../../services/document';
 import { useTranslation } from 'react-i18next';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Check, ChevronDown, Sparkles } from 'lucide-react';
 import { AI_MODELS, AI_VENDORS, type AiModelInfo } from './aiModelCatalog';
 import { useAiModelSelection } from './useAiModelSelection';

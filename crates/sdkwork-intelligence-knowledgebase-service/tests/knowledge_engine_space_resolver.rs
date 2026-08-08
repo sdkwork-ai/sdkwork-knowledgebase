@@ -619,7 +619,7 @@ impl KnowledgeEngine for ConcurrencyHealthEngine {
 
 #[tokio::test]
 async fn native_space_mode_is_not_overridden_by_provider_binding() {
-    let registry = Arc::new(build_default_registry(KnowledgeEngineRuntimeDeps {
+    let registry = Arc::new(wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(Arc::new(MockOkfConceptStore), Arc::new(MockDriveStorage)),
         rag_documents: Arc::new(MockDocumentStore),
@@ -668,7 +668,7 @@ async fn native_space_mode_is_not_overridden_by_provider_binding() {
 
 #[tokio::test]
 async fn explicit_native_override_wins_for_external_space() {
-    let registry = Arc::new(build_default_registry(KnowledgeEngineRuntimeDeps {
+    let registry = Arc::new(wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(Arc::new(MockOkfConceptStore), Arc::new(MockDriveStorage)),
         rag_documents: Arc::new(MockDocumentStore),
@@ -704,7 +704,7 @@ async fn explicit_native_override_wins_for_external_space() {
 
 #[tokio::test]
 async fn external_space_uses_the_single_active_binding_as_selection_authority() {
-    let registry = Arc::new(build_default_registry(KnowledgeEngineRuntimeDeps {
+    let registry = Arc::new(wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(Arc::new(MockOkfConceptStore), Arc::new(MockDriveStorage)),
         rag_documents: Arc::new(MockDocumentStore),
@@ -743,7 +743,7 @@ async fn external_space_uses_the_single_active_binding_as_selection_authority() 
 
 #[tokio::test]
 async fn resolve_for_external_mode_space_requires_active_provider_binding() {
-    let registry = Arc::new(build_default_registry(KnowledgeEngineRuntimeDeps {
+    let registry = Arc::new(wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(Arc::new(MockOkfConceptStore), Arc::new(MockDriveStorage)),
         rag_documents: Arc::new(MockDocumentStore),
@@ -812,7 +812,7 @@ async fn execution_authorization_precedes_credential_lookup_and_provider_http() 
     let credential_resolver = Arc::new(StaticCredentialResolver {
         resolve_count: credential_resolve_count.clone(),
     });
-    let registry = Arc::new(build_default_registry(KnowledgeEngineRuntimeDeps {
+    let registry = Arc::new(wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(Arc::new(MockOkfConceptStore), Arc::new(MockDriveStorage)),
         rag_documents: Arc::new(MockDocumentStore),
@@ -864,7 +864,7 @@ async fn execution_authorization_precedes_credential_lookup_and_provider_http() 
 #[tokio::test]
 async fn active_binding_health_probes_are_concurrent_and_bounded() {
     let engine = Arc::new(ConcurrencyHealthEngine::default());
-    let registry = Arc::new(build_default_registry(KnowledgeEngineRuntimeDeps {
+    let registry = Arc::new(wrap_build_default_registry(KnowledgeEngineRuntimeDeps {
         tenant_id: 1,
         okf: okf_test_deps(Arc::new(MockOkfConceptStore), Arc::new(MockDriveStorage)),
         rag_documents: Arc::new(MockDocumentStore),
@@ -1037,3 +1037,12 @@ fn configured_ragflow_engine() -> RagflowKnowledgeEngine {
         default_dataset_id: None,
     })
 }
+
+
+/// Builds the default engine registry for tests, unwrapping the fallible builder.
+fn wrap_build_default_registry(
+    deps: sdkwork_intelligence_knowledgebase_service::knowledge_engine::KnowledgeEngineRuntimeDeps,
+) -> sdkwork_intelligence_knowledgebase_service::knowledge_engine::DefaultKnowledgeEngineRegistry {
+    build_default_registry(deps).expect("default knowledge engine registry must build")
+}
+

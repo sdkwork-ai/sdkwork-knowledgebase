@@ -1,4 +1,3 @@
-import React from 'react';
 import { CircleAlert, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Activity, ArrowLeft, Database, FileStack, Layers, ServerCog, ShieldAlert, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatBytes } from '@sdkwork/utils';
 import {
+  extractNextCursor,
   extractSdkWorkListItems,
   getKnowledgebaseBackendSdkClient,
   isKnowledgebaseBackendApiAvailable,
@@ -81,7 +82,17 @@ export function KnowledgebaseAdminConsole() {
   const [traces, setTraces] = useState<RetrievalTraceRow[]>([]);
   const [providerHealth, setProviderHealth] = useState<ProviderHealthView | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Cursor pagination state: each list loads one bounded page at a time and appends the
+  // next page on demand (PAGINATION_SPEC §8 — interactive lists never aggregate
+  // full collections client-side).
+  const [sourcesCursor, setSourcesCursor] = useState<string | undefined>(undefined);
+  const [spacesCursor, setSpacesCursor] = useState<string | undefined>(undefined);
+  const [indexesCursor, setIndexesCursor] = useState<string | undefined>(undefined);
+  const [tracesCursor, setTracesCursor] = useState<string | undefined>(undefined);
+
+  const ADMIN_PAGE_SIZE = 50;
 
   useEffect(() => {
     if (!canAccess) {
@@ -102,15 +113,19 @@ export function KnowledgebaseAdminConsole() {
         const client = getKnowledgebaseBackendSdkClient().client;
         const [status, sourceList, spaceList, indexList, traceList, health] = await Promise.all([
           client.knowledge.tenants.current.list(),
-          client.knowledge.sources.list(),
-          client.knowledge.spaces.list(),
-          client.knowledge.indexes.list(),
-          client.knowledge.retrievalTraces.list(),
+          client.knowledge.sources.list({ pageSize: ADMIN_PAGE_SIZE }),
+          client.knowledge.spaces.list({ pageSize: ADMIN_PAGE_SIZE }),
+          client.knowledge.indexes.list({ pageSize: ADMIN_PAGE_SIZE }),
+          client.knowledge.retrievalTraces.list({ pageSize: ADMIN_PAGE_SIZE }),
           client.knowledge.providerHealth.list(),
         ]);
         if (cancelled) {
           return;
         }
+        setSourcesCursor(extractNextCursor(sourceList));
+        setSpacesCursor(extractNextCursor(spaceList));
+        setIndexesCursor(extractNextCursor(indexList));
+        setTracesCursor(extractNextCursor(traceList));
         const spaceRows: AdminSpaceRow[] = extractSdkWorkListItems(spaceList).map((item) => ({
           id: readStringField(item, 'id'),
           name: readStringField(item, 'name'),
@@ -192,6 +207,104 @@ export function KnowledgebaseAdminConsole() {
       cancelled = true;
     };
   }, [canAccess, t]);
+
+  const hasMoreAdminData =
+    sourcesCursor !== undefined ||
+    spacesCursor !== undefined ||
+    indexesCursor !== undefined ||
+    tracesCursor !== undefined;
+
+  const loadMoreAdminData = useCallback(async () => {
+    if (loadingMore || !hasMoreAdminData) {
+      return;
+    }
+    setLoadingMore(true);
+    setErrorMessage(null);
+    try {
+      const client = getKnowledgebaseBackendSdkClient().client;
+      if (sourcesCursor !== undefined) {
+        const next = await client.knowledge.sources.list({
+          cursor: sourcesCursor,
+          pageSize: ADMIN_PAGE_SIZE,
+        });
+        setSources((prev) => [
+          ...prev,
+          ...extractSdkWorkListItems(next).map((item) => ({
+            id: readStringField(item, 'id'),
+            spaceId: readStringField(item, 'spaceId'),
+            sourceType: readStringField(item, 'sourceType'),
+            provider: readOptionalStringField(item, 'provider'),
+          })),
+        ]);
+        setSourcesCursor(extractNextCursor(next));
+      }
+      if (spacesCursor !== undefined) {
+        const next = await client.knowledge.spaces.list({
+          cursor: spacesCursor,
+          pageSize: ADMIN_PAGE_SIZE,
+        });
+        const nextRows: AdminSpaceRow[] = extractSdkWorkListItems(next).map((item) => ({
+          id: readStringField(item, 'id'),
+          name: readStringField(item, 'name'),
+          knowledgeMode: readStringField(item, 'knowledgeMode'),
+          driveBound: readOptionalStringField(item, 'driveSpaceId') != null,
+        }));
+        const nextMembers = await loadAdminSpaceMembers(
+          (spaceId) => client.knowledge.spaces.members.list(spaceId),
+          nextRows,
+        );
+        setSpaces((prev) => [...prev, ...nextRows]);
+        setMembers((prev) => [...prev, ...nextMembers]);
+        setSpacesCursor(extractNextCursor(next));
+      }
+      if (indexesCursor !== undefined) {
+        const next = await client.knowledge.indexes.list({
+          cursor: indexesCursor,
+          pageSize: ADMIN_PAGE_SIZE,
+        });
+        setIndexes((prev) => [
+          ...prev,
+          ...extractSdkWorkListItems(next).map((item) => ({
+            id: readStringField(item, 'indexId'),
+            spaceId: readStringField(item, 'spaceId'),
+            indexKind: readStringField(item, 'indexKind'),
+            status: readStringField(item, 'status'),
+          })),
+        ]);
+        setIndexesCursor(extractNextCursor(next));
+      }
+      if (tracesCursor !== undefined) {
+        const next = await client.knowledge.retrievalTraces.list({
+          cursor: tracesCursor,
+          pageSize: ADMIN_PAGE_SIZE,
+        });
+        setTraces((prev) => [
+          ...prev,
+          ...extractSdkWorkListItems(next).map((item) => ({
+            id: readStringField(item, 'retrievalTraceId'),
+            status: readStringField(item, 'status'),
+            latencyMs: readOptionalStringField(item, 'latencyMs')
+              ? readNumberField(item, 'latencyMs')
+              : undefined,
+            resultCount: readNumberField(item, 'resultCount'),
+          })),
+        ]);
+        setTracesCursor(extractNextCursor(next));
+      }
+    } catch (error) {
+      setErrorMessage(resolveUserFacingErrorMessage(error, (key, options) => t(key, options)));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [
+    loadingMore,
+    hasMoreAdminData,
+    sourcesCursor,
+    spacesCursor,
+    indexesCursor,
+    tracesCursor,
+    t,
+  ]);
 
   return (
     <div className="min-h-screen bg-[var(--color-kb-bg)] text-[var(--color-kb-text)]">
@@ -503,6 +616,20 @@ export function KnowledgebaseAdminConsole() {
                 </table>
               </div>
             )}
+          </section>
+        ) : null}
+
+        {canAccess && !loading && hasMoreAdminData ? (
+          <section className="flex justify-center pt-2">
+            <button
+              type="button"
+              onClick={() => void loadMoreAdminData()}
+              disabled={loadingMore}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-kb-panel-border)] bg-[var(--color-kb-panel)] px-4 py-2 text-sm font-medium hover:bg-[var(--color-kb-panel-hover)] disabled:opacity-60"
+            >
+              <Layers size={16} />
+              {loadingMore ? t('adminConsoleLoadingMore') : t('adminConsoleLoadMore')}
+            </button>
           </section>
         ) : null}
       </main>
