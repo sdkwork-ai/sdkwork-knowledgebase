@@ -675,7 +675,7 @@ CREATE TABLE IF NOT EXISTS kb_group_knowledge_space_binding (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     conversation_id VARCHAR(256) NOT NULL,
     space_id BIGINT,
     space_uuid VARCHAR(64),
@@ -745,7 +745,7 @@ CREATE TABLE IF NOT EXISTS kb_group_knowledge_space_member (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     binding_id BIGINT NOT NULL,
     principal_kind VARCHAR(32) NOT NULL,
     actor_id VARCHAR(256) NOT NULL,
@@ -799,7 +799,7 @@ CREATE TABLE IF NOT EXISTS kb_group_knowledge_space_event_inbox (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     source_event_id VARCHAR(512) NOT NULL,
     event_type VARCHAR(64) NOT NULL,
     binding_id BIGINT,
@@ -827,7 +827,7 @@ CREATE TABLE IF NOT EXISTS kb_group_knowledge_space_membership_projection (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     binding_id BIGINT NOT NULL,
     source_event_id VARCHAR(512) NOT NULL,
     payload_sha256_hex VARCHAR(64) NOT NULL,
@@ -1104,7 +1104,7 @@ CREATE TABLE IF NOT EXISTS kb_site_publication (
     id BIGINT NOT NULL PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     space_id BIGINT NOT NULL,
     drive_space_uuid VARCHAR(64) NOT NULL,
     source_root_node_uuid VARCHAR(64),
@@ -1198,7 +1198,7 @@ CREATE TABLE IF NOT EXISTS kb_source_file_projection (
     id BIGINT NOT NULL PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     site_publication_id BIGINT NOT NULL,
     space_id BIGINT NOT NULL,
     drive_space_uuid VARCHAR(64) NOT NULL,
@@ -1330,7 +1330,7 @@ CREATE TABLE IF NOT EXISTS kb_source_file_rendition (
     id BIGINT NOT NULL PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     site_publication_id BIGINT NOT NULL,
     source_file_projection_id BIGINT NOT NULL,
     drive_version_uuid VARCHAR(64) NOT NULL,
@@ -1427,7 +1427,7 @@ CREATE TABLE IF NOT EXISTS kb_drive_source_checkpoint (
     id BIGINT NOT NULL PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     site_publication_id BIGINT NOT NULL,
     drive_space_uuid VARCHAR(64) NOT NULL,
     source_scope_uuid VARCHAR(64) NOT NULL,
@@ -1487,7 +1487,7 @@ CREATE TABLE IF NOT EXISTS kb_drive_event_inbox (
     id BIGINT NOT NULL PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     site_publication_id BIGINT NOT NULL,
     checkpoint_id BIGINT NOT NULL,
     source_event_id VARCHAR(128) NOT NULL,
@@ -1559,7 +1559,7 @@ CREATE TABLE IF NOT EXISTS kb_provider_credential_reference (
     id BIGINT PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     implementation_id VARCHAR(128) NOT NULL,
     display_name VARCHAR(256) NOT NULL,
     reference_locator TEXT NOT NULL,
@@ -1593,7 +1593,7 @@ CREATE TABLE IF NOT EXISTS kb_provider_binding (
     id BIGINT PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     space_id BIGINT NOT NULL,
     implementation_id VARCHAR(128) NOT NULL,
     remote_resource_type VARCHAR(64) NOT NULL,
@@ -1646,7 +1646,7 @@ CREATE TABLE IF NOT EXISTS kb_provider_migration_operation (
     id BIGINT PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    organization_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
     space_id BIGINT NOT NULL,
     source_binding_id BIGINT NOT NULL,
     target_binding_id BIGINT NOT NULL,
@@ -2235,34 +2235,34 @@ SET LOCAL statement_timeout = '5min';
 
 ALTER TABLE kb_space ALTER COLUMN organization_id DROP DEFAULT;
 
-ALTER TABLE kb_collection ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_source ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_drive_object_ref ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_document ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_document_version ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_chunk ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_index ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_embedding ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_retrieval_profile ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_retrieval_trace ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_retrieval_hit ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_agent_profile ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_agent_knowledge_binding ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_ingestion_job ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_ingestion_job_item ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_okf_concept ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_okf_concept_revision ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_okf_bundle_file ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_okf_schema_profile ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_okf_log_entry ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_local_mirror_package ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_space_context_binding ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_okf_concept_link ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_okf_candidate ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_market_listing ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_market_subscription ADD COLUMN IF NOT EXISTS organization_id BIGINT;
-ALTER TABLE kb_audit_event ADD COLUMN IF NOT EXISTS organization_id BIGINT;
+ALTER TABLE kb_collection ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_source ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_drive_object_ref ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_document ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_document_version ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_chunk ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_index ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_embedding ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_retrieval_profile ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_retrieval_trace ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_retrieval_hit ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_agent_profile ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_agent_knowledge_binding ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_ingestion_job ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_ingestion_job_item ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_okf_concept ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_okf_concept_revision ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_okf_bundle_file ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_okf_schema_profile ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_okf_log_entry ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_local_mirror_package ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_space_context_binding ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_okf_concept_link ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_okf_candidate ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_market_listing ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_market_subscription ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE kb_audit_event ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 
 UPDATE kb_collection target SET organization_id = space.organization_id
 FROM kb_space space
