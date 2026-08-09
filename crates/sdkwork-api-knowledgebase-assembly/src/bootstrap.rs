@@ -122,6 +122,34 @@ pub async fn assemble_business_routes_from_environment() -> Result<ApiAssembly, 
     assemble_api_router_from_environment().await
 }
 
+/// Assemble the Knowledgebase contribution against a caller-provided database
+/// pool so the platform cloud gateway can share its process-wide PostgreSQL
+/// pool.
+pub async fn assemble_api_router_with_pool(
+    pool: sdkwork_database_sqlx::DatabasePool,
+) -> Result<ApiAssembly, String> {
+    let runtime = runtime_from_environment_with_group_launch_ticket_consumer(None)
+        .await
+        .map_err(|error| format!("{error}"))?;
+    let router = Router::new()
+        .merge(runtime.build_full_app_router())
+        .merge(runtime.build_backend_business_router())
+        .merge(runtime.build_internal_business_router())
+        .merge(runtime.build_open_business_router());
+    ApiAssemblyContribution::from_manifest(
+        "sdkwork-knowledgebase",
+        "SDKWork Knowledgebase API",
+        router,
+        route_manifest(),
+        vec![
+            sdkwork_routes_knowledgebase_app_api::knowledgebase_app_context_injector(),
+            sdkwork_routes_knowledgebase_backend_api::knowledgebase_backend_context_injector(),
+            sdkwork_routes_knowledgebase_open_api::knowledgebase_open_api_context_injector(),
+        ],
+        Arc::new(sdkwork_web_bootstrap::DatabasePoolReadinessCheck::new(pool)),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

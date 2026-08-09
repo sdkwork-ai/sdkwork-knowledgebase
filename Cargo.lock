@@ -3821,12 +3821,14 @@ name = "sdkwork-api-knowledgebase-assembly"
 version = "0.1.0"
 dependencies = [
  "axum 0.8.9",
+ "sdkwork-database-sqlx",
  "sdkwork-intelligence-knowledgebase-service",
  "sdkwork-routes-knowledgebase-app-api",
  "sdkwork-routes-knowledgebase-backend-api",
  "sdkwork-routes-knowledgebase-internal-api",
  "sdkwork-routes-knowledgebase-open-api",
  "sdkwork-web-bootstrap",
+ "sdkwork-web-core",
  "tokio",
 ]
 
