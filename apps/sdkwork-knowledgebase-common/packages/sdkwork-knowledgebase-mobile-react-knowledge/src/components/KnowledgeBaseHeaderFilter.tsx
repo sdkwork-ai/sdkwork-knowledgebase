@@ -21,14 +21,13 @@ export const KnowledgeBaseHeaderFilter: React.FC<KnowledgeBaseHeaderFilterProps>
   setIsSelectionMode,
   totalCount,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation("knowledge");
 
   const filterOptions = [
-    { id: "all", label: t("knowledge.filter_all", "全部") },
-    { id: "newest", label: t("knowledge.filter_newest", "最新创建") },
-    { id: "oldest", label: t("knowledge.filter_oldest", "最早创建") },
-    { id: "recently_updated", label: t("knowledge.filter_recent", "最近活跃") },
-    { id: "archived", label: "已归档" },
+    { id: "all", label: t("filter_all", "全部") },
+    { id: "newest", label: t("filter_newest", "最新创建") },
+    { id: "oldest", label: t("filter_oldest", "最早创建") },
+    { id: "recently_updated", label: t("filter_recent", "最近活跃") },
   ];
 
   return (
@@ -38,7 +37,7 @@ export const KnowledgeBaseHeaderFilter: React.FC<KnowledgeBaseHeaderFilterProps>
           <Search className="w-5 h-5 text-text-sub mr-2 shrink-0" />
           <input
             type="text"
-            placeholder={t("knowledge.search_kb", "Search knowledge bases...")}
+            placeholder={t("search_kb", "搜索知识库...")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-transparent border-none outline-none flex-1 text-[15px] text-text-main"
@@ -47,14 +46,19 @@ export const KnowledgeBaseHeaderFilter: React.FC<KnowledgeBaseHeaderFilterProps>
 
         <button
           onClick={() => setIsSelectionMode(!isSelectionMode)}
-          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
+          disabled={totalCount === 0}
+          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all disabled:opacity-40 ${
             isSelectionMode
               ? "bg-primary-blue text-white shadow-sm active:scale-95"
               : "bg-[#f3f4f6] dark:bg-[#2c2d2e] text-text-main hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95"
           }`}
         >
           <CheckSquare className="w-4 h-4" />
-          <span>{isSelectionMode ? "取消批量" : "批量操作"}</span>
+          <span>
+            {isSelectionMode
+              ? t("exit_batch", "取消批量")
+              : t("batch", "批量操作")}
+          </span>
         </button>
       </div>
 

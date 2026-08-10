@@ -18,54 +18,67 @@
 
 BEGIN;
 
+ALTER TABLE kb_space ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_space SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_space ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_space ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_group_knowledge_space_binding ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_group_knowledge_space_binding SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_group_knowledge_space_binding ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_group_knowledge_space_binding ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_group_knowledge_space_member ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_group_knowledge_space_member SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_group_knowledge_space_member ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_group_knowledge_space_member ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_group_knowledge_space_event_inbox ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_group_knowledge_space_event_inbox SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_group_knowledge_space_event_inbox ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_group_knowledge_space_event_inbox ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_group_knowledge_space_membership_projection ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_group_knowledge_space_membership_projection SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_group_knowledge_space_membership_projection ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_group_knowledge_space_membership_projection ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_site_publication ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_site_publication SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_site_publication ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_site_publication ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_source_file_projection ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_source_file_projection SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_source_file_projection ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_source_file_projection ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_source_file_rendition ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_source_file_rendition SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_source_file_rendition ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_source_file_rendition ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_drive_source_checkpoint ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_drive_source_checkpoint SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_drive_source_checkpoint ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_drive_source_checkpoint ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_drive_event_inbox ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_drive_event_inbox SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_drive_event_inbox ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_drive_event_inbox ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_provider_credential_reference ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_provider_credential_reference SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_provider_credential_reference ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_provider_credential_reference ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_provider_binding ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_provider_binding SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_provider_binding ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_provider_binding ALTER COLUMN organization_id SET NOT NULL;
 
+ALTER TABLE kb_provider_migration_operation ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 UPDATE kb_provider_migration_operation SET organization_id = 0 WHERE organization_id IS NULL;
 ALTER TABLE kb_provider_migration_operation ALTER COLUMN organization_id SET DEFAULT 0;
 ALTER TABLE kb_provider_migration_operation ALTER COLUMN organization_id SET NOT NULL;

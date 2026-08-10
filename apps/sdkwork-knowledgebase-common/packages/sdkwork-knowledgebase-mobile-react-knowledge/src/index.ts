@@ -8,4 +8,6 @@ export * from "./components/BatchActionBar";
 export * from "./components/KnowledgeBaseHeaderFilter";
 export * from "./components/EmptyKnowledgeBaseState";
 export * from "./components/KnowledgeDocumentCard";
+export * from "./components/ConfirmDialog";
+export * from "./components/RenameDialog";
 export * from "./services/KnowledgeBaseService";

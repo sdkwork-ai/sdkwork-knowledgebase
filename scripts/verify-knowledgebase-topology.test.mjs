@@ -220,8 +220,17 @@ test('topology governance files do not retain retired deployment profile segment
   const deploymentProfileIds = [...deployment.matchAll(/^  ([A-Za-z0-9.-]+):\s*$/gmu)]
     .map((match) => match[1])
     .sort();
+  // Development profiles remain source config under etc/ and are never
+  // deploy targets; cloud deploys test/staging/production, standalone
+  // deploys production only (customer-managed host installs).
   const expectedDeploymentProfileIds = expectedProfileIds
-    .filter((profileId) => profileId.endsWith('.production'))
+    .filter((profileId) => {
+      const [deploymentProfile, environment] = profileId.split('.');
+      if (deploymentProfile === 'standalone') {
+        return environment === 'production';
+      }
+      return environment !== 'development';
+    })
     .sort();
   assert.deepEqual(deploymentProfileIds, expectedDeploymentProfileIds);
   assert.ok(
@@ -432,8 +441,17 @@ test('production cloud topology orchestrates background worker and health probes
   assert.equal(await exists('deployments/kubernetes/backend-api-deployment.yaml'), false);
   assert.equal(await exists('deployments/kubernetes/open-api-deployment.yaml'), false);
 
-  const apiDockerfile = await read('deployments/docker/Dockerfile.api');
-  assert.match(apiDockerfile, /cargo build --release -p sdkwork-api-knowledgebase-standalone-gateway/);
+  const apiDockerfile = await read('Dockerfile');
+  // The committed container build uses the pre-assembled staging pattern
+  // (scripts/build-knowledgebase-container.mjs builds bin/ outside the image
+  // and the Dockerfile COPYs the staged install package), not an in-image
+  // multi-stage cargo build.
+  assert.match(apiDockerfile, /ARG GATEWAY_BINARY=sdkwork-api-knowledgebase-standalone-gateway/);
+  assert.match(apiDockerfile, /COPY \. \$\{INSTALL_ROOT\}/);
+  assert.match(
+    apiDockerfile,
+    /ENTRYPOINT \["\/opt\/sdkwork\/knowledgebase\/bin\/sdkwork-api-knowledgebase-standalone-gateway"\]/,
+  );
   assert.doesNotMatch(apiDockerfile, /sdkwork-knowledgebase-api-server|KB_API_BINARY/);
 
   const ingressRouting = await read('deployments/kubernetes/ingress.yaml');

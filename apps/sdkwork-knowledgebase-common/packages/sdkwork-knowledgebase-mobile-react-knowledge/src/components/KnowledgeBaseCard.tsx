@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "motion/react";
 import { MoreHorizontal, CheckCircle2, Circle, Archive } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { KnowledgeBase } from "../services/KnowledgeBaseService";
 
 interface KnowledgeBaseCardProps {
@@ -20,6 +21,8 @@ export const KnowledgeBaseCard: React.FC<KnowledgeBaseCardProps> = ({
   onClickCard,
   onMoreClick,
 }) => {
+  const { t } = useTranslation("knowledge");
+
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
@@ -79,18 +82,20 @@ export const KnowledgeBaseCard: React.FC<KnowledgeBaseCardProps> = ({
         {kb.isArchived && (
           <span className="shrink-0 flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium border border-amber-500/20">
             <Archive className="w-3 h-3" />
-            已归档
+            {t("archived", "已归档")}
           </span>
         )}
       </div>
 
       <p className="text-[14px] text-text-sub line-clamp-2 mb-4 h-10">
-        {kb.description || "暂无描述"}
+        {kb.description || t("no_description", "暂无描述")}
       </p>
 
       <div className="flex items-center justify-between mt-auto pt-3 border-t border-border-color/50">
         <span className="text-[12px] text-text-sub font-medium bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
-          {new Date(kb.createdAt).toLocaleDateString()}
+          {kb.createdAt
+            ? new Date(kb.createdAt).toLocaleDateString()
+            : ""}
         </span>
       </div>
     </motion.div>

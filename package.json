@@ -38,6 +38,7 @@
     "test:e2e": "node --test --experimental-test-isolation=none scripts/e2e-knowledgebase-pc-bootstrap.test.mjs && node --test --experimental-test-isolation=none scripts/e2e-knowledgebase-pc-browser.test.mjs",
     "test:e2e:playwright": "pnpm --dir apps/sdkwork-knowledgebase-pc run test:e2e",
     "test:topology": "node --test --experimental-test-isolation=none scripts/verify-knowledgebase-topology.test.mjs",
+    "test:web-domain-routing-standard": "node scripts/dev/sdkwork-knowledgebase-web-domain-routing-standard.test.mjs",
     "test:frontend": "pnpm --dir apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-commons test && pnpm --dir apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-core test && pnpm --dir apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-search test && pnpm --dir apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-knowledgebase test && pnpm --dir apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-shell test && pnpm --dir apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-admin-core test && pnpm --dir apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-admin-provider test",
     "check": "pnpm exec sdkwork-app check",
     "check:app-composition": "node ../sdkwork-specs/tools/verify-repo.mjs --root .",

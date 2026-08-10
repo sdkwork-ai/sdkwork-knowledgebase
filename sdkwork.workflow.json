@@ -146,6 +146,13 @@
         "shell": "pwsh",
         "run": "node ../sdkwork-github-workflow/scripts/generate-release-sbom.mjs --app sdkwork-knowledgebase --package-id $env:SDKWORK_PACKAGE_ID"
       }
+    ],
+    "deploy": [
+      {
+        "name": "Apply immutable artifact through the SDKWork app facade",
+        "shell": "pwsh",
+        "run": "$ErrorActionPreference = \"Stop\"\n$PSNativeCommandUseErrorActionPreference = $true\npnpm exec sdkwork-app deploy:workflow-apply"
+      }
     ]
   },
   "targets": [
@@ -199,5 +206,15 @@
     "workflowArtifact": true,
     "githubRelease": false,
     "retentionDays": 30
-  }
+  },
+  "deployments": [
+    {
+      "id": "standalone-production-server",
+      "environment": "production",
+      "targetId": "linux-x64-standalone-server-tar-gz",
+      "deploymentProfile": "standalone",
+      "lifecycle": "deploy",
+      "artifactEvidencePath": ".sdkwork/evidence/{packageId}.json"
+    }
+  ]
 }

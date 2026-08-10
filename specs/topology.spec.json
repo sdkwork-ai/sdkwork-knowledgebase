@@ -86,16 +86,36 @@
   },
   "cloudPublicHosts": {
     "application.public-ingress": {
-      "httpHost": "knowledgebase.sdkwork.com"
+      "httpHost": "knowledgebase.sdkwork.com",
+      "environments": {
+        "development": { "httpHost": "knowledgebase-dev.sdkwork.com" },
+        "test": { "httpHost": "knowledgebase-test.sdkwork.com" },
+        "staging": { "httpHost": "knowledgebase-staging.sdkwork.com" }
+      }
     },
     "application.backend-http": {
-      "httpHost": "knowledgebase-admin.sdkwork.com"
+      "httpHost": "knowledgebase-admin.sdkwork.com",
+      "environments": {
+        "development": { "httpHost": "knowledgebase-admin-dev.sdkwork.com" },
+        "test": { "httpHost": "knowledgebase-admin-test.sdkwork.com" },
+        "staging": { "httpHost": "knowledgebase-admin-staging.sdkwork.com" }
+      }
     },
     "application.open-http": {
-      "httpHost": "knowledge.sdkwork.com"
+      "httpHost": "knowledge.sdkwork.com",
+      "environments": {
+        "development": { "httpHost": "knowledge-dev.sdkwork.com" },
+        "test": { "httpHost": "knowledge-test.sdkwork.com" },
+        "staging": { "httpHost": "knowledge-staging.sdkwork.com" }
+      }
     },
     "platform.api-gateway": {
-      "httpHost": "api.sdkwork.com"
+      "httpHost": "api.sdkwork.com",
+      "environments": {
+        "development": { "httpHost": "api-dev.sdkwork.com" },
+        "test": { "httpHost": "api-test.sdkwork.com" },
+        "staging": { "httpHost": "api-staging.sdkwork.com" }
+      }
     }
   },
   "components": {

@@ -34,6 +34,28 @@ Do not copy root standard text into this repository. If these relative paths do 
 
 Read `sdkwork.app.config.json` only when the task touches Knowledgebase application behavior, runtime config, SDK wiring, release metadata, app-owned capabilities, packaging, or deployment. For unrelated documentation or tooling work, do not expand into the full app manifest unless evidence requires it.
 
+## Group Knowledgebase Boundary
+
+This repository owns the Knowledgebase side of the group-knowledgebase
+boundary declared in `../sdkwork-im/AGENTS.md` (Group Knowledgebase Boundary):
+
+- `sdkwork-im` owns Conversation membership, current-Owner initialization
+  authorization, lifecycle status, and opaque launch-ticket issuance.
+- `sdkwork-knowledgebase` owns the one-to-one group-space binding, content,
+  and final ACL enforcement.
+- Browser launch consumes only the opaque ticket in the standalone
+  Knowledgebase route fragment. Desktop launch consumes only that ticket
+  through the registered deep link (`sdkwork-knowledgebase://group-launch/<opaque-ticket>`)
+  to this product's Tauri process. Space identifiers, destinations, session
+  tokens, and caller context are never accepted from IM URLs; the ticket is
+  short-lived, single-use, hash-stored, and bound to actor/scope/version/epoch
+  per `RPC_SPEC.md` section 13.2.
+- Trusted IM integration uses generated IM SDKs and generated Knowledgebase
+  RPC SDKs (`sdkwork-knowledgebase-rpc-sdk`) or approved composed facades
+  only. Raw HTTP, manual credential headers, and local SDK forks are
+  forbidden; the trusted RPC path requires mTLS, signed caller context, and
+  deployment readiness described in `etc/topology/README.md`.
+
 ## Local Dictionary Structure
 
 - `AGENTS.md`: repository agent entrypoint and relative SDKWork spec index.

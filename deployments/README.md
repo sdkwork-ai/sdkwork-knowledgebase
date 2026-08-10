@@ -1,6 +1,13 @@
 # SDKWork Knowledgebase Deployment Artifacts
 
-Production deployment descriptors for the `cloud.production` topology profile.
+Deployment descriptors for the `cloud.test`, `cloud.staging`,
+`cloud.production`, and `standalone.production` deploy.yaml profiles. The
+cloud profiles expose the registered hosts
+(`knowledgebase[-test|-staging].sdkwork.com` plus the
+`knowledgebase-admin` / `knowledge` auxiliary surfaces) per
+`../sdkwork-specs/APP_RUNTIME_TOPOLOGY_NAMING.md` section 9. Development
+profiles are source config under `etc/topology/` and are never deploy
+targets; `standalone.test`/`standalone.staging` fold to loopback URLs.
 
 ## Contents
 
