@@ -46,19 +46,32 @@ function applyPermissions(document, { permission, permissionByOperation, auditEv
         continue;
       }
 
-      const operationPermission =
-        permissionByOperation?.[operation.operationId] ??
-        permission ??
-        (permissionByOperation
-          ? (() => {
-              throw new Error(
-                `missing app-api permission mapping for operation ${operation.operationId}`,
-              );
-            })()
-          : undefined);
-      if (operation['x-sdkwork-permission'] !== operationPermission) {
-        operation['x-sdkwork-permission'] = operationPermission;
-        changed = true;
+      if (permissionByOperation) {
+        // Read operations are tenant-scoped authenticated reads without an
+        // RBAC permission requirement (same contract as other IM embedded
+        // dependency surfaces).
+        if (method === 'get') {
+          if ('x-sdkwork-permission' in operation) {
+            delete operation['x-sdkwork-permission'];
+            changed = true;
+          }
+        } else {
+          const operationPermission = permissionByOperation[operation.operationId];
+          if (!operationPermission) {
+            throw new Error(
+              `missing app-api permission mapping for operation ${operation.operationId}`,
+            );
+          }
+          if (operation['x-sdkwork-permission'] !== operationPermission) {
+            operation['x-sdkwork-permission'] = operationPermission;
+            changed = true;
+          }
+        }
+      } else {
+        if (operation['x-sdkwork-permission'] !== permission) {
+          operation['x-sdkwork-permission'] = permission;
+          changed = true;
+        }
       }
       if (auditEvent && operation['x-sdkwork-audit-event'] !== auditEvent) {
         operation['x-sdkwork-audit-event'] = auditEvent;

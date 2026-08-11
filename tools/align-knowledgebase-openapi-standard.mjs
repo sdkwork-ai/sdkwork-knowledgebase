@@ -717,11 +717,11 @@ function registerWikiOperation(spec, method, routePath, options) {
     'x-sdkwork-auth-mode': 'dual-token',
     'x-sdkwork-domain': 'intelligence',
     'x-sdkwork-resource': options.resource,
-    'x-sdkwork-permission': options.permission,
     'x-sdkwork-tenant-scope': 'tenant',
     'x-sdkwork-data-scope': 'organization',
     ...(method !== 'get'
       ? {
+          'x-sdkwork-permission': options.permission,
           'x-sdkwork-rate-limit-tier': 'auth-critical',
           'x-sdkwork-idempotent': true,
           'x-sdkwork-audit-event': options.auditEvent,

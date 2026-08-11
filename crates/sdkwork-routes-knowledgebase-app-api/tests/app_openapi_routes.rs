@@ -165,7 +165,15 @@ fn app_openapi_exposes_version_fenced_wiki_publication_contracts() {
     ] {
         assert_resource_response_envelope(&spec, operation_id, item_schema_ref);
         let operation = operation_by_id(&spec, operation_id);
-        assert_eq!(operation["x-sdkwork-permission"], permission);
+        if mutation {
+            assert_eq!(operation["x-sdkwork-permission"], permission);
+        } else {
+            assert_eq!(
+                operation.get("x-sdkwork-permission"),
+                None,
+                "read operation {operation_id} must not require an RBAC permission"
+            );
+        }
         assert_eq!(operation["x-sdkwork-tenant-scope"], "tenant");
         assert_eq!(operation["x-sdkwork-data-scope"], "organization");
         if mutation {

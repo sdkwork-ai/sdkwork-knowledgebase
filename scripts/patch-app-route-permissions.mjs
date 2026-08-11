@@ -98,6 +98,14 @@ source = source.replace(
         .with_required_permission(permission)
 }
 
+const fn knowledge_read_route(
+    method: HttpMethod,
+    path: &'static str,
+    operation_id: &'static str,
+) -> HttpRoute {
+    HttpRoute::dual_token(method, path, "knowledge", operation_id)
+}
+
 const fn knowledge_abuse_route(
     method: HttpMethod,
     path: &'static str,
@@ -114,6 +122,13 @@ const HTTP_ROUTES`,
 source = source.replace(
   /HttpRoute::dual_token\(\s*HttpMethod::(\w+),\s*"([^"]+)",\s*"knowledge",\s*"([^"]+)",\s*\)/g,
   (_, method, routePath, operationId) => {
+    if (method === 'Get') {
+      return `knowledge_read_route(
+        HttpMethod::${method},
+        "${routePath}",
+        "${operationId}",
+    )`;
+    }
     const permission = APP_API_PERMISSION_BY_OPERATION[operationId];
     if (!permission) {
       throw new Error(`missing permission mapping for ${operationId}`);
@@ -130,6 +145,13 @@ source = source.replace(
 source = source.replace(
   /abuse_sensitive_route\(\s*HttpMethod::(\w+),\s*"([^"]+)",\s*"knowledge",\s*"([^"]+)",\s*\)/g,
   (_, method, routePath, operationId) => {
+    if (method === 'Get') {
+      return `knowledge_read_route(
+        HttpMethod::${method},
+        "${routePath}",
+        "${operationId}",
+    )`;
+    }
     const permission = APP_API_PERMISSION_BY_OPERATION[operationId];
     if (!permission) {
       throw new Error(`missing permission mapping for ${operationId}`);

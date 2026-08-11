@@ -44,7 +44,6 @@ const sdkworkExtensions = {
 // carry the same authorization metadata as the authored manifest routes.
 const commercePermissionExtensions = {
   'market.listings.list': {
-    'x-sdkwork-permission': 'knowledge.market.read',
     'x-sdkwork-tenant-scope': 'tenant',
     'x-sdkwork-data-scope': 'organization',
   },
