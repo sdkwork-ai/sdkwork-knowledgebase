@@ -101,6 +101,15 @@ function registryStorageKey(scopeKey: string): string {
   return `${REGISTRY_KEY_PREFIX}.${scopeKey}`;
 }
 
+/**
+ * Process-local registry of spaces this device opened, keyed by principal
+ * scope. The registry is a disposable accelerator only: entries are verified
+ * against the server on load and are never treated as business authority.
+ * Browser storage is deliberately not used — device registries stay in
+ * process memory and can be rebuilt from server state after a reload.
+ */
+const registeredSpacesByScope = new Map<string, RegisteredKnowledgebaseSpace[]>();
+
 function normalizeRegisteredSpaceId(value: unknown): string {
   if (typeof value === 'string') {
     const trimmed = value.trim();
@@ -118,31 +127,16 @@ function normalizeRegisteredSpaceId(value: unknown): string {
 }
 
 export function readRegisteredSpaces(scopeKey = resolveScopeKey()): RegisteredKnowledgebaseSpace[] {
-  if (typeof window === 'undefined') {
+  if (!scopeKey) {
     return [];
   }
-  try {
-    const raw = window.localStorage.getItem(registryStorageKey(scopeKey));
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw) as RegisteredKnowledgebaseSpace[];
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed
-      .map((space) => ({ ...space, spaceId: normalizeRegisteredSpaceId(space.spaceId) }))
-      .filter((space) => space.spaceId.length > 0);
-  } catch {
-    return [];
-  }
+  return (registeredSpacesByScope.get(scopeKey) ?? [])
+    .map((space) => ({ ...space, spaceId: normalizeRegisteredSpaceId(space.spaceId) }))
+    .filter((space) => space.spaceId.length > 0);
 }
 
 function writeRegisteredSpaces(scopeKey: string, spaces: RegisteredKnowledgebaseSpace[]): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  window.localStorage.setItem(registryStorageKey(scopeKey), JSON.stringify(spaces));
+  registeredSpacesByScope.set(scopeKey, spaces);
 }
 
 export function upsertRegisteredSpace(

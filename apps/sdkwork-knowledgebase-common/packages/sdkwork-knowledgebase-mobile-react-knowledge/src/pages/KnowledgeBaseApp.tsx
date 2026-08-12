@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Plus, RefreshCw } from "lucide-react";
 import { ActionSheet, PageLayout, showToast } from "@sdkwork/ui-mobile-react";
+import { CapabilityUnavailablePage } from "../components/CapabilityUnavailablePage";
 
 import {
   KnowledgeBase,
@@ -187,17 +188,7 @@ export function KnowledgeBaseApp() {
           <span className="text-[14px]">{t("loading", "加载中...")}</span>
         </div>
       ) : loadError ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-          <p className="text-[14px] text-text-sub mb-4">
-            {t("load_error", "加载失败，请稍后重试")}
-          </p>
-          <button
-            onClick={() => void load()}
-            className="px-5 py-2.5 rounded-xl bg-primary-blue text-white text-[14px] font-medium active:scale-95 transition-transform"
-          >
-            {t("retry", "重试")}
-          </button>
-        </div>
+        <CapabilityUnavailablePage />
       ) : filteredKnowledgeBases.length === 0 ? (
         <EmptyKnowledgeBaseState
           onCreateNew={() => navigate("/workspace/knowledge/create")}
