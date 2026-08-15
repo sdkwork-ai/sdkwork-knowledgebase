@@ -3846,7 +3846,6 @@ dependencies = [
  "sdkwork-knowledgebase-agent-provider",
  "sdkwork-knowledgebase-im-rpc-adapter",
  "sdkwork-knowledgebase-observability",
- "sdkwork-routes-knowledgebase-open-api",
  "sdkwork-rpc-core",
  "sdkwork-utils-rust",
  "sdkwork-web-bootstrap",

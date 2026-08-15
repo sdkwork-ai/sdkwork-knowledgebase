@@ -12,8 +12,6 @@ application and platform surfaces.
 
 Additional safe templates:
 
-- `sdkwork-api-cloud-gateway.knowledgebase.development.toml`: development gateway policy.
-- `sdkwork-api-cloud-gateway.knowledgebase.production.toml`: production gateway policy.
 - `examples/knowledgebase-redis.env.example`: non-secret Redis configuration example.
 - `examples/browser-security-headers.nginx.conf`: browser static-host security headers.
 

@@ -41,7 +41,6 @@
     },
     "cloud.development": {
       "config": "topology/cloud.development.env",
-      "gatewayConfig": "sdkwork-api-cloud-gateway.knowledgebase.development.toml"
     },
     "cloud.test": {
       "config": "topology/cloud.test.env"
@@ -51,7 +50,6 @@
     },
     "cloud.production": {
       "config": "topology/cloud.production.env",
-      "gatewayConfig": "sdkwork-api-cloud-gateway.knowledgebase.production.toml"
     }
   }
 }

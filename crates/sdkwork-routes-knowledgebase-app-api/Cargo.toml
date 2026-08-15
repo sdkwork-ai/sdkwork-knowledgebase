@@ -54,7 +54,7 @@ dev-auth = []
 [dev-dependencies]
 # Integration tests exercise the development auth middlewares, so the crate's own test
 # build enables the dev-auth feature.
-sdkwork-routes-knowledgebase-app-api = { path = ".", features = ["dev-auth"] }
+sdkwork-routes-knowledgebase-app-api = { workspace = true, features = ["dev-auth"] }
 async-trait.workspace = true
 tokio.workspace = true
 tower.workspace = true

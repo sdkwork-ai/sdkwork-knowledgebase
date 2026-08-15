@@ -13,7 +13,6 @@ sdkwork-api-knowledgebase-assembly.workspace = true
 sdkwork-database-sqlx.workspace = true
 sdkwork_api_iam_assembly.workspace = true
 sdkwork-iam-web-adapter.workspace = true
-sdkwork-routes-knowledgebase-open-api.workspace = true
 sdkwork-web-bootstrap = { workspace = true, features = ["redis"] }
 axum.workspace = true
 hyper.workspace = true

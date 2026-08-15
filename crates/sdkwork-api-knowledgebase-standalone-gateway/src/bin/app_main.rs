@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         resolver,
         manifest,
         infra_public_path_prefixes(),
-        sdkwork_routes_knowledgebase_open_api::knowledgebase_open_api_prefixes(),
+        sdkwork_api_knowledgebase_assembly::knowledgebase_open_api_prefixes(),
     );
     // The observability layer (wrap_router_with_metrics in serve_router) owns
     // the process-level /metrics surface; skip the framework's duplicate

@@ -16,3 +16,9 @@ pub use bootstrap::{
 pub fn assembly_route_count() -> usize {
     generated::ROUTE_CRATE_COUNT
 }
+
+/// Public path prefixes of the Knowledgebase Open API surface, projected from
+/// the assembly-owned route crate for gateway Web Framework wiring.
+pub fn knowledgebase_open_api_prefixes() -> Vec<String> {
+    sdkwork_routes_knowledgebase_open_api::knowledgebase_open_api_prefixes()
+}
