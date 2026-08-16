@@ -82,6 +82,30 @@
       "repository": "sdkwork-ai/sdkwork-cloudrouter-router",
       "refInput": "SDKWORK_CLOUDROUTER_REF",
       "tokenSecret": "SDKWORK_RELEASE_TOKEN"
+    },
+    {
+      "id": "sdkwork-core",
+      "repository": "sdkwork-ai/sdkwork-core",
+      "refInput": "SDKWORK_CORE_REF",
+      "tokenSecret": "SDKWORK_RELEASE_TOKEN"
+    },
+    {
+      "id": "sdkwork-iam",
+      "repository": "sdkwork-ai/sdkwork-iam",
+      "refInput": "SDKWORK_IAM_REF",
+      "tokenSecret": "SDKWORK_RELEASE_TOKEN"
+    },
+    {
+      "id": "sdkwork-sdk-commons",
+      "repository": "sdkwork-ai/sdkwork-sdk-commons",
+      "refInput": "SDKWORK_SDK_COMMONS_REF",
+      "tokenSecret": "SDKWORK_RELEASE_TOKEN"
+    },
+    {
+      "id": "sdkwork-ui",
+      "repository": "sdkwork-ai/sdkwork-ui",
+      "refInput": "SDKWORK_UI_REF",
+      "tokenSecret": "SDKWORK_RELEASE_TOKEN"
     }
   ],
   "toolchains": {
@@ -161,7 +185,9 @@
       "profile": "server",
       "platform": "linux",
       "architecture": "x64",
-      "formats": ["tar.gz"],
+      "formats": [
+        "tar.gz"
+      ],
       "runner": "ubuntu-24.04",
       "outputGlobs": [
         "target/release/sdkwork-api-knowledgebase-standalone-gateway*",
@@ -175,7 +201,9 @@
       "profile": "container",
       "platform": "linux",
       "architecture": "x64",
-      "formats": ["oci"],
+      "formats": [
+        "oci"
+      ],
       "runner": "ubuntu-24.04",
       "outputGlobs": [
         "target/release/sdkwork-api-knowledgebase-standalone-gateway*",
@@ -190,9 +218,13 @@
       "profile": "browser",
       "platform": "web",
       "architecture": "universal",
-      "formats": ["zip"],
+      "formats": [
+        "zip"
+      ],
       "runner": "ubuntu-24.04",
-      "outputGlobs": ["apps/sdkwork-knowledgebase-pc/dist/**"],
+      "outputGlobs": [
+        "apps/sdkwork-knowledgebase-pc/dist/**"
+      ],
       "deploymentProfile": "cloud",
       "runtimeTarget": "browser"
     }

@@ -15,7 +15,9 @@ tokio.workspace = true
 sdkwork-web-bootstrap.workspace = true
 sdkwork-web-core.workspace = true
 sdkwork-database-sqlx.workspace = true
+sdkwork-agent-kernel = { workspace = true, features = ["secret-vault"] }
 sdkwork-intelligence-knowledgebase-service.workspace = true
+sdkwork-knowledgebase-provider-secret-adapter.workspace = true
 sdkwork-routes-knowledgebase-app-api.workspace = true
 sdkwork-routes-knowledgebase-backend-api.workspace = true
 sdkwork-routes-knowledgebase-internal-api.workspace = true

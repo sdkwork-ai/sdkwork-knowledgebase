@@ -16,29 +16,29 @@ catalogs:
       specifier: ^1.5.6
       version: 1.5.6
     '@types/react':
-      specifier: ^19.0.0
+      specifier: ^19.2.14
       version: 19.2.14
     '@types/react-dom':
-      specifier: ^19.0.0
+      specifier: ^19.2.3
       version: 19.2.3
     jsdom:
       specifier: ^29.1.1
       version: 29.1.1
     lucide-react:
-      specifier: ^0.546.0
-      version: 0.546.0
+      specifier: ^1.7.0
+      version: 1.7.0
     qrcode:
       specifier: ^1.5.4
       version: 1.5.4
     react:
-      specifier: ^19.0.1
+      specifier: ^19.2.4
       version: 19.2.4
     react-dom:
-      specifier: ^19.0.1
+      specifier: ^19.2.4
       version: 19.2.4
     typescript:
-      specifier: ~5.8.2
-      version: 5.8.3
+      specifier: ~6.0.2
+      version: 6.0.3
     vite-plugin-dts:
       specifier: ^4.5.4
       version: 4.5.4
@@ -47,11 +47,7 @@ catalogs:
       version: 4.1.9
 
 overrides:
-  dompurify: ^3.4.13
-  linkify-it: ^5.0.2
-  postcss: ^8.5.23
-  nanoid: ^3.3.17
-  react-router: ^7.18.2
+  '@sdkwork/sdk-common': workspace:*
 
 importers:
 
@@ -86,7 +82,7 @@ importers:
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       lucide-react:
         specifier: 'catalog:'
-        version: 0.546.0(react@19.2.4)
+        version: 1.7.0(react@19.2.4)
       react:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4
@@ -131,8 +127,8 @@ importers:
   ../sdkwork-core/sdkwork-core-pc-react:
     dependencies:
       '@sdkwork/sdk-common':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
     devDependencies:
       '@testing-library/react':
         specifier: ^16.3.2
@@ -154,13 +150,13 @@ importers:
         version: 19.2.4(react@19.2.4)
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 6.0.3
       vite:
         specifier: 8.1.5
         version: 8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 4.5.4(@types/node@25.9.4)(rollup@4.62.2)(typescript@5.8.3)(vite@8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4))
+        version: 4.5.4(@types/node@25.9.4)(rollup@4.62.2)(typescript@6.0.3)(vite@8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4))
       vitest:
         specifier: ^4.1.2
         version: 4.1.9(@types/node@25.9.4)(jsdom@29.1.1)(vite@8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4))
@@ -171,8 +167,8 @@ importers:
         specifier: workspace:*
         version: link:../../../../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
       '@sdkwork/sdk-common':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
       '@sdkwork/utils':
         specifier: workspace:*
         version: link:../../../../sdkwork-utils/packages/sdkwork-utils-typescript
@@ -222,8 +218,8 @@ importers:
         specifier: workspace:*
         version: link:../../../../sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
       '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
       '@sdkwork/utils':
         specifier: workspace:*
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
@@ -253,8 +249,8 @@ importers:
         specifier: workspace:*
         version: link:../../../../../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap
       '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
     devDependencies:
       typescript:
         specifier: ^6.0.2
@@ -327,7 +323,7 @@ importers:
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       lucide-react:
         specifier: 'catalog:'
-        version: 0.546.0(react@19.2.4)
+        version: 1.7.0(react@19.2.4)
       qrcode:
         specifier: 'catalog:'
         version: 1.5.4
@@ -384,8 +380,8 @@ importers:
         specifier: workspace:*
         version: link:../../../sdkwork-iam-common/packages/sdkwork-iam-runtime
       '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
       '@sdkwork/user-center-core-pc-react':
         specifier: workspace:*
         version: link:../sdkwork-user-center-core-pc-react
@@ -712,7 +708,7 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       dompurify:
-        specifier: ^3.4.13
+        specifier: ^3.4.11
         version: 3.4.13
       dotenv:
         specifier: ^17.2.3
@@ -886,7 +882,7 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       dompurify:
-        specifier: ^3.4.13
+        specifier: ^3.4.11
         version: 3.4.13
       lucide-react:
         specifier: ^0.487.0
@@ -1033,7 +1029,7 @@ importers:
         specifier: ^3.26.0
         version: 3.27.1
       dompurify:
-        specifier: ^3.4.13
+        specifier: ^3.4.11
         version: 3.4.13
       i18next:
         specifier: ^26.3.1
@@ -1091,7 +1087,7 @@ importers:
         specifier: workspace:*
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       dompurify:
-        specifier: ^3.4.13
+        specifier: ^3.4.11
         version: 3.4.13
       lucide-react:
         specifier: ^0.546.0
@@ -1177,8 +1173,8 @@ importers:
         specifier: workspace:*
         version: link:../../../../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
       '@sdkwork/sdk-common':
-        specifier: ^1.0.2
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
       '@sdkwork/utils':
         specifier: workspace:*
         version: link:../../../../sdkwork-utils/packages/sdkwork-utils-typescript
@@ -1201,7 +1197,7 @@ importers:
     devDependencies:
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 6.0.3
 
 packages:
 
@@ -2961,10 +2957,6 @@ packages:
   '@rushstack/ts-command-line@5.3.10':
     resolution: {integrity: sha512-fwI076HYknC0IrMXdY6UmjDv+PH7NHhNJX3/pY2UblSE5XrXgndXZPiOe/6ZtuFpn6DvVDVNhtkIzQ+Qu/MhVQ==}
 
-  '@sdkwork/sdk-common@1.0.3':
-    resolution: {integrity: sha512-EGCm742ya1VL9hZ+9SVVArUxieFxIwQ3MMpt8Tv6Vc++U5ug4qG2TBUQ/hKAeJIwhL5Tvbhs6Tzy31P8fBO/cQ==}
-    engines: {node: '>=18.0.0'}
-
   '@shikijs/core@2.5.0':
     resolution: {integrity: sha512-uu/8RExTKtavlpH7XqnVYBrfBkUc20ngXiX9NSrBhOVZYv/7XQRKUyhtkeflY5QsxC0GbJThCerruZfsUaSldg==}
 
@@ -3838,7 +3830,7 @@ packages:
     engines: {node: ^10 || ^12 || >=14}
     hasBin: true
     peerDependencies:
-      postcss: ^8.5.23
+      postcss: ^8.1.0
 
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
@@ -4074,6 +4066,9 @@ packages:
 
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
+
+  dompurify@3.2.7:
+    resolution: {integrity: sha512-WhL/YuveyGXJaerVlMYGWhvQswa7myDG17P7Vu65EWC05o8vfeNbvNf4d/BOvH99+ZW+LlQsc1GDKMa1vNK6dw==}
 
   dompurify@3.4.13:
     resolution: {integrity: sha512-2vmYIoqjze2d+kakP8S/nS5shfsl587kzwEjcGlTdiksUVgFHnFCsLYDVj/JNqJVOQZGSYBTmuycv0PodwmnMQ==}
@@ -5231,6 +5226,16 @@ packages:
       react: '>=18'
       react-dom: '>=18'
 
+  react-router@7.18.0:
+    resolution: {integrity: sha512-pTTGt8J+ji1NOmYnjzT+bAJy/1zD+Jp4ziO6cL7T3ZLvXKtusO7BpFqlRXitqpcPVqllsIXFHRMt+2/k3Xn6HQ==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      react: '>=18'
+      react-dom: '>=18'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+
   react-router@7.18.2:
     resolution: {integrity: sha512-aUVMjFm3GAPTTZL7oYr5E7ETiqfQCHRLH+B+5afnICvf0r7kkK4eR6SMuwbSTJw/7t+12khT/Kahij49fqOCIg==}
     engines: {node: '>=20.0.0'}
@@ -5853,7 +5858,7 @@ packages:
     hasBin: true
     peerDependencies:
       markdown-it-mathjax3: ^4
-      postcss: ^8.5.23
+      postcss: ^8
     peerDependenciesMeta:
       markdown-it-mathjax3:
         optional: true
@@ -7559,8 +7564,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@sdkwork/sdk-common@1.0.3': {}
-
   '@shikijs/core@2.5.0':
     dependencies:
       '@shikijs/engine-javascript': 2.5.0
@@ -8379,19 +8382,6 @@ snapshots:
     dependencies:
       rfdc: 1.4.1
 
-  '@vue/language-core@2.2.0(typescript@5.8.3)':
-    dependencies:
-      '@volar/language-core': 2.4.28
-      '@vue/compiler-dom': 3.5.39
-      '@vue/compiler-vue2': 2.7.16
-      '@vue/shared': 3.5.39
-      alien-signals: 0.4.14
-      minimatch: 9.0.9
-      muggle-string: 0.4.1
-      path-browserify: 1.0.1
-    optionalDependencies:
-      typescript: 5.8.3
-
   '@vue/language-core@2.2.0(typescript@6.0.2)':
     dependencies:
       '@volar/language-core': 2.4.28
@@ -8404,6 +8394,19 @@ snapshots:
       path-browserify: 1.0.1
     optionalDependencies:
       typescript: 6.0.2
+
+  '@vue/language-core@2.2.0(typescript@6.0.3)':
+    dependencies:
+      '@volar/language-core': 2.4.28
+      '@vue/compiler-dom': 3.5.39
+      '@vue/compiler-vue2': 2.7.16
+      '@vue/shared': 3.5.39
+      alien-signals: 0.4.14
+      minimatch: 9.0.9
+      muggle-string: 0.4.1
+      path-browserify: 1.0.1
+    optionalDependencies:
+      typescript: 6.0.3
 
   '@vue/reactivity@3.5.39':
     dependencies:
@@ -8747,6 +8750,10 @@ snapshots:
   dom-accessibility-api@0.5.16: {}
 
   dom-accessibility-api@0.6.3: {}
+
+  dompurify@3.2.7:
+    optionalDependencies:
+      '@types/trusted-types': 2.0.7
 
   dompurify@3.4.13:
     optionalDependencies:
@@ -9888,7 +9895,7 @@ snapshots:
 
   monaco-editor@0.55.1:
     dependencies:
-      dompurify: 3.4.13
+      dompurify: 3.2.7
       marked: 14.0.0
 
   motion-dom@12.42.0:
@@ -10239,13 +10246,21 @@ snapshots:
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
-      react-router: 7.18.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-router: 7.18.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
   react-router-dom@7.18.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       react-router: 7.18.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+
+  react-router@7.18.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      cookie: 1.1.1
+      react: 19.2.4
+      set-cookie-parser: 2.7.2
+    optionalDependencies:
+      react-dom: 19.2.4(react@19.2.4)
 
   react-router@7.18.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
@@ -10816,25 +10831,6 @@ snapshots:
       - tsx
       - yaml
 
-  vite-plugin-dts@4.5.4(@types/node@25.9.4)(rollup@4.62.2)(typescript@5.8.3)(vite@8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)):
-    dependencies:
-      '@microsoft/api-extractor': 7.58.9(@types/node@25.9.4)
-      '@rollup/pluginutils': 5.4.0(rollup@4.62.2)
-      '@volar/typescript': 2.4.28
-      '@vue/language-core': 2.2.0(typescript@5.8.3)
-      compare-versions: 6.1.1
-      debug: 4.4.3
-      kolorist: 1.8.0
-      local-pkg: 1.2.1
-      magic-string: 0.30.21
-      typescript: 5.8.3
-    optionalDependencies:
-      vite: 8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)
-    transitivePeerDependencies:
-      - '@types/node'
-      - rollup
-      - supports-color
-
   vite-plugin-dts@4.5.4(@types/node@25.9.4)(rollup@4.62.2)(typescript@6.0.2)(vite@8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)):
     dependencies:
       '@microsoft/api-extractor': 7.58.9(@types/node@25.9.4)
@@ -10847,6 +10843,25 @@ snapshots:
       local-pkg: 1.2.1
       magic-string: 0.30.21
       typescript: 6.0.2
+    optionalDependencies:
+      vite: 8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)
+    transitivePeerDependencies:
+      - '@types/node'
+      - rollup
+      - supports-color
+
+  vite-plugin-dts@4.5.4(@types/node@25.9.4)(rollup@4.62.2)(typescript@6.0.3)(vite@8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)):
+    dependencies:
+      '@microsoft/api-extractor': 7.58.9(@types/node@25.9.4)
+      '@rollup/pluginutils': 5.4.0(rollup@4.62.2)
+      '@volar/typescript': 2.4.28
+      '@vue/language-core': 2.2.0(typescript@6.0.3)
+      compare-versions: 6.1.1
+      debug: 4.4.3
+      kolorist: 1.8.0
+      local-pkg: 1.2.1
+      magic-string: 0.30.21
+      typescript: 6.0.3
     optionalDependencies:
       vite: 8.1.5(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)
     transitivePeerDependencies:

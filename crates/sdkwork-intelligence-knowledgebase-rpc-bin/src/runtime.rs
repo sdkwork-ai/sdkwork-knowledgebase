@@ -70,7 +70,7 @@ impl KnowledgebaseGroupKnowledgeSpaceLifecycleRuntime {
             .map_err(|_| dependency_unavailable("knowledgebase-organization-scope"))?;
         let pool = connect_knowledgebase_and_install_schema(database_url)
             .await
-            .map_err(|_| dependency_unavailable("knowledgebase-schema-connect"))?;
+            .map_err(|error| dependency_failure("knowledgebase-schema-connect", error))?;
         let database_config = database_config_from_url(database_url)
             .map_err(|_| dependency_unavailable("knowledgebase-database-config"))?;
         let pool_budget = knowledgebase_process_pool_budget_from_url(database_url)
@@ -344,12 +344,44 @@ struct GroupKnowledgeSpaceLifecycleDependencies {
 pub enum KnowledgebaseGroupKnowledgeSpaceLifecycleRuntimeError {
     #[error("Knowledgebase lifecycle runtime dependency is unavailable at stage `{stage}`")]
     DependencyUnavailable { stage: &'static str },
+    #[error("Knowledgebase lifecycle runtime dependency failed at stage `{stage}`: {detail}")]
+    DependencyFailure { stage: &'static str, detail: String },
 }
 
 fn dependency_unavailable(
     stage: &'static str,
 ) -> KnowledgebaseGroupKnowledgeSpaceLifecycleRuntimeError {
     KnowledgebaseGroupKnowledgeSpaceLifecycleRuntimeError::DependencyUnavailable { stage }
+}
+
+fn dependency_failure(
+    stage: &'static str,
+    error: impl std::fmt::Display,
+) -> KnowledgebaseGroupKnowledgeSpaceLifecycleRuntimeError {
+    KnowledgebaseGroupKnowledgeSpaceLifecycleRuntimeError::DependencyFailure {
+        stage,
+        detail: redact_connection_userinfo(&error.to_string()),
+    }
+}
+
+fn redact_connection_userinfo(detail: &str) -> String {
+    let Some(scheme_end) = detail.find("://") else {
+        return detail.to_string();
+    };
+    let authority_start = scheme_end + 3;
+    let Some(authority_end) = detail[authority_start..].find('@') else {
+        return detail.to_string();
+    };
+    let authority_end = authority_start + authority_end;
+    let userinfo = &detail[authority_start..authority_end];
+    if !userinfo.contains(':') {
+        return detail.to_string();
+    }
+    format!(
+        "{}[REDACTED]{}",
+        &detail[..authority_start],
+        &detail[authority_end..]
+    )
 }
 
 /// Creates the configured root when needed and verifies that it is a directory usable for Drive
@@ -406,6 +438,20 @@ fn verify_drive_storage_root(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dependency_diagnostics_redact_database_userinfo() {
+        let detail = "failed to parse postgresql://gateway:secret@postgres:5432/sdkwork";
+
+        assert_eq!(
+            redact_connection_userinfo(detail),
+            "failed to parse postgresql://[REDACTED]@postgres:5432/sdkwork"
+        );
+        assert_eq!(
+            redact_connection_userinfo("database connection refused"),
+            "database connection refused"
+        );
+    }
 
     #[test]
     fn drive_storage_preflight_creates_a_writable_root_without_leaving_a_probe() {

@@ -103,6 +103,11 @@
     ],
     "requiredPorts": [
       {
+        "name": "applicationApiAssembly",
+        "export": "sdkwork_api_knowledgebase_assembly::assemble_api_router_from_environment_with_group_launch_ticket_consumer",
+        "provider": "sdkwork-api-knowledgebase-assembly"
+      },
+      {
         "name": "iamAppApiContribution",
         "export": "sdkwork_api_iam_assembly::assemble_app_api_contribution",
         "provider": "sdkwork-api-iam-assembly"

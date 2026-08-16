@@ -41,6 +41,7 @@ const RPC_MAX_CONNECTION_AGE_GRACE_SECONDS_ENV: &str =
 const RPC_TCP_KEEPALIVE_SECONDS_ENV: &str = "SDKWORK_KNOWLEDGEBASE_RPC_TCP_KEEPALIVE_SECONDS";
 const RPC_DRAIN_TIMEOUT_SECONDS_ENV: &str = "SDKWORK_KNOWLEDGEBASE_RPC_DRAIN_TIMEOUT_SECONDS";
 const DATABASE_URL_ENV: &str = "SDKWORK_DATABASE_URL";
+const DATABASE_URL_FILE_ENV: &str = "SDKWORK_DATABASE_URL_FILE";
 const DEPLOYMENT_PROFILE_ENV: &str = "SDKWORK_KNOWLEDGEBASE_DEPLOYMENT_PROFILE";
 const DRIVE_STORAGE_ROOT_ENV: &str = "SDKWORK_KNOWLEDGEBASE_DRIVE_STORAGE_ROOT";
 const DRIVE_STORAGE_PROVIDER_ID_ENV: &str = "SDKWORK_KNOWLEDGEBASE_DRIVE_STORAGE_PROVIDER_ID";
@@ -91,7 +92,7 @@ impl GroupKnowledgeSpaceLifecycleRpcHostConfig {
             )?)),
             client_auth_optional: false,
         };
-        let database_url = required_env(DATABASE_URL_ENV)?;
+        let database_url = read_secret_env_or_file(DATABASE_URL_ENV, DATABASE_URL_FILE_ENV)?;
         let drive_storage = resolve_drive_storage_from_env(environment)?;
         let operator_id =
             configured_nonblank_text_or_default(OPERATOR_ID_ENV, KNOWLEDGEBASE_SERVICE_ID)?;
@@ -505,7 +506,7 @@ pub enum GroupKnowledgeSpaceLifecycleRpcHostConfigError {
     InvalidValue { key: &'static str },
     #[error("the internal RPC listener requires enabled configuration: {key}")]
     Disabled { key: &'static str },
-    #[error("private RPC signing key has conflicting environment and file sources")]
+    #[error("private RPC value has conflicting direct and file sources")]
     ConflictingSecretSources {
         value_key: &'static str,
         file_key: &'static str,
