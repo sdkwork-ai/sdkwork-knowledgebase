@@ -1,6 +1,6 @@
 import type { KnowledgeRetrievalResult } from './knowledge-retrieval-result';
 
-export interface AgentProfilesRetrievalPreviewResponse {
+export interface AgentProfilesRetrievalPreviewCreateResponse {
   code: 0;
   data: unknown & { item: KnowledgeRetrievalResult; };
   /** Server-owned request correlation id. */

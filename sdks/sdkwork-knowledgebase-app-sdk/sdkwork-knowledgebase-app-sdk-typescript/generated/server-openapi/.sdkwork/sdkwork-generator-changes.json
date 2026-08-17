@@ -9,37 +9,42 @@
     "protocol": "http",
     "packageName": "@sdkwork/knowledgebase-app-sdk"
   },
-  "changeFingerprint": "40e1ad53778b33a39748c8bccc8e0ff64a9c90130566fd6fa815fbbe80fb9a68",
+  "changeFingerprint": "0880be4d78cdf8ee36d347ad943072c2e8f9ed18a52caf1070905cf0a4441881",
   "changes": {
-    "createdGeneratedFiles": [],
+    "createdGeneratedFiles": [
+      "src/types/agent-profiles-bindings-create-response.ts",
+      "src/types/agent-profiles-chat-create-response.ts",
+      "src/types/agent-profiles-retrieval-preview-create-response.ts",
+      "src/types/documents-versions-create-response.ts",
+      "src/types/spaces-context-bindings-create-response.ts",
+      "src/types/spaces-members-create-response.ts"
+    ],
     "updatedGeneratedFiles": [
-      "CHANGELOG.md",
-      "package.json",
-      "sdkwork-sdk.json",
-      "src/http/client.ts"
+      "bin/publish-core.mjs",
+      "README.md",
+      "src/api/base.ts",
+      "src/api/knowledge.ts",
+      "src/http/client.ts",
+      "src/types/index.ts"
     ],
     "unchangedGeneratedFiles": [
-      "bin/publish-core.mjs",
       "bin/publish.ps1",
       "bin/publish.sh",
       "bin/sdk-gen.bat",
       "bin/sdk-gen.sh",
+      "CHANGELOG.md",
       "LICENSE",
-      "README.md",
-      "src/api/base.ts",
+      "package.json",
+      "sdkwork-sdk.json",
       "src/api/index.ts",
-      "src/api/knowledge.ts",
       "src/api/paths.ts",
       "src/auth/index.ts",
       "src/http/index.ts",
       "src/index.ts",
       "src/sdk.ts",
       "src/types/agent-profiles-bindings-list-response.ts",
-      "src/types/agent-profiles-bindings-response.ts",
       "src/types/agent-profiles-bindings-update-response.ts",
-      "src/types/agent-profiles-chat-response.ts",
       "src/types/agent-profiles-create-response201.ts",
-      "src/types/agent-profiles-retrieval-preview-response.ts",
       "src/types/agent-profiles-retrieve-response.ts",
       "src/types/agent-profiles-update-response.ts",
       "src/types/change-knowledge-wiki-source-file-visibility-request.ts",
@@ -59,7 +64,6 @@
       "src/types/documents-retrieve-response.ts",
       "src/types/documents-update-response.ts",
       "src/types/documents-versions-list-response.ts",
-      "src/types/documents-versions-response.ts",
       "src/types/drive-imports-create-response201.ts",
       "src/types/field-error.ts",
       "src/types/git-imports-create-response201.ts",
@@ -68,7 +72,6 @@
       "src/types/group-knowledge-space-lifecycle-state.ts",
       "src/types/group-knowledgebase-launch-target.ts",
       "src/types/group-launches-consume-response.ts",
-      "src/types/index.ts",
       "src/types/ingestion-job-state.ts",
       "src/types/ingestion-job.ts",
       "src/types/ingests-create-response201.ts",
@@ -228,10 +231,8 @@
       "src/types/sdk-work-resource-response.ts",
       "src/types/spaces-browser-list-response.ts",
       "src/types/spaces-context-bindings-list-response.ts",
-      "src/types/spaces-context-bindings-response.ts",
       "src/types/spaces-create-response201.ts",
       "src/types/spaces-members-list-response.ts",
-      "src/types/spaces-members-response.ts",
       "src/types/spaces-retrieve-response.ts",
       "src/types/spaces-update-response.ts",
       "src/types/update-knowledge-space-context-binding-request.ts",
@@ -251,7 +252,14 @@
       "src/types/wiki-source-files-visibility-update-response.ts",
       "tsconfig.json"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "src/types/agent-profiles-bindings-response.ts",
+      "src/types/agent-profiles-chat-response.ts",
+      "src/types/agent-profiles-retrieval-preview-response.ts",
+      "src/types/documents-versions-response.ts",
+      "src/types/spaces-context-bindings-response.ts",
+      "src/types/spaces-members-response.ts"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/build-runtime.mjs",
@@ -263,15 +271,36 @@
     "schemaVersion": 1,
     "areas": [
       "api-surface",
+      "models",
       "runtime",
-      "build-metadata",
+      "publish-workflow",
       "documentation"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
+          "src/api/base.ts",
+          "src/api/knowledge.ts",
           "src/http/client.ts"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/types/agent-profiles-bindings-create-response.ts",
+          "src/types/agent-profiles-bindings-response.ts",
+          "src/types/agent-profiles-chat-create-response.ts",
+          "src/types/agent-profiles-chat-response.ts",
+          "src/types/agent-profiles-retrieval-preview-create-response.ts",
+          "src/types/agent-profiles-retrieval-preview-response.ts",
+          "src/types/documents-versions-create-response.ts",
+          "src/types/documents-versions-response.ts",
+          "src/types/index.ts",
+          "src/types/spaces-context-bindings-create-response.ts",
+          "src/types/spaces-context-bindings-response.ts",
+          "src/types/spaces-members-create-response.ts",
+          "src/types/spaces-members-response.ts"
         ]
       },
       {
@@ -281,32 +310,31 @@
         ]
       },
       {
-        "area": "build-metadata",
+        "area": "publish-workflow",
         "paths": [
-          "package.json",
-          "sdkwork-sdk.json"
+          "bin/publish-core.mjs"
         ]
       },
       {
         "area": "documentation",
         "paths": [
-          "CHANGELOG.md"
+          "README.md"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, runtime, build-metadata, documentation. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, runtime, publish-workflow, documentation. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, runtime, build-metadata, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, runtime, publish-workflow, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, runtime, build-metadata, documentation.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, publish-workflow, documentation.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -324,7 +352,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, runtime, build-metadata, documentation.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, publish-workflow, documentation.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -342,12 +370,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

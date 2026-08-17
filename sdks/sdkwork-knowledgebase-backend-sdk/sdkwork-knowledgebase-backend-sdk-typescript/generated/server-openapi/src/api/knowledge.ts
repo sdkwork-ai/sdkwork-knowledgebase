@@ -14,16 +14,14 @@ export class KnowledgeTenantsCurrentApi {
 
 /** Retrieve current tenant knowledgebase status */
   async list(requestOptions?: ApiRequestOptions): Promise<KnowledgeTenantStatus> {
-    return this.client.request<KnowledgeTenantStatus>(backendApiPath(`/knowledge/tenants/current`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeTenantStatus>(backendApiPath(`/knowledge/tenants/current`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class KnowledgeTenantsApi {
-  private client: HttpClient;
   public readonly current: KnowledgeTenantsCurrentApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.current = new KnowledgeTenantsCurrentApi(client);
   }
 
@@ -50,22 +48,22 @@ export class KnowledgeSpacesProviderMigrationsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<KnowledgeEngineProviderMigrationOperationPage>(appendQueryString(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_migrations`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<KnowledgeEngineProviderMigrationOperationPage>(appendQueryString(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_migrations`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Create a recoverable Provider migration operation */
   async create(spaceId: string, body: CreateKnowledgeEngineProviderMigrationOperationRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeEngineProviderMigrationOperation> {
-    return this.client.request<KnowledgeEngineProviderMigrationOperation>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_migrations`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeEngineProviderMigrationOperation>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_migrations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve a Provider migration operation */
   async retrieve(spaceId: string, migrationOperationId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeEngineProviderMigrationOperation> {
-    return this.client.request<KnowledgeEngineProviderMigrationOperation>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_migrations/${serializePathParameter(migrationOperationId, { name: 'migrationOperationId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeEngineProviderMigrationOperation>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_migrations/${serializePathParameter(migrationOperationId, { name: 'migrationOperationId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** Request rollback of a Provider migration operation */
   async rollback(spaceId: string, migrationOperationId: string, body: ProviderMigrationVersionCommandRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
-    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_migrations/${serializePathParameter(migrationOperationId, { name: 'migrationOperationId', style: 'simple', explode: false })}/rollback`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_migrations/${serializePathParameter(migrationOperationId, { name: 'migrationOperationId', style: 'simple', explode: false })}/rollback`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 }
 
@@ -90,37 +88,37 @@ export class KnowledgeSpacesProviderBindingsApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<KnowledgeEngineProviderBindingPage>(appendQueryString(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<KnowledgeEngineProviderBindingPage>(appendQueryString(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Create a Provider binding for a knowledge space */
   async create(spaceId: string, body: CreateKnowledgeEngineProviderBindingRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeEngineProviderBinding> {
-    return this.client.request<KnowledgeEngineProviderBinding>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeEngineProviderBinding>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve a Provider binding */
   async retrieve(spaceId: string, bindingId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeEngineProviderBinding> {
-    return this.client.request<KnowledgeEngineProviderBinding>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeEngineProviderBinding>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** Update a draft Provider binding */
   async update(spaceId: string, bindingId: string, body: UpdateKnowledgeEngineProviderBindingRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeEngineProviderBinding> {
-    return this.client.request<KnowledgeEngineProviderBinding>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeEngineProviderBinding>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Activate a Provider binding */
   async activate(spaceId: string, bindingId: string, body: ProviderBindingVersionCommandRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
-    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}/activate`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}/activate`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 
 /** Disable a Provider binding */
   async disable(spaceId: string, bindingId: string, body: ProviderBindingVersionCommandRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
-    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}/disable`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}/disable`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 
 /** Test a Provider binding */
   async test(spaceId: string, bindingId: string, body: ProviderBindingVersionCommandRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
-    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}/test`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/provider_bindings/${serializePathParameter(bindingId, { name: 'bindingId', style: 'simple', explode: false })}/test`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 }
 
@@ -143,7 +141,7 @@ export class KnowledgeSpacesMembersApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: KnowledgeSpaceMember[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/members`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: KnowledgeSpaceMember[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/members`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -172,7 +170,7 @@ export class KnowledgeSpacesApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: KnowledgeSpace[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/spaces`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: KnowledgeSpace[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/spaces`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -195,12 +193,12 @@ export class KnowledgeSourcesApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: KnowledgeSource[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/sources`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: KnowledgeSource[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/sources`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Create a knowledge source */
   async create(body: CreateKnowledgeSourceRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeSource> {
-    return this.client.request<KnowledgeSource>(backendApiPath(`/knowledge/sources`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeSource>(backendApiPath(`/knowledge/sources`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -223,12 +221,12 @@ export class KnowledgeRetrievalTracesApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: KnowledgeRetrievalTrace[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/retrieval_traces`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: KnowledgeRetrievalTrace[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/retrieval_traces`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Retrieve a retrieval trace */
   async retrieve(traceId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeRetrievalTrace> {
-    return this.client.request<KnowledgeRetrievalTrace>(backendApiPath(`/knowledge/retrieval_traces/${serializePathParameter(traceId, { name: 'traceId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeRetrievalTrace>(backendApiPath(`/knowledge/retrieval_traces/${serializePathParameter(traceId, { name: 'traceId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -242,17 +240,17 @@ export class KnowledgeRetrievalProfilesApi {
 
 /** Create a retrieval profile */
   async create(body: KnowledgeRetrievalProfileRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeRetrievalProfile> {
-    return this.client.request<KnowledgeRetrievalProfile>(backendApiPath(`/knowledge/retrieval_profiles`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeRetrievalProfile>(backendApiPath(`/knowledge/retrieval_profiles`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve a retrieval profile */
   async retrieve(profileId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeRetrievalProfile> {
-    return this.client.request<KnowledgeRetrievalProfile>(backendApiPath(`/knowledge/retrieval_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeRetrievalProfile>(backendApiPath(`/knowledge/retrieval_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** Update a retrieval profile */
   async update(profileId: string, body: KnowledgeRetrievalProfileRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeRetrievalProfile> {
-    return this.client.request<KnowledgeRetrievalProfile>(backendApiPath(`/knowledge/retrieval_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeRetrievalProfile>(backendApiPath(`/knowledge/retrieval_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -266,7 +264,7 @@ export class KnowledgeProviderHealthApi {
 
 /** Retrieve provider health status */
   async list(requestOptions?: ApiRequestOptions): Promise<KnowledgeProviderHealth> {
-    return this.client.request<KnowledgeProviderHealth>(backendApiPath(`/knowledge/provider_health`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeProviderHealth>(backendApiPath(`/knowledge/provider_health`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -293,27 +291,27 @@ export class KnowledgeProviderCredentialReferencesApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<KnowledgeEngineProviderCredentialReferencePage>(appendQueryString(backendApiPath(`/knowledge/provider_credential_references`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<KnowledgeEngineProviderCredentialReferencePage>(appendQueryString(backendApiPath(`/knowledge/provider_credential_references`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Create a Provider credential reference */
   async create(body: CreateKnowledgeEngineProviderCredentialReferenceRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeEngineProviderCredentialReference> {
-    return this.client.request<KnowledgeEngineProviderCredentialReference>(backendApiPath(`/knowledge/provider_credential_references`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeEngineProviderCredentialReference>(backendApiPath(`/knowledge/provider_credential_references`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve a Provider credential reference */
   async retrieve(credentialReferenceId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeEngineProviderCredentialReference> {
-    return this.client.request<KnowledgeEngineProviderCredentialReference>(backendApiPath(`/knowledge/provider_credential_references/${serializePathParameter(credentialReferenceId, { name: 'credentialReferenceId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeEngineProviderCredentialReference>(backendApiPath(`/knowledge/provider_credential_references/${serializePathParameter(credentialReferenceId, { name: 'credentialReferenceId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** Revoke a Provider credential reference */
   async revoke(credentialReferenceId: string, body: RevokeKnowledgeEngineProviderCredentialReferenceRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
-    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/provider_credential_references/${serializePathParameter(credentialReferenceId, { name: 'credentialReferenceId', style: 'simple', explode: false })}/revoke`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/provider_credential_references/${serializePathParameter(credentialReferenceId, { name: 'credentialReferenceId', style: 'simple', explode: false })}/revoke`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 
 /** Rotate a Provider credential reference */
   async rotate(credentialReferenceId: string, body: RotateKnowledgeEngineProviderCredentialReferenceRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
-    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/provider_credential_references/${serializePathParameter(credentialReferenceId, { name: 'credentialReferenceId', style: 'simple', explode: false })}/rotate`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/provider_credential_references/${serializePathParameter(credentialReferenceId, { name: 'credentialReferenceId', style: 'simple', explode: false })}/rotate`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 }
 
@@ -327,12 +325,12 @@ export class KnowledgeOkfProfileApi {
 
 /** Create an OKF profile */
   async create(body: KnowledgeOkfProfileRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeOkfBundleFile> {
-    return this.client.request<KnowledgeOkfBundleFile>(backendApiPath(`/knowledge/okf/profile`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeOkfBundleFile>(backendApiPath(`/knowledge/okf/profile`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Update an OKF profile */
   async update(profileId: number, body: KnowledgeOkfProfileRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeOkfBundleFile> {
-    return this.client.request<KnowledgeOkfBundleFile>(backendApiPath(`/knowledge/okf/profile/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeOkfBundleFile>(backendApiPath(`/knowledge/okf/profile/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -346,16 +344,14 @@ export class KnowledgeOkfLogEntriesApi {
 
 /** Create an OKF log entry */
   async create(body: OkfLogEntry, requestOptions?: ApiRequestOptions): Promise<OkfLogEntry> {
-    return this.client.request<OkfLogEntry>(backendApiPath(`/knowledge/okf/log_entries`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfLogEntry>(backendApiPath(`/knowledge/okf/log_entries`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class KnowledgeOkfLogApi {
-  private client: HttpClient;
   public readonly entries: KnowledgeOkfLogEntriesApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.entries = new KnowledgeOkfLogEntriesApi(client);
   }
 
@@ -371,7 +367,7 @@ export class KnowledgeOkfLintRunsApi {
 
 /** Create an OKF lint run */
   async create(body: OkfQualityRunRequest, requestOptions?: ApiRequestOptions): Promise<OkfQualityRun> {
-    return this.client.request<OkfQualityRun>(backendApiPath(`/knowledge/okf/lint_runs`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfQualityRun>(backendApiPath(`/knowledge/okf/lint_runs`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -385,7 +381,7 @@ export class KnowledgeOkfEvalRunsApi {
 
 /** Create an OKF eval run */
   async create(body: OkfQualityRunRequest, requestOptions?: ApiRequestOptions): Promise<OkfQualityRun> {
-    return this.client.request<OkfQualityRun>(backendApiPath(`/knowledge/okf/eval_runs`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfQualityRun>(backendApiPath(`/knowledge/okf/eval_runs`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -399,7 +395,7 @@ export class KnowledgeOkfConceptsApi {
 
 /** Publish an OKF concept */
   async publish(conceptId: number, body: OkfConceptPublishRequest, requestOptions?: ApiRequestOptions): Promise<OkfConceptSummary> {
-    return this.client.request<OkfConceptSummary>(backendApiPath(`/knowledge/okf/concepts/${serializePathParameter(conceptId, { name: 'conceptId', style: 'simple', explode: false })}/publish`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfConceptSummary>(backendApiPath(`/knowledge/okf/concepts/${serializePathParameter(conceptId, { name: 'conceptId', style: 'simple', explode: false })}/publish`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -413,7 +409,7 @@ export class KnowledgeOkfCompileJobsApi {
 
 /** Create an OKF compile job */
   async create(body: OkfCompileJobRequest, requestOptions?: ApiRequestOptions): Promise<IngestionJob> {
-    return this.client.request<IngestionJob>(backendApiPath(`/knowledge/okf/compile_jobs`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<IngestionJob>(backendApiPath(`/knowledge/okf/compile_jobs`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -438,17 +434,17 @@ export class KnowledgeOkfCandidatesApi {
       { name: 'cursor', value: params.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: OkfCandidateResult[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/okf/candidates`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: OkfCandidateResult[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/okf/candidates`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Approve an OKF candidate */
   async approve(candidateId: number, body: OkfCandidateReviewRequest, requestOptions?: ApiRequestOptions): Promise<OkfCandidateResult> {
-    return this.client.request<OkfCandidateResult>(backendApiPath(`/knowledge/okf/candidates/${serializePathParameter(candidateId, { name: 'candidateId', style: 'simple', explode: false })}/approve`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfCandidateResult>(backendApiPath(`/knowledge/okf/candidates/${serializePathParameter(candidateId, { name: 'candidateId', style: 'simple', explode: false })}/approve`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Reject an OKF candidate */
   async reject(candidateId: number, body: OkfCandidateReviewRequest, requestOptions?: ApiRequestOptions): Promise<OkfCandidateResult> {
-    return this.client.request<OkfCandidateResult>(backendApiPath(`/knowledge/okf/candidates/${serializePathParameter(candidateId, { name: 'candidateId', style: 'simple', explode: false })}/reject`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfCandidateResult>(backendApiPath(`/knowledge/okf/candidates/${serializePathParameter(candidateId, { name: 'candidateId', style: 'simple', explode: false })}/reject`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -462,7 +458,7 @@ export class KnowledgeOkfBundleIndexApi {
 
 /** Rebuild the OKF bundle index */
   async rebuild(body: OkfBundleIndexRebuildRequest, requestOptions?: ApiRequestOptions): Promise<OkfIndexDocument> {
-    return this.client.request<OkfIndexDocument>(backendApiPath(`/knowledge/okf/index/rebuild`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfIndexDocument>(backendApiPath(`/knowledge/okf/index/rebuild`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -476,7 +472,7 @@ export class KnowledgeOkfBundleImportApi {
 
 /** Import an OKF bundle from drive staging */
   async create(body: OkfBundleImportRequest, requestOptions?: ApiRequestOptions): Promise<OkfBundleImportResult> {
-    return this.client.request<OkfBundleImportResult>(backendApiPath(`/knowledge/okf/imports`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfBundleImportResult>(backendApiPath(`/knowledge/okf/imports`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -490,12 +486,12 @@ export class KnowledgeOkfBundleExportApi {
 
 /** Create an OKF bundle export */
   async create(body: OkfBundleExportRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeOkfBundleFile> {
-    return this.client.request<KnowledgeOkfBundleFile>(backendApiPath(`/knowledge/okf/exports`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeOkfBundleFile>(backendApiPath(`/knowledge/okf/exports`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve an OKF bundle export */
   async retrieve(exportId: number, requestOptions?: ApiRequestOptions): Promise<KnowledgeOkfBundleFile> {
-    return this.client.request<KnowledgeOkfBundleFile>(backendApiPath(`/knowledge/okf/exports/${serializePathParameter(exportId, { name: 'exportId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeOkfBundleFile>(backendApiPath(`/knowledge/okf/exports/${serializePathParameter(exportId, { name: 'exportId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -518,19 +514,17 @@ export class KnowledgeOkfBundleFilesApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: KnowledgeOkfBundleFile[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/okf/bundle/files`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: KnowledgeOkfBundleFile[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/okf/bundle/files`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
 export class KnowledgeOkfBundleApi {
-  private client: HttpClient;
   public readonly files: KnowledgeOkfBundleFilesApi;
   public readonly export: KnowledgeOkfBundleExportApi;
   public readonly import: KnowledgeOkfBundleImportApi;
   public readonly index: KnowledgeOkfBundleIndexApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.files = new KnowledgeOkfBundleFilesApi(client);
     this.export = new KnowledgeOkfBundleExportApi(client);
     this.import = new KnowledgeOkfBundleImportApi(client);
@@ -540,7 +534,6 @@ export class KnowledgeOkfBundleApi {
 }
 
 export class KnowledgeOkfApi {
-  private client: HttpClient;
   public readonly bundle: KnowledgeOkfBundleApi;
   public readonly candidates: KnowledgeOkfCandidatesApi;
   public readonly compileJobs: KnowledgeOkfCompileJobsApi;
@@ -551,7 +544,6 @@ export class KnowledgeOkfApi {
   public readonly profile: KnowledgeOkfProfileApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.bundle = new KnowledgeOkfBundleApi(client);
     this.candidates = new KnowledgeOkfCandidatesApi(client);
     this.compileJobs = new KnowledgeOkfCompileJobsApi(client);
@@ -579,7 +571,7 @@ export class KnowledgeIndexesApi {
 
 /** Create a knowledge index */
   async create(body: KnowledgeIndexRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeIndex> {
-    return this.client.request<KnowledgeIndex>(backendApiPath(`/knowledge/indexes`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeIndex>(backendApiPath(`/knowledge/indexes`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** List knowledge indexes */
@@ -588,17 +580,17 @@ export class KnowledgeIndexesApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: KnowledgeIndex[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/indexes`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: KnowledgeIndex[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/indexes`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Retrieve a knowledge index */
   async retrieve(indexId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeIndex> {
-    return this.client.request<KnowledgeIndex>(backendApiPath(`/knowledge/indexes/${serializePathParameter(indexId, { name: 'indexId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeIndex>(backendApiPath(`/knowledge/indexes/${serializePathParameter(indexId, { name: 'indexId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** Rebuild a knowledge index */
   async rebuild(indexId: string, body: OkfBundleIndexRebuildRequest, requestOptions?: ApiRequestOptions): Promise<OkfIndexDocument> {
-    return this.client.request<OkfIndexDocument>(backendApiPath(`/knowledge/indexes/${serializePathParameter(indexId, { name: 'indexId', style: 'simple', explode: false })}/rebuild`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<OkfIndexDocument>(backendApiPath(`/knowledge/indexes/${serializePathParameter(indexId, { name: 'indexId', style: 'simple', explode: false })}/rebuild`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -612,16 +604,14 @@ export class KnowledgeGroupLaunchApi {
 
 /** Retrieve the group knowledgebase launch capability state for the runtime deployment */
   async capability(requestOptions?: ApiRequestOptions): Promise<GroupKnowledgebaseLaunchCapability> {
-    return this.client.request<GroupKnowledgebaseLaunchCapability>(backendApiPath(`/knowledge/group_launch_capability`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<GroupKnowledgebaseLaunchCapability>(backendApiPath(`/knowledge/group_launch_capability`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class KnowledgeGroupApi {
-  private client: HttpClient;
   public readonly launch: KnowledgeGroupLaunchApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.launch = new KnowledgeGroupLaunchApi(client);
   }
 
@@ -637,7 +627,7 @@ export class KnowledgeComplianceAuditEventsExportApi {
 
 /** Export knowledge audit events for a subject */
   async create(body: ExportKnowledgeAuditEventsRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeAuditEventExport> {
-    return this.client.request<KnowledgeAuditEventExport>(backendApiPath(`/knowledge/compliance/audit_events/export`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<KnowledgeAuditEventExport>(backendApiPath(`/knowledge/compliance/audit_events/export`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -651,17 +641,15 @@ export class KnowledgeComplianceAuditEventsAnonymizeActorApi {
 
 /** Anonymize audit events for a subject */
   async create(body: AnonymizeKnowledgeAuditSubjectRequest, requestOptions?: ApiRequestOptions): Promise<AnonymizeKnowledgeAuditSubjectResult> {
-    return this.client.request<AnonymizeKnowledgeAuditSubjectResult>(backendApiPath(`/knowledge/compliance/audit_events/anonymize_actor`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<AnonymizeKnowledgeAuditSubjectResult>(backendApiPath(`/knowledge/compliance/audit_events/anonymize_actor`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class KnowledgeComplianceAuditEventsApi {
-  private client: HttpClient;
   public readonly anonymizeActor: KnowledgeComplianceAuditEventsAnonymizeActorApi;
   public readonly export: KnowledgeComplianceAuditEventsExportApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.anonymizeActor = new KnowledgeComplianceAuditEventsAnonymizeActorApi(client);
     this.export = new KnowledgeComplianceAuditEventsExportApi(client);
   }
@@ -669,18 +657,15 @@ export class KnowledgeComplianceAuditEventsApi {
 }
 
 export class KnowledgeComplianceApi {
-  private client: HttpClient;
   public readonly auditEvents: KnowledgeComplianceAuditEventsApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.auditEvents = new KnowledgeComplianceAuditEventsApi(client);
   }
 
 }
 
 export class KnowledgeApi {
-  private client: HttpClient;
   public readonly compliance: KnowledgeComplianceApi;
   public readonly group: KnowledgeGroupApi;
   public readonly indexes: KnowledgeIndexesApi;
@@ -694,7 +679,6 @@ export class KnowledgeApi {
   public readonly tenants: KnowledgeTenantsApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.compliance = new KnowledgeComplianceApi(client);
     this.group = new KnowledgeGroupApi(client);
     this.indexes = new KnowledgeIndexesApi(client);

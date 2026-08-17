@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -40,11 +40,11 @@
     },
     {
       "path": "package.json",
-      "sha256": "0ba148a7b4f00b9c0f238c5d250d9508ce141e88d4b340f8bfe7024fdebf4891"
+      "sha256": "6fcd9c7741897ccfabe028fd761c3b1a6d52e5d3b1963ecdb72c040364aa1452"
     },
     {
       "path": "README.md",
-      "sha256": "96270a4b4ae8dacf3254a5486489ea5c83109233192d33a5148a1a24a601a6d9"
+      "sha256": "0f64b51a4bb0113e661dfee4b601da44aba4606edd96a2074dfc60c3309b52ab"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -52,7 +52,7 @@
     },
     {
       "path": "src/api/base.ts",
-      "sha256": "02ad25e6bf331ff241ba387c2947ddf1900dd849038e08c2757416a3aa788a04"
+      "sha256": "94d136c54a008dfe7602e373a0b2c79176bbf2fc6e7c899fc23b1f12f750380f"
     },
     {
       "path": "src/api/index.ts",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/knowledge.ts",
-      "sha256": "b7d52345863717b30929e78b1828a2e812e3486aea8afa4fc8ecab2e85d31c57"
+      "sha256": "47529bbf030b54c1b3eefdd824abfac9f242261afda5e0f2326614ab83c550fb"
     },
     {
       "path": "src/api/paths.ts",
@@ -72,7 +72,7 @@
     },
     {
       "path": "src/http/client.ts",
-      "sha256": "9349831b44a1a7336bdb8963379ad2ee616c48a4ae7c6d2540737780810ee8bc"
+      "sha256": "868b7785497a93658b628de2d9b520d9d2456406bcf2ef717319beaa6913146d"
     },
     {
       "path": "src/http/index.ts",
@@ -87,28 +87,28 @@
       "sha256": "bbc20c39d60b8dc8b068fb393cd156dd1090c58a7036e237b2d5564764eab0c4"
     },
     {
-      "path": "src/types/agent-profiles-bindings-list-response.ts",
-      "sha256": "febe9375029bfe9eb7f79b004444d8098cf2417dd3143c8c367e778dffeaa5bf"
+      "path": "src/types/agent-profiles-bindings-create-response.ts",
+      "sha256": "cb2a68b64e1fec148c36f7369c4ecc107bffb3f8df605b350cd8f2ac613eac03"
     },
     {
-      "path": "src/types/agent-profiles-bindings-response.ts",
-      "sha256": "7979bc1a0ad21aac0c658808c7e43d1c1b87ff1e8ca8960958f0065822c1ef75"
+      "path": "src/types/agent-profiles-bindings-list-response.ts",
+      "sha256": "febe9375029bfe9eb7f79b004444d8098cf2417dd3143c8c367e778dffeaa5bf"
     },
     {
       "path": "src/types/agent-profiles-bindings-update-response.ts",
       "sha256": "b5035555ab94aa677e37670ab99eaad9ccbc450fb99033f8dc160b20d0eebb54"
     },
     {
-      "path": "src/types/agent-profiles-chat-response.ts",
-      "sha256": "64a0b7bd6912582535ae773c9eca4d3887f25f42f33c50d941b76d7eb35abbfa"
+      "path": "src/types/agent-profiles-chat-create-response.ts",
+      "sha256": "7b774e9b8e3c997fe2192bdba4b02499afe0d30b04c41e24ab63372a57f69264"
     },
     {
       "path": "src/types/agent-profiles-create-response201.ts",
       "sha256": "20955df669f6ed535c36b2be44b65e346e9fb07628791bd9d90839ce3c0730cf"
     },
     {
-      "path": "src/types/agent-profiles-retrieval-preview-response.ts",
-      "sha256": "458eab8a79d8cfbf92fa529e89e7db058d0ad0ee63f1baddf2a86bcd314ea77d"
+      "path": "src/types/agent-profiles-retrieval-preview-create-response.ts",
+      "sha256": "e45a96e09615fc74ec794a43d189138e2572fb7d80507e26983e2fa9c523c924"
     },
     {
       "path": "src/types/agent-profiles-retrieve-response.ts",
@@ -183,12 +183,12 @@
       "sha256": "d48c680b1ad4c7f4d8d49d91f4c618d488c1e4c8c7603e8424b700f35c6b5bbf"
     },
     {
-      "path": "src/types/documents-versions-list-response.ts",
-      "sha256": "f896f821f7e683cef40c7947c31dd225aa8a869e95380aafe410cd2a39005e65"
+      "path": "src/types/documents-versions-create-response.ts",
+      "sha256": "4fe2bc80a00c6e04a37a02c78fcf1b7fff97862481375e5d61c87a64c699d924"
     },
     {
-      "path": "src/types/documents-versions-response.ts",
-      "sha256": "d9907fe393f6a27c9940d5f48a690fae2d9d3900dcda7dcc906796d2624aaed8"
+      "path": "src/types/documents-versions-list-response.ts",
+      "sha256": "f896f821f7e683cef40c7947c31dd225aa8a869e95380aafe410cd2a39005e65"
     },
     {
       "path": "src/types/drive-imports-create-response201.ts",
@@ -224,7 +224,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "e7ca944f5c650d71de6d59bad44e514d6bfae29388ce0f0495ae2ab1a8e5faf0"
+      "sha256": "65702fc05eae481fa358e1ed3e50272249253d1f89a27cd59a35fdd156f6ef2d"
     },
     {
       "path": "src/types/ingestion-job-state.ts",
@@ -859,24 +859,24 @@
       "sha256": "61a130d384ab11700c6e45c26901380a85aea17657e92f1dca46355488bae6c5"
     },
     {
-      "path": "src/types/spaces-context-bindings-list-response.ts",
-      "sha256": "2670c116cc394a301e1a5b1c659785e0da717220604e7bc5718a94206257f8ee"
+      "path": "src/types/spaces-context-bindings-create-response.ts",
+      "sha256": "bc6aaaa55524d6c707b64a998212fe6fdce798e815b6bb25725f755729817433"
     },
     {
-      "path": "src/types/spaces-context-bindings-response.ts",
-      "sha256": "bb5b5fc175c0ac27f66f9f5c3f4d655e9ac268f423e70056aae9683c929d4e9b"
+      "path": "src/types/spaces-context-bindings-list-response.ts",
+      "sha256": "2670c116cc394a301e1a5b1c659785e0da717220604e7bc5718a94206257f8ee"
     },
     {
       "path": "src/types/spaces-create-response201.ts",
       "sha256": "ab32e40dbcb1b13450f098e67837cd456a29a1d956d51d825e6d73ff8497f595"
     },
     {
-      "path": "src/types/spaces-members-list-response.ts",
-      "sha256": "41ed51078a9eef087625513746921fb872781db593bd831e2220f2b178d47671"
+      "path": "src/types/spaces-members-create-response.ts",
+      "sha256": "c88904949f67a94626d1a3bb10b9c37a08f5f32b6f3509d4e52ca34284e40c9e"
     },
     {
-      "path": "src/types/spaces-members-response.ts",
-      "sha256": "557090d5950304734d4827c688adc0a52f76b654c4e572894dec809ce243d1b7"
+      "path": "src/types/spaces-members-list-response.ts",
+      "sha256": "41ed51078a9eef087625513746921fb872781db593bd831e2220f2b178d47671"
     },
     {
       "path": "src/types/spaces-retrieve-response.ts",
