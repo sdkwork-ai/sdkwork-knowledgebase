@@ -12,8 +12,17 @@
   "apiPrefix": "/internal/v3/api",
   "authoritySpec": "openapi/sdkwork-knowledgebase-internal-api.openapi.yaml",
   "generationInputSpec": "openapi/sdkwork-knowledgebase-internal-api.sdkgen.yaml",
-  "derivedSpecs": {"default": "openapi/sdkwork-knowledgebase-internal-api.sdkgen.yaml"},
-  "discoverySurface": {"sdkTarget": "internal", "apiPrefix": "/internal/v3/api", "generatedProtocols": ["http-openapi"], "manualTransports": []},
+  "derivedSpecs": {
+    "default": "openapi/sdkwork-knowledgebase-internal-api.sdkgen.yaml"
+  },
+  "discoverySurface": {
+    "sdkTarget": "internal",
+    "apiPrefix": "/internal/v3/api",
+    "generatedProtocols": [
+      "http-openapi"
+    ],
+    "manualTransports": []
+  },
   "sdkDependencies": [],
   "generatorName": "@sdkwork/sdk-generator",
   "generatorPath": "../sdkwork-sdk-generator/bin/sdkgen.js",
@@ -28,12 +37,42 @@
     "transportEntry": "sdkwork-knowledgebase-internal-sdk-typescript/generated/server-openapi/src/index.ts"
   },
   "languages": [
-    {"language": "typescript", "workspace": "sdkwork-knowledgebase-internal-sdk-typescript", "generationState": "declared", "releaseState": "not_published", "generatedPath": "sdkwork-knowledgebase-internal-sdk-typescript/generated/server-openapi", "manifestPath": "sdkwork-knowledgebase-internal-sdk-typescript/generated/server-openapi/package.json", "consumerPackageName": "@sdkwork/knowledgebase-internal-sdk", "transportPackageName": "sdkwork-knowledgebase-internal-sdk-generated-typescript", "name": "sdkwork-knowledgebase-internal-sdk-generated-typescript", "version": "0.1.0", "description": "Generator-owned TypeScript transport SDK for sdkwork-knowledgebase-internal-sdk."},
-    {"language": "rust", "workspace": "sdkwork-knowledgebase-internal-sdk-rust", "generationState": "declared", "releaseState": "not_published", "generatedPath": "sdkwork-knowledgebase-internal-sdk-rust/generated/server-openapi", "manifestPath": "sdkwork-knowledgebase-internal-sdk-rust/generated/server-openapi/Cargo.toml", "name": "sdkwork-knowledgebase-internal-sdk-generated-rust", "version": "0.1.0", "description": "Generator-owned Rust transport SDK for sdkwork-knowledgebase-internal-sdk."}
+    {
+      "language": "typescript",
+      "workspace": "sdkwork-knowledgebase-internal-sdk-typescript",
+      "generationState": "declared",
+      "releaseState": "not_published",
+      "generatedPath": "sdkwork-knowledgebase-internal-sdk-typescript/generated/server-openapi",
+      "manifestPath": "sdkwork-knowledgebase-internal-sdk-typescript/generated/server-openapi/package.json",
+      "consumerPackageName": "@sdkwork/knowledgebase-internal-sdk",
+      "transportPackageName": "sdkwork-knowledgebase-internal-sdk-generated-typescript",
+      "name": "sdkwork-knowledgebase-internal-sdk-generated-typescript",
+      "version": "0.1.0",
+      "description": "Generator-owned TypeScript transport SDK for sdkwork-knowledgebase-internal-sdk."
+    },
+    {
+      "language": "rust",
+      "workspace": "sdkwork-knowledgebase-internal-sdk-rust",
+      "generationState": "declared",
+      "releaseState": "not_published",
+      "generatedPath": "sdkwork-knowledgebase-internal-sdk-rust/generated/server-openapi",
+      "manifestPath": "sdkwork-knowledgebase-internal-sdk-rust/generated/server-openapi/Cargo.toml",
+      "name": "sdkwork-knowledgebase-internal-sdk-generated-rust",
+      "version": "0.1.0",
+      "description": "Generator-owned Rust transport SDK for sdkwork-knowledgebase-internal-sdk."
+    }
   ],
   "generatedPackages": {
-    "typescript": {"language": "typescript", "packageName": "sdkwork-knowledgebase-internal-sdk-generated-typescript", "generatedOutput": "sdkwork-knowledgebase-internal-sdk-typescript/generated/server-openapi"},
-    "rust": {"language": "rust", "packageName": "sdkwork-knowledgebase-internal-sdk-generated-rust", "generatedOutput": "sdkwork-knowledgebase-internal-sdk-rust/generated/server-openapi"}
+    "typescript": {
+      "language": "typescript",
+      "packageName": "sdkwork-knowledgebase-internal-sdk-generated-typescript",
+      "generatedOutput": "sdkwork-knowledgebase-internal-sdk-typescript/generated/server-openapi"
+    },
+    "rust": {
+      "language": "rust",
+      "packageName": "sdkwork-knowledgebase-internal-sdk-generated-rust",
+      "generatedOutput": "sdkwork-knowledgebase-internal-sdk-rust/generated/server-openapi"
+    }
   },
   "ownerOnlyOperationCount": 6
 }

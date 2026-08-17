@@ -1,3 +1,4 @@
+export { KnowledgeView } from './KnowledgeView';
 export { GroupKnowledgebaseLaunchPage } from './GroupKnowledgebaseLaunchPage';
 export { KnowledgebaseModal } from './KnowledgebaseModal';
 export type { KnowledgebaseModalProps } from './KnowledgebaseModal';
