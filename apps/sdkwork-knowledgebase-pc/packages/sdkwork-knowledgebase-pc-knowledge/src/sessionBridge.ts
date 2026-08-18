@@ -1,11 +1,12 @@
 import type { SessionStore } from 'sdkwork-knowledgebase-pc-core';
+import { enrichSessionSnapshotFromAccessToken } from 'sdkwork-knowledgebase-pc-core';
 
 import { getKnowledgebasePcSdkPorts } from './sdkPorts';
 
 export function syncHostSessionIntoKnowledgebaseStore(session: SessionStore): void {
   const hostSession = getKnowledgebasePcSdkPorts().readHostSession();
   if (hostSession) {
-    session.setSession(hostSession);
+    session.setSession(enrichSessionSnapshotFromAccessToken(hostSession));
     return;
   }
   session.clearSession();

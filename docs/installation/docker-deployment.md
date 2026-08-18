@@ -217,8 +217,8 @@ Two channels, in increasing precedence (ENVIRONMENT_SPEC §11):
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `KNOWLEDGEBASE_DATABASE_MAX_CONNECTIONS` | 30 | PostgreSQL app pool ceiling |
-| `KNOWLEDGEBASE_DATABASE_MIN_CONNECTIONS` | 5 | Warm connections kept ready |
+| `SDKWORK_DATABASE_MAX_CONNECTIONS` | 30 | PostgreSQL app pool ceiling |
+| `SDKWORK_DATABASE_MIN_CONNECTIONS` | 5 | Warm connections kept ready |
 | `PG_MAX_CONNECTIONS` | 200 | PostgreSQL server-side ceiling |
 | `KNOWLEDGEBASE_CPU_LIMIT` / `KNOWLEDGEBASE_MEMORY_LIMIT` | 4.0 / 4g | api deploy limits |
 | `KNOWLEDGEBASE_WORKER_CPU_LIMIT` / `KNOWLEDGEBASE_WORKER_MEMORY_LIMIT` | 2.0 / 2g | worker deploy limits |
