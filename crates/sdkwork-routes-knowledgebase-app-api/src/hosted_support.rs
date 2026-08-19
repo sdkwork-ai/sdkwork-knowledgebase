@@ -216,14 +216,19 @@ pub(crate) fn okf_paths() -> OkfBundlePaths {
     OkfBundlePaths::default()
 }
 
-fn okf_bundle_workflow_deps(
-    runtime: &crate::runtime::KnowledgebaseRuntime,
-) -> OkfBundleWorkflowDeps<'_> {
+use sdkwork_routes_knowledgebase_backend_api::KnowledgeDataScope;
+
+fn okf_bundle_workflow_deps<'a>(
+    runtime: &'a crate::runtime::KnowledgebaseRuntime,
+    space_store: &'a sdkwork_intelligence_knowledgebase_repository_sqlx::PostgresKnowledgeSpaceStore,
+    concepts: &'a sdkwork_intelligence_knowledgebase_repository_sqlx::PostgresKnowledgeOkfConceptStore,
+    source_store: &'a sdkwork_intelligence_knowledgebase_repository_sqlx::PostgresKnowledgeSourceStore,
+) -> OkfBundleWorkflowDeps<'a> {
     OkfBundleWorkflowDeps {
-        concepts: runtime.okf_concept_store(),
+        concepts,
         drive: runtime.drive_storage(),
-        space_store: runtime.space_store(),
-        source_store: runtime.source_store(),
+        space_store,
+        source_store,
         link_store: Some(runtime.okf_concept_link_store()),
         bundle_file_store: Some(runtime.okf_bundle_file_store()),
         drive_workspace: Some(runtime.drive_workspace()),
@@ -233,6 +238,7 @@ fn okf_bundle_workflow_deps(
 
 pub(crate) async fn run_okf_compile_workflow_for_space(
     runtime: &crate::runtime::KnowledgebaseRuntime,
+    scope: KnowledgeDataScope,
     space_id: u64,
     source_id: Option<u64>,
     actor: &str,
@@ -240,8 +246,11 @@ pub(crate) async fn run_okf_compile_workflow_for_space(
     runtime
         .resolve_okf_bundle_engine_for_space(space_id)
         .await?;
+    let space_store = runtime.space_store_for(scope);
+    let concepts = runtime.okf_concept_store_for(scope);
+    let source_store = runtime.source_store_for(scope);
     run_okf_compile_workflow(
-        okf_bundle_workflow_deps(runtime),
+        okf_bundle_workflow_deps(runtime, &space_store, &concepts, &source_store),
         space_id,
         source_id,
         actor,
@@ -252,15 +261,23 @@ pub(crate) async fn run_okf_compile_workflow_for_space(
 
 pub(crate) async fn run_okf_eval_workflow_for_space(
     runtime: &crate::runtime::KnowledgebaseRuntime,
+    scope: KnowledgeDataScope,
     space_id: u64,
     actor: &str,
 ) -> Result<OkfBundleLintResult, ApiError> {
     runtime
         .resolve_okf_bundle_engine_for_space(space_id)
         .await?;
-    run_okf_eval_workflow(okf_bundle_workflow_deps(runtime), space_id, actor)
-        .await
-        .map_err(ApiError::from)
+    let space_store = runtime.space_store_for(scope);
+    let concepts = runtime.okf_concept_store_for(scope);
+    let source_store = runtime.source_store_for(scope);
+    run_okf_eval_workflow(
+        okf_bundle_workflow_deps(runtime, &space_store, &concepts, &source_store),
+        space_id,
+        actor,
+    )
+    .await
+    .map_err(ApiError::from)
 }
 
 pub(crate) async fn run_okf_bundle_lint(

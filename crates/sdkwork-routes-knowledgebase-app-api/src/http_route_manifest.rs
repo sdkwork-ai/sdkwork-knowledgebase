@@ -36,11 +36,10 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "knowledge.spaces.read",
     )
     .with_idempotent(true),
-    knowledge_route(
+    knowledge_read_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces",
         "spaces.create",
-        "knowledge.spaces.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,

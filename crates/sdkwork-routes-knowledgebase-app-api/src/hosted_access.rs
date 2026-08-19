@@ -22,12 +22,15 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeSpaceMember, KnowledgeSpaceMemberRole,
     KnowledgeSpaceMemberSubjectType, UpdateKnowledgeSpaceRequest,
 };
+use sdkwork_routes_knowledgebase_backend_api::{
+    effective_organization_id, knowledge_data_scope,
+};
 use sdkwork_utils_rust::{is_blank, SdkWorkPageData};
 use std::collections::HashSet;
 
 use crate::{
     error::ApiError, hosted::map_okf_concept_store_error, ports::KnowledgeAppRequestContext,
-    runtime::KnowledgebaseRuntime, ApiResult,
+    runtime::KnowledgebaseRuntime, scoped_stores::request_data_scope, ApiResult,
 };
 
 pub(crate) fn ensure_runtime_tenant(
@@ -41,30 +44,7 @@ pub(crate) fn ensure_runtime_tenant(
             "authenticated tenant does not match configured runtime tenant",
         ));
     }
-    ensure_runtime_organization(runtime, context)?;
-    Ok(())
-}
-
-pub(crate) fn ensure_runtime_organization(
-    runtime: &KnowledgebaseRuntime,
-    context: &KnowledgeAppRequestContext,
-) -> ApiResult<()> {
-    let runtime_org = runtime.organization_id();
-    let context_org = context.organization_id.unwrap_or(0);
-    if runtime_org != 0 && context_org == 0 {
-        return Err(ApiError::new(
-            StatusCode::FORBIDDEN,
-            "missing_organization_id",
-            "organization context is required for this operation",
-        ));
-    };
-    if context_org != runtime_org {
-        return Err(ApiError::new(
-            StatusCode::FORBIDDEN,
-            "organization_id_mismatch",
-            "authenticated organization does not match configured runtime organization",
-        ));
-    }
+    let _ = effective_organization_id(context.organization_id);
     Ok(())
 }
 
@@ -152,7 +132,7 @@ pub(crate) async fn require_space_access_with_role(
         .authorize(
             GroupKnowledgeSpaceScope {
                 tenant_id: context.tenant_id,
-                organization_id: context.organization_id.unwrap_or(0),
+                organization_id: effective_organization_id(context.organization_id),
             },
             space_id,
             &actor_id,
@@ -163,7 +143,7 @@ pub(crate) async fn require_space_access_with_role(
         .is_some()
     {
         let space = runtime
-            .space_store()
+            .space_store_for(request_data_scope(context))
             .get_group_managed_space(space_id)
             .await
             .map_err(ApiError::from)?;
@@ -203,7 +183,11 @@ pub(crate) async fn require_space_access_with_role(
     let okf_initializer = OkfBundleInitializerService::new(runtime.drive_storage())
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
-    KnowledgeSpaceService::new(runtime.space_store(), &okf_initializer)
+    let space_store = runtime.space_store_for(request_data_scope(context));
+    KnowledgeSpaceService::new(
+        &space_store,
+        &okf_initializer,
+    )
         .with_drive_context(runtime.tenant_id_str(), runtime.operator_id())
         .with_drive_space_provisioner(runtime.drive_space_provisioner())
         .with_access_control(runtime.access_control())
@@ -233,8 +217,9 @@ pub(crate) async fn require_document_access_with_role(
     required_role: KnowledgeAccessRole,
 ) -> ApiResult<KnowledgeDocument> {
     ensure_runtime_tenant(runtime, context)?;
+    let scope = request_data_scope(context);
     let document = runtime
-        .document_store()
+        .document_store_for(scope)
         .get_document_by_id(document_id)
         .await
         .map_err(ApiError::from)?;
@@ -257,8 +242,9 @@ pub(crate) async fn require_ingest_access_with_role(
     required_role: KnowledgeAccessRole,
 ) -> ApiResult<IngestionJob> {
     ensure_runtime_tenant(runtime, context)?;
+    let scope = request_data_scope(context);
     let job = runtime
-        .ingestion_job_store()
+        .ingestion_job_store_for(scope)
         .get_job(ingest_id)
         .await
         .map_err(ApiError::from)?;
@@ -287,8 +273,9 @@ pub(crate) async fn require_okf_concept_space_access_with_role(
     required_role: KnowledgeAccessRole,
 ) -> ApiResult<KnowledgeSpace> {
     ensure_runtime_tenant(runtime, context)?;
+    let scope = request_data_scope(context);
     let concept = runtime
-        .okf_concept_store()
+        .okf_concept_store_for(scope)
         .get_concept_by_row_id(concept_row_id)
         .await
         .map_err(map_okf_concept_store_error)?;
@@ -312,14 +299,18 @@ pub(crate) async fn create_space_with_context(
             runtime.wiki_store(),
             runtime.wiki_drive_scope(),
         );
-    KnowledgeSpaceService::new(runtime.space_store(), &okf_initializer)
+    let space_store = runtime.space_store_for(request_data_scope(context));
+    KnowledgeSpaceService::new(
+        &space_store,
+        &okf_initializer,
+    )
         .with_drive_context(runtime.tenant_id_str(), runtime.operator_id())
         .with_drive_space_provisioner(runtime.drive_space_provisioner())
         .with_access_control(runtime.access_control())
         .with_wiki_context(
             sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_persistence::WikiPersistenceScope {
                 tenant_id: context.tenant_id,
-                organization_id: context.organization_id.unwrap_or(0),
+                organization_id: effective_organization_id(context.organization_id),
             },
             actor_id,
         )
@@ -339,7 +330,7 @@ pub(crate) async fn update_space_with_context(
     let actor_id = require_actor_id(context)?;
     let scope = GroupKnowledgeSpaceScope {
         tenant_id: context.tenant_id,
-        organization_id: context.organization_id.unwrap_or(0),
+        organization_id: effective_organization_id(context.organization_id),
     };
     if is_group_managed_space(runtime, scope, space_id).await? {
         if request.name.is_some() {
@@ -359,7 +350,11 @@ pub(crate) async fn update_space_with_context(
         let okf_initializer = OkfBundleInitializerService::new(runtime.drive_storage())
             .with_registry(&file_registry)
             .with_drive_workspace(runtime.drive_workspace());
-        return KnowledgeSpaceService::new(runtime.space_store(), &okf_initializer)
+        let space_store = runtime.space_store_for(request_data_scope(context));
+        return KnowledgeSpaceService::new(
+            &space_store,
+            &okf_initializer,
+        )
             .update_group_managed_space_description(space_id, description)
             .await
             .map_err(ApiError::from);
@@ -368,7 +363,11 @@ pub(crate) async fn update_space_with_context(
     let okf_initializer = OkfBundleInitializerService::new(runtime.drive_storage())
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
-    KnowledgeSpaceService::new(runtime.space_store(), &okf_initializer)
+    let space_store = runtime.space_store_for(request_data_scope(context));
+    KnowledgeSpaceService::new(
+        &space_store,
+        &okf_initializer,
+    )
         .with_drive_context(runtime.tenant_id_str(), runtime.operator_id())
         .with_drive_space_provisioner(runtime.drive_space_provisioner())
         .with_access_control(runtime.access_control())
@@ -387,7 +386,7 @@ pub(crate) async fn delete_space_with_context(
         runtime,
         GroupKnowledgeSpaceScope {
             tenant_id: context.tenant_id,
-            organization_id: context.organization_id.unwrap_or(0),
+            organization_id: effective_organization_id(context.organization_id),
         },
         space_id,
     )
@@ -400,7 +399,11 @@ pub(crate) async fn delete_space_with_context(
     let okf_initializer = OkfBundleInitializerService::new(runtime.drive_storage())
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
-    KnowledgeSpaceService::new(runtime.space_store(), &okf_initializer)
+    let space_store = runtime.space_store_for(request_data_scope(context));
+    KnowledgeSpaceService::new(
+        &space_store,
+        &okf_initializer,
+    )
         .with_drive_context(runtime.tenant_id_str(), runtime.operator_id())
         .with_drive_space_provisioner(runtime.drive_space_provisioner())
         .with_access_control(runtime.access_control())
@@ -456,9 +459,10 @@ pub(crate) fn parse_member_role(role: KnowledgeSpaceMemberRole) -> KnowledgeAcce
 
 fn space_service<'a>(
     runtime: &'a KnowledgebaseRuntime,
+    space_store: &'a sdkwork_intelligence_knowledgebase_repository_sqlx::PostgresKnowledgeSpaceStore,
     okf_initializer: &'a OkfBundleInitializerService,
 ) -> KnowledgeSpaceService<'a> {
-    KnowledgeSpaceService::new(runtime.space_store(), okf_initializer)
+    KnowledgeSpaceService::new(space_store, okf_initializer)
         .with_drive_context(runtime.tenant_id_str(), runtime.operator_id())
         .with_drive_space_provisioner(runtime.drive_space_provisioner())
         .with_access_control(runtime.access_control())
@@ -476,7 +480,7 @@ pub(crate) async fn list_space_members_with_context(
         runtime,
         GroupKnowledgeSpaceScope {
             tenant_id: context.tenant_id,
-            organization_id: context.organization_id.unwrap_or(0),
+            organization_id: effective_organization_id(context.organization_id),
         },
         space_id,
     )
@@ -493,7 +497,8 @@ pub(crate) async fn list_space_members_with_context(
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
     let normalized_page_size = crate::pagination::normalize_api_page_size(page_size)?;
-    let members = space_service(runtime, &okf_initializer)
+    let space_store = runtime.space_store_for(request_data_scope(context));
+    let members = space_service(runtime, &space_store, &okf_initializer)
         .list_space_members(
             space_id,
             &context.tenant_id.to_string(),
@@ -538,7 +543,11 @@ pub(crate) async fn list_space_members_admin_with_runtime(
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
     let normalized_page_size = crate::pagination::normalize_api_page_size(page_size)?;
-    let members = space_service(runtime, &okf_initializer)
+    let space_store = runtime.space_store_for(knowledge_data_scope(
+        runtime.tenant_id(),
+        Some(runtime.organization_id()),
+    ));
+    let members = space_service(runtime, &space_store, &okf_initializer)
         .list_space_members_admin(
             space_id,
             runtime.tenant_id_str(),
@@ -570,7 +579,7 @@ pub(crate) async fn grant_space_member_with_context(
         runtime,
         GroupKnowledgeSpaceScope {
             tenant_id: context.tenant_id,
-            organization_id: context.organization_id.unwrap_or(0),
+            organization_id: effective_organization_id(context.organization_id),
         },
         space_id,
     )
@@ -590,7 +599,8 @@ pub(crate) async fn grant_space_member_with_context(
     let okf_initializer = OkfBundleInitializerService::new(runtime.drive_storage())
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
-    space_service(runtime, &okf_initializer)
+    let space_store = runtime.space_store_for(request_data_scope(context));
+    space_service(runtime, &space_store, &okf_initializer)
         .grant_space_member(
             space_id,
             &context.tenant_id.to_string(),
@@ -625,7 +635,7 @@ pub(crate) async fn revoke_space_member_with_context(
         runtime,
         GroupKnowledgeSpaceScope {
             tenant_id: context.tenant_id,
-            organization_id: context.organization_id.unwrap_or(0),
+            organization_id: effective_organization_id(context.organization_id),
         },
         space_id,
     )
@@ -645,7 +655,8 @@ pub(crate) async fn revoke_space_member_with_context(
     let okf_initializer = OkfBundleInitializerService::new(runtime.drive_storage())
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
-    space_service(runtime, &okf_initializer)
+    let space_store = runtime.space_store_for(request_data_scope(context));
+    space_service(runtime, &space_store, &okf_initializer)
         .revoke_space_member(
             space_id,
             &context.tenant_id.to_string(),
@@ -770,3 +781,4 @@ fn member_subject_type_label(subject_type: KnowledgeSpaceMemberSubjectType) -> &
         KnowledgeSpaceMemberSubjectType::App => "app",
     }
 }
+

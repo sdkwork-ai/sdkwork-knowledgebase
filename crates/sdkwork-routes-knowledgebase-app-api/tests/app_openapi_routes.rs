@@ -46,6 +46,28 @@ async fn app_router_mounts_every_app_openapi_operation_path() {
 }
 
 #[test]
+fn spaces_create_is_login_authenticated_without_rbac_permission() {
+    let spec: Value = serde_json::from_str(include_str!(
+        "../../../sdks/sdkwork-knowledgebase-app-sdk/openapi/knowledgebase-app-api.openapi.json"
+    ))
+    .unwrap();
+    let operation = &spec["paths"]["/app/v3/api/knowledge/spaces"]["post"];
+    assert_eq!(operation["operationId"], "spaces.create");
+    assert_eq!(operation["x-sdkwork-auth-mode"], "dual-token");
+    assert_eq!(
+        operation.get("x-sdkwork-permission"),
+        None,
+        "spaces.create must not require an RBAC permission"
+    );
+    let manifest = sdkwork_routes_knowledgebase_app_api::app_route_manifest();
+    let route = manifest
+        .match_route("POST", "/app/v3/api/knowledge/spaces")
+        .expect("spaces.create");
+    assert_eq!(route.operation_id, "spaces.create");
+    assert_eq!(route.required_permission, None);
+}
+
+#[test]
 fn app_openapi_uses_collection_schemas_for_okf_list_operations() {
     let spec: Value = serde_json::from_str(include_str!(
         "../../../sdks/sdkwork-knowledgebase-app-sdk/openapi/knowledgebase-app-api.openapi.json"

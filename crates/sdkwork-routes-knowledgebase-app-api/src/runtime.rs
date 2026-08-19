@@ -85,6 +85,10 @@ use sdkwork_knowledgebase_agent_provider::{
     resolve_cloud_router_client_from_env, CloudRouterEmbeddingClient,
 };
 
+use sdkwork_routes_knowledgebase_backend_api::{
+    effective_organization_id, KnowledgeDataScope,
+};
+
 use crate::{
     agent_chat_runtime::{
         RuntimeKnowledgebaseRetrievalClient, RuntimeOkfKnowledgeClient,
@@ -1389,6 +1393,85 @@ impl KnowledgebaseRuntime {
         &self.space_store
     }
 
+    pub(crate) fn space_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresKnowledgeSpaceStore {
+        PostgresKnowledgeSpaceStore::new(self.pool.clone(), scope.tenant_id, scope.organization_id)
+    }
+
+    pub(crate) fn document_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresKnowledgeDocumentStore {
+        PostgresKnowledgeDocumentStore::new(self.pool.clone(), scope.tenant_id, scope.organization_id)
+    }
+
+    pub(crate) fn ingestion_job_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresIngestionJobStore {
+        PostgresIngestionJobStore::new(self.pool.clone(), scope.tenant_id, scope.organization_id)
+    }
+
+    pub(crate) fn okf_concept_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresKnowledgeOkfConceptStore {
+        PostgresKnowledgeOkfConceptStore::new(self.pool.clone(), scope.tenant_id, scope.organization_id)
+    }
+
+    pub(crate) fn source_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresKnowledgeSourceStore {
+        PostgresKnowledgeSourceStore::new(self.pool.clone(), scope.tenant_id, scope.organization_id)
+    }
+
+    pub(crate) fn object_ref_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresKnowledgeDriveObjectRefStore {
+        PostgresKnowledgeDriveObjectRefStore::new(
+            self.pool.clone(),
+            scope.tenant_id,
+            scope.organization_id,
+        )
+    }
+
+    pub(crate) fn markdown_index_metadata_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresMarkdownIndexMetadataStore {
+        PostgresMarkdownIndexMetadataStore::new(
+            self.pool.clone(),
+            scope.tenant_id,
+            scope.organization_id,
+        )
+    }
+
+    pub(crate) fn drive_import_metadata_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresDriveImportMetadataStore {
+        PostgresDriveImportMetadataStore::new(
+            self.pool.clone(),
+            scope.tenant_id,
+            scope.organization_id,
+        )
+    }
+
+    pub(crate) fn browser_projection_store_for(
+        &self,
+        scope: KnowledgeDataScope,
+    ) -> PostgresKnowledgeBrowserProjectionStore {
+        PostgresKnowledgeBrowserProjectionStore::new(
+            self.pool.clone(),
+            scope.tenant_id,
+            scope.organization_id,
+        )
+    }
+
     pub(crate) fn document_store(&self) -> &PostgresKnowledgeDocumentStore {
         &self.document_store
     }
@@ -1513,15 +1596,7 @@ impl KnowledgebaseRuntime {
                 "request tenant does not match the Knowledgebase runtime",
             ));
         }
-        let organization_id = request_context
-            .organization_id
-            .unwrap_or(self.organization_id);
-        if organization_id != self.organization_id {
-            return Err(crate::ApiError::forbidden(
-                "knowledge_engine_organization_scope_mismatch",
-                "request organization does not match the Knowledgebase runtime",
-            ));
-        }
+        let organization_id = effective_organization_id(request_context.organization_id);
         let actor_id = request_context.actor_id.ok_or_else(|| {
             crate::ApiError::unauthorized(
                 "knowledge_engine_actor_required",
@@ -1559,8 +1634,8 @@ impl KnowledgebaseRuntime {
             })?;
 
         Ok(KnowledgeEngineExecutionContext {
-            tenant_id: self.tenant_id,
-            organization_id: self.organization_id,
+            tenant_id: request_context.tenant_id,
+            organization_id,
             actor_id: actor_id.to_string(),
             permission_scope: vec!["knowledge.read".to_string()],
             data_scope: KnowledgeEngineDataScope {

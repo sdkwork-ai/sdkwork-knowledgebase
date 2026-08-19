@@ -134,7 +134,7 @@ Authority-tier scopes (Stage 1 — lateral containment):
 | `knowledge.platform.manage` | Admin operations (backend API) |
 | `knowledge.spaces.*` | All space operations |
 | `knowledge.spaces.read` | Read spaces |
-| `knowledge.spaces.write` | Create/update spaces |
+| `knowledge.spaces.write` | Update existing spaces |
 | `knowledge.spaces.delete` | Delete spaces |
 | `knowledge.documents.*` | All document operations |
 | `knowledge.index_jobs.*` | All index job operations |

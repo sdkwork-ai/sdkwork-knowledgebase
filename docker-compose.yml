@@ -71,9 +71,8 @@ services:
       # in source. Container-internal 18081 is the standalone default; the
       # host port mapping above keeps it off the `pnpm dev` ports.
       SDKWORK_KNOWLEDGEBASE_APPLICATION_PUBLIC_INGRESS_BIND: 0.0.0.0:18081
-      # Tenant/organization identity for the single-tenant standalone
-      # deployment (mirrors the standalone.development topology values).
       SDKWORK_KNOWLEDGEBASE_TENANT_ID: ${KNOWLEDGEBASE_TENANT_ID:-100001}
+      # PostgreSQL pool RLS baseline (personal scope). Request org comes from IAM tokens.
       SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID: ${KNOWLEDGEBASE_ORGANIZATION_ID:-0}
       SDKWORK_KNOWLEDGEBASE_SNOWFLAKE_NODE_ID: ${KNOWLEDGEBASE_SNOWFLAKE_NODE_ID:-1}
       # IAM development posture secrets (local defaults; override via .env for

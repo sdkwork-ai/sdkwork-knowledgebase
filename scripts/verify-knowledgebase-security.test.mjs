@@ -409,11 +409,18 @@ describe('knowledgebase security standard alignment', () => {
     }
   });
 
-  it('requires manifest permissions on knowledge app-api spaces.create route', () => {
+  it('lets any logged-in user create a knowledge space without RBAC permission', () => {
     const routeManifest = readRepoFile(
       'crates/sdkwork-routes-knowledgebase-app-api/src/http_route_manifest.rs',
     );
-    assert.match(routeManifest, /"spaces\.create"[\s\S]*?"knowledge\.spaces\.write"/u);
+    assert.match(
+      routeManifest,
+      /knowledge_read_route\(\s*HttpMethod::Post,\s*"\/app\/v3\/api\/knowledge\/spaces",\s*"spaces\.create",\s*\)/u,
+    );
+    assert.doesNotMatch(
+      routeManifest,
+      /knowledge_(?:route|abuse_route)\(\s*HttpMethod::Post,\s*"\/app\/v3\/api\/knowledge\/spaces",\s*"spaces\.create",[\s\S]*?"knowledge\.spaces\.write"/u,
+    );
     assert.match(routeManifest, /with_required_permission\(permission\)/u);
   });
 

@@ -9,8 +9,11 @@ const target = path.join(
   'crates/sdkwork-routes-knowledgebase-app-api/src/http_route_manifest.rs',
 );
 
+export const APP_API_AUTHENTICATED_ONLY_MUTATIONS = new Set([
+  'spaces.create',
+]);
+
 export const APP_API_PERMISSION_BY_OPERATION = {
-  'spaces.create': 'knowledge.spaces.write',
   'spaces.retrieve': 'knowledge.spaces.read',
   'spaces.update': 'knowledge.spaces.write',
   'spaces.delete': 'knowledge.spaces.write',
@@ -84,7 +87,8 @@ export const APP_API_PERMISSION_BY_OPERATION = {
   'wechat.officialAccounts.fanTags.list': 'knowledge.wechat.manage',
 };
 
-let source = fs.readFileSync(target, 'utf8');
+function patchAppRoutePermissions() {
+  let source = fs.readFileSync(target, 'utf8');
 
 source = source.replace(
   /const fn abuse_sensitive_route\([\s\S]*?\n\}\n\nconst HTTP_ROUTES/,
@@ -122,7 +126,7 @@ const HTTP_ROUTES`,
 source = source.replace(
   /HttpRoute::dual_token\(\s*HttpMethod::(\w+),\s*"([^"]+)",\s*"knowledge",\s*"([^"]+)",\s*\)/g,
   (_, method, routePath, operationId) => {
-    if (method === 'Get') {
+    if (method === 'Get' || APP_API_AUTHENTICATED_ONLY_MUTATIONS.has(operationId)) {
       return `knowledge_read_route(
         HttpMethod::${method},
         "${routePath}",
@@ -145,7 +149,7 @@ source = source.replace(
 source = source.replace(
   /abuse_sensitive_route\(\s*HttpMethod::(\w+),\s*"([^"]+)",\s*"knowledge",\s*"([^"]+)",\s*\)/g,
   (_, method, routePath, operationId) => {
-    if (method === 'Get') {
+    if (method === 'Get' || APP_API_AUTHENTICATED_ONLY_MUTATIONS.has(operationId)) {
       return `knowledge_read_route(
         HttpMethod::${method},
         "${routePath}",
@@ -165,5 +169,13 @@ source = source.replace(
   },
 );
 
-fs.writeFileSync(target, source);
-console.log('patched knowledge app route permissions');
+  fs.writeFileSync(target, source);
+  console.log('patched knowledge app route permissions');
+}
+
+const isMain =
+  process.argv[1] !== undefined &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  patchAppRoutePermissions();
+}

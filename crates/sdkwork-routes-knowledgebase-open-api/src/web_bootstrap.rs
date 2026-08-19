@@ -15,6 +15,7 @@ use sdkwork_web_core::{
 use crate::http_route_manifest::open_route_manifest;
 use crate::paths;
 use crate::KnowledgeOpenApiRequestContext;
+use sdkwork_routes_knowledgebase_backend_api::resolve_knowledge_organization_id;
 
 pub fn knowledgebase_open_api_public_path_prefixes() -> Vec<String> {
     sdkwork_routes_knowledgebase_backend_api::health::knowledgebase_infra_public_path_prefixes()
@@ -45,9 +46,7 @@ fn knowledge_open_api_context_from_web_request(
     let principal = context.principal.as_ref()?;
     let tenant_id = principal.tenant_id().parse().ok()?;
     let actor_id = principal.user_id().parse().ok();
-    let organization_id = principal
-        .organization_id()
-        .and_then(|value| value.parse().ok());
+    let organization_id = resolve_knowledge_organization_id(principal);
     let credential_id = principal
         .api_key_id()
         .map(str::to_owned)

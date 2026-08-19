@@ -12,6 +12,8 @@ use sdkwork_knowledgebase_contract::group_space::{
 };
 use sdkwork_utils_rust::is_blank;
 
+use sdkwork_routes_knowledgebase_backend_api::require_organization_bound_scope;
+
 use crate::{
     hosted_access::{ensure_runtime_tenant, require_actor_id, require_space_access},
     ApiError, ApiResult, KnowledgeAppRequestContext, KnowledgeGroupLaunchAppService,
@@ -86,16 +88,13 @@ impl KnowledgeGroupLaunchAppService for HostedGroupLaunchService {
 }
 
 fn require_group_launch_organization_id(context: &KnowledgeAppRequestContext) -> ApiResult<u64> {
-    context
-        .organization_id
-        .filter(|organization_id| *organization_id != 0)
-        .ok_or_else(|| {
-            ApiError::new(
-                StatusCode::FORBIDDEN,
-                "group_launch_organization_required",
-                "an active organization is required to consume a group launch ticket",
-            )
-        })
+    require_organization_bound_scope(context.organization_id).map_err(|_| {
+        ApiError::new(
+            StatusCode::FORBIDDEN,
+            "group_launch_organization_required",
+            "an active organization is required to consume a group launch ticket",
+        )
+    })
 }
 
 fn require_group_launch_trace_id(context: &KnowledgeAppRequestContext) -> ApiResult<String> {

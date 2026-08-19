@@ -1,3 +1,5 @@
+use sdkwork_routes_knowledgebase_backend_api::effective_organization_id;
+
 use crate::{
     hosted_access::{require_numeric_actor_id, require_space_access_with_role},
     ApiError, ApiResult, KnowledgeAppRequestContext, KnowledgeWikiPublicationAppService,
@@ -44,7 +46,7 @@ impl HostedWikiPublicationService {
     fn scope(&self, context: &KnowledgeAppRequestContext) -> WikiPersistenceScope {
         WikiPersistenceScope {
             tenant_id: context.tenant_id,
-            organization_id: context.organization_id.unwrap_or(0),
+            organization_id: effective_organization_id(context.organization_id),
         }
     }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, type ComponentProps } from 'react';
+import React, { useEffect, useMemo, useSyncExternalStore, type ComponentProps } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { KnowledgebaseRuntimeProvider } from 'sdkwork-knowledgebase-pc-core';
 
@@ -12,45 +12,37 @@ import {
   subscribeKnowledgebaseHostLanguage,
   syncKnowledgebaseHostLanguage,
 } from './hostLanguageBridge';
-
-function syncHostManagedKnowledgebaseAppearance(): void {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  const isDark = document.documentElement.classList.contains('dark')
-    || !document.documentElement.classList.contains('light-mode');
-  document.documentElement.classList.toggle('dark', isDark);
-}
+import {
+  resolveKnowledgebaseHostColorScheme,
+  subscribeKnowledgebaseHostColorScheme,
+  syncKnowledgebaseHostColorScheme,
+} from './hostColorSchemeBridge';
 
 type HostManagedKnowledgebaseRuntime = ReturnType<typeof createHostManagedKnowledgebaseRuntime>;
 
 const KnowledgeViewContent: React.FC<{ runtime: HostManagedKnowledgebaseRuntime }> = ({ runtime }) => {
+  const readHostColorScheme = (): 'light' | 'dark' | undefined => resolveKnowledgebaseHostColorScheme()
+  const hostColorScheme = useSyncExternalStore(
+    (listener) => subscribeKnowledgebaseHostColorScheme(listener) ?? (() => {}),
+    readHostColorScheme,
+    readHostColorScheme,
+  )
+
   useEffect(() => {
     return bindHostSessionToKnowledgebaseStore(runtime.session);
   }, [runtime.session]);
 
   useEffect(() => {
-    syncHostManagedKnowledgebaseAppearance();
-
-    if (typeof document === 'undefined') {
-      return undefined;
-    }
-
-    const observer = new MutationObserver(() => {
-      syncHostManagedKnowledgebaseAppearance();
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-
-    return () => observer.disconnect();
+    syncKnowledgebaseHostColorScheme();
+    return subscribeKnowledgebaseHostColorScheme();
   }, []);
 
   return (
     <KnowledgebaseRuntimeProvider runtime={runtime}>
-      <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden bg-[var(--color-kb-bg-app,#1e1e1e)]">
+      <div
+        className={`flex flex-1 min-h-0 min-w-0 overflow-hidden bg-[var(--color-kb-bg-app)]${hostColorScheme === 'dark' ? ' dark' : hostColorScheme === 'light' ? ' light-mode' : ''}`}
+        data-sdk-color-mode={hostColorScheme}
+      >
         <React.Suspense
           fallback={(
             <div className="flex flex-1 items-center justify-center text-kb-text-muted">
@@ -70,8 +62,10 @@ type KnowledgebaseI18nProviderProps = ComponentProps<typeof I18nextProvider>;
 
 export const KnowledgeView: React.FC = () => {
   syncKnowledgebaseHostLanguage();
+  syncKnowledgebaseHostColorScheme();
 
   useEffect(() => subscribeKnowledgebaseHostLanguage(), []);
+  useEffect(() => subscribeKnowledgebaseHostColorScheme(), []);
 
   const runtime = useMemo(() => createHostManagedKnowledgebaseRuntime(), []);
 

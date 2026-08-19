@@ -34,11 +34,10 @@ pub fn validate_process_config() {
     validate_secrets_encryption_for_production();
 
     let organization_id = resolve_deployment_organization_id();
-    if organization_id == 0 && !is_development_environment() {
+    if organization_id != 0 && !is_development_environment() {
         eprintln!(
-            "SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID must be set when SDKWORK_KNOWLEDGEBASE_ENVIRONMENT is not development"
+            "SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID={organization_id} is deprecated; organization scope is derived from authenticated tokens (empty -> 0)"
         );
-        std::process::exit(1);
     }
 
     let tenant_id = std::env::var("SDKWORK_KNOWLEDGEBASE_TENANT_ID")

@@ -1,3 +1,7 @@
+use sdkwork_routes_knowledgebase_backend_api::{
+    effective_organization_id, knowledge_data_scope,
+};
+
 use async_trait::async_trait;
 use sdkwork_intelligence_knowledgebase_repository_sqlx::KnowledgeAuditEventStoreError;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_space_store::KnowledgeSpaceStore;
@@ -87,9 +91,7 @@ impl HostedBackendApi {
         let allowed_space_ids = space_id.into_iter().collect::<Vec<_>>();
         Ok(KnowledgeEngineExecutionContext {
             tenant_id: context.tenant_id,
-            organization_id: context
-                .organization_id
-                .unwrap_or_else(|| self.runtime.organization_id()),
+            organization_id: effective_organization_id(context.organization_id),
             actor_id: operator_id.to_string(),
             permission_scope: context.permission_scope.clone(),
             data_scope: KnowledgeEngineDataScope {
@@ -111,7 +113,6 @@ impl HostedBackendApi {
     ) -> BackendApiResult<String> {
         let execution = self.provider_execution_context(context, Some(space_id))?;
         if execution.tenant_id != self.runtime.tenant_id()
-            || execution.organization_id != self.runtime.organization_id()
             || execution.data_scope.allowed_space_ids.as_slice() != [space_id]
         {
             return Err(BackendApiError::new(
@@ -288,6 +289,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         let source_id = request.source_id;
         let runtime = self.runtime.clone();
         let actor = self.runtime.operator_id().to_string();
+        let scope = knowledge_data_scope(runtime.tenant_id(), Some(runtime.organization_id()));
         self.create_and_run_background_job(
             space_id,
             "okf_compile",
@@ -298,7 +300,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
             ),
             move || async move {
                 crate::hosted_support::run_okf_compile_workflow_for_space(
-                    &runtime, space_id, source_id, &actor,
+                    &runtime, scope, space_id, source_id, &actor,
                 )
                 .await
                 .map_err(|error| format!("{error:?}"))
@@ -649,6 +651,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
         let space_id = request.space_id;
         let runtime = self.runtime.clone();
         let actor = self.runtime.operator_id().to_string();
+        let scope = knowledge_data_scope(runtime.tenant_id(), Some(runtime.organization_id()));
         let job = self
             .create_and_run_background_job(
                 space_id,
@@ -665,7 +668,7 @@ impl KnowledgeBackendApi for HostedBackendApi {
                         .await
                         .map_err(|error| format!("{error:?}"))?;
                     let lint_result = crate::hosted_support::run_okf_eval_workflow_for_space(
-                        &runtime, space_id, &actor,
+                        &runtime, scope, space_id, &actor,
                     )
                     .await
                     .map_err(|error| format!("{error:?}"))?;
