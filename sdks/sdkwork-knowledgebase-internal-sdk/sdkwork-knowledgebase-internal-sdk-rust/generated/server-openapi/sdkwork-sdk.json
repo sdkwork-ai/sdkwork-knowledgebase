@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "language": "rust",
   "sdkType": "custom",
-  "packageName": "sdkwork-knowledgebase-internal-sdk",
-  "transportPackageName": "sdkwork-knowledgebase-internal-sdk",
-  "consumerPackageName": "sdkwork-knowledgebase-internal-sdk",
+  "packageName": "sdkwork-knowledgebase-internal-sdk-generated-rust",
+  "transportPackageName": "sdkwork-knowledgebase-internal-sdk-generated-rust",
+  "consumerPackageName": "sdkwork-knowledgebase-internal-sdk-generated-rust",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,

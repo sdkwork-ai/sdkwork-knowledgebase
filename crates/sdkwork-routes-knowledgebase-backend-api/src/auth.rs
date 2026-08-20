@@ -5,10 +5,8 @@ use axum::{
 use std::ops::Deref;
 
 use crate::{
-    organization_scope::effective_organization_id,
-    permission::can_access_knowledge_admin,
-    routes::BackendState,
-    BackendApiProblem, KnowledgeBackendRequestContext,
+    permission::can_access_knowledge_admin, routes::BackendState, BackendApiProblem,
+    KnowledgeBackendRequestContext,
 };
 
 /// Authenticated backend request context injected by `sdkwork-web-framework` middleware.
@@ -52,6 +50,7 @@ pub fn require_backend_context(
 ) -> Result<KnowledgeBackendRequestContext, BackendApiProblem> {
     let context = context.0;
     ensure_runtime_tenant(state, &context)?;
+    ensure_runtime_organization(&context)?;
     ensure_knowledge_admin_permission(&context)?;
     Ok(context)
 }
@@ -76,7 +75,28 @@ pub fn ensure_runtime_tenant(
             "authenticated tenant does not match configured runtime tenant",
         ));
     }
-    let _ = effective_organization_id(context.organization_id);
+    Ok(())
+}
+
+pub fn ensure_runtime_organization(
+    context: &KnowledgeBackendRequestContext,
+) -> Result<(), BackendApiProblem> {
+    let runtime_org = configured_runtime_organization_id();
+    let context_org = context.organization_id.unwrap_or(0);
+    if runtime_org != 0 && context_org == 0 {
+        return Err(BackendApiProblem::new(
+            StatusCode::FORBIDDEN,
+            "missing_organization_id",
+            "organization context is required for this operation",
+        ));
+    };
+    if context_org != runtime_org {
+        return Err(BackendApiProblem::new(
+            StatusCode::FORBIDDEN,
+            "organization_id_mismatch",
+            "authenticated organization does not match configured runtime organization",
+        ));
+    }
     Ok(())
 }
 
@@ -91,4 +111,11 @@ fn ensure_knowledge_admin_permission(
         "knowledge_admin_permission_required",
         "knowledge.platform.manage permission is required for backend-api operations",
     ))
+}
+
+fn configured_runtime_organization_id() -> u64 {
+    std::env::var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(0)
 }

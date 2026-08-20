@@ -9,31 +9,28 @@
     "protocol": "http",
     "packageName": "sdkwork-knowledgebase-backend-sdk-generated-rust"
   },
-  "changeFingerprint": "c218d116285607b922f9e10a463dfba64e542965093b7a8d84c10e1a951d601d",
+  "changeFingerprint": "edec3880d46a5bafe145778c2d2c1cf7b1d32acce86f350d6372074527e5b9c2",
   "changes": {
-    "createdGeneratedFiles": [
-      "src/models/group_knowledgebase_launch_capability.rs",
-      "src/models/group_launch_capability_response.rs"
-    ],
+    "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
-      "README.md",
+      "bin/publish-core.mjs",
+      "Cargo.toml",
       "src/api/knowledge.rs",
+      "src/http/client.rs",
+      "src/http/mod.rs",
       "src/models/mod.rs"
     ],
     "unchangedGeneratedFiles": [
-      "bin/publish-core.mjs",
       "bin/publish.ps1",
       "bin/publish.sh",
-      "Cargo.toml",
       "CHANGELOG.md",
       "LICENSE",
+      "README.md",
       "sdkwork-sdk.json",
       "src/api/base.rs",
       "src/api/mod.rs",
       "src/api/paths.rs",
       "src/client.rs",
-      "src/http/client.rs",
-      "src/http/mod.rs",
       "src/lib.rs",
       "src/models/anonymize_knowledge_audit_subject_request.rs",
       "src/models/anonymize_knowledge_audit_subject_result.rs",
@@ -49,6 +46,8 @@
       "src/models/create_knowledge_space_request.rs",
       "src/models/export_knowledge_audit_events_request.rs",
       "src/models/field_error.rs",
+      "src/models/group_knowledgebase_launch_capability.rs",
+      "src/models/group_launch_capability_response.rs",
       "src/models/indexes_create_response201.rs",
       "src/models/indexes_list_response.rs",
       "src/models/indexes_rebuild_response.rs",
@@ -182,19 +181,31 @@
       "src/models/tenants_current_list_response.rs",
       "src/models/update_knowledge_engine_provider_binding_request.rs"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "src/models/knowledge_space_member_page.rs"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
     ],
-    "backedUpFiles": []
+    "backedUpFiles": [
+      "bin/publish-core.mjs",
+      "Cargo.toml",
+      "src/api/knowledge.rs",
+      "src/http/client.rs",
+      "src/http/mod.rs",
+      "src/models/knowledge_space_member_page.rs",
+      "src/models/mod.rs"
+    ]
   },
   "impact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
       "models",
-      "documentation"
+      "runtime",
+      "build-metadata",
+      "publish-workflow"
     ],
     "details": [
       {
@@ -206,31 +217,43 @@
       {
         "area": "models",
         "paths": [
-          "src/models/group_knowledgebase_launch_capability.rs",
-          "src/models/group_launch_capability_response.rs",
+          "src/models/knowledge_space_member_page.rs",
           "src/models/mod.rs"
         ]
       },
       {
-        "area": "documentation",
+        "area": "runtime",
         "paths": [
-          "README.md"
+          "src/http/client.rs",
+          "src/http/mod.rs"
+        ]
+      },
+      {
+        "area": "build-metadata",
+        "paths": [
+          "Cargo.toml"
+        ]
+      },
+      {
+        "area": "publish-workflow",
+        "paths": [
+          "bin/publish-core.mjs"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-backend-sdk\\sdkwork-knowledgebase-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -248,7 +271,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, documentation.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-backend-sdk\\sdkwork-knowledgebase-backend-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -266,12 +289,15 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "backed-up-generated-files",
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

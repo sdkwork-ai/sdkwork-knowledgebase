@@ -10,7 +10,6 @@ use sdkwork_web_core::{
 
 use crate::http_route_manifest::backend_route_manifest;
 use crate::permission::can_access_knowledge_admin;
-use crate::organization_scope::resolve_knowledge_organization_id;
 use crate::web_framework_assembly::apply_knowledgebase_web_framework;
 use crate::KnowledgeBackendRequestContext;
 
@@ -68,7 +67,9 @@ fn knowledge_backend_context_from_web_request(
 ) -> Option<KnowledgeBackendRequestContext> {
     let tenant_id = principal.tenant_id().parse().ok()?;
     let operator_id = principal.user_id().parse().ok();
-    let organization_id = resolve_knowledge_organization_id(principal);
+    let organization_id = principal
+        .organization_id()
+        .and_then(|value| value.parse().ok());
     Some(KnowledgeBackendRequestContext {
         tenant_id,
         operator_id,

@@ -130,22 +130,7 @@ async fn tenant_id_mismatch_rejects_space_creation() {
 
 #[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
 #[tokio::test]
-async fn tenant_mode_allows_space_creation_when_runtime_org_zero() {
-    let _guard = tenant_isolation_test_lock().await;
-    let _org_env = TestEnvVarGuard::set("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID", "0");
-    let Some(runtime) = test_runtime().await else {
-        eprintln!(
-            "skipping integration test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL"
-        );
-        return;
-    };
-    create_space(&runtime, app_context(1, 42, None)).await;
-    create_space(&runtime, app_context(1, 42, Some(0))).await;
-}
-
-#[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
-#[tokio::test]
-async fn personal_scope_creates_space_from_token_context_even_with_runtime_org_env() {
+async fn organization_id_mismatch_rejects_when_runtime_org_configured() {
     let _guard = tenant_isolation_test_lock().await;
     let _org_env = TestEnvVarGuard::set("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID", "100");
     let Some(runtime) = test_runtime().await else {
@@ -154,21 +139,30 @@ async fn personal_scope_creates_space_from_token_context_even_with_runtime_org_e
         );
         return;
     };
-    create_space(&runtime, app_context(1, 42, None)).await;
-}
+    let app = runtime.build_full_app_router();
 
-#[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
-#[tokio::test]
-async fn organization_scope_persists_nonzero_organization_from_request_context() {
-    let _guard = tenant_isolation_test_lock().await;
-    let _org_env = TestEnvVarGuard::set("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID", "100");
-    let Some(runtime) = test_runtime().await else {
-        eprintln!(
-            "skipping integration test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL"
-        );
-        return;
-    };
-    create_space(&runtime, app_context(1, 42, Some(200))).await;
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(paths::SPACES)
+                .header("content-type", "application/json")
+                .extension(app_context(1, 42, Some(200)))
+                .body(Body::from(
+                    json!({
+                        "name": "org-mismatch-space",
+                        "description": "must be rejected"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    let body = response_body_json(response).await;
+    assert_eq!(body["code"].as_i64(), Some(40304));
 }
 
 async fn create_space(runtime: &KnowledgebaseRuntime, context: KnowledgeAppRequestContext) -> u64 {

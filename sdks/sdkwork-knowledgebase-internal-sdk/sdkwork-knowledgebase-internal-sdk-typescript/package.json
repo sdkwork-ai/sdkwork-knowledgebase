@@ -20,7 +20,7 @@
     }
   },
   "dependencies": {
-    "@sdkwork/sdk-common": "^1.0.5"
+    "@sdkwork/sdk-common": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -1,10 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  APP_API_AUTHENTICATED_ONLY_MUTATIONS,
-  APP_API_PERMISSION_BY_OPERATION,
-} from '../scripts/patch-app-route-permissions.mjs';
+import { APP_API_PERMISSION_BY_OPERATION } from '../scripts/patch-app-route-permissions.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(scriptDir, '..');
@@ -50,12 +47,10 @@ function applyPermissions(document, { permission, permissionByOperation, auditEv
       }
 
       if (permissionByOperation) {
-        // GET operations and authenticated-only mutations (for example
-        // spaces.create) stay dual-token without an RBAC permission.
-        if (
-          method === 'get' ||
-          APP_API_AUTHENTICATED_ONLY_MUTATIONS.has(operation.operationId)
-        ) {
+        // Read operations are tenant-scoped authenticated reads without an
+        // RBAC permission requirement (same contract as other IM embedded
+        // dependency surfaces).
+        if (method === 'get') {
           if ('x-sdkwork-permission' in operation) {
             delete operation['x-sdkwork-permission'];
             changed = true;

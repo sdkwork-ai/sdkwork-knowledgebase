@@ -9,7 +9,7 @@
     "protocol": "http",
     "packageName": "@sdkwork/knowledgebase-backend-sdk"
   },
-  "changeFingerprint": "bb0619bb99b311a390c82c658667ff4f045207525de7d52aaf47f9c6494ae2f8",
+  "changeFingerprint": "aac9002693070540e22360f5278cd4302a4fde4f793fa7af0cc1e49f98da81a4",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
@@ -211,8 +211,12 @@
       "custom/README.md"
     ],
     "backedUpFiles": [
+      "bin/publish-core.mjs",
       "package.json",
-      "src/api/knowledge.ts"
+      "README.md",
+      "src/api/base.ts",
+      "src/api/knowledge.ts",
+      "src/http/client.ts"
     ]
   },
   "impact": {

@@ -27,7 +27,7 @@ export class KnowledgebaseInternalWikiWikiPublicationsPagesApi {
       { name: 'cursor', value: params.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<WikiPublicPageListData>(appendQueryString(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}/pages/search`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<WikiPublicPageListData>(appendQueryString(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}/pages/search`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -52,7 +52,7 @@ export class KnowledgebaseInternalWikiWikiPublicationsNavigationApi {
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<WikiPublicPageListData>(appendQueryString(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}/navigation`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<WikiPublicPageListData>(appendQueryString(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}/navigation`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -66,7 +66,7 @@ export class KnowledgebaseInternalWikiWikiPublicationsContentsApi {
 
 /** Retrieve one bounded pinned public Wiki representation */
   async retrieve(publicationUuid: string, contentHandle: string, requestOptions?: ApiRequestOptions): Promise<Blob> {
-    return this.client.request<Blob>(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}/contents/${serializePathParameter(contentHandle, { name: 'contentHandle', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'data' });
+    return this.client.request<Blob>(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}/contents/${serializePathParameter(contentHandle, { name: 'contentHandle', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'data' });
   }
 }
 
@@ -80,7 +80,7 @@ export class KnowledgebaseInternalWikiWikiPublicationsRoutesApi {
 
 /** Resolve one normalized public Wiki route */
   async resolve(publicationUuid: string, body: ResolveWikiRouteRequest, requestOptions?: ApiRequestOptions): Promise<WikiRouteResolution> {
-    return this.client.request<WikiRouteResolution>(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}/routes/resolve`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<WikiRouteResolution>(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}/routes/resolve`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -102,7 +102,7 @@ export class KnowledgebaseInternalWikiWikiPublicationsApi {
 
 /** Retrieve an active public Wiki publication */
   async retrieve(publicationUuid: string, requestOptions?: ApiRequestOptions): Promise<WikiPublication> {
-    return this.client.request<WikiPublication>(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<WikiPublication>(customApiPath(`/knowledgebase/wiki_publications/${serializePathParameter(publicationUuid, { name: 'publicationUuid', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -136,17 +136,15 @@ export class KnowledgebaseInternalWikiDriveEventsApi {
       },
       {}
     );
-    return this.client.request<DriveEventReceipt>(customApiPath(`/knowledgebase/drive_events`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<DriveEventReceipt>(customApiPath(`/knowledgebase/drive_events`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', ...(requestHeaders !== undefined ? { headers: requestHeaders } : {}), sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class KnowledgebaseInternalWikiApi {
-  private client: HttpClient;
   public readonly driveEvents: KnowledgebaseInternalWikiDriveEventsApi;
   public readonly wikiPublications: KnowledgebaseInternalWikiWikiPublicationsApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.driveEvents = new KnowledgebaseInternalWikiDriveEventsApi(client);
     this.wikiPublications = new KnowledgebaseInternalWikiWikiPublicationsApi(client);
   }

@@ -5,14 +5,10 @@ use sdkwork_intelligence_knowledgebase_service::tenant_quota::{
 };
 use sdkwork_knowledgebase_contract::KnowledgeTenantQuotaStatus;
 use sdkwork_knowledgebase_observability::KnowledgebaseTenantQuotaLimits;
-use sdkwork_routes_knowledgebase_backend_api::{knowledge_data_scope, KnowledgeDataScope};
 use sdkwork_routes_knowledgebase_backend_api::knowledgebase_rate_limit_store;
 use std::time::Duration;
 
-use crate::{
-    runtime::KnowledgebaseRuntime, scoped_stores::request_data_scope, KnowledgeAppRequestContext,
-    ApiError, ApiResult,
-};
+use crate::{runtime::KnowledgebaseRuntime, ApiError, ApiResult};
 
 pub(crate) fn map_tenant_quota_error(error: TenantQuotaExceeded) -> ApiError {
     let detail = match error.kind {
@@ -36,33 +32,29 @@ pub(crate) fn map_tenant_quota_error(error: TenantQuotaExceeded) -> ApiError {
     ApiError::quota_exceeded(detail)
 }
 
-async fn load_storage_bytes_used(
-    runtime: &KnowledgebaseRuntime,
-    scope: KnowledgeDataScope,
-) -> ApiResult<u64> {
+async fn load_storage_bytes_used(runtime: &KnowledgebaseRuntime) -> ApiResult<u64> {
     runtime
-        .object_ref_store_for(scope)
+        .object_ref_store()
         .sum_active_storage_bytes()
         .await
         .map_err(|error| ApiError::internal("knowledgebase_store_failed", error.to_string()))
 }
 
-async fn load_tenant_quota_status_for_scope(
+pub(crate) async fn load_tenant_quota_status(
     runtime: &KnowledgebaseRuntime,
-    scope: KnowledgeDataScope,
 ) -> ApiResult<KnowledgeTenantQuotaStatus> {
     let limits = KnowledgebaseTenantQuotaLimits::from_env();
     let summary = runtime
-        .space_store_for(scope)
+        .space_store()
         .summarize_tenant_knowledgebase()
         .await
         .map_err(|error| ApiError::internal("knowledgebase_store_failed", error.to_string()))?;
     let inflight = runtime
-        .ingestion_job_store_for(scope)
+        .ingestion_job_store()
         .count_inflight_jobs()
         .await
         .map_err(|error| ApiError::internal("knowledgebase_store_failed", error.to_string()))?;
-    let storage_bytes_used = load_storage_bytes_used(runtime, scope).await?;
+    let storage_bytes_used = load_storage_bytes_used(runtime).await?;
     Ok(build_quota_status(
         limits,
         summary.document_count,
@@ -71,31 +63,12 @@ async fn load_tenant_quota_status_for_scope(
     ))
 }
 
-pub(crate) async fn load_tenant_quota_status(
-    runtime: &KnowledgebaseRuntime,
-) -> ApiResult<KnowledgeTenantQuotaStatus> {
-    load_tenant_quota_status_for_scope(
-        runtime,
-        knowledge_data_scope(runtime.tenant_id(), Some(runtime.organization_id())),
-    )
-    .await
-}
-
-pub(crate) async fn load_tenant_quota_status_for_context(
-    runtime: &KnowledgebaseRuntime,
-    context: &KnowledgeAppRequestContext,
-) -> ApiResult<KnowledgeTenantQuotaStatus> {
-    load_tenant_quota_status_for_scope(runtime, request_data_scope(context)).await
-}
-
 pub(crate) async fn ensure_tenant_can_create_document(
     runtime: &KnowledgebaseRuntime,
-    context: &KnowledgeAppRequestContext,
 ) -> ApiResult<()> {
     let limits = KnowledgebaseTenantQuotaLimits::from_env();
-    let scope = request_data_scope(context);
     let summary = runtime
-        .space_store_for(scope)
+        .space_store()
         .summarize_tenant_knowledgebase()
         .await
         .map_err(|error| ApiError::internal("knowledgebase_store_failed", error.to_string()))?;

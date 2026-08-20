@@ -93,13 +93,5 @@
     "generator": "@sdkwork/sdk-generator",
     "generatorPath": "../sdkwork-sdk-generator/bin/sdkgen.js",
     "generatorVersion": "workspace"
-  },
-  "packageName": "@sdkwork/knowledgebase-rpc-sdk",
-  "transportPackageName": "sdkwork-knowledgebase-rpc-sdk-generated-typescript",
-  "typescript": {
-    "composedRoot": "sdkwork-knowledgebase-rpc-sdk-typescript",
-    "composedEntry": "sdkwork-knowledgebase-rpc-sdk-typescript/src/index.ts",
-    "transportRoot": "sdkwork-knowledgebase-rpc-sdk-typescript/generated/server-openapi",
-    "transportEntry": "sdkwork-knowledgebase-rpc-sdk-typescript/generated/server-openapi/src/index.ts"
   }
 }

@@ -30,7 +30,6 @@ pub mod paths;
 mod ports;
 mod routes;
 pub mod runtime;
-mod scoped_stores;
 mod tenant_quota_enforcement;
 mod web_bootstrap;
 

@@ -14,7 +14,6 @@ pub mod manifest;
 pub mod pagination;
 pub mod paths;
 pub mod permission;
-mod organization_scope;
 pub mod ports;
 mod response;
 pub mod routes;
@@ -29,12 +28,6 @@ pub use error::{BackendApiError, BackendApiProblem, BackendApiResult};
 pub use health::{DbReadinessCheck, KnowledgebaseReadinessCheck};
 pub use http_route_manifest::backend_route_manifest;
 pub use permission::{can_access_knowledge_admin, KNOWLEDGE_PLATFORM_MANAGE_PERMISSION};
-pub use organization_scope::{
-    effective_organization_id, is_personal_organization_scope, knowledge_data_scope,
-    parse_organization_id_claim, require_organization_bound_scope,
-    resolve_knowledge_organization_id, KnowledgeDataScope, OrganizationScopeViolation,
-    PERSONAL_ORGANIZATION_ID,
-};
 pub use ports::{KnowledgeBackendApi, KnowledgeBackendRequestContext};
 pub use routes::{
     build_business_router_with_shared_backend_api, build_router_with_backend_api,

@@ -177,47 +177,47 @@ async fn wiki_routes_preserve_tenant_and_organization_denial() {
 #[test]
 fn wiki_route_manifest_declares_permissions_rate_limits_and_idempotency() {
     let manifest = app_route_manifest();
-    let routes: [(&str, &str, &str, Option<&str>, bool); 6] = [
+    let routes = [
         (
             "GET",
             "/app/v3/api/knowledge/spaces/7/wiki_publication",
             "wikiPublications.retrieve",
-            None,
+            "knowledge.spaces.read",
             false,
         ),
         (
             "POST",
             "/app/v3/api/knowledge/spaces/7/wiki_publication/activate",
             "wikiPublications.activate",
-            Some("knowledge.spaces.write"),
+            "knowledge.spaces.write",
             true,
         ),
         (
             "POST",
             "/app/v3/api/knowledge/spaces/7/wiki_publication/pause",
             "wikiPublications.pause",
-            Some("knowledge.spaces.write"),
+            "knowledge.spaces.write",
             true,
         ),
         (
             "POST",
             "/app/v3/api/knowledge/spaces/7/wiki_source_files/source-file-001/publish",
             "wikiSourceFiles.publish",
-            Some("knowledge.spaces.write"),
+            "knowledge.spaces.write",
             true,
         ),
         (
             "POST",
             "/app/v3/api/knowledge/spaces/7/wiki_source_files/source-file-001/unpublish",
             "wikiSourceFiles.unpublish",
-            Some("knowledge.spaces.write"),
+            "knowledge.spaces.write",
             true,
         ),
         (
             "PATCH",
             "/app/v3/api/knowledge/spaces/7/wiki_source_files/source-file-001/visibility",
             "wikiSourceFiles.visibility.update",
-            Some("knowledge.spaces.write"),
+            "knowledge.spaces.write",
             true,
         ),
     ];
@@ -225,7 +225,7 @@ fn wiki_route_manifest_declares_permissions_rate_limits_and_idempotency() {
     for (method, path, operation_id, permission, mutation) in routes {
         let route = manifest.match_route(method, path).expect(operation_id);
         assert_eq!(route.operation_id, operation_id);
-        assert_eq!(route.required_permission.as_deref(), permission);
+        assert_eq!(route.required_permission, Some(permission));
         assert_eq!(route.idempotent, mutation);
         assert_eq!(
             route.rate_limit_tier,

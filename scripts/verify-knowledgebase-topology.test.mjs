@@ -425,7 +425,7 @@ test('production cloud topology orchestrates background worker and health probes
   assert.match(bootstrapSource, /validate_snowflake_node_id_for_production/);
   assert.match(
     bootstrapSource,
-    /SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID=.*is deprecated; organization scope is derived from authenticated tokens/,
+    /SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID must be set when SDKWORK_KNOWLEDGEBASE_ENVIRONMENT is not development/,
   );
   assert.doesNotMatch(bootstrapSource, /DEV_AUTH_BYPASS/);
   assert.doesNotMatch(bootstrapSource, /SDKWORK_KNOWLEDGEBASE_SERVICE_LAYOUT|is_unified_process_layout/);

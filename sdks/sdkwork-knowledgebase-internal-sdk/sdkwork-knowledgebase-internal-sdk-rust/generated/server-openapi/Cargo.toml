@@ -1,7 +1,7 @@
 [workspace]
 
 [package]
-name = "sdkwork-knowledgebase-internal-sdk"
+name = "sdkwork-knowledgebase-internal-sdk-generated-rust"
 version = "0.1.0"
 edition = "2021"
 description = "sdkwork-knowledgebase-internal-sdk SDK"
@@ -9,7 +9,7 @@ license = "MIT"
 authors = ["SDKWork Team"]
 
 [lib]
-name = "sdkwork_knowledgebase_internal_sdk"
+name = "sdkwork_knowledgebase_internal_sdk_generated_rust"
 path = "src/lib.rs"
 
 [dependencies]

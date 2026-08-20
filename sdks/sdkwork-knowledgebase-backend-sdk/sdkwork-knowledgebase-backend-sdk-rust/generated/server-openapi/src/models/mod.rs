@@ -166,7 +166,6 @@ pub mod knowledge_space_member;
 pub use knowledge_space_member::KnowledgeSpaceMember;
 pub mod knowledge_space_member_list;
 pub use knowledge_space_member_list::KnowledgeSpaceMemberList;
-pub use knowledge_space_member_page::KnowledgeSpaceMemberPage;
 pub mod knowledge_engine_provider_credential_reference;
 pub use knowledge_engine_provider_credential_reference::KnowledgeEngineProviderCredentialReference;
 pub mod create_knowledge_engine_provider_credential_reference_request;

@@ -57,7 +57,6 @@ use crate::{
         stable_u64_hash,
     },
     runtime::KnowledgebaseRuntime,
-    scoped_stores::RequestScopedStores,
     ApiError, ApiResult, KnowledgeAppRequestContext, KnowledgeBrowserApi,
     KnowledgeDocumentAppService, KnowledgeDriveImportAppService, KnowledgeGitImportAppService,
     KnowledgeIngestAppService, KnowledgeOkfAppService, KnowledgeSpaceAppService,
@@ -180,11 +179,10 @@ impl KnowledgeIngestAppService for HostedIngestService {
             KnowledgeAccessRole::Writer,
         )
         .await?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
         let pipeline = ApiMarkdownIngestPipeline::new(
             self.runtime.drive_storage(),
-            &stores.ingestion_job_store,
-            &stores.markdown_index_metadata_store,
+            self.runtime.ingestion_job_store(),
+            self.runtime.markdown_index_metadata_store(),
         );
         let result = pipeline
             .run(request, space.drive_space_id.as_deref(), "api-ingest")
@@ -245,9 +243,8 @@ impl KnowledgeDriveImportAppService for HostedDriveImportService {
             .await
             .map_err(ApiError::from)?;
 
-        let stores = RequestScopedStores::new(&self.runtime, &context);
         let pipeline = sdkwork_intelligence_knowledgebase_service::ingest::KnowledgeIngestionJobWorkerService::new(
-            &stores.ingestion_job_store,
+            self.runtime.ingestion_job_store(),
             self.runtime.drive_storage(),
         );
         match pipeline.process_drive_import_result(&result).await {
@@ -298,11 +295,10 @@ impl KnowledgeGitImportAppService for HostedGitImportService {
             KnowledgeAccessRole::Writer,
         )
         .await?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
         let service = KnowledgeGitImportService::new(
             self.runtime.drive_storage(),
-            &stores.ingestion_job_store,
-            &stores.markdown_index_metadata_store,
+            self.runtime.ingestion_job_store(),
+            self.runtime.markdown_index_metadata_store(),
         );
         let run = service
             .import_repository(request, space.drive_space_id.as_deref())
@@ -331,10 +327,8 @@ impl KnowledgeGitImportAppService for HostedGitImportService {
             KnowledgeAccessRole::Writer,
         )
         .await?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
         let markdown_reader = RuntimeDocumentMarkdownReader::new(self.runtime.clone());
-        let service =
-            KnowledgeGitSyncService::new(&stores.document_store, &markdown_reader);
+        let service = KnowledgeGitSyncService::new(self.runtime.document_store(), &markdown_reader);
         service
             .sync_repository(request)
             .await
@@ -373,14 +367,10 @@ impl HostedDocumentService {
         Self { runtime }
     }
 
-    async fn create_manual_document_source(
-        &self,
-        context: &KnowledgeAppRequestContext,
-        space_id: u64,
-    ) -> ApiResult<u64> {
-        let stores = RequestScopedStores::new(&self.runtime, context);
-        let source = stores
-            .source_store
+    async fn create_manual_document_source(&self, space_id: u64) -> ApiResult<u64> {
+        let source = self
+            .runtime
+            .source_store()
             .create_source(CreateKnowledgeSourceRecord {
                 space_id,
                 source_type: KnowledgeSourceType::Api,
@@ -414,13 +404,13 @@ impl KnowledgeDocumentAppService for HostedDocumentService {
             ));
         }
         require_space_access(&self.runtime, &context, space_id).await?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
         let normalized_page_size = crate::pagination::normalize_api_page_size(page_size)?;
         let cursor_id = crate::pagination::parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
             ApiError::invalid_request("invalid_parameter", "cursor must be a valid document id")
         })?;
-        let (items, next_cursor, has_more) = stores
-            .document_store
+        let (items, next_cursor, has_more) = self
+            .runtime
+            .document_store()
             .list_documents_page(space_id, cursor_id, normalized_page_size)
             .await
             .map_err(ApiError::from)?;
@@ -456,20 +446,15 @@ impl KnowledgeDocumentAppService for HostedDocumentService {
             KnowledgeAccessRole::Writer,
         )
         .await?;
-        crate::tenant_quota_enforcement::ensure_tenant_can_create_document(
-            &self.runtime,
-            &context,
-        )
-        .await?;
+        crate::tenant_quota_enforcement::ensure_tenant_can_create_document(&self.runtime).await?;
 
-        let stores = RequestScopedStores::new(&self.runtime, &context);
         let source_id = match request.source_id {
             Some(source_id) => source_id,
-            None => self.create_manual_document_source(&context, request.space_id).await?,
+            None => self.create_manual_document_source(request.space_id).await?,
         };
 
-        stores
-            .document_store
+        self.runtime
+            .document_store()
             .create_document(CreateKnowledgeDocumentRecord {
                 space_id: request.space_id,
                 collection_id: request.collection_id.unwrap_or(0),
@@ -518,9 +503,9 @@ impl KnowledgeDocumentAppService for HostedDocumentService {
             ));
         }
         let previous_visibility = document.visibility;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
-        let updated = stores
-            .document_store
+        let updated = self
+            .runtime
+            .document_store()
             .update_document_metadata(
                 document_id,
                 request.title,
@@ -558,9 +543,8 @@ impl KnowledgeDocumentAppService for HostedDocumentService {
             KnowledgeAccessRole::Writer,
         )
         .await?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
-        stores
-            .document_store
+        self.runtime
+            .document_store()
             .soft_delete_document(document_id)
             .await
             .map_err(Into::into)
@@ -614,9 +598,8 @@ impl KnowledgeDocumentAppService for HostedDocumentService {
                 "document_id in body must match path documentId when provided",
             ));
         }
-        let stores = RequestScopedStores::new(&self.runtime, &context);
-        stores
-            .document_store
+        self.runtime
+            .document_store()
             .get_document_by_id(document_id)
             .await
             .map_err(ApiError::from)?;
@@ -677,11 +660,10 @@ impl KnowledgeBrowserApi for HostedBrowserService {
         // Fail-closed: an anonymous browser identity must never reach the browser service, or a
         // missing actor would bypass per-actor ACL checks.
         let actor_id = require_actor_id(&context)?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
         let service = KnowledgeBrowserService::new(
-            &stores.space_store,
+            self.runtime.space_store(),
             self.runtime.drive_tree(),
-            &stores.browser_projection_store,
+            self.runtime.browser_projection_store(),
         )
         .with_access_control(self.runtime.access_control());
         let page = service
@@ -735,9 +717,9 @@ impl KnowledgeOkfAppService for HostedOkfService {
             space_id,
         )
         .map_err(|_| ApiError::invalid_request("invalid_parameter", "cursor is invalid"))?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
-        let (items, next_position, has_more) = stores
-            .okf_concept_store
+        let (items, next_position, has_more) = self
+            .runtime
+            .okf_concept_store()
             .list_concept_summaries_page(space_id, cursor_position, normalized_page_size)
             .await
             .map_err(map_okf_concept_store_error)?;
@@ -778,9 +760,9 @@ impl KnowledgeOkfAppService for HostedOkfService {
         concept_row_id: u64,
     ) -> ApiResult<OkfConceptSummary> {
         require_okf_concept_space_access(&self.runtime, &context, concept_row_id).await?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
-        let page = stores
-            .okf_concept_store
+        let page = self
+            .runtime
+            .okf_concept_store()
             .get_concept_by_row_id(concept_row_id)
             .await
             .map_err(map_okf_concept_store_error)?;
@@ -804,9 +786,9 @@ impl KnowledgeOkfAppService for HostedOkfService {
             concept_row_id,
         )
         .map_err(|_| ApiError::invalid_request("invalid_parameter", "cursor is invalid"))?;
-        let stores = RequestScopedStores::new(&self.runtime, &context);
-        let (items, next_position, has_more) = stores
-            .okf_concept_store
+        let (items, next_position, has_more) = self
+            .runtime
+            .okf_concept_store()
             .list_concept_revisions_page(concept_row_id, cursor_position, normalized_page_size)
             .await
             .map_err(map_okf_concept_store_error)?;

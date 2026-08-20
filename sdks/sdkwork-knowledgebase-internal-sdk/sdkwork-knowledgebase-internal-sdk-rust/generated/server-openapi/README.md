@@ -5,18 +5,18 @@ Professional Rust SDK for SDKWork API.
 ## Installation
 
 ```bash
-cargo add sdkwork-knowledgebase-internal-sdk
+cargo add sdkwork-knowledgebase-internal-sdk-generated-rust
 ```
 
 ## Quick Start
 
 ```rust
-use sdkwork_knowledgebase_internal_sdk::{SdkworkCustomClient, SdkworkConfig};
+use sdkwork_knowledgebase_internal_sdk_generated_rust::{SdkworkCustomClient, SdkworkConfig};
 
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = SdkworkCustomClient::new(SdkworkConfig::new("http://127.0.0.1:19090"))?;
+    let client = SdkworkCustomClient::new(SdkworkConfig::new("{applicationPublicIngressOrigin}"))?;
     client.set_api_key("your-api-key");
 
     let publication_uuid = "1";
@@ -33,7 +33,7 @@ Choose exactly one mode for the same client instance.
 ### Mode A: API Key
 
 ```rust
-let client = SdkworkCustomClient::new(SdkworkConfig::new("http://127.0.0.1:19090"))?;
+let client = SdkworkCustomClient::new(SdkworkConfig::new("{applicationPublicIngressOrigin}"))?;
 client.set_api_key("your-api-key");
 // Sends: X-API-Key: <apiKey>
 ```
@@ -41,7 +41,7 @@ client.set_api_key("your-api-key");
 ### Mode B: Dual Token
 
 ```rust
-let client = SdkworkCustomClient::new(SdkworkConfig::new("http://127.0.0.1:19090"))?;
+let client = SdkworkCustomClient::new(SdkworkConfig::new("{applicationPublicIngressOrigin}"))?;
 client.set_auth_token("your-auth-token");
 client.set_access_token("your-access-token");
 // Sends:
@@ -54,7 +54,7 @@ client.set_access_token("your-access-token");
 ## Configuration (Non-Auth)
 
 ```rust
-let client = SdkworkCustomClient::new(SdkworkConfig::new("http://127.0.0.1:19090"))?;
+let client = SdkworkCustomClient::new(SdkworkConfig::new("{applicationPublicIngressOrigin}"))?;
 client.set_header("X-Custom-Header", "value");
 ```
 
@@ -76,10 +76,10 @@ println!("{result:?}");
 ## Error Handling
 
 ```rust
-use sdkwork_knowledgebase_internal_sdk::{SdkworkCustomClient, SdkworkConfig};
+use sdkwork_knowledgebase_internal_sdk_generated_rust::{SdkworkCustomClient, SdkworkConfig};
 
 
-let client = SdkworkCustomClient::new(SdkworkConfig::new("http://127.0.0.1:19090"))?;
+let client = SdkworkCustomClient::new(SdkworkConfig::new("{applicationPublicIngressOrigin}"))?;
 
 let outcome: Result<(), _> = async {
     let publication_uuid = "1";

@@ -48,9 +48,9 @@ pub fn require_postgres_rls_organization_id() -> Result<u64, PoolError> {
                     .to_string(),
             )
         }),
-        Err(std::env::VarError::NotPresent) => Ok(0),
+        Err(std::env::VarError::NotPresent) if !is_production_like_environment() => Ok(0),
         Err(_) => Err(PoolError::InvalidUrl(
-            "SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID must be a canonical nonnegative signed BIGINT when set"
+            "SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID must be set for production-like Postgres deployments"
                 .to_string(),
         )),
     }

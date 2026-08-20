@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -40,11 +40,11 @@
     },
     {
       "path": "package.json",
-      "sha256": "0fb36ea8b8d07446a249d7052761704a4dd45ef5107c8793eba28ae9b69c74fb"
+      "sha256": "719e0ae3f3f7358d3e9b54ee8c504f515116c89c4d5642fd27ff2efc214b55f9"
     },
     {
       "path": "README.md",
-      "sha256": "f6ac36de1d422f6a6ef809acf3af46074a13f16f6c3ee2223e6a290b574c292f"
+      "sha256": "420fa612e91ef83eff1c40920fb43b502ebc85a3b75c64deb14c633190048d08"
     },
     {
       "path": "sdkwork-sdk.json",
@@ -52,7 +52,7 @@
     },
     {
       "path": "src/api/base.ts",
-      "sha256": "02ad25e6bf331ff241ba387c2947ddf1900dd849038e08c2757416a3aa788a04"
+      "sha256": "94d136c54a008dfe7602e373a0b2c79176bbf2fc6e7c899fc23b1f12f750380f"
     },
     {
       "path": "src/api/index.ts",
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/knowledgebase-internal-wiki.ts",
-      "sha256": "25bde1025020b07e801436c663dd136046c4fd3337a47d98ee817c0ecfc6ed7f"
+      "sha256": "0d3cf0739c663c4d6b6608ff43d0181b81cb0408add2f6ab3ca624fcaefff95b"
     },
     {
       "path": "src/api/paths.ts",
@@ -72,7 +72,7 @@
     },
     {
       "path": "src/http/client.ts",
-      "sha256": "703617f015f375c3da14f021edfb827e14cede027981a24d3da2c215556c241c"
+      "sha256": "b8676ea00512ec8e38fe35ea5df9c3783cd7232d0b207ad75e7c12872702e14f"
     },
     {
       "path": "src/http/index.ts",

@@ -12,7 +12,7 @@
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -24,7 +24,7 @@
     },
     {
       "path": "Cargo.toml",
-      "sha256": "4fc97eb5411bdb717c6bddfa16614b319cedb78c65718f29139225783eb45b35"
+      "sha256": "d9b5b99c4ecd81d8bd5b1a218cf342a3922b7be9d8b77f1dfc436a4d666d1d65"
     },
     {
       "path": "CHANGELOG.md",
@@ -48,7 +48,7 @@
     },
     {
       "path": "src/api/knowledge.rs",
-      "sha256": "9ae6a19a080fc317f0a700e05a7f46ff31e4137cb4ebfcba282fbba3cd2dc0ba"
+      "sha256": "3367b9f75fa8108bd865f78336d53c55ea7d81298d71b65c3a68b2d04140ba97"
     },
     {
       "path": "src/api/mod.rs",
@@ -64,11 +64,11 @@
     },
     {
       "path": "src/http/client.rs",
-      "sha256": "8b6e059c95e3fd9a3301bd71225f9b43f156e6a4abda765755c557ac7e3f0284"
+      "sha256": "6744c77f8c5d27ea5f0d35340b928589e8ed15c946174c184f67dd17a98b58ed"
     },
     {
       "path": "src/http/mod.rs",
-      "sha256": "fdf16d487ebd9180fb423d5630d4401ff18180721b86636dec085ad83940bb3d"
+      "sha256": "d09ef1f29c3fa0e631fc4f7287fc93dc7d3cee7e7261ac85091852a09243e90a"
     },
     {
       "path": "src/lib.rs",

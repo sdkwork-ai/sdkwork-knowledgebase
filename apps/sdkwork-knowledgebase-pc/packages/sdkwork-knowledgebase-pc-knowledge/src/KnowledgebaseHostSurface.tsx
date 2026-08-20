@@ -25,7 +25,7 @@ export const KnowledgebaseHostSurface: React.FC<KnowledgebaseHostSurfaceProps> =
       <iframe
         title={title?.trim() || 'Knowledge Base'}
         src={embedUrl}
-        className="h-full w-full flex-1 border-0 bg-[var(--color-kb-bg-app)]"
+        className="h-full w-full flex-1 border-0 bg-[var(--color-kb-bg-app,#1e1e1e)]"
         allow="clipboard-read; clipboard-write"
       />
     );

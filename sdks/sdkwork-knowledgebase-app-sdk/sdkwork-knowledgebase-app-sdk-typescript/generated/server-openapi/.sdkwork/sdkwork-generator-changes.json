@@ -9,7 +9,7 @@
     "protocol": "http",
     "packageName": "@sdkwork/knowledgebase-app-sdk"
   },
-  "changeFingerprint": "0880be4d78cdf8ee36d347ad943072c2e8f9ed18a52caf1070905cf0a4441881",
+  "changeFingerprint": "6a75aa896cf26c7cd7095251f19971dc04fe7a92c31e485604c59157e345b4e8",
   "changes": {
     "createdGeneratedFiles": [
       "src/types/agent-profiles-bindings-create-response.ts",
@@ -21,6 +21,7 @@
     ],
     "updatedGeneratedFiles": [
       "bin/publish-core.mjs",
+      "package.json",
       "README.md",
       "src/api/base.ts",
       "src/api/knowledge.ts",
@@ -34,7 +35,6 @@
       "bin/sdk-gen.sh",
       "CHANGELOG.md",
       "LICENSE",
-      "package.json",
       "sdkwork-sdk.json",
       "src/api/index.ts",
       "src/api/paths.ts",
@@ -265,7 +265,21 @@
       "custom/build-runtime.mjs",
       "custom/README.md"
     ],
-    "backedUpFiles": []
+    "backedUpFiles": [
+      "bin/publish-core.mjs",
+      "package.json",
+      "README.md",
+      "src/api/base.ts",
+      "src/api/knowledge.ts",
+      "src/http/client.ts",
+      "src/types/agent-profiles-bindings-response.ts",
+      "src/types/agent-profiles-chat-response.ts",
+      "src/types/agent-profiles-retrieval-preview-response.ts",
+      "src/types/documents-versions-response.ts",
+      "src/types/index.ts",
+      "src/types/spaces-context-bindings-response.ts",
+      "src/types/spaces-members-response.ts"
+    ]
   },
   "impact": {
     "schemaVersion": 1,
@@ -273,6 +287,7 @@
       "api-surface",
       "models",
       "runtime",
+      "build-metadata",
       "publish-workflow",
       "documentation"
     ],
@@ -310,6 +325,12 @@
         ]
       },
       {
+        "area": "build-metadata",
+        "paths": [
+          "package.json"
+        ]
+      },
+      {
         "area": "publish-workflow",
         "paths": [
           "bin/publish-core.mjs"
@@ -323,18 +344,18 @@
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, publish-workflow, documentation. Verification is required."
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation. Verification is required."
   },
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, publish-workflow, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, publish-workflow, documentation.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -352,7 +373,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, publish-workflow, documentation.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -376,6 +397,7 @@
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "backed-up-generated-files",
       "deleted-generated-files",
       "manual-review-required",
       "verification-required"

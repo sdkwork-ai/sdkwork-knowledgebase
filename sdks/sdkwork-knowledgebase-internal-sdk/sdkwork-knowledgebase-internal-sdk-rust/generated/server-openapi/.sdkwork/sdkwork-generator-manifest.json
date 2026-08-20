@@ -7,12 +7,12 @@
     "language": "rust",
     "sdkType": "custom",
     "protocol": "http",
-    "packageName": null
+    "packageName": "sdkwork-knowledgebase-internal-sdk-generated-rust"
   },
   "generatedFiles": [
     {
       "path": "bin/publish-core.mjs",
-      "sha256": "98ad0918a78bfbe22bf8f12fec709b0bed545b9e01edd40f5e4abf31a23378a5"
+      "sha256": "a47e95119bf3eafcbcb2102f7024c147f967924e4e3f343d1a29effb4b6765df"
     },
     {
       "path": "bin/publish.ps1",
@@ -24,7 +24,7 @@
     },
     {
       "path": "Cargo.toml",
-      "sha256": "9ee409d5aeac526d3a3cbfc48a96e69bd2ac0b28e7c5bd6766d68b6826f0e892"
+      "sha256": "58c3b6b2764caf63880a686047ca3fc82e695645896656b2d1f3a2f67df3894a"
     },
     {
       "path": "CHANGELOG.md",
@@ -36,11 +36,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "6e87bc3b88b320b2429c3390ea8a0c74430d52432b28f01f1dbd57334aeed7a5"
+      "sha256": "a78eb5df3aad25a7c3a83275888c254f06113520681c54a1344ac2a2da26b342"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "1e46d72309d7e85df85af73b1df17e57d7eb20932765d2b3b02a457e757e171c"
+      "sha256": "da029fb3cecac2e2bfa023f104f14f9934b9b87f2a3ddc48a9d1f8da9add5e04"
     },
     {
       "path": "src/api/base.rs",
@@ -64,7 +64,7 @@
     },
     {
       "path": "src/http/client.rs",
-      "sha256": "d609cf96b01b811dfa07fb5e704aaf87f2e60e2bff9648a6bfa0b2807ffe909b"
+      "sha256": "c3d1f9e4ab9680f2583b9c5e58cafaf2006609e67983130fbc317a5944e97514"
     },
     {
       "path": "src/http/mod.rs",

@@ -123,10 +123,8 @@ pub fn inject_dev_app_context(
 }
 
 fn dev_organization_id() -> Option<u64> {
-    Some(
-        std::env::var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID")
-            .ok()
-            .and_then(|value| value.parse::<u64>().ok())
-            .unwrap_or(0),
-    )
+    std::env::var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID")
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .filter(|value| *value != 0)
 }

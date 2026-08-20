@@ -25,7 +25,6 @@ export * from './sdk/driveAppSdkClient';
 export * from './sdk/groupKnowledgebaseLaunch';
 export * from './sdk/sdkContractTypes';
 export * from './session/sessionStore';
-export * from './session/accessTokenContextClaims';
 export * from './session/sessionTokenManager';
 export {
   signOutKnowledgebaseAccount,

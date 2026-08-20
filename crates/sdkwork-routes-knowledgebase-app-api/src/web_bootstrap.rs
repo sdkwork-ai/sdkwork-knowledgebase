@@ -4,7 +4,7 @@ use axum::Router;
 use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_routes_knowledgebase_backend_api::{
     apply_knowledgebase_web_framework, attach_knowledgebase_audit_emitter,
-    knowledgebase_rate_limit_store, resolve_knowledge_organization_id,
+    knowledgebase_rate_limit_store,
 };
 use sdkwork_web_axum::{with_web_request_context, WebFrameworkLayer};
 use sdkwork_web_core::{
@@ -45,7 +45,9 @@ fn knowledge_app_context_from_web_request(
     let principal = context.principal.as_ref()?;
     let tenant_id = principal.tenant_id().parse().ok()?;
     let actor_id = principal.user_id().parse().ok();
-    let organization_id = resolve_knowledge_organization_id(principal);
+    let organization_id = principal
+        .organization_id()
+        .and_then(|value| value.parse().ok());
     let session_id = principal.session_id().map(str::to_owned);
     Some(KnowledgeAppRequestContext {
         tenant_id,
@@ -91,83 +93,4 @@ pub async fn wrap_router_with_web_framework_from_env(router: Router) -> Router {
     let resolver = sdkwork_iam_web_adapter::iam_web_request_context_resolver_from_env().await;
     let layer = attach_knowledgebase_audit_emitter(build_app_web_framework_layer(resolver)).await;
     with_web_request_context(router, layer)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::knowledge_app_context_from_web_request;
-    use sdkwork_web_core::{
-        ServerRequestId, WebApiSurface, WebAuthMode, WebDeploymentMode, WebEnvironment,
-        WebLoginScope, WebRequestContext, WebRequestPrincipal, WebTransportFacts,
-    };
-
-    fn web_context(
-        login_scope: WebLoginScope,
-        organization_id: Option<&str>,
-    ) -> WebRequestContext {
-        WebRequestContext {
-            request_id: ServerRequestId("request-tenant-scope".to_string()),
-            api_surface: WebApiSurface::AppApi,
-            auth_mode: WebAuthMode::DualToken,
-            transport: WebTransportFacts {
-                path: "/app/v3/api/knowledge/spaces".to_string(),
-                method: "POST".to_string(),
-                auth_token_present: true,
-                access_token_present: true,
-                api_key_present: false,
-                ingress_token_present: false,
-                oauth_bearer_present: false,
-                agent_token_present: false,
-            },
-            principal: Some(
-                WebRequestPrincipal::builder()
-                    .tenant_id("100001")
-                    .organization_id(organization_id.map(str::to_owned))
-                    .login_scope(login_scope)
-                    .user_id("42")
-                    .session_id(Some("session-1".to_owned()))
-                    .app_id("sdkwork-knowledgebase")
-                    .environment(WebEnvironment::Dev)
-                    .deployment_mode(WebDeploymentMode::Local)
-                    .build(),
-            ),
-            locale: None,
-            client_kind: None,
-            operation: None,
-            trace_id: Some("trace-tenant-scope".to_string()),
-            idempotency_key: None,
-        }
-    }
-
-    #[test]
-    fn tenant_login_injects_zero_organization_scope_for_blank_claims() {
-        for organization_id in [None, Some("0"), Some(" ")] {
-            let context = knowledge_app_context_from_web_request(&web_context(
-                WebLoginScope::Tenant,
-                organization_id,
-            ))
-            .expect("tenant login should inject app context");
-            assert_eq!(context.organization_id, Some(0));
-        }
-    }
-
-    #[test]
-    fn organization_login_preserves_nonzero_organization_scope() {
-        let context = knowledge_app_context_from_web_request(&web_context(
-            WebLoginScope::Organization,
-            Some("100"),
-        ))
-        .expect("organization login should inject app context");
-        assert_eq!(context.organization_id, Some(100));
-    }
-
-    #[test]
-    fn missing_organization_claim_normalizes_to_zero() {
-        let context = knowledge_app_context_from_web_request(&web_context(
-            WebLoginScope::Organization,
-            None,
-        ))
-        .expect("missing organization claim should still inject app context");
-        assert_eq!(context.organization_id, Some(0));
-    }
 }

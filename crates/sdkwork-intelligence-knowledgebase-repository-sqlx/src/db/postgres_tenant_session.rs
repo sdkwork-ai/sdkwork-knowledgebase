@@ -100,12 +100,14 @@ mod tests {
     }
 
     #[test]
-    fn require_organization_id_defaults_to_personal_scope() {
+    fn require_organization_id_is_explicit_in_production_like() {
         let _guard = env_test_guard();
         std::env::remove_var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID");
         std::env::set_var("SDKWORK_KNOWLEDGEBASE_ENVIRONMENT", "production");
+        assert!(require_postgres_rls_organization_id().is_err());
+        std::env::set_var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID", "0");
         assert_eq!(
-            require_postgres_rls_organization_id().expect("personal scope default"),
+            require_postgres_rls_organization_id().expect("personal scope"),
             0
         );
         std::env::remove_var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID");
