@@ -26,7 +26,7 @@ affected_surfaces:
   - pc
   - drive
   - deployment
-  - web-server
+  - webserver
 ```
 
 Specs: REQUIREMENTS_SPEC.md, ARCHITECTURE_DECISION_SPEC.md, DATABASE_SPEC.md, DRIVE_SPEC.md,
@@ -198,4 +198,4 @@ MEDIA_RESOURCE_SPEC.md, SUPPLY_CHAIN_SECURITY_SPEC.md
 - Machine contract: `specs/live-wiki-publication.spec.json`
 - Readiness review: `docs/engineering/reviews/REVIEW-20260721-live-wiki-deployment-integration-readiness.md`
 - Deploy authority: `sdkwork-deployments/docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md`
-- Web Server authority: `sdkwork-web-server/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md`
+- Web Server authority: `sdkwork-webserver/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md`

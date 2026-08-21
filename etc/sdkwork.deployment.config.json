@@ -40,7 +40,7 @@
       "config": "topology/standalone.production.env"
     },
     "cloud.development": {
-      "config": "topology/cloud.development.env",
+      "config": "topology/cloud.development.env"
     },
     "cloud.test": {
       "config": "topology/cloud.test.env"
@@ -49,7 +49,7 @@
       "config": "topology/cloud.staging.env"
     },
     "cloud.production": {
-      "config": "topology/cloud.production.env",
+      "config": "topology/cloud.production.env"
     }
   }
 }

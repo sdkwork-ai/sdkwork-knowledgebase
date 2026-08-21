@@ -187,9 +187,9 @@ The Web Server repository adapter boundary has additionally passed:
 cargo test -p sdkwork-webserver-contract
 cargo test -p sdkwork-webserver-delivery-runtime
 cargo test -p sdkwork-webserver-knowledgebase-provider
-cargo test -p sdkwork-api-web-server-standalone-gateway
+cargo test -p sdkwork-api-webserver-standalone-gateway
 cargo check --workspace
-cargo clippy -p sdkwork-webserver-core -p sdkwork-webserver-contract -p sdkwork-webserver-drive-provider -p sdkwork-webserver-knowledgebase-provider -p sdkwork-webserver-delivery-runtime -p sdkwork-api-web-server-standalone-gateway --all-targets -- -D warnings
+cargo clippy -p sdkwork-webserver-core -p sdkwork-webserver-contract -p sdkwork-webserver-drive-provider -p sdkwork-webserver-knowledgebase-provider -p sdkwork-webserver-delivery-runtime -p sdkwork-api-webserver-standalone-gateway --all-targets -- -D warnings
 cargo test -p sdkwork-deploy-runtime-compiler --test knowledgebase_wiki_delivery_contract
 ```
 

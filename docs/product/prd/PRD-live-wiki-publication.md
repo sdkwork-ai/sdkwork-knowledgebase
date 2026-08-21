@@ -522,9 +522,9 @@ use a processor-class asynchronous SLO and never inherit the native realtime cla
 ## 18. Dependencies
 
 - Deploy PRD: `../sdkwork-deployments/docs/product/prd/PRD-cloud-site-publishing-platform.md`
-- Web Server architecture: `../sdkwork-web-server/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md`
+- Web Server architecture: `../sdkwork-webserver/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md`
 - Deploy architecture: `sdkwork-deployments/docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md`
-- Web Server architecture: `sdkwork-web-server/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md`
+- Web Server architecture: `sdkwork-webserver/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md`
 - Local architecture: [TECH-live-wiki-resource-provider.md](../../architecture/tech/TECH-live-wiki-resource-provider.md)
 - Local migration: [MIG-2026-0721-release-to-live-wiki-publication.md](../../migrations/MIG-2026-0721-release-to-live-wiki-publication.md)
 - Machine contract: `specs/live-wiki-publication.spec.json`

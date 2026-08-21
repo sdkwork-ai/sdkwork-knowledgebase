@@ -14,8 +14,8 @@
     "crossRepositoryContracts": {
       "deployControlPlane": "../sdkwork-deployments/docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md",
       "deployDecision": "../sdkwork-deployments/docs/architecture/decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md",
-      "webServerDataPlane": "../sdkwork-web-server/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md",
-      "webServerDecision": "../sdkwork-web-server/docs/architecture/decisions/ADR-20260721-compiled-website-runtime-descriptor.md"
+      "webServerDataPlane": "../sdkwork-webserver/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md",
+      "webServerDecision": "../sdkwork-webserver/docs/architecture/decisions/ADR-20260721-compiled-website-runtime-descriptor.md"
     },
     "canonicalSpecs": [
       "../sdkwork-specs/API_SPEC.md",
@@ -34,7 +34,7 @@
     "sourceAuthority": "sdkwork-drive",
     "semanticAuthority": "sdkwork-knowledgebase",
     "siteControlPlaneAuthority": "sdkwork-deploy",
-    "deliveryAuthority": "sdkwork-web-server",
+    "deliveryAuthority": "sdkwork-webserver",
     "runtimeDescriptor": "sdkwork.website-runtime.v1",
     "runtimeHandler": "WIKI",
     "knowledgebaseCapability": "every Knowledgebase is Wiki-capable without a special Knowledgebase type or conversion",
@@ -216,7 +216,7 @@
     "reconciliation": "checkpointed bounded Drive scan repairs event gaps without losing explicit publication decisions"
   },
   "routing": {
-    "entrypoint": "standalone and cloud requests both enter sdkwork-web-server through an active sdkwork.website-runtime.v1 descriptor; Knowledgebase exposes no anonymous fixed public route",
+    "entrypoint": "standalone and cloud requests both enter sdkwork-webserver through an active sdkwork.website-runtime.v1 descriptor; Knowledgebase exposes no anonymous fixed public route",
     "baseUrl": "an active Binding selects a Variant whose longest-prefix WIKI Mount references a valid KNOWLEDGEBASE_WIKI Site Resource",
     "selectionOrder": ["exact or approved wildcard Binding", "longest Binding path prefix", "deterministic Variant", "longest WIKI Mount prefix", "provider-relative Wiki route"],
     "standaloneComposition": "Web Server may inject the typed Knowledgebase provider in-process but preserves the same descriptor, routing, authorization, error and cache contracts",

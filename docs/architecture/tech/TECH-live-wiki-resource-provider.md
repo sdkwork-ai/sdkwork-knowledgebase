@@ -15,8 +15,8 @@ Cross-repository authority:
 
 - Deploy control plane: [TECH-cloud-site-publishing-control-plane.md](../../../../sdkwork-deployments/docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md)
 - Deploy decision: [ADR-20260721-unified-cloud-site-publishing-control-plane.md](../../../../sdkwork-deployments/docs/architecture/decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md)
-- Web Server data plane: [TECH-cloud-site-delivery-data-plane.md](../../../../sdkwork-web-server/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md)
-- Web Server decision: [ADR-20260721-compiled-website-runtime-descriptor.md](../../../../sdkwork-web-server/docs/architecture/decisions/ADR-20260721-compiled-website-runtime-descriptor.md)
+- Web Server data plane: [TECH-cloud-site-delivery-data-plane.md](../../../../sdkwork-webserver/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md)
+- Web Server decision: [ADR-20260721-compiled-website-runtime-descriptor.md](../../../../sdkwork-webserver/docs/architecture/decisions/ADR-20260721-compiled-website-runtime-descriptor.md)
 
 ## 1. Boundary And Source Of Truth
 

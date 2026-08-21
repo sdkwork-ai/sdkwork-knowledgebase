@@ -12,7 +12,7 @@ MEDIA_RESOURCE_SPEC.md, SUPPLY_CHAIN_SECURITY_SPEC.md
 Cross-repository decisions:
 
 - [Deploy unified cloud site publishing control plane](../../../../sdkwork-deployments/docs/architecture/decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md)
-- [Web Server compiled website runtime descriptor](../../../../sdkwork-web-server/docs/architecture/decisions/ADR-20260721-compiled-website-runtime-descriptor.md)
+- [Web Server compiled website runtime descriptor](../../../../sdkwork-webserver/docs/architecture/decisions/ADR-20260721-compiled-website-runtime-descriptor.md)
 
 ## Context
 

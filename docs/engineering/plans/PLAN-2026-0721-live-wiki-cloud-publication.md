@@ -56,7 +56,7 @@ The target behavior is:
 | `sdkwork-drive` | Website Space type, document-root folder identity, tree/version events, typed node reads, atomic directory sync | Domains, TLS, device routing, Wiki publication policy |
 | `sdkwork-knowledgebase` | Wiki publication authority, per-file projection, processors/renditions, routes, navigation, search, visibility, public-version policy | Domain/certificate state, copied website snapshots, object keys |
 | `sdkwork-deployments` | Site/resource/Variant/mount/binding/domain/TLS/ACME/descriptor/rollout/usage control plane | Source bytes, Wiki parse/index state, request byte streaming |
-| `sdkwork-web-server` | Host/SNI match, descriptor cache, Variant selection, path normalization, provider dispatch, HTTP/cache/range/security semantics | Authoring state, certificate ordering, source indexing, deployment business workflow |
+| `sdkwork-webserver` | Host/SNI match, descriptor cache, Variant selection, path normalization, provider dispatch, HTTP/cache/range/security semantics | Authoring state, certificate ordering, source indexing, deployment business workflow |
 
 Dependency direction is browser/admin client -> generated app/backend SDK -> owning service API ->
 application service -> port -> adapter. Web Server resource reads use typed provider contracts

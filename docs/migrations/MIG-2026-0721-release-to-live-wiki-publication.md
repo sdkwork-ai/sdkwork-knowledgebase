@@ -13,7 +13,7 @@ SUPPLY_CHAIN_SECURITY_SPEC.md
 Cross-repository runtime contracts:
 
 - `sdkwork-deployments/docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md`
-- `sdkwork-web-server/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md`
+- `sdkwork-webserver/docs/architecture/tech/TECH-cloud-site-delivery-data-plane.md`
 
 ## 1. Scope
 
