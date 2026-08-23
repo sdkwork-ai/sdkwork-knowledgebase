@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Activity, ArrowLeft, KeyRound, Link2, Plus, RefreshCw, RotateCcw, ShieldAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { uuid } from '@sdkwork/utils/id';
 import type {
   KnowledgeEngineProviderBinding,
   KnowledgeEngineProviderCredentialReference,
@@ -339,7 +340,7 @@ function ProviderAdminFormDialog(props: { bindings: KnowledgeEngineProviderBindi
   const [sourceBindingId, setSourceBindingId] = useState<string>(activeBinding?.id ?? '');
   const [targetBindingId, setTargetBindingId] = useState<string>(testedBindings[0]?.id ?? '');
   const [observationSeconds, setObservationSeconds] = useState(300);
-  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => uuid());
   const [validationError, setValidationError] = useState<string>();
   const title = props.t(props.dialog.kind);
 

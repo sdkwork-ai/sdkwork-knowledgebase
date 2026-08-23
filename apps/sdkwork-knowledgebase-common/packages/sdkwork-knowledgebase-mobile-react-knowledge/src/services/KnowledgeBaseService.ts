@@ -1,4 +1,5 @@
 import { NotFoundError } from '@sdkwork/sdk-common';
+import { uuid } from '@sdkwork/utils/id';
 import type {
   CreateKnowledgeDocumentRequest,
   KnowledgeDocument as ServerKnowledgeDocument,
@@ -157,11 +158,7 @@ export function removeRegisteredSpace(scopeKey: string, spaceId: string): Regist
 }
 
 function createIdempotencyKey(): string {
-  const randomUuid = globalThis.crypto?.randomUUID;
-  if (!randomUuid) {
-    throw new Error("Secure UUID generation is unavailable in this browser.");
-  }
-  return `kb-h5-doc-${randomUuid.call(globalThis.crypto)}`;
+  return `kb-h5-doc-${uuid()}`;
 }
 
 function mapServerSpace(

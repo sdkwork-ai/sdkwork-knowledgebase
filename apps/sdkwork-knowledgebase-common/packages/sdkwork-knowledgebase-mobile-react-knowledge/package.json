@@ -12,7 +12,8 @@
   "dependencies": {
     "@sdkwork/knowledgebase-app-sdk": "workspace:*",
     "@sdkwork/sdk-common": "workspace:*",
-    "@sdkwork/ui-mobile-react": "workspace:*"
+    "@sdkwork/ui-mobile-react": "workspace:*",
+    "@sdkwork/utils": "workspace:*"
   },
   "peerDependencies": {
     "lucide-react": ">=1.0.0",
