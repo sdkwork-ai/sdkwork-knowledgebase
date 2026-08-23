@@ -1,6 +1,5 @@
 version: 2
 defaultProfile: cloud.production
-
 profiles:
   cloud.test:
     deployment:
@@ -17,13 +16,48 @@ profiles:
     install:
       layout: binary-package
     expose:
-      - domain: knowledgebase-test.sdkwork.com
+      - domain: knowledge-test.sdkwork.com
         tls: sdkwork.com
         mode: web+api
         web: pc
         aliases:
           - knowledgebase-admin-test.sdkwork.com
-          - knowledge-test.sdkwork.com
+          - knowledgebase-test.sdkwork.com
+      - domain: knowledge-test.birdcoder.com
+        tls: birdcoder.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.birdcoder.com
+          - knowledgebase-test.birdcoder.com
+      - domain: knowledge-test.dtupay.com
+        tls: dtupay.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.dtupay.com
+          - knowledgebase-test.dtupay.com
+      - domain: knowledge-test.sdkwork.cn
+        tls: sdkwork.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.sdkwork.cn
+          - knowledgebase-test.sdkwork.cn
+      - domain: knowledge-test.birdcoder.cn
+        tls: birdcoder.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.birdcoder.cn
+          - knowledgebase-test.birdcoder.cn
+      - domain: knowledge-test.dtupay.cn
+        tls: dtupay.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.dtupay.cn
+          - knowledgebase-test.dtupay.cn
     packages: []
     overrides:
       topology:
@@ -32,7 +66,6 @@ profiles:
         env: etc/topology/cloud.test.env
       kubernetes:
         reference: deployments/kubernetes/
-
   cloud.staging:
     deployment:
       deploymentProfile: cloud
@@ -48,13 +81,48 @@ profiles:
     install:
       layout: binary-package
     expose:
-      - domain: knowledgebase-staging.sdkwork.com
+      - domain: knowledge-staging.sdkwork.com
         tls: sdkwork.com
         mode: web+api
         web: pc
         aliases:
           - knowledgebase-admin-staging.sdkwork.com
-          - knowledge-staging.sdkwork.com
+          - knowledgebase-staging.sdkwork.com
+      - domain: knowledge-staging.birdcoder.com
+        tls: birdcoder.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.birdcoder.com
+          - knowledgebase-staging.birdcoder.com
+      - domain: knowledge-staging.dtupay.com
+        tls: dtupay.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.dtupay.com
+          - knowledgebase-staging.dtupay.com
+      - domain: knowledge-staging.sdkwork.cn
+        tls: sdkwork.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.sdkwork.cn
+          - knowledgebase-staging.sdkwork.cn
+      - domain: knowledge-staging.birdcoder.cn
+        tls: birdcoder.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.birdcoder.cn
+          - knowledgebase-staging.birdcoder.cn
+      - domain: knowledge-staging.dtupay.cn
+        tls: dtupay.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.dtupay.cn
+          - knowledgebase-staging.dtupay.cn
     packages: []
     overrides:
       topology:
@@ -63,7 +131,6 @@ profiles:
         env: etc/topology/cloud.staging.env
       kubernetes:
         reference: deployments/kubernetes/
-
   cloud.production:
     deployment:
       deploymentProfile: cloud
@@ -79,13 +146,48 @@ profiles:
     install:
       layout: binary-package
     expose:
-      - domain: knowledgebase.sdkwork.com
+      - domain: knowledge.sdkwork.com
         tls: sdkwork.com
         mode: web+api
         web: pc
         aliases:
           - knowledgebase-admin.sdkwork.com
-          - knowledge.sdkwork.com
+          - knowledgebase.sdkwork.com
+      - domain: knowledge.birdcoder.com
+        tls: birdcoder.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.birdcoder.com
+          - knowledgebase.birdcoder.com
+      - domain: knowledge.dtupay.com
+        tls: dtupay.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.dtupay.com
+          - knowledgebase.dtupay.com
+      - domain: knowledge.sdkwork.cn
+        tls: sdkwork.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.sdkwork.cn
+          - knowledgebase.sdkwork.cn
+      - domain: knowledge.birdcoder.cn
+        tls: birdcoder.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.birdcoder.cn
+          - knowledgebase.birdcoder.cn
+      - domain: knowledge.dtupay.cn
+        tls: dtupay.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.dtupay.cn
+          - knowledgebase.dtupay.cn
     packages: []
     overrides:
       topology:
@@ -94,7 +196,6 @@ profiles:
         env: etc/topology/cloud.production.env
       kubernetes:
         reference: deployments/kubernetes/
-
   standalone.production:
     deployment:
       deploymentProfile: standalone
@@ -110,11 +211,54 @@ profiles:
     install:
       layout: binary-package
     expose:
-      - domain: knowledgebase.internal.example
-        tls: managed
+      - domain: knowledge.sdkwork.com
+        tls: sdkwork.com
         mode: web+api
         web: pc
         apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.sdkwork.com
+          - knowledgebase.sdkwork.com
+      - domain: knowledge.birdcoder.com
+        tls: birdcoder.com
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.birdcoder.com
+          - knowledgebase.birdcoder.com
+      - domain: knowledge.dtupay.com
+        tls: dtupay.com
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.dtupay.com
+          - knowledgebase.dtupay.com
+      - domain: knowledge.sdkwork.cn
+        tls: sdkwork.cn
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.sdkwork.cn
+          - knowledgebase.sdkwork.cn
+      - domain: knowledge.birdcoder.cn
+        tls: birdcoder.cn
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.birdcoder.cn
+          - knowledgebase.birdcoder.cn
+      - domain: knowledge.dtupay.cn
+        tls: dtupay.cn
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.dtupay.cn
+          - knowledgebase.dtupay.cn
     packages:
       - desktop-windows
       - desktop-macos
