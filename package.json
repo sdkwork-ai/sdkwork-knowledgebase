@@ -103,7 +103,12 @@
     "_sdkwork:clean": "cargo clean && node -e \"const fs=require('node:fs'); for (const dir of ['artifacts','target']) { if (fs.existsSync(dir)) fs.rmSync(dir,{recursive:true,force:true}); }\"",
     "dev:standalone": "pnpm exec sdkwork-app dev --deployment-profile standalone",
     "dev:cloud": "pnpm exec sdkwork-app dev --deployment-profile cloud",
-    "dev:browser:cloud": "pnpm exec sdkwork-app dev --runtime-target browser --deployment-profile cloud"
+    "dev:browser:cloud": "pnpm exec sdkwork-app dev --runtime-target browser --deployment-profile cloud",
+    "build:pc:dev": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment dev",
+    "build:pc:test": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment test",
+    "build:pc:staging": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment staging",
+    "build:pc:prod": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment prod",
+    "check:browser-build-scripts": "node ../sdkwork-specs/tools/check-browser-build-scripts.mjs --root ."
   },
   "exports": {
     ".": {

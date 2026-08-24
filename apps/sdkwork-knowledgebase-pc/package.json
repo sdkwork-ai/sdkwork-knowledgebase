@@ -13,7 +13,11 @@
     "test:e2e:install": "playwright install chromium",
     "dev:desktop": "pnpm --filter sdkwork-knowledgebase-pc-desktop run dev:desktop",
     "build:desktop": "pnpm --filter sdkwork-knowledgebase-pc-desktop run build:desktop",
-    "build:desktop:debug": "pnpm --filter sdkwork-knowledgebase-pc-desktop run build:desktop:debug"
+    "build:desktop:debug": "pnpm --filter sdkwork-knowledgebase-pc-desktop run build:desktop:debug",
+    "build:dev": "node ../../../sdkwork-specs/tools/build-browser-client.mjs --app-root . --environment dev",
+    "build:test": "node ../../../sdkwork-specs/tools/build-browser-client.mjs --app-root . --environment test",
+    "build:staging": "node ../../../sdkwork-specs/tools/build-browser-client.mjs --app-root . --environment staging",
+    "build:prod": "node ../../../sdkwork-specs/tools/build-browser-client.mjs --app-root . --environment prod"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

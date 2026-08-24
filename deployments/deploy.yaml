@@ -58,6 +58,62 @@ profiles:
         aliases:
           - knowledgebase-admin-test.dtupay.cn
           - knowledgebase-test.dtupay.cn
+      - domain: knowledge-test.skubc.com
+        tls: skubc.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.skubc.com
+          - knowledgebase-test.skubc.com
+      - domain: knowledge-test.skubc.cn
+        tls: skubc.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.skubc.cn
+          - knowledgebase-test.skubc.cn
+      - domain: knowledge-test.zowalk.com
+        tls: zowalk.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.zowalk.com
+          - knowledgebase-test.zowalk.com
+      - domain: knowledge-test.zowalk.cn
+        tls: zowalk.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.zowalk.cn
+          - knowledgebase-test.zowalk.cn
+      - domain: knowledge-test.offer86.com
+        tls: offer86.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.offer86.com
+          - knowledgebase-test.offer86.com
+      - domain: knowledge-test.offer86.cn
+        tls: offer86.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.offer86.cn
+          - knowledgebase-test.offer86.cn
+      - domain: knowledge-test.86offer.com
+        tls: 86offer.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.86offer.com
+          - knowledgebase-test.86offer.com
+      - domain: knowledge-test.86offer.cn
+        tls: 86offer.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.86offer.cn
+          - knowledgebase-test.86offer.cn
     packages: []
     overrides:
       topology:
@@ -123,6 +179,62 @@ profiles:
         aliases:
           - knowledgebase-admin-staging.dtupay.cn
           - knowledgebase-staging.dtupay.cn
+      - domain: knowledge-staging.skubc.com
+        tls: skubc.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.skubc.com
+          - knowledgebase-staging.skubc.com
+      - domain: knowledge-staging.skubc.cn
+        tls: skubc.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.skubc.cn
+          - knowledgebase-staging.skubc.cn
+      - domain: knowledge-staging.zowalk.com
+        tls: zowalk.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.zowalk.com
+          - knowledgebase-staging.zowalk.com
+      - domain: knowledge-staging.zowalk.cn
+        tls: zowalk.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.zowalk.cn
+          - knowledgebase-staging.zowalk.cn
+      - domain: knowledge-staging.offer86.com
+        tls: offer86.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.offer86.com
+          - knowledgebase-staging.offer86.com
+      - domain: knowledge-staging.offer86.cn
+        tls: offer86.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.offer86.cn
+          - knowledgebase-staging.offer86.cn
+      - domain: knowledge-staging.86offer.com
+        tls: 86offer.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.86offer.com
+          - knowledgebase-staging.86offer.com
+      - domain: knowledge-staging.86offer.cn
+        tls: 86offer.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.86offer.cn
+          - knowledgebase-staging.86offer.cn
     packages: []
     overrides:
       topology:
@@ -188,6 +300,62 @@ profiles:
         aliases:
           - knowledgebase-admin.dtupay.cn
           - knowledgebase.dtupay.cn
+      - domain: knowledge.skubc.com
+        tls: skubc.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.skubc.com
+          - knowledgebase.skubc.com
+      - domain: knowledge.skubc.cn
+        tls: skubc.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.skubc.cn
+          - knowledgebase.skubc.cn
+      - domain: knowledge.zowalk.com
+        tls: zowalk.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.zowalk.com
+          - knowledgebase.zowalk.com
+      - domain: knowledge.zowalk.cn
+        tls: zowalk.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.zowalk.cn
+          - knowledgebase.zowalk.cn
+      - domain: knowledge.offer86.com
+        tls: offer86.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.offer86.com
+          - knowledgebase.offer86.com
+      - domain: knowledge.offer86.cn
+        tls: offer86.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.offer86.cn
+          - knowledgebase.offer86.cn
+      - domain: knowledge.86offer.com
+        tls: 86offer.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.86offer.com
+          - knowledgebase.86offer.com
+      - domain: knowledge.86offer.cn
+        tls: 86offer.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.86offer.cn
+          - knowledgebase.86offer.cn
     packages: []
     overrides:
       topology:
@@ -259,6 +427,70 @@ profiles:
         aliases:
           - knowledgebase-admin.dtupay.cn
           - knowledgebase.dtupay.cn
+      - domain: knowledge.skubc.com
+        tls: skubc.com
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.skubc.com
+          - knowledgebase.skubc.com
+      - domain: knowledge.skubc.cn
+        tls: skubc.cn
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.skubc.cn
+          - knowledgebase.skubc.cn
+      - domain: knowledge.zowalk.com
+        tls: zowalk.com
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.zowalk.com
+          - knowledgebase.zowalk.com
+      - domain: knowledge.zowalk.cn
+        tls: zowalk.cn
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.zowalk.cn
+          - knowledgebase.zowalk.cn
+      - domain: knowledge.offer86.com
+        tls: offer86.com
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.offer86.com
+          - knowledgebase.offer86.com
+      - domain: knowledge.offer86.cn
+        tls: offer86.cn
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.offer86.cn
+          - knowledgebase.offer86.cn
+      - domain: knowledge.86offer.com
+        tls: 86offer.com
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.86offer.com
+          - knowledgebase.86offer.com
+      - domain: knowledge.86offer.cn
+        tls: 86offer.cn
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.86offer.cn
+          - knowledgebase.86offer.cn
     packages:
       - desktop-windows
       - desktop-macos

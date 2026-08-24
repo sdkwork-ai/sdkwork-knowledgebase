@@ -2,59 +2,8 @@ environment = "staging"
 
 [http]
 
-[http.certificates]
-
-[http.certificates."sdkwork.com"]
-certFile = "/opt/certs/letsencrypt/live/sdkwork.com/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/sdkwork.com/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/sdkwork.com/chain.pem"
-ocspStapling = true
-
-[http.certificates."birdcoder.com"]
-certFile = "/opt/certs/letsencrypt/live/birdcoder.com/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/birdcoder.com/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/birdcoder.com/chain.pem"
-ocspStapling = true
-
-[http.certificates."dtupay.com"]
-certFile = "/opt/certs/letsencrypt/live/dtupay.com/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/dtupay.com/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/dtupay.com/chain.pem"
-ocspStapling = true
-
-[http.certificates."sdkwork.cn"]
-certFile = "/opt/certs/letsencrypt/live/sdkwork.cn/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/sdkwork.cn/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/sdkwork.cn/chain.pem"
-ocspStapling = true
-
-[http.certificates."birdcoder.cn"]
-certFile = "/opt/certs/letsencrypt/live/birdcoder.cn/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/birdcoder.cn/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/birdcoder.cn/chain.pem"
-ocspStapling = true
-
-[http.certificates."dtupay.cn"]
-certFile = "/opt/certs/letsencrypt/live/dtupay.cn/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/dtupay.cn/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/dtupay.cn/chain.pem"
-ocspStapling = true
-
 [[http.server]]
 listen = ["80"]
-serverName = ["knowledgebase-staging.sdkwork.com", "knowledgebase-staging.birdcoder.com", "knowledgebase-staging.dtupay.com", "knowledgebase-staging.sdkwork.cn", "knowledgebase-staging.birdcoder.cn", "knowledgebase-staging.dtupay.cn", "knowledgebase-admin-staging.sdkwork.com", "knowledgebase-admin-staging.birdcoder.com", "knowledgebase-admin-staging.dtupay.com", "knowledgebase-admin-staging.sdkwork.cn", "knowledgebase-admin-staging.birdcoder.cn", "knowledgebase-admin-staging.dtupay.cn", "knowledge-staging.sdkwork.com", "knowledge-staging.birdcoder.com", "knowledge-staging.dtupay.com", "knowledge-staging.sdkwork.cn", "knowledge-staging.birdcoder.cn", "knowledge-staging.dtupay.cn"]
-
-[[http.server.location]]
-match = "/api/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
-
-[[http.server.location]]
-match = "/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
-proxyBuffering = false
-proxyReadTimeout = "300s"
+serverName = ["knowledgebase-staging.sdkwork.com", "knowledgebase-staging.birdcoder.com", "knowledgebase-staging.dtupay.com", "knowledgebase-staging.sdkwork.cn", "knowledgebase-staging.birdcoder.cn", "knowledgebase-staging.dtupay.cn", "knowledgebase-staging.skubc.com", "knowledgebase-staging.skubc.cn", "knowledgebase-staging.zowalk.com", "knowledgebase-staging.zowalk.cn", "knowledgebase-staging.offer86.com", "knowledgebase-staging.offer86.cn", "knowledgebase-staging.86offer.com", "knowledgebase-staging.86offer.cn", "knowledgebase-admin-staging.sdkwork.com", "knowledgebase-admin-staging.birdcoder.com", "knowledgebase-admin-staging.dtupay.com", "knowledgebase-admin-staging.sdkwork.cn", "knowledgebase-admin-staging.birdcoder.cn", "knowledgebase-admin-staging.dtupay.cn", "knowledgebase-admin-staging.skubc.com", "knowledgebase-admin-staging.skubc.cn", "knowledgebase-admin-staging.zowalk.com", "knowledgebase-admin-staging.zowalk.cn", "knowledgebase-admin-staging.offer86.com", "knowledgebase-admin-staging.offer86.cn", "knowledgebase-admin-staging.86offer.com", "knowledgebase-admin-staging.86offer.cn", "knowledge-staging.sdkwork.com", "knowledge-staging.birdcoder.com", "knowledge-staging.dtupay.com", "knowledge-staging.sdkwork.cn", "knowledge-staging.birdcoder.cn", "knowledge-staging.dtupay.cn", "knowledge-staging.skubc.com", "knowledge-staging.skubc.cn", "knowledge-staging.zowalk.com", "knowledge-staging.zowalk.cn", "knowledge-staging.offer86.com", "knowledge-staging.offer86.cn", "knowledge-staging.86offer.com", "knowledge-staging.86offer.cn"]
+include = ["snippets/gateway-locations.nonproduction.conf"]
 

@@ -2,263 +2,171 @@ environment = "production"
 
 [http]
 
-[http.certificates]
-
-[http.certificates."sdkwork.com"]
-certFile = "/opt/certs/letsencrypt/live/sdkwork.com/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/sdkwork.com/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/sdkwork.com/chain.pem"
-ocspStapling = true
-
-[http.certificates."birdcoder.com"]
-certFile = "/opt/certs/letsencrypt/live/birdcoder.com/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/birdcoder.com/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/birdcoder.com/chain.pem"
-ocspStapling = true
-
-[http.certificates."dtupay.com"]
-certFile = "/opt/certs/letsencrypt/live/dtupay.com/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/dtupay.com/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/dtupay.com/chain.pem"
-ocspStapling = true
-
-[http.certificates."sdkwork.cn"]
-certFile = "/opt/certs/letsencrypt/live/sdkwork.cn/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/sdkwork.cn/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/sdkwork.cn/chain.pem"
-ocspStapling = true
-
-[http.certificates."birdcoder.cn"]
-certFile = "/opt/certs/letsencrypt/live/birdcoder.cn/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/birdcoder.cn/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/birdcoder.cn/chain.pem"
-ocspStapling = true
-
-[http.certificates."dtupay.cn"]
-certFile = "/opt/certs/letsencrypt/live/dtupay.cn/fullchain.pem"
-certKeyFile = "/opt/certs/letsencrypt/live/dtupay.cn/privkey.pem"
-chainFile = "/opt/certs/letsencrypt/live/dtupay.cn/chain.pem"
-ocspStapling = true
-
 [[http.server]]
 listen = ["443 ssl", "80"]
 serverName = ["knowledgebase.sdkwork.com", "knowledgebase-admin.sdkwork.com", "knowledge.sdkwork.com"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
 
 [http.server.tls]
 cert = "sdkwork.com"
-protocols = ["TLSv1.2", "TLSv1.3"]
-preferServerCiphers = true
-sessionCache = "shared:SSL:10m"
-
-[[http.server.location]]
-match = "= /healthz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "= /readyz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "/api/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
 
 [[http.server.location]]
 match = "/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Real-IP $remote_addr", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
-proxyBuffering = false
-proxyReadTimeout = "120s"
-proxySendTimeout = "120s"
+include = ["snippets/adaptive-web.dispatch.conf"]
 
 [[http.server]]
 listen = ["443 ssl", "80"]
 serverName = ["knowledgebase.birdcoder.com", "knowledgebase-admin.birdcoder.com", "knowledge.birdcoder.com"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
 
 [http.server.tls]
 cert = "birdcoder.com"
-protocols = ["TLSv1.2", "TLSv1.3"]
-preferServerCiphers = true
-sessionCache = "shared:SSL:10m"
-
-[[http.server.location]]
-match = "= /healthz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "= /readyz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "/api/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
 
 [[http.server.location]]
 match = "/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Real-IP $remote_addr", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
-proxyBuffering = false
-proxyReadTimeout = "120s"
-proxySendTimeout = "120s"
+include = ["snippets/adaptive-web.dispatch.conf"]
 
 [[http.server]]
 listen = ["443 ssl", "80"]
 serverName = ["knowledgebase.dtupay.com", "knowledgebase-admin.dtupay.com", "knowledge.dtupay.com"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
 
 [http.server.tls]
 cert = "dtupay.com"
-protocols = ["TLSv1.2", "TLSv1.3"]
-preferServerCiphers = true
-sessionCache = "shared:SSL:10m"
-
-[[http.server.location]]
-match = "= /healthz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "= /readyz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "/api/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
 
 [[http.server.location]]
 match = "/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Real-IP $remote_addr", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
-proxyBuffering = false
-proxyReadTimeout = "120s"
-proxySendTimeout = "120s"
+include = ["snippets/adaptive-web.dispatch.conf"]
 
 [[http.server]]
 listen = ["443 ssl", "80"]
 serverName = ["knowledgebase.sdkwork.cn", "knowledgebase-admin.sdkwork.cn", "knowledge.sdkwork.cn"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
 
 [http.server.tls]
 cert = "sdkwork.cn"
-protocols = ["TLSv1.2", "TLSv1.3"]
-preferServerCiphers = true
-sessionCache = "shared:SSL:10m"
-
-[[http.server.location]]
-match = "= /healthz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "= /readyz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "/api/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
 
 [[http.server.location]]
 match = "/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Real-IP $remote_addr", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
-proxyBuffering = false
-proxyReadTimeout = "120s"
-proxySendTimeout = "120s"
+include = ["snippets/adaptive-web.dispatch.conf"]
 
 [[http.server]]
 listen = ["443 ssl", "80"]
 serverName = ["knowledgebase.birdcoder.cn", "knowledgebase-admin.birdcoder.cn", "knowledge.birdcoder.cn"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
 
 [http.server.tls]
 cert = "birdcoder.cn"
-protocols = ["TLSv1.2", "TLSv1.3"]
-preferServerCiphers = true
-sessionCache = "shared:SSL:10m"
-
-[[http.server.location]]
-match = "= /healthz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "= /readyz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "/api/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
 
 [[http.server.location]]
 match = "/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Real-IP $remote_addr", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
-proxyBuffering = false
-proxyReadTimeout = "120s"
-proxySendTimeout = "120s"
+include = ["snippets/adaptive-web.dispatch.conf"]
 
 [[http.server]]
 listen = ["443 ssl", "80"]
 serverName = ["knowledgebase.dtupay.cn", "knowledgebase-admin.dtupay.cn", "knowledge.dtupay.cn"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
 
 [http.server.tls]
 cert = "dtupay.cn"
-protocols = ["TLSv1.2", "TLSv1.3"]
-preferServerCiphers = true
-sessionCache = "shared:SSL:10m"
-
-[[http.server.location]]
-match = "= /healthz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "= /readyz"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host"]
-
-[[http.server.location]]
-match = "/api/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
 
 [[http.server.location]]
 match = "/"
-proxyPass = "http://gateway"
-proxyHttpVersion = "1.1"
-proxySetHeader = ["Host $host", "X-Real-IP $remote_addr", "X-Forwarded-For $proxy_add_x_forwarded_for", "X-Forwarded-Proto $scheme"]
-proxyBuffering = false
-proxyReadTimeout = "120s"
-proxySendTimeout = "120s"
+include = ["snippets/adaptive-web.dispatch.conf"]
+
+[[http.server]]
+listen = ["443 ssl", "80"]
+serverName = ["knowledgebase.skubc.com", "knowledgebase-admin.skubc.com", "knowledge.skubc.com"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
+
+[http.server.tls]
+cert = "skubc.com"
+
+[[http.server.location]]
+match = "/"
+include = ["snippets/adaptive-web.dispatch.conf"]
+
+[[http.server]]
+listen = ["443 ssl", "80"]
+serverName = ["knowledgebase.skubc.cn", "knowledgebase-admin.skubc.cn", "knowledge.skubc.cn"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
+
+[http.server.tls]
+cert = "skubc.cn"
+
+[[http.server.location]]
+match = "/"
+include = ["snippets/adaptive-web.dispatch.conf"]
+
+[[http.server]]
+listen = ["443 ssl", "80"]
+serverName = ["knowledgebase.zowalk.com", "knowledgebase-admin.zowalk.com", "knowledge.zowalk.com"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
+
+[http.server.tls]
+cert = "zowalk.com"
+
+[[http.server.location]]
+match = "/"
+include = ["snippets/adaptive-web.dispatch.conf"]
+
+[[http.server]]
+listen = ["443 ssl", "80"]
+serverName = ["knowledgebase.zowalk.cn", "knowledgebase-admin.zowalk.cn", "knowledge.zowalk.cn"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
+
+[http.server.tls]
+cert = "zowalk.cn"
+
+[[http.server.location]]
+match = "/"
+include = ["snippets/adaptive-web.dispatch.conf"]
+
+[[http.server]]
+listen = ["443 ssl", "80"]
+serverName = ["knowledgebase.offer86.com", "knowledgebase-admin.offer86.com", "knowledge.offer86.com"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
+
+[http.server.tls]
+cert = "offer86.com"
+
+[[http.server.location]]
+match = "/"
+include = ["snippets/adaptive-web.dispatch.conf"]
+
+[[http.server]]
+listen = ["443 ssl", "80"]
+serverName = ["knowledgebase.offer86.cn", "knowledgebase-admin.offer86.cn", "knowledge.offer86.cn"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
+
+[http.server.tls]
+cert = "offer86.cn"
+
+[[http.server.location]]
+match = "/"
+include = ["snippets/adaptive-web.dispatch.conf"]
+
+[[http.server]]
+listen = ["443 ssl", "80"]
+serverName = ["knowledgebase.86offer.com", "knowledgebase-admin.86offer.com", "knowledge.86offer.com"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
+
+[http.server.tls]
+cert = "86offer.com"
+
+[[http.server.location]]
+match = "/"
+include = ["snippets/adaptive-web.dispatch.conf"]
+
+[[http.server]]
+listen = ["443 ssl", "80"]
+serverName = ["knowledgebase.86offer.cn", "knowledgebase-admin.86offer.cn", "knowledge.86offer.cn"]
+include = ["snippets/adaptive-web.named-locations.conf", "snippets/gateway-api-locations.production.conf"]
+
+[http.server.tls]
+cert = "86offer.cn"
+
+[[http.server.location]]
+match = "/"
+include = ["snippets/adaptive-web.dispatch.conf"]
 
