@@ -15,6 +15,12 @@ sdks/**/generated/server-openapi/node_modules/
 sdks/**/generated/server-openapi/dist/
 sdks/**/generated/server-openapi/package-lock.json
 
+# TypeScript/JavaScript build artifacts emitted alongside source (tsc declaration/emit)
+*.d.ts.map
+*.js.map
+**/src/**/*.js
+**/src/**/*.d.ts
+
 # Environment and secrets
 .env
 .env.local
@@ -65,6 +71,7 @@ apps/sdkwork-knowledgebase-pc/**/dist/
 apps/sdkwork-knowledgebase-pc/**/build/
 apps/sdkwork-knowledgebase-pc/**/src-tauri/target/
 apps/sdkwork-knowledgebase-pc/**/*.zip
+apps/*.zip
 
 # Playwright / e2e local output
 **/test-results/
