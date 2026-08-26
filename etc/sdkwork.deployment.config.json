@@ -8,22 +8,26 @@
     "development": {
       "catalogAccessUrl": "https://api-dev.sdkwork.com/apps/sdkwork-knowledgebase",
       "catalogDeployUrl": "https://api-dev.sdkwork.com/apps/sdkwork-knowledgebase",
-      "deployEnvironment": "dev"
+      "deployEnvironment": "dev",
+      "cloudApiBaseUrl": "https://api-dev.sdkwork.com"
     },
     "test": {
       "catalogAccessUrl": "https://api-test.sdkwork.com/apps/sdkwork-knowledgebase",
       "catalogDeployUrl": "https://api-test.sdkwork.com/apps/sdkwork-knowledgebase",
-      "deployEnvironment": "test"
+      "deployEnvironment": "test",
+      "cloudApiBaseUrl": "https://api-test.sdkwork.com"
     },
     "staging": {
       "catalogAccessUrl": "https://api-staging.sdkwork.com/apps/sdkwork-knowledgebase",
       "catalogDeployUrl": "https://api-staging.sdkwork.com/apps/sdkwork-knowledgebase",
-      "deployEnvironment": "staging"
+      "deployEnvironment": "staging",
+      "cloudApiBaseUrl": "https://api-staging.sdkwork.com"
     },
     "production": {
       "catalogAccessUrl": "https://api.sdkwork.com/apps/sdkwork-knowledgebase",
       "catalogDeployUrl": "https://api.sdkwork.com/apps/sdkwork-knowledgebase",
-      "deployEnvironment": "production"
+      "deployEnvironment": "production",
+      "cloudApiBaseUrl": "https://api.sdkwork.com"
     }
   },
   "profiles": {

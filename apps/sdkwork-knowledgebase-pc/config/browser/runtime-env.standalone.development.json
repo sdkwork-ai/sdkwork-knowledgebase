@@ -1,0 +1,27 @@
+{
+  "environment": "development",
+  "deploymentProfile": "standalone",
+  "profileId": "standalone.development",
+  "runtimeTarget": "browser",
+  "browserOriginMode": "same-origin",
+  "configProfile": "dev",
+  "buildMode": "development",
+  "appKey": "sdkwork-knowledgebase-pc",
+  "sdkBaseUrls": {
+    "appApiBaseUrl": "http://127.0.0.1:18081",
+    "openApiBaseUrl": "http://127.0.0.1:18081",
+    "platformApiGatewayBaseUrl": "http://127.0.0.1:3900"
+  },
+  "featureFlags": {
+    "enableDemoMode": true
+  },
+  "notes": "Safe checked-in browser runtime example for local development. Production/staging examples disable demo mode.",
+  "auth": {
+    "tokenStorage": "browser-local"
+  },
+  "appApiBaseUrl": "/",
+  "backendApiBaseUrl": "/",
+  "driveAppApiBaseUrl": "/",
+  "appbaseAppApiBaseUrl": "/",
+  "deployAppApiBaseUrl": "/"
+}

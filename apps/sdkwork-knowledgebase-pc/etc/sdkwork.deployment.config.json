@@ -7,8 +7,44 @@
   "materialization": {
     "authority": "../../../etc/sdkwork.deployment.config.json",
     "command": "pnpm workflow:materialize-client-env",
-    "format": "dotenv",
+    "format": "json",
     "outputPattern": "../.env.{deploymentProfile}.{environment}",
-    "profiles": ["standalone.development", "standalone.test", "standalone.staging", "standalone.production", "cloud.development", "cloud.test", "cloud.staging", "cloud.production"]
+    "profiles": [
+      "standalone.development",
+      "standalone.test",
+      "standalone.staging",
+      "standalone.production",
+      "cloud.development",
+      "cloud.test",
+      "cloud.staging",
+      "cloud.production"
+    ],
+    "output": "../public/runtime-env.json"
+  },
+  "profiles": {
+    "standalone.development": {
+      "source": "../config/browser/runtime-env.standalone.development.json"
+    },
+    "standalone.test": {
+      "source": "../config/browser/runtime-env.standalone.test.json"
+    },
+    "standalone.staging": {
+      "source": "../config/browser/runtime-env.standalone.staging.json"
+    },
+    "standalone.production": {
+      "source": "../config/browser/runtime-env.standalone.production.json"
+    },
+    "cloud.development": {
+      "source": "../config/browser/runtime-env.cloud.development.json"
+    },
+    "cloud.test": {
+      "source": "../config/browser/runtime-env.cloud.test.json"
+    },
+    "cloud.staging": {
+      "source": "../config/browser/runtime-env.cloud.staging.json"
+    },
+    "cloud.production": {
+      "source": "../config/browser/runtime-env.cloud.production.json"
+    }
   }
 }
