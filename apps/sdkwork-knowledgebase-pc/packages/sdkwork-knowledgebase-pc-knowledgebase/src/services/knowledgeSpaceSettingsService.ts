@@ -161,7 +161,7 @@ export async function ensureSpaceAgentProfile(
     throw new Error('Agent profile create did not return profileId');
   }
 
-  await client.knowledge.agentProfiles.bindings.bindings(profileId, {
+  await client.knowledge.agentProfiles.bindings.create(profileId, {
     profileId,
     spaceId: String(spaceId),
     priority: 0,
@@ -273,7 +273,7 @@ export async function applyKnowledgeSpacePermissionSettings(
     return;
   }
 
-  await client.knowledge.spaces.contextBindings.contextBindings(String(spaceId), {
+  await client.knowledge.spaces.contextBindings.create(String(spaceId), {
     spaceId: String(spaceId),
     contextType: 'team',
     contextId: GUEST_CONTEXT_BINDING_ID,

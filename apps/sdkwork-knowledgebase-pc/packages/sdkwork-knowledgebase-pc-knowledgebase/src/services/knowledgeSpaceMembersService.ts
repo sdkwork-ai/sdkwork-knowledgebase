@@ -182,7 +182,7 @@ export async function syncKnowledgeSpaceMembers(
   for (const [email, member] of desiredByEmail) {
     const existing = previousByEmail.get(email);
     if (!existing || existing.role !== member.role) {
-      await client.knowledge.spaces.members.members(spaceKey, {
+      await client.knowledge.spaces.members.create(spaceKey, {
         subjectType: 'user',
         subjectId: member.email,
         role: toApiRole(member.role),

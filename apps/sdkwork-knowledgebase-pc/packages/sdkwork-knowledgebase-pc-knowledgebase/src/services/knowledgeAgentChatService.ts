@@ -52,7 +52,7 @@ export async function sendKnowledgeAgentMessage(
   const client = requireKnowledgebaseAppSdkHttpClient();
   const profile = await client.knowledge.agentProfiles.retrieve(profileId);
 
-  const response = await client.knowledge.agentProfiles.chat.chat(profileId, {
+  const response = await client.knowledge.agentProfiles.chat.create(profileId, {
     message: message.trim(),
     mode: options?.mode ?? profile.knowledgeMode ?? 'okf_bundle',
     sessionId: options?.sessionId ?? null,
