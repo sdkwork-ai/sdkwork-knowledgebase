@@ -28,4 +28,3 @@ thiserror.workspace = true
 
 [dev-dependencies]
 sdkwork-knowledgebase-test-support.workspace = true
-tokio.workspace = true

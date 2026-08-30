@@ -23,6 +23,5 @@ tokio = { workspace = true, features = ["sync"] }
 sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "postgres", "any"] }
 
 [dev-dependencies]
-tokio.workspace = true
 tower.workspace = true
 sdkwork-web-core.workspace = true

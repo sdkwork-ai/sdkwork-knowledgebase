@@ -56,7 +56,6 @@ dev-auth = []
 # build enables the dev-auth feature.
 sdkwork-routes-knowledgebase-app-api = { workspace = true, features = ["dev-auth"] }
 async-trait.workspace = true
-tokio.workspace = true
 tower.workspace = true
 serde_json.workspace = true
 wiremock.workspace = true

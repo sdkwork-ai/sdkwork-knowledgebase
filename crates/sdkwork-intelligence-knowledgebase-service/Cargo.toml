@@ -36,7 +36,6 @@ url = "2"
 zeroize.workspace = true
 
 [dev-dependencies]
-tokio.workspace = true
 wiremock.workspace = true
 sdkwork-knowledgebase-engine-dify.workspace = true
 sdkwork-knowledgebase-engine-ragflow.workspace = true
