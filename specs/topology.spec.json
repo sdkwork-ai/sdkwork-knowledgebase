@@ -496,7 +496,8 @@
         ],
         "healthSurfaces": [
           "application.public-ingress"
-        ]
+        ],
+        "browserDeliveries": []
       },
       "standalone.production": {
         "processes": [
@@ -517,15 +518,18 @@
         ],
         "healthSurfaces": [
           "application.public-ingress"
-        ]
+        ],
+        "browserDeliveries": []
       },
       "standalone.test": {
         "processes": [],
-        "healthSurfaces": []
+        "healthSurfaces": [],
+        "browserDeliveries": []
       },
       "standalone.staging": {
         "processes": [],
-        "healthSurfaces": []
+        "healthSurfaces": [],
+        "browserDeliveries": []
       },
       "cloud.development": {
         "processes": [],
@@ -566,7 +570,8 @@
       },
       "standalone.demo": {
         "processes": [],
-        "healthSurfaces": []
+        "healthSurfaces": [],
+        "browserDeliveries": []
       },
       "cloud.demo": {
         "processes": [],

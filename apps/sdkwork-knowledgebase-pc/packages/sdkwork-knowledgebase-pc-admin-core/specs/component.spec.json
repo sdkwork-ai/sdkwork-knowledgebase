@@ -110,12 +110,6 @@
       },
       "moduleCatalogRefs": [
         {
-          "moduleId": "iam-kernel",
-          "manifestRef": "../../../../../sdkwork-iam/iam/modules/iam-kernel/iam.module.manifest.json",
-          "inheritPermissions": true,
-          "inheritRoles": true
-        },
-        {
           "moduleId": "knowledge",
           "manifestRef": "../../../../specs/iam.module.manifest.json",
           "inheritPermissions": true,

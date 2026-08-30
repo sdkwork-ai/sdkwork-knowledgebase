@@ -178,7 +178,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/compliance/audit_events/export": {
@@ -369,12 +370,13 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/group_launch_capability": {
       "get": {
-        "operationId": "group.launch.capability",
+        "operationId": "group.launch.list",
         "tags": [
           "knowledge"
         ],
@@ -712,7 +714,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       },
       "get": {
         "operationId": "indexes.list",
@@ -2226,7 +2229,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/okf/concepts/{conceptId}/publish": {
@@ -2589,7 +2593,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/okf/exports": {
@@ -2766,7 +2771,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/okf/exports/{exportId}": {
@@ -3120,7 +3126,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/okf/index/rebuild": {
@@ -3296,7 +3303,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/okf/lint_runs": {
@@ -3472,7 +3480,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/okf/log_entries": {
@@ -3648,7 +3657,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/okf/profile": {
@@ -3824,7 +3834,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/okf/profile/{profileId}": {
@@ -5095,7 +5106,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/retrieval_profiles": {
@@ -5271,7 +5283,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/retrieval_profiles/{profileId}": {
@@ -6381,7 +6394,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     },
     "/backend/v3/api/knowledge/spaces": {
@@ -9078,7 +9092,8 @@
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": []
       }
     }
   },
@@ -11492,14 +11507,16 @@
             "$ref": "#/components/schemas/KnowledgeTenantStatusEnum"
           },
           "spaceCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "documentCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "createdAt": {
             "anyOf": [
@@ -11898,14 +11915,16 @@
         ],
         "properties": {
           "maxDocuments": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "documentCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "maxConcurrentIngestJobs": {
             "type": "integer",
@@ -11923,14 +11942,16 @@
             "minimum": 0
           },
           "maxStorageBytes": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "storageBytesUsed": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -12060,9 +12081,10 @@
         ],
         "properties": {
           "anonymizedCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           }
         }
       },
