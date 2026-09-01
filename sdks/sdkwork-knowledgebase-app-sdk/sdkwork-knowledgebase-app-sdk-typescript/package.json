@@ -1,6 +1,6 @@
 {
   "name": "@sdkwork/knowledgebase-app-sdk",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "SDKWork Knowledgebase App SDK with composed consumer facade.",
   "type": "module",
   "private": false,

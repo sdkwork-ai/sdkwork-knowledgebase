@@ -69,7 +69,7 @@ impl std::fmt::Display for GatewayConfigError {
             ),
             Self::InvalidEnvironment { value } => write!(
                 formatter,
-                "{ENVIRONMENT_ENV} must be one of development, test, staging, or production, got {value:?}"
+                "{ENVIRONMENT_ENV} must be one of development, test, staging, production, or demo, got {value:?}"
             ),
             Self::DrainTimeoutMustBePositive => {
                 write!(formatter, "{DRAIN_TIMEOUT_ENV} must be greater than zero")
@@ -161,7 +161,7 @@ pub(crate) fn resolve_gateway_drain_timeout(
 ) -> Result<Duration, GatewayConfigError> {
     let production = match environment {
         None => return Err(GatewayConfigError::MissingEnvironment),
-        Some("development" | "test" | "staging") => false,
+        Some("development" | "test" | "staging" | "demo") => false,
         Some("production") => true,
         Some(value) => {
             return Err(GatewayConfigError::InvalidEnvironment {
