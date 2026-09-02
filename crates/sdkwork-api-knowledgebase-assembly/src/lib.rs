@@ -11,7 +11,8 @@ pub use bootstrap::{
     assemble_api_router_with_pool, assemble_api_router_with_pool_and_provider_credential_resolver,
     assemble_api_router_with_pool_for_environment, assemble_app_api_contribution,
     assemble_app_api_contribution_from_environment, assemble_business_routes,
-    assemble_business_routes_from_environment, ApiAssembly,
+    assemble_business_routes_from_environment, web_module, web_module_with_pool,
+    web_module_with_pool_for_environment, ApiAssembly,
 };
 
 pub fn assembly_route_count() -> usize {

@@ -10,8 +10,7 @@ pub mod postgres_scope;
 
 pub use postgres_scope::{
     postgres_url_with_deployment_scope, require_postgres_rls_organization_id,
-    require_postgres_rls_tenant_id, POSTGRES_ORGANIZATION_SESSION_KEY,
-    POSTGRES_TENANT_SESSION_KEY,
+    require_postgres_rls_tenant_id, POSTGRES_ORGANIZATION_SESSION_KEY, POSTGRES_TENANT_SESSION_KEY,
 };
 
 pub struct KnowledgebaseDatabaseHost {
@@ -64,10 +63,9 @@ pub async fn bootstrap_knowledgebase_database_from_env() -> Result<Knowledgebase
     let mut config = DatabaseConfig::from_env("KNOWLEDGEBASE")
         .map_err(|error| format!("read knowledgebase database config failed: {error}"))?;
     if config.engine == DatabaseEngine::Postgres {
-        let tenant_id = require_postgres_rls_tenant_id()
-            .map_err(|error| error.to_string())?;
-        let organization_id = require_postgres_rls_organization_id()
-            .map_err(|error| error.to_string())?;
+        let tenant_id = require_postgres_rls_tenant_id().map_err(|error| error.to_string())?;
+        let organization_id =
+            require_postgres_rls_organization_id().map_err(|error| error.to_string())?;
         config.url = postgres_url_with_deployment_scope(&config.url, tenant_id, organization_id)
             .map_err(|error| error.to_string())?;
     } else {

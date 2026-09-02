@@ -242,7 +242,10 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(
+                    next_cursor,
+                ),
+                has_more,
                 page_size,
             ),
         )
@@ -372,7 +375,10 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(
+                    next_cursor,
+                ),
+                has_more,
                 page_size,
             ),
         )
@@ -561,7 +567,10 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(
+                    next_cursor,
+                ),
+                has_more,
                 page_size,
             ),
         )
@@ -739,7 +748,10 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(
+                    next_cursor,
+                ),
+                has_more,
                 page_size,
             ),
         )
@@ -933,7 +945,10 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(
+                    next_cursor,
+                ),
+                has_more,
                 page_size,
             ),
         )
@@ -1439,7 +1454,10 @@ impl KnowledgeBackendApi for HostedBackendApi {
         Ok(
             sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
                 items,
-                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(next_cursor),has_more,
+                sdkwork_routes_knowledgebase_backend_api::pagination::encode_opaque_next_cursor(
+                    next_cursor,
+                ),
+                has_more,
                 normalized_page_size,
             ),
         )

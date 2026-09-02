@@ -159,7 +159,8 @@ impl WechatApiClient {
         Err(WechatApiClientError::Api(format!(
             "wechat token request failed with code {}: {}",
             body.errcode.unwrap_or(0),
-            body.errmsg.unwrap_or_else(|| "no upstream detail".to_string()),
+            body.errmsg
+                .unwrap_or_else(|| "no upstream detail".to_string()),
         )))
     }
 

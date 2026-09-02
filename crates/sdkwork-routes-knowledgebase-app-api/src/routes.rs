@@ -1,13 +1,10 @@
 use axum::{
-    extract::{
-        rejection::JsonRejection, FromRequestParts, OriginalUri, Path, Query, State,
-    },
+    extract::{rejection::JsonRejection, FromRequestParts, OriginalUri, Path, Query, State},
     http::{request::Parts, StatusCode},
     response::Response,
     routing::{delete, get, patch, post, put},
     Json, Router,
 };
-use serde::de::DeserializeOwned;
 use sdkwork_knowledgebase_contract::{
     context_binding::{
         CreateKnowledgeSpaceContextBindingRequest, UpdateKnowledgeSpaceContextBindingRequest,
@@ -27,6 +24,7 @@ use sdkwork_knowledgebase_contract::{
     OkfQualityRunRequest, OkfQueryRequest, PublishKnowledgeWikiSourceFileRequest,
     UpdateKnowledgeSpaceRequest,
 };
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 

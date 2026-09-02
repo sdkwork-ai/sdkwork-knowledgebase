@@ -25,8 +25,7 @@ pub const AGENT_PROFILES_BINDINGS_LIST: &str = "agentProfiles.bindings.list";
 pub const AGENT_PROFILES_BINDINGS_CREATE: &str = "agentProfiles.bindings.create";
 pub const AGENT_PROFILES_BINDINGS_UPDATE: &str = "agentProfiles.bindings.update";
 pub const AGENT_PROFILES_BINDINGS_DELETE: &str = "agentProfiles.bindings.delete";
-pub const AGENT_PROFILES_RETRIEVAL_PREVIEW_CREATE: &str =
-    "agentProfiles.retrievalPreview.create";
+pub const AGENT_PROFILES_RETRIEVAL_PREVIEW_CREATE: &str = "agentProfiles.retrievalPreview.create";
 pub const AGENT_PROFILES_CHAT_CREATE: &str = "agentProfiles.chat.create";
 pub const OKF_CONCEPTS_LIST: &str = "okf.concepts.list";
 pub const OKF_CONCEPTS_RETRIEVE: &str = "okf.concepts.retrieve";

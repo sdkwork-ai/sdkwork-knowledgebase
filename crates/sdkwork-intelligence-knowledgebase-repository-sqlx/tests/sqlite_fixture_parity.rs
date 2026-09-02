@@ -17,8 +17,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-const PG_BASELINE: &str =
-    "database/ddl/baseline/postgres/0001_knowledgebase_baseline.sql";
+const PG_BASELINE: &str = "database/ddl/baseline/postgres/0001_knowledgebase_baseline.sql";
 const SQLITE_BASELINE: &str =
     "tests/fixtures/database/sqlite/ddl/baseline/0001_knowledgebase_baseline.sql";
 const SQLITE_MIGRATIONS_DIR: &str = "tests/fixtures/database/sqlite/migrations";
@@ -113,9 +112,7 @@ fn create_table_columns(sql: &str) -> BTreeMap<String, BTreeMap<String, String>>
     let mut tables = BTreeMap::new();
     for statement in sql_statements(sql) {
         let trimmed = statement.trim_start();
-        if !(trimmed.starts_with("CREATE TABLE")
-            || trimmed.starts_with("CREATE VIRTUAL TABLE"))
-        {
+        if !(trimmed.starts_with("CREATE TABLE") || trimmed.starts_with("CREATE VIRTUAL TABLE")) {
             continue;
         }
         let Some(open) = trimmed.find('(') else {
@@ -124,7 +121,12 @@ fn create_table_columns(sql: &str) -> BTreeMap<String, BTreeMap<String, String>>
         let close = trimmed.rfind(')').unwrap_or(trimmed.len());
         let name = trimmed[..open]
             .split_whitespace()
-            .find(|token| !matches!(*token, "CREATE" | "TABLE" | "VIRTUAL" | "IF" | "NOT" | "EXISTS" | "USING"))
+            .find(|token| {
+                !matches!(
+                    *token,
+                    "CREATE" | "TABLE" | "VIRTUAL" | "IF" | "NOT" | "EXISTS" | "USING"
+                )
+            })
             .map(|token| token.trim_matches(|c| c == '"' || c == '`'))
             .expect("table name");
         let body = &trimmed[open + 1..close];
@@ -247,9 +249,10 @@ fn sqlite_effective_schema() -> (BTreeMap<String, BTreeMap<String, String>>, BTr
     let mut sql = read_repo_file(SQLITE_BASELINE);
     for migration in migration_files() {
         sql.push('\n');
-        sql.push_str(&fs::read_to_string(&migration).unwrap_or_else(|error| {
-            panic!("read migration {}: {error}", migration.display())
-        }));
+        sql.push_str(
+            &fs::read_to_string(&migration)
+                .unwrap_or_else(|error| panic!("read migration {}: {error}", migration.display())),
+        );
     }
     let mut tables = create_table_columns(&sql);
     for (table, columns) in alter_added_columns(&sql) {

@@ -19,8 +19,8 @@ use sdkwork_knowledgebase_contract::rag::{
 };
 use sdkwork_knowledgebase_contract::{
     ingest::IngestionJob, GrantKnowledgeSpaceMemberRequest, KnowledgeDocument, KnowledgeSpace,
-    KnowledgeSpaceMember, KnowledgeSpaceMemberRole,
-    KnowledgeSpaceMemberSubjectType, UpdateKnowledgeSpaceRequest,
+    KnowledgeSpaceMember, KnowledgeSpaceMemberRole, KnowledgeSpaceMemberSubjectType,
+    UpdateKnowledgeSpaceRequest,
 };
 use sdkwork_utils_rust::{is_blank, SdkWorkPageData};
 use std::collections::HashSet;

@@ -10,7 +10,7 @@ use sdkwork_iam_web_adapter::{
 };
 use sdkwork_web_bootstrap::{
     shared_concurrent_admission_store, shared_idempotency_store, shared_rate_limit_store,
-    ComposedApiAssembly, CompositeReadinessCheck, ReadinessCheck, RedisReadinessCheck,
+    ApiModuleRegistry, CompositeReadinessCheck, ReadinessCheck, RedisReadinessCheck,
 };
 use std::sync::Arc;
 
@@ -35,8 +35,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     )
     .await?;
     let iam = sdkwork_api_iam_assembly::assemble_app_api_contribution().await?;
-    let mut composed =
-        ComposedApiAssembly::try_compose("SDKWork Knowledgebase API", vec![knowledgebase, iam])?;
+    let mut module_registry = ApiModuleRegistry::new();
+    module_registry.add_modules(vec![knowledgebase, iam]);
+    let mut composed = module_registry.try_compose("SDKWork Knowledgebase API")?;
 
     // Resolver bound to the process-shared database pool with the production
     // issuer/audience claim policy attached when the deployment is production-like.

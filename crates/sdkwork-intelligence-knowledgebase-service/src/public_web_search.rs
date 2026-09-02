@@ -90,9 +90,8 @@ pub async fn search_public_web(
         )));
     }
 
-    let mut last_error = PublicWebSearchError::Provider(
-        "public web search provider is unavailable".to_string(),
-    );
+    let mut last_error =
+        PublicWebSearchError::Provider("public web search provider is unavailable".to_string());
     for attempt in 0..=PUBLIC_SEARCH_MAX_RETRIES {
         let result = if let Some(base_url) = configured_searxng_base_url() {
             search_via_searxng(base_url, normalized, top_k).await

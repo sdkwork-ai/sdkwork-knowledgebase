@@ -252,7 +252,10 @@ pub async fn create_and_bootstrap_knowledgebase_database_pool_from_env(
 
 #[cfg(test)]
 mod tests {
-    use super::{ensure_url_ssl_mode, process_pool_budget, resolve_postgres_ssl_mode, KnowledgebaseProcessPoolBudget};
+    use super::{
+        ensure_url_ssl_mode, process_pool_budget, resolve_postgres_ssl_mode,
+        KnowledgebaseProcessPoolBudget,
+    };
     use sdkwork_database_config::{DatabaseEngine, PgSslMode};
     use sdkwork_knowledgebase_database_host::postgres_url_with_deployment_scope;
     use url::Url;

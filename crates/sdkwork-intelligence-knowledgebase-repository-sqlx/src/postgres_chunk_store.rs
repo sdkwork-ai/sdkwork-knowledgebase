@@ -140,7 +140,10 @@ impl KnowledgeChunkStore for PostgresKnowledgeChunkStore {
                 .last()
                 .and_then(|row| row.try_get::<i64, _>("chunk_index").ok())
                 .unwrap_or(after_chunk_index + page_len);
-            chunk_ids.extend(rows.iter().filter_map(|row| row.try_get::<i64, _>("id").ok()));
+            chunk_ids.extend(
+                rows.iter()
+                    .filter_map(|row| row.try_get::<i64, _>("id").ok()),
+            );
             if page_len < CHUNK_PAGE_SIZE {
                 break;
             }

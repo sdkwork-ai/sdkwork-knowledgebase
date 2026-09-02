@@ -786,9 +786,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _document_id: u64,
         _request: CreateKnowledgeDocumentVersionRequest,
     ) -> ApiResult<KnowledgeDocumentVersion> {
-        Err(ApiError::unsupported_operation(
-            "documents.versions.create",
-        ))
+        Err(ApiError::unsupported_operation("documents.versions.create"))
     }
 
     async fn retrieve_document_content(

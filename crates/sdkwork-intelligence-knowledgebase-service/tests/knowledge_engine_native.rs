@@ -699,11 +699,9 @@ async fn rag_native_rebuild_index_without_wiring_is_unsupported() {
     assert!(matches!(error, KnowledgeEngineError::Unsupported(_)));
 }
 
-
 /// Builds the default engine registry for tests, unwrapping the fallible builder.
 fn wrap_build_default_registry(
     deps: sdkwork_intelligence_knowledgebase_service::knowledge_engine::KnowledgeEngineRuntimeDeps,
 ) -> sdkwork_intelligence_knowledgebase_service::knowledge_engine::DefaultKnowledgeEngineRegistry {
     build_default_registry(deps).expect("default knowledge engine registry must build")
 }
-

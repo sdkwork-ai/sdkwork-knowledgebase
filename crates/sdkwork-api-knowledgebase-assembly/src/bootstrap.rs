@@ -18,7 +18,7 @@ use sdkwork_routes_knowledgebase_app_api::bootstrap::{
     resolve_database_url, validate_process_config,
 };
 use sdkwork_routes_knowledgebase_app_api::KnowledgebaseRuntime;
-use sdkwork_web_bootstrap::{ApiAssemblyContribution, HttpRouteManifest};
+use sdkwork_web_bootstrap::{ApiAssemblyContribution, HttpRouteManifest, WebModule};
 
 pub type ApiAssembly = ApiAssemblyContribution;
 
@@ -242,6 +242,41 @@ fn managed_provider_credential_resolver(
     let resolver = KnowledgebaseProviderCredentialResolver::managed(config, secret_provider)
         .map_err(|error| error.to_string())?;
     Ok(Arc::new(resolver))
+}
+
+/// Canonical Web Module definition for this application
+/// (API_ASSEMBLY_SPEC §4.1.1): the complete HTTP surface — every route,
+/// manifest, and OpenAPI document of this owner — as one installable module.
+pub async fn web_module() -> Result<WebModule, String> {
+    Ok(WebModule::from_contribution(
+        assemble_api_router_from_environment()
+            .await
+            .map_err(|error| error.to_string())?,
+    ))
+}
+
+/// Same as [`web_module`] but composed on a process-shared database pool
+/// (platform gateways, API_ASSEMBLY_SPEC §4.1.1).
+pub async fn web_module_with_pool(
+    pool: sdkwork_database_sqlx::DatabasePool,
+) -> Result<WebModule, String> {
+    Ok(WebModule::from_contribution(
+        assemble_api_router_with_pool(pool).await?,
+    ))
+}
+
+/// Same as [`web_module_with_pool`] but resolved against an explicit
+/// deployment environment (platform gateways, API_ASSEMBLY_SPEC §4.1.1).
+///
+/// Staging and production resolve managed provider credentials; every other
+/// environment keeps the plain process-pool composition.
+pub async fn web_module_with_pool_for_environment(
+    pool: sdkwork_database_sqlx::DatabasePool,
+    environment: &str,
+) -> Result<WebModule, String> {
+    Ok(WebModule::from_contribution(
+        assemble_api_router_with_pool_for_environment(pool, environment).await?,
+    ))
 }
 
 #[cfg(test)]

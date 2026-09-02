@@ -1034,10 +1034,9 @@ impl KnowledgebaseRuntime {
                     crate::knowledge_engine_adapters::load_runtime_external_adapter_engines(),
             })
             .map_err(|error| {
-                sqlx::Error::Configuration(format!(
-                    "knowledge engine registry build failed: {error}"
+                sqlx::Error::Configuration(
+                    format!("knowledge engine registry build failed: {error}").into(),
                 )
-                .into())
             })?,
         );
 

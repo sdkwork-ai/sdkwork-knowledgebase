@@ -313,9 +313,7 @@ fn resolve_drive_storage_from_env(
         Some(profile) => profile,
         None if matches!(
             environment,
-            RpcHostEnvironment::Development
-                | RpcHostEnvironment::Test
-                | RpcHostEnvironment::Demo
+            RpcHostEnvironment::Development | RpcHostEnvironment::Test | RpcHostEnvironment::Demo
         ) =>
         {
             "standalone".to_string()

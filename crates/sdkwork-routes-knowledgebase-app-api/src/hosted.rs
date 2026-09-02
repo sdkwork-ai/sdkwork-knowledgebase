@@ -405,9 +405,10 @@ impl KnowledgeDocumentAppService for HostedDocumentService {
         }
         require_space_access(&self.runtime, &context, space_id).await?;
         let normalized_page_size = crate::pagination::normalize_api_page_size(page_size)?;
-        let cursor_id = crate::pagination::parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
-            ApiError::invalid_request("invalid_parameter", "cursor must be a valid document id")
-        })?;
+        let cursor_id =
+            crate::pagination::parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
+                ApiError::invalid_request("invalid_parameter", "cursor must be a valid document id")
+            })?;
         let (items, next_cursor, has_more) = self
             .runtime
             .document_store()
@@ -559,12 +560,13 @@ impl KnowledgeDocumentAppService for HostedDocumentService {
     ) -> ApiResult<SdkWorkPageData<KnowledgeDocumentVersion>> {
         require_document_access(&self.runtime, &context, document_id).await?;
         let normalized_page_size = crate::pagination::normalize_api_page_size(page_size)?;
-        let cursor_id = crate::pagination::parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
-            ApiError::invalid_request(
-                "invalid_parameter",
-                "cursor must be a valid document version id",
-            )
-        })?;
+        let cursor_id =
+            crate::pagination::parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
+                ApiError::invalid_request(
+                    "invalid_parameter",
+                    "cursor must be a valid document version id",
+                )
+            })?;
         let (items, next_cursor, has_more) = self
             .runtime
             .version_store()

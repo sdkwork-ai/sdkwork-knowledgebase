@@ -6,12 +6,12 @@ use axum::middleware::{self, Next};
 use axum::Router;
 use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_knowledgebase_contract::{KnowledgeSource, KnowledgeSourceList};
-use sdkwork_utils_rust::SdkWorkPageData;
 use sdkwork_routes_knowledgebase_backend_api::{
     backend_route_manifest, build_router_with_backend_api, manifest,
     wrap_router_with_web_framework, BackendApiResult, KnowledgeBackendApi,
     KnowledgeBackendRequestContext,
 };
+use sdkwork_utils_rust::SdkWorkPageData;
 use sdkwork_web_core::RouteAuth;
 use tower::util::ServiceExt;
 
@@ -269,11 +269,13 @@ impl KnowledgeBackendApi for OkBackendApi {
     ) -> BackendApiResult<SdkWorkPageData<KnowledgeSource>> {
         // Auth tests exercise the router boundary; the page method must return an empty
         // page instead of relying on the (now forbidden) unbounded facade default.
-        Ok(sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
-            vec![],
-            None,
-            false,
-            20,
-        ))
+        Ok(
+            sdkwork_routes_knowledgebase_backend_api::pagination::cursor_page_data(
+                vec![],
+                None,
+                false,
+                20,
+            ),
+        )
     }
 }
