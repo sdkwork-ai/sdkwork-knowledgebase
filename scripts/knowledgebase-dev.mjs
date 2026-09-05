@@ -22,6 +22,13 @@ import {
   waitForHttpHealthy,
 } from './lib/knowledgebase-topology.mjs';
 import { mergeRepoDevBootstrapAccessTokenEnv, readApplicationManifest, resolveRepoApplicationManifestPath } from './lib/knowledgebase-dev-bootstrap-access-token-env.mjs';
+import {
+  buildCargoPrebuildArgs,
+  cargoCommand,
+  collectCargoPackageIds,
+  prebuildKnowledgebaseBackendPackages,
+  resolveKnowledgebaseCargoDevEnv,
+} from './lib/knowledgebase-dev-cargo-env.mjs';
 import { redactDatabaseUrl } from './lib/redact-database-url.mjs';
 
 const HEALTH_PATH = '/healthz';
@@ -32,10 +39,6 @@ const MAX_STARTUP_ATTEMPTS = 60;
 const PC_APP_ROOT = path.join(REPO_ROOT, 'apps/sdkwork-knowledgebase-pc');
 const DESKTOP_ROOT = path.join(PC_APP_ROOT, 'packages/sdkwork-knowledgebase-pc-desktop');
 const DEFAULT_API_SERVER_CRATE = 'sdkwork-api-knowledgebase-standalone-gateway';
-
-function cargoCommand() {
-  return process.platform === 'win32' ? 'cargo.exe' : 'cargo';
-}
 
 function pnpmCommand() {
   return process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
@@ -60,6 +63,7 @@ function parseArgs(argv) {
   const settings = {
     database: 'postgres',
     deploymentProfile: 'standalone',
+    environment: 'development',
     devEnvFile: undefined,
     dryRun: false,
     help: false,
@@ -68,6 +72,10 @@ function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
+    if (arg === '--' || arg === '') {
+      // pnpm private-lifecycle passthrough inserts a literal `--` separator.
+      continue;
+    }
     if (arg === '--help' || arg === '-h') {
       settings.help = true;
       continue;
@@ -77,13 +85,26 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
+    if (arg === '--environment') {
+      // Accepted for sdkwork-app private-lifecycle passthrough; profile id remains
+      // `{deploymentProfile}.{environment}` via resolveDevProfileId when supported.
+      settings.environment = argv[index + 1] ?? settings.environment;
+      index += 1;
+      continue;
+    }
     if (arg === '--database') {
       settings.database = argv[index + 1] ?? settings.database;
       index += 1;
       continue;
     }
-    if (arg === '--target') {
+    if (arg === '--target' || arg === '--runtime-target') {
       settings.target = argv[index + 1] ?? settings.target;
+      index += 1;
+      continue;
+    }
+    if (arg === '--client-architecture') {
+      // Accepted for sdkwork-app private-lifecycle passthrough; browser delivery
+      // currently owns a single pc-web Vite renderer.
       index += 1;
       continue;
     }
@@ -251,8 +272,6 @@ function createBrowserRendererProcess(env) {
       env.VITE_SDKWORK_APPBASE_APP_API_BASE_URL ?? 'http://127.0.0.1:18081',
     VITE_SDKWORK_IAM_APP_API_BASE_URL:
       env.VITE_SDKWORK_IAM_APP_API_BASE_URL ?? 'http://127.0.0.1:18081',
-    VITE_SDKWORK_KNOWLEDGEBASE_PLATFORM_API_GATEWAY_HTTP_URL:
-      env.VITE_SDKWORK_KNOWLEDGEBASE_PLATFORM_API_GATEWAY_HTTP_URL ?? 'http://127.0.0.1:3900',
   });
 
   return {
@@ -276,8 +295,6 @@ function createDesktopProcess(env) {
       env.VITE_SDKWORK_APPBASE_APP_API_BASE_URL ?? 'http://127.0.0.1:18081',
     VITE_SDKWORK_IAM_APP_API_BASE_URL:
       env.VITE_SDKWORK_IAM_APP_API_BASE_URL ?? 'http://127.0.0.1:18081',
-    VITE_SDKWORK_KNOWLEDGEBASE_PLATFORM_API_GATEWAY_HTTP_URL:
-      env.VITE_SDKWORK_KNOWLEDGEBASE_PLATFORM_API_GATEWAY_HTTP_URL ?? 'http://127.0.0.1:3900',
   });
 
   return {
@@ -401,20 +418,39 @@ async function main() {
     ),
   }));
 
-  const backendProcesses = buildProcessesFromOrchestration(profileId, runtimeEnv);
+  const cargoEnv = resolveKnowledgebaseCargoDevEnv({ env: runtimeEnv });
+  const backendProcesses = buildProcessesFromOrchestration(profileId, cargoEnv);
   const processes =
     settings.target === 'desktop'
       ? [...backendProcesses, createDesktopProcess(runtimeEnv)]
       : backendProcesses;
+  const prebuildPackageIds = collectCargoPackageIds(backendProcesses);
+  const prebuildArgs = buildCargoPrebuildArgs(prebuildPackageIds);
 
   if (settings.dryRun) {
     console.log(
       `[sdkwork-knowledgebase] profile=${profileId} deploymentProfile=${settings.deploymentProfile} database=${settings.database} target=${settings.target} workspaceDatabase=${redactDatabaseUrl(runtimeEnv.SDKWORK_DATABASE_URL)}`,
     );
+    if (prebuildArgs) {
+      console.log(`[cargo-prebuild] ${cargoCommand()} ${prebuildArgs.join(' ')}`);
+    }
+    if (cargoEnv.CARGO_INCREMENTAL != null) {
+      console.log(`[cargo-env] CARGO_INCREMENTAL=${cargoEnv.CARGO_INCREMENTAL}`);
+    }
     for (const entry of processes) {
       console.log(`[${entry.label}] ${entry.command} ${entry.args.join(' ')}`);
     }
     process.exit(0);
+  }
+
+  if (prebuildArgs) {
+    console.log(
+      `[sdkwork-knowledgebase] prebuilding backend packages: ${prebuildPackageIds.join(', ')}`,
+    );
+    prebuildKnowledgebaseBackendPackages({
+      processEntries: backendProcesses,
+      env: cargoEnv,
+    });
   }
 
   const children = [];

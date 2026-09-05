@@ -79,7 +79,7 @@ const appOperations = [
   ),
   resource('post', '/app/v3/api/knowledge/documents/{documentId}/versions', {
     operationId: 'documents.versions.create',
-    status: '200',
+    status: '201',
     itemRef: '#/components/schemas/KnowledgeDocumentVersion',
   }),
   namedList('get', '/app/v3/api/knowledge/okf/concepts', {
@@ -117,17 +117,17 @@ const appOperations = [
   }),
   resource('post', '/app/v3/api/knowledge/agent_profiles/{profileId}/bindings', {
     operationId: 'agentProfiles.bindings.create',
-    status: '200',
+    status: '201',
     itemRef: '#/components/schemas/KnowledgeAgentBinding',
   }),
   resource('post', '/app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview', {
     operationId: 'agentProfiles.retrievalPreview.create',
-    status: '200',
+    status: '201',
     itemRef: '#/components/schemas/KnowledgeRetrievalResult',
   }),
   resource('post', '/app/v3/api/knowledge/agent_profiles/{profileId}/chat', {
     operationId: 'agentProfiles.chat.create',
-    status: '200',
+    status: '201',
     itemRef: '#/components/schemas/KnowledgeAgentChatResponse',
   }),
   list('get', '/app/v3/api/knowledge/spaces/{spaceId}/context_bindings', {
@@ -136,7 +136,7 @@ const appOperations = [
   }),
   resource('post', '/app/v3/api/knowledge/spaces/{spaceId}/context_bindings', {
     operationId: 'spaces.contextBindings.create',
-    status: '200',
+    status: '201',
     itemRef: '#/components/schemas/KnowledgeSpaceContextBinding',
   }),
   list('get', '/app/v3/api/knowledge/spaces/{spaceId}/members', {
@@ -145,7 +145,7 @@ const appOperations = [
   }),
   command('post', '/app/v3/api/knowledge/spaces/{spaceId}/members', {
     operationId: 'spaces.members.create',
-    status: '200',
+    status: '201',
     payloadRef: '#/components/schemas/SdkWorkCommandData',
   }),
   noContent('delete', '/app/v3/api/knowledge/spaces/{spaceId}/members', {

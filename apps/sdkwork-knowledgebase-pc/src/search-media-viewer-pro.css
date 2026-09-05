@@ -602,14 +602,14 @@
   max-height: min(460px, 52vh);
   border-radius: 1.125rem;
   border: none;
-  background: white;
+  background: var(--color-kb-editor);
   box-shadow: inset 0 0 0 1px var(--color-kb-panel-border);
   overflow: hidden;
 }
 
 .search-product-detail__hero--pro .search-product-detail__hero-image {
   object-fit: contain;
-  background: color-mix(in srgb, var(--color-kb-text) 3%, white);
+  background: color-mix(in srgb, var(--color-kb-text) 3%, var(--color-kb-editor));
 }
 
 .search-product-detail__hero-meta {
@@ -638,7 +638,11 @@
   padding: 0.15rem 0.5rem;
   border-radius: 9999px;
   color: #be123c;
-  background: #ffe4e6;
+  background: color-mix(in srgb, #fb7185 18%, var(--color-kb-editor));
+}
+
+.dark .search-product-detail__savings {
+  color: #fb7185;
 }
 
 .search-product-detail__trust-strip {

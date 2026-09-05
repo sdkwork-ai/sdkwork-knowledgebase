@@ -2,29 +2,68 @@
   "schemaVersion": 3,
   "kind": "sdkwork.app",
   "app": {
-    "key": "app-6v0c27",
-    "name": "App 6v0c27",
-    "displayName": "App 6v0c27",
-    "officialWebsiteUrl": "https://sdkwork.com/apps/app-6v0c27",
-    "appType": "APP_HTML"
+    "key": "sdkwork-knowledgebase-pc",
+    "name": "SDKWork Knowledgebase PC",
+    "displayName": "SDKWork Knowledgebase PC",
+    "description": "SDKWork Knowledgebase PC browser/desktop application surface.",
+    "vendor": "SDKWork",
+    "officialWebsiteUrl": "https://sdkwork.com/apps/sdkwork-knowledgebase-pc",
+    "supportUrl": "https://sdkwork.com/support",
+    "privacyPolicyUrl": "https://sdkwork.com/privacy",
+    "termsOfServiceUrl": "https://sdkwork.com/terms",
+    "iconUrl": "https://cdn.sdkwork.com/apps/sdkwork-knowledgebase-pc/assets/icon-1024.png",
+    "appType": "APP_REACT",
+    "versionSource": "package.json",
+    "identifiers": {
+      "packageName": null,
+      "bundleId": null,
+      "desktopAppId": "com.sdkwork.knowledgebase.pc.desktop",
+      "containerImage": "registry.sdkwork.com/apps/sdkwork-knowledgebase-pc"
+    }
   },
-  "backend": {},
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "WEB",
+    "appId": "sdkwork-knowledgebase-pc",
+    "tenantId": "100001",
+    "organizationId": "0",
+    "accessTokenPermissionScope": [
+      "iam:self"
+    ]
+  },
   "runtime": {
+    "family": "web",
+    "framework": "react-vite",
+    "runtimes": [
+      "WEB",
+      "BROWSER",
+      "TAURI"
+    ],
+    "deliveryModes": [
+      "WEB_URL",
+      "DIRECT_DOWNLOAD"
+    ],
+    "defaultPlatform": "WEB",
+    "defaultArchitecture": "x64",
+    "clientArchitectures": [
+      "pc-web",
+      "tauri"
+    ],
     "supportedDeploymentProfiles": [
       "standalone",
       "cloud"
     ],
-    "defaultDeploymentProfile": "standalone",
-    "family": "server",
-    "framework": "rust-axum"
+    "defaultDeploymentProfile": "standalone"
   },
   "media": {
     "icons": {
       "primary": {
-        "id": "app-6v0c27-primary-icon",
+        "id": "sdkwork-knowledgebase-pc-primary-icon",
         "type": "ICON",
         "purpose": "PRIMARY",
-        "url": "https://cdn.sdkwork.com/apps/app-6v0c27/assets/icon-1024.png",
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-knowledgebase-pc/assets/icon-1024.png",
         "platform": "APP",
         "locale": "en-US",
         "width": 1024,
@@ -33,123 +72,76 @@
         "fileSizeBytes": 524288,
         "alphaChannel": false,
         "sortOrder": 0,
-        "enabled": true,
+        "enabled": false,
         "metadata": {
-          "generatedPlaceholder": true
+          "generatedPlaceholder": true,
+          "releaseStatus": "prelaunch-placeholder"
         }
       },
       "platform": [],
       "metadata": {
-        "generatedPlaceholder": true
+        "generatedBy": "apps/scripts/initialize-sdkwork-app-standard-v3.mjs"
       }
     },
-    "screenshots": [
-      {
-        "id": "app-6v0c27-web-screenshot",
-        "type": "SCREENSHOT",
-        "purpose": "CATALOG_SCREENSHOT",
-        "url": "https://cdn.sdkwork.com/apps/app-6v0c27/media/web-screenshot.png",
-        "platform": "WEB",
-        "locale": "en-US",
-        "deviceClass": "BROWSER",
-        "displayType": "WEB_DESKTOP",
-        "width": 1920,
-        "height": 1080,
-        "format": "PNG",
-        "fileSizeBytes": 1048576,
-        "alphaChannel": false,
-        "caption": "App 6v0c27 product screenshot.",
-        "sortOrder": 0,
-        "enabled": true,
-        "metadata": {
-          "generatedPlaceholder": true,
-          "altText": "App 6v0c27 app screenshot."
-        }
-      }
-    ],
-    "previews": [
-      {
-        "id": "app-6v0c27-catalog-preview",
-        "type": "PREVIEW_IMAGE",
-        "purpose": "CATALOG_PREVIEW",
-        "url": "https://cdn.sdkwork.com/apps/app-6v0c27/media/preview-cover.png",
-        "platform": "WEB",
-        "locale": "en-US",
-        "width": 1600,
-        "height": 900,
-        "format": "PNG",
-        "fileSizeBytes": 786432,
-        "alphaChannel": false,
-        "caption": "App 6v0c27 preview.",
-        "sortOrder": 0,
-        "enabled": true,
-        "metadata": {
-          "generatedPlaceholder": true,
-          "altText": "App 6v0c27 preview cover."
-        }
-      }
-    ],
+    "screenshots": [],
+    "previews": [],
     "metadata": {
       "assetVersion": "0.1.0",
       "defaultLocale": "en-US"
     }
   },
   "publish": {
-    "status": "ACTIVE",
-    "platforms": [
-      "WEB"
-    ],
-    "installPlatforms": [
-      "WEB"
-    ],
-    "defaultPackageId": "linux-x64-standalone-server-tar-gz",
+    "status": "DRAFT",
+    "preLaunch": true,
     "installSkill": {
       "name": "sdkwork-skills-app"
     },
+    "platforms": [
+      "WEB",
+      "DESKTOP",
+      "DESKTOP_WINDOWS",
+      "DESKTOP_MACOS",
+      "DESKTOP_LINUX"
+    ],
+    "installPlatforms": [
+      "WEB",
+      "DESKTOP_WINDOWS",
+      "DESKTOP_MACOS",
+      "DESKTOP_LINUX"
+    ],
+    "defaultPackageId": "web-universal-cloud-browser-zip",
+    "storeUrl": "https://sdkwork.com/apps/sdkwork-knowledgebase-pc",
     "stores": [],
-    "storeUrl": "https://sdkwork.com/apps/app-6v0c27"
+    "config": {
+      "workspaceRoot": "apps/sdkwork-knowledgebase-pc",
+      "framework": "react-vite",
+      "managedBy": "apps/scripts/initialize-sdkwork-app-standard-v3.mjs"
+    }
   },
   "artifacts": {
     "installConfig": {
-      "defaultPackageId": "linux-x64-standalone-server-tar-gz",
-      "installCommand": "sdkwork install app-6v0c27",
-      "launchCommand": "sdkwork open app-6v0c27",
-      "uninstallCommand": "sdkwork uninstall app-6v0c27",
+      "defaultPackageId": "web-universal-cloud-browser-zip",
+      "installCommand": "sdkwork install sdkwork-knowledgebase-pc",
+      "launchCommand": "sdkwork open sdkwork-knowledgebase-pc",
+      "uninstallCommand": "sdkwork uninstall sdkwork-knowledgebase-pc",
       "packages": [
         {
-          "id": "linux-x64-standalone-server-tar-gz",
-          "name": "App 6v0c27 standalone server archive",
+          "id": "web-universal-cloud-browser-zip",
+          "name": "SDKWork Knowledgebase PC Web Bundle",
           "sourceType": "BINARY_URL",
-          "packageFormat": "TAR_GZ",
-          "platform": "API",
-          "url": "https://cdn.sdkwork.com/apps/app-6v0c27/STABLE/0.1.0/linux-x64-standalone-server-tar-gz-0.1.0.tar.gz",
-          "architecture": "x64",
-          "checksumAlgorithm": "SHA-256",
-          "checksum": "ff8abd8726fb572042116460538436ee6f2d55ddf1e46b4cfa927495424e7f1c",
-          "deploymentProfile": "standalone",
-          "runtimeTarget": "server",
+          "packageFormat": "ZIP",
+          "platform": "WEB",
+          "url": "https://cdn.sdkwork.com/apps/sdkwork-knowledgebase-pc/DEV/0.1.0/web.zip",
+          "architecture": "universal",
           "profileBinding": "fixed",
-          "enabled": true,
-          "metadata": {
-            "releaseBuildDeferred": false
-          }
-        },
-        {
-          "id": "linux-x64-cloud-server-tar-gz",
-          "name": "App 6v0c27 cloud server archive",
-          "sourceType": "BINARY_URL",
-          "packageFormat": "TAR_GZ",
-          "platform": "API",
-          "url": "https://cdn.sdkwork.com/apps/app-6v0c27/STABLE/0.1.0/linux-x64-cloud-server-tar-gz-0.1.0.tar.gz",
-          "architecture": "x64",
-          "checksumAlgorithm": "SHA-256",
-          "checksum": "d255a650cec7d190d5feb3c59c21297fe436409236f896da381f6f66caaff938",
           "deploymentProfile": "cloud",
-          "runtimeTarget": "server",
-          "profileBinding": "fixed",
-          "enabled": true,
+          "runtimeTarget": "browser",
+          "targetPlatform": "web",
+          "clientArchitecture": "pc-web",
+          "enabled": false,
           "metadata": {
-            "releaseBuildDeferred": false
+            "releaseStatus": "prelaunch-artifact-pending",
+            "releaseBuildDeferred": true
           }
         }
       ]
@@ -157,41 +149,38 @@
   },
   "release": {
     "currentVersion": "0.1.0",
-    "defaultChannel": "STABLE",
+    "defaultChannel": "DEV",
     "latest": {
-      "STABLE": "0.1.0"
+      "DEV": "0.1.0"
     },
     "notes": [
       {
         "version": "0.1.0",
-        "releaseChannel": "STABLE",
-        "title": "App 6v0c27 0.1.0",
-        "summary": "App 6v0c27 initialized standard release.",
-        "content": "Initial SDKWork App Standard v3 manifest for App 6v0c27.",
+        "releaseChannel": "DEV",
+        "title": "SDKWork Knowledgebase PC 0.1.0",
+        "summary": "PC surface manifest for IAM credential-entry bootstrap and browser/desktop delivery.",
+        "content": "Aligned with repository root application identity and IAM_APPLICATION_BOOTSTRAP_SPEC.",
         "highlights": [
-          "SDKWork App Standard v3 configuration initialized",
-          "platform_app projection metadata standardized",
-          "Download package matrix normalized"
+          "backend.appId=sdkwork-knowledgebase-pc",
+          "backend.accessTokenPermissionScope configured for embedded IAM bootstrap"
         ],
         "packageIds": [
-          "linux-x64-standalone-server-tar-gz",
-          "linux-x64-cloud-server-tar-gz"
+          "web-universal-cloud-browser-zip"
         ],
-        "publishedAt": "2026-05-07T00:00:00Z",
         "current": true,
         "forceUpdate": false,
-        "minSupportedVersion": "0.1.0",
-        "metadata": {}
+        "minSupportedVersion": "0.1.0"
       }
     ]
   },
   "security": {
-    "checksumRequired": false,
-    "signatureRequired": false,
-    "sbomRequired": false
+    "checksumRequired": true,
+    "signatureRequired": true,
+    "sbomRequired": true
   },
   "metadata": {
-    "deploymentConfig": "etc/sdkwork.deployment.config.json",
-    "standardOwner": "sdkwork-platform"
+    "standardOwner": "sdkwork-platform",
+    "deploymentConfig": "../../etc/sdkwork.deployment.config.json",
+    "topologySpec": "../../specs/topology.spec.json"
   }
 }

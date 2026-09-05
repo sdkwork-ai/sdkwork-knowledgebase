@@ -49,6 +49,9 @@ Desktop.ini
 *.log
 *.tmp
 *.bak
+.tmp-*.err
+.tmp-*.out
+.tmp-*.log
 
 # Local SDKWork workspace data
 .sdkwork/local/

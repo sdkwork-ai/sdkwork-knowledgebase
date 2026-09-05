@@ -108,14 +108,14 @@ export function WechatImageCropperModal({ isOpen, imageSrc, onClose, onConfirm, 
 
   return (
     <div className="fixed inset-0 z-[600] bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white w-[1000px] h-[750px] rounded shadow-2xl flex flex-col overflow-hidden">
-        
+      <div className="bg-white dark:bg-[var(--color-kb-editor)] w-[1000px] h-[750px] rounded shadow-2xl flex flex-col overflow-hidden">
+
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-5">
-          <h3 className="text-xl font-normal text-gray-800">编辑封面</h3>
-          <button 
-            onClick={onClose} 
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+          <h3 className="text-xl font-normal text-gray-800 dark:text-[var(--color-kb-text-heading)]">编辑封面</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
           >
             <X size={24} strokeWidth={1} />
           </button>
@@ -168,8 +168,8 @@ export function WechatImageCropperModal({ isOpen, imageSrc, onClose, onConfirm, 
             </div>
 
             {/* Slider floating at bottom */}
-            <div className="absolute bottom-6 bg-white shadow-md rounded-full px-4 py-2 flex items-center gap-3 border border-gray-100">
-              <ZoomOut size={16} className="text-gray-400" />
+            <div className="absolute bottom-6 bg-white dark:bg-zinc-800 shadow-md dark:shadow-none rounded-full px-4 py-2 flex items-center gap-3 border border-gray-100 dark:border-[var(--color-kb-panel-border)]">
+              <ZoomOut size={16} className="text-gray-400 dark:text-zinc-500" />
               <input 
                 type="range" 
                 min="1" 
@@ -183,9 +183,9 @@ export function WechatImageCropperModal({ isOpen, imageSrc, onClose, onConfirm, 
                   setOffsetX(bounded.x);
                   setOffsetY(bounded.y);
                 }}
-                className="w-32 accent-[#07c160] h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
+                className="w-32 accent-[#07c160] h-1 bg-gray-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer"
               />
-              <ZoomIn size={16} className="text-gray-400" />
+              <ZoomIn size={16} className="text-gray-400 dark:text-zinc-500" />
             </div>
 
           </div>
@@ -236,16 +236,16 @@ export function WechatImageCropperModal({ isOpen, imageSrc, onClose, onConfirm, 
 
             {/* 2.35:1 Preview */}
             <div className="flex flex-col gap-2">
-              <span className="text-sm text-gray-700">2.35:1 (内容推荐)</span>
+              <span className="text-sm text-gray-700 dark:text-zinc-200">2.35:1 (内容推荐)</span>
               <div 
                 onClick={() => { setAspectMode('2.35'); setZoom(1); setOffsetX(0); setOffsetY(0); }}
-                className={`cursor-pointer rounded-lg p-3 border transition-colors ${aspectMode === '2.35' ? 'border-[#07c160] bg-[#07c160]/5' : 'border-transparent hover:border-gray-200'}`}
+                className={`cursor-pointer rounded-lg p-3 border transition-colors ${aspectMode === '2.35' ? 'border-[#07c160] bg-[#07c160]/5' : 'border-transparent hover:border-gray-200 dark:hover:border-[var(--color-kb-panel-border)]'}`}
               >
-                <div className="bg-white border border-gray-200 shadow-sm w-full rounded overflow-hidden flex flex-col">
-                  <div className="h-6 bg-white flex items-center px-3">
-                    <div className="h-2 w-1/4 bg-gray-200 rounded-full"></div>
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-[var(--color-kb-panel-border)] shadow-sm w-full rounded overflow-hidden flex flex-col">
+                  <div className="h-6 bg-white dark:bg-zinc-900 flex items-center px-3">
+                    <div className="h-2 w-1/4 bg-gray-200 dark:bg-zinc-700 rounded-full"></div>
                   </div>
-                  <div className="w-full aspect-[2.35/1] bg-gray-100 overflow-hidden relative items-center justify-center flex">
+                  <div className="w-full aspect-[2.35/1] bg-gray-100 dark:bg-zinc-800 overflow-hidden relative items-center justify-center flex">
                     {aspectMode === '2.35' ? (
                        <img 
                          src={imageSrc} 
@@ -279,10 +279,10 @@ export function WechatImageCropperModal({ isOpen, imageSrc, onClose, onConfirm, 
         </div>
 
         {/* Footer */}
-        <div className="py-4 border-t border-gray-100 flex justify-center gap-4 mt-6">
-          <button 
-            onClick={onBack ? onBack : onClose} 
-            className="px-8 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+        <div className="py-4 border-t border-gray-100 dark:border-[var(--color-kb-panel-border)] flex justify-center gap-4 mt-6">
+          <button
+            onClick={onBack ? onBack : onClose}
+            className="px-8 py-2 text-sm text-gray-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-[var(--color-kb-panel-border)] rounded hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
           >
             {onBack ? '上一步' : '取消'}
           </button>

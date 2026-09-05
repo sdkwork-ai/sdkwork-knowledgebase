@@ -57,12 +57,18 @@ function applyPermissions(document, { permission, permissionByOperation, auditEv
           }
         } else {
           const operationPermission = permissionByOperation[operation.operationId];
-          if (!operationPermission) {
+          if (operationPermission === null) {
+            // `null` marks an operation any authenticated principal may call:
+            // dual-token authenticated, no RBAC permission requirement.
+            if ('x-sdkwork-permission' in operation) {
+              delete operation['x-sdkwork-permission'];
+              changed = true;
+            }
+          } else if (!operationPermission) {
             throw new Error(
               `missing app-api permission mapping for operation ${operation.operationId}`,
             );
-          }
-          if (operation['x-sdkwork-permission'] !== operationPermission) {
+          } else if (operation['x-sdkwork-permission'] !== operationPermission) {
             operation['x-sdkwork-permission'] = operationPermission;
             changed = true;
           }

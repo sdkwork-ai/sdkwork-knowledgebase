@@ -24,19 +24,19 @@ export function ExtractCoverFromBodyModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[300] flex items-center justify-center p-4">
-      <div className="bg-white w-[900px] h-[600px] rounded flex flex-col shadow-lg overflow-hidden">
+      <div className="bg-white dark:bg-[var(--color-kb-editor)] w-[900px] h-[600px] rounded flex flex-col shadow-lg overflow-hidden">
         <div className="flex items-center justify-between p-6 pb-2">
-          <span className="text-base font-normal text-gray-800">{t('chooseImage')}</span>
-          <button 
-            onClick={onClose} 
-            className="text-gray-400 hover:text-gray-600"
+          <span className="text-base font-normal text-gray-800 dark:text-[var(--color-kb-text-heading)]">{t('chooseImage')}</span>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300"
           >
             <X size={20} strokeWidth={1} />
           </button>
         </div>
-        
+
         <div className="px-6 py-2">
-          <p className="text-sm text-gray-500 mb-6">{t('chooseImageHint')}</p>
+          <p className="text-sm text-gray-500 dark:text-[var(--color-kb-text-muted)] mb-6">{t('chooseImageHint')}</p>
         </div>
 
         <div className="px-6 overflow-y-auto flex-1">
@@ -69,7 +69,7 @@ export function ExtractCoverFromBodyModal({
           )}
         </div>
         
-        <div className="flex justify-center items-center py-6 gap-4 bg-gray-50/50">
+        <div className="flex justify-center items-center py-6 gap-4 bg-gray-50/50 dark:bg-zinc-900/50">
           <button 
             onClick={onConfirm} 
             disabled={!selectedBodyImage}
@@ -83,7 +83,7 @@ export function ExtractCoverFromBodyModal({
           </button>
           <button 
             onClick={onClose} 
-            className="px-8 py-1.5 text-sm bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 rounded transition-colors"
+            className="px-8 py-1.5 text-sm bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 dark:bg-zinc-800 dark:border-[var(--color-kb-panel-border)] dark:hover:bg-zinc-700 dark:text-[var(--color-kb-text)] rounded transition-colors"
           >
             {t('cancel')}
           </button>

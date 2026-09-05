@@ -87,14 +87,14 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       const showDiagnosticDetails =
         import.meta.env.DEV || import.meta.env.MODE === 'playwright';
       return (
-        <div className="w-screen h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-800 p-6">
+        <div className="w-screen h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-[var(--color-kb-editor)] text-gray-800 dark:text-[var(--color-kb-text)] p-6">
           <AlertTriangle size={64} className="text-red-500 mb-6" />
           <h1 className="text-2xl font-bold mb-2">{i18n.t('errors:root.title')}</h1>
-          <p className="text-gray-600 mb-6 text-center max-w-md">
+          <p className="text-gray-600 dark:text-[var(--color-kb-text-muted)] mb-6 text-center max-w-md">
             {i18n.t('errors:root.description')}
           </p>
           {showDiagnosticDetails ? (
-            <div className="bg-white border rounded shadow-sm p-4 w-full max-w-2xl overflow-auto mb-8">
+            <div className="bg-white dark:bg-zinc-900 border dark:border-[var(--color-kb-panel-border)] rounded shadow-sm p-4 w-full max-w-2xl overflow-auto mb-8">
               <pre className="text-xs text-red-600 font-mono">
                 {this.state.error?.message}
               </pre>

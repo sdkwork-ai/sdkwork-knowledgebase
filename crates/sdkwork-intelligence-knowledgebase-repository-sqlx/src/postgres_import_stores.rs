@@ -2191,7 +2191,7 @@ impl IngestionJobStore for PostgresIngestionJobStore {
         let lease_expires_at_text = format_job_timestamp(lease_expires_at)?;
         let limit = i64::from(request.limit.min(200));
         let max_attempts = i64::from(request.max_attempts.max(1));
-        let now_expr = self.timestamp_dialect.sql_timestamp_expr("$7");
+        let exhausted_now_expr = self.timestamp_dialect.sql_timestamp_expr("$8");
 
         // Jobs whose lease expired with a claimed attempt at/over the maximum
         // are failed permanently instead of being reclaimed forever (crash or
@@ -2204,8 +2204,8 @@ impl IngestionJobStore for PostgresIngestionJobStore {
                 claim_token = NULL,
                 lease_expires_at = NULL,
                 error_detail = $2,
-                finished_at = {now_expr},
-                updated_at = {now_expr},
+                finished_at = {exhausted_now_expr},
+                updated_at = {exhausted_now_expr},
                 version = version + 1
             WHERE tenant_id = $3
               AND organization_id = $4
@@ -2213,8 +2213,8 @@ impl IngestionJobStore for PostgresIngestionJobStore {
               AND job_type = $6
               AND state = $7
               AND lease_expires_at IS NOT NULL
-              AND lease_expires_at <= {now_expr}
-              AND attempt_count >= $8
+              AND lease_expires_at <= {exhausted_now_expr}
+              AND attempt_count >= $9
             "#,
         );
         let exhausted = sqlx::query(sqlx::AssertSqlSafe(fail_exhausted_query.as_str()))
@@ -2241,6 +2241,7 @@ impl IngestionJobStore for PostgresIngestionJobStore {
             );
         }
 
+        let now_expr = self.timestamp_dialect.sql_timestamp_expr("$7");
         let candidates_query = format!(
             r#"
             SELECT id

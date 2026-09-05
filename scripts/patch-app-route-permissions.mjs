@@ -10,7 +10,11 @@ const target = path.join(
 );
 
 export const APP_API_PERMISSION_BY_OPERATION = {
-  'spaces.create': 'knowledge.spaces.write',
+  // `null` marks an operation any authenticated principal may call: the route
+  // stays dual-token authenticated but carries no RBAC permission point, so
+  // both the Rust manifest emits `knowledge_read_route` and the OpenAPI
+  // snapshot drops `x-sdkwork-permission` (API_ASSEMBLY_SPEC app-api pattern).
+  'spaces.create': null,
   'spaces.retrieve': 'knowledge.spaces.read',
   'spaces.update': 'knowledge.spaces.write',
   'spaces.delete': 'knowledge.spaces.write',
@@ -130,6 +134,13 @@ source = source.replace(
     )`;
     }
     const permission = APP_API_PERMISSION_BY_OPERATION[operationId];
+    if (permission === null) {
+      return `knowledge_read_route(
+        HttpMethod::${method},
+        "${routePath}",
+        "${operationId}",
+    )`;
+    }
     if (!permission) {
       throw new Error(`missing permission mapping for ${operationId}`);
     }
@@ -153,6 +164,12 @@ source = source.replace(
     )`;
     }
     const permission = APP_API_PERMISSION_BY_OPERATION[operationId];
+    if (permission === null) {
+      throw new Error(
+        `operation ${operationId} is abuse-tier but mapped to null (permission-free); ` +
+          'abuse-tier routes require a permission for fail-closed rate-limit isolation',
+      );
+    }
     if (!permission) {
       throw new Error(`missing permission mapping for ${operationId}`);
     }

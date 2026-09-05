@@ -216,7 +216,16 @@ export function AppShell() {
   }, [activeColor, fontSize]);
 
   useEffect(() => {
+    const isHostManagedMode = (): boolean =>
+      document.documentElement.getAttribute('data-sdk-color-mode') !== null;
+
     const applyTheme = () => {
+      // Single-writer arbitration (THEME_DARKMODE_SPEC §7.2): when a host owns the
+      // documentElement mode root, this shell must not add/remove mode classes.
+      if (isHostManagedMode()) {
+        return;
+      }
+
       const isDark = themePreference === 'dark'
         || (themePreference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 

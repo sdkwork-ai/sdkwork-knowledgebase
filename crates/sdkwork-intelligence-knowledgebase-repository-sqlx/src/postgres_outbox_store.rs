@@ -471,7 +471,8 @@ impl KnowledgeOutboxStore for PostgresKnowledgeOutboxStore {
         // Requeue only failed events whose backoff window has elapsed
         // (next_attempt_at is NULL or due); future-dated events stay FAILED
         // until their scheduled retry time.
-        let updated = sqlx::query(
+        let next_attempt_due_expr = self.timestamp_dialect.sql_timestamp_expr("$7");
+        let requeue_query = format!(
             r#"
             UPDATE kb_outbox_event
             SET status = $1, dead_lettered_at = NULL, next_attempt_at = NULL, version = version + 1
@@ -479,7 +480,7 @@ impl KnowledgeOutboxStore for PostgresKnowledgeOutboxStore {
               AND organization_id = $3
               AND status = $4
               AND retry_count < $5
-              AND (next_attempt_at IS NULL OR next_attempt_at <= $7)
+              AND (next_attempt_at IS NULL OR next_attempt_at <= {next_attempt_due_expr})
               AND id IN (
                 SELECT id
                 FROM kb_outbox_event
@@ -487,22 +488,23 @@ impl KnowledgeOutboxStore for PostgresKnowledgeOutboxStore {
                   AND organization_id = $3
                   AND status = $4
                   AND retry_count < $5
-                  AND (next_attempt_at IS NULL OR next_attempt_at <= $7)
+                  AND (next_attempt_at IS NULL OR next_attempt_at <= {next_attempt_due_expr})
                 ORDER BY created_at ASC, id ASC
                 LIMIT $6
               )
             "#,
-        )
-        .bind(OUTBOX_STATUS_PENDING)
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(OUTBOX_STATUS_FAILED)
-        .bind(max_retry_count)
-        .bind(limit)
-        .bind(now)
-        .execute(&mut *transaction)
-        .await
-        .map_err(sqlx_error)?;
+        );
+        let updated = sqlx::query(sqlx::AssertSqlSafe(requeue_query.as_str()))
+            .bind(OUTBOX_STATUS_PENDING)
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(OUTBOX_STATUS_FAILED)
+            .bind(max_retry_count)
+            .bind(limit)
+            .bind(now)
+            .execute(&mut *transaction)
+            .await
+            .map_err(sqlx_error)?;
         transaction.commit().await.map_err(sqlx_error)?;
 
         Ok(OutboxRequeueResult {

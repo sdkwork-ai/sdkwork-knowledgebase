@@ -303,7 +303,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                   </div>
                   
                   <div className="flex items-center space-x-1.5 overflow-x-auto py-1 border-t border-zinc-100 dark:border-zinc-800/50 pt-1.5">
-                    <span className="text-[10px] text-zinc-400 shrink-0 mr-1">{t('emojiAvatar', { defaultValue: '表情头像:' })}</span>
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0 mr-1">{t('emojiAvatar', { defaultValue: '表情头像:' })}</span>
                     {EMOTE_PRESETS.map((emote, idx) => (
                       <button 
                         key={idx}
@@ -507,7 +507,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                           <Briefcase size={15} />
                         </span>
                         <div>
-                          <span className="text-[10px] text-zinc-400 block">{t('positionLabel', { defaultValue: '所在职位' })}</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block">{t('positionLabel', { defaultValue: '所在职位' })}</span>
                           <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{profile.title || t('notFilled', { defaultValue: '暂未填写' })}</span>
                         </div>
                       </div>
@@ -517,7 +517,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                           <Info size={15} />
                         </span>
                         <div>
-                          <span className="text-[10px] text-zinc-400 block">{t('workDeptLabel', { defaultValue: '工作部门' })}</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block">{t('workDeptLabel', { defaultValue: '工作部门' })}</span>
                           <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{profile.department || t('defaultDept', { defaultValue: '企业高管 / 合伙人' })}</span>
                         </div>
                       </div>
@@ -527,7 +527,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                           <Clock size={15} />
                         </span>
                         <div>
-                          <span className="text-[10px] text-zinc-400 block">{t('timezonePreference', { defaultValue: '时区偏好' })}</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block">{t('timezonePreference', { defaultValue: '时区偏好' })}</span>
                           <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{profile.timezone}</span>
                         </div>
                       </div>
@@ -537,7 +537,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                           <Sparkles size={15} />
                         </span>
                         <div>
-                          <span className="text-[10px] text-zinc-400 block">{t('memberRoleLabel', { defaultValue: '成员角色' })}</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block">{t('memberRoleLabel', { defaultValue: '成员角色' })}</span>
                           <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{t('roleOwner', { defaultValue: '系统拥有者 (Owner)' })}</span>
                         </div>
                       </div>
@@ -556,7 +556,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                           <Mail size={15} />
                         </span>
                         <div className="overflow-hidden">
-                          <span className="text-[10px] text-zinc-400 block">{t('workEmailLabel', { defaultValue: '工作邮箱' })}</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block">{t('workEmailLabel', { defaultValue: '工作邮箱' })}</span>
                           <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate block">{profile.email || t('noEmailBound', { defaultValue: '未绑定工作邮件' })}</span>
                         </div>
                       </div>
@@ -566,7 +566,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                           <Phone size={15} />
                         </span>
                         <div>
-                          <span className="text-[10px] text-zinc-400 block">{t('contactPhone', { defaultValue: '联系电话' })}</span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block">{t('contactPhone', { defaultValue: '联系电话' })}</span>
                           <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{profile.phone || t('noPhoneLinked', { defaultValue: '未关联移动电话' })}</span>
                         </div>
                       </div>
@@ -581,7 +581,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                       <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">{t('kpiDocs', { defaultValue: '✍️ 撰写手记与文档' })}</span>
                       <div className="flex items-baseline space-x-1">
                         <span className="text-3xl font-extrabold text-zinc-800 dark:text-zinc-100">42</span>
-                        <span className="text-[10px] text-zinc-400">{t('unitPieces', { defaultValue: '篇' })}</span>
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">{t('unitPieces', { defaultValue: '篇' })}</span>
                       </div>
                     </div>
                     <div className="p-4 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-100 dark:border-zinc-800/80 rounded-2xl flex flex-col justify-between h-[100px] shadow-sm hover:border-[var(--color-kb-accent)]/30 transition-all">
@@ -639,7 +639,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
 
         {/* Modal Footer Actions */}
         <div className="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex justify-between items-center flex-shrink-0">
-          <div className="flex items-center space-x-1.5 text-[11px] text-zinc-400">
+          <div className="flex items-center space-x-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">
             <AlertCircle size={13} />
             <span>{t('revisionSyncNote', { defaultValue: '资料更新后系统中的修订作者记录同步更新' })}</span>
           </div>

@@ -9,13 +9,29 @@ export function KnowledgebaseAuthShell({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') {
       return 'dark';
     }
+    const root = document.documentElement;
+    const hostColorMode = root.getAttribute('data-sdk-color-mode');
+    if (hostColorMode === 'dark' || hostColorMode === 'light') {
+      return hostColorMode;
+    }
+    if (root.classList.contains('dark')) {
+      return 'dark';
+    }
+    if (root.classList.contains('light-mode')) {
+      return 'light';
+    }
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
 
   const isLightMode = themeMode === 'light';
   const shouldRenderDesktopHeader = isTauriDesktopRuntime();
 
+  // Single-writer arbitration (THEME_DARKMODE_SPEC §7.2): while a host owns the
+  // documentElement mode root, this standalone auth shell must not write it.
   useEffect(() => {
+    if (document.documentElement.getAttribute('data-sdk-color-mode') !== null) {
+      return;
+    }
     document.documentElement.classList.toggle('light-mode', isLightMode);
     document.documentElement.style.colorScheme = themeMode;
   }, [themeMode, isLightMode]);

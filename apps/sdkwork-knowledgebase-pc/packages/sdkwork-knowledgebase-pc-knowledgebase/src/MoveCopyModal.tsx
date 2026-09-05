@@ -82,7 +82,7 @@ export function MoveCopyModal({ action, item, activeKb, onClose, onSubmit }: Mov
                 {action === 'move' ? <FolderOutput size={16} className="text-indigo-600 dark:text-[var(--color-kb-text-muted)]" strokeWidth={2.5} /> : <Copy size={16} className="text-indigo-600 dark:text-[var(--color-kb-text-muted)]" strokeWidth={2.5} />}
               </div>
               <div className="flex items-center">
-                <span className="text-zinc-500 font-medium">
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium">
                   {action === 'move' ? t('moveTitle') : action === 'save_as' ? '另存为：' : t('copyTitle')}
                 </span>
                 <span className="tracking-tight">{item.title}</span>
@@ -161,7 +161,7 @@ export function MoveCopyModal({ action, item, activeKb, onClose, onSubmit }: Mov
                 <div className="space-y-1 w-full min-w-0">
                    <div className="px-3 pb-2 text-[11px] font-extrabold tracking-wider text-zinc-400 dark:text-[var(--color-kb-text-muted)] mt-4 mb-2 uppercase flex items-center justify-between">
                      <span>共享知识库</span>
-                     <div className="w-5 h-5 rounded-md bg-zinc-200/50 flex items-center justify-center text-[10px] text-zinc-500">{kbs.team.length}</div>
+                     <div className="w-5 h-5 rounded-md bg-zinc-200/50 dark:bg-zinc-700/50 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-300">{kbs.team.length}</div>
                    </div>
                    {kbs.team.map(kb => (
                       <div 

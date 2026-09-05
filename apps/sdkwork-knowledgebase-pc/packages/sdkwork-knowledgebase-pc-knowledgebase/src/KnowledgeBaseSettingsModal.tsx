@@ -405,7 +405,7 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
                       <div key={member.email} className="flex items-center justify-between px-5 py-3 hover:bg-[#fafafa] dark:hover:bg-zinc-900/50 transition-colors">
                         <div className="flex items-center gap-3 min-w-0">
                           {member.avatar ? (
-                            <img src={member.avatar} alt={member.name} className="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-200/80 shadow-sm" />
+                            <img src={member.avatar} alt={member.name} className="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-200/80 dark:border-zinc-700/80 shadow-sm" />
                           ) : (
                             <div className="w-8 h-8 rounded-full shrink-0 border border-zinc-200/80 shadow-sm bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-[12px] font-bold text-zinc-600 dark:text-zinc-300">
                               {member.name.charAt(0).toUpperCase()}
@@ -436,7 +436,7 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
                           <button
                             type="button"
                             onClick={() => handleRemoveMember(idx)}
-                            className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-950/40 rounded-lg transition-all"
                           >
                             <X size={16} strokeWidth={2.5} />
                           </button>
@@ -506,7 +506,7 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
                       onChange={(e) => setTemperature(parseFloat(e.target.value))}
                       className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                     />
-                    <div className="text-[10.5px] font-bold tracking-wide text-zinc-500 flex justify-between mt-1">
+                    <div className="text-[10.5px] font-bold tracking-wide text-zinc-500 dark:text-zinc-400 flex justify-between mt-1">
                       <span>0.0 (严谨模式)</span>
                       <span>1.0 (发散创造)</span>
                     </div>
@@ -523,7 +523,7 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
                       max="16384"
                       className="w-full bg-[#fafafa] dark:bg-[var(--color-kb-input-bg)] border border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] rounded-xl px-4 py-2 text-[14px] font-mono font-bold text-zinc-900 dark:text-[var(--color-kb-text)] focus:outline-none focus:border-zinc-900 shadow-inner"
                     />
-                    <p className="text-[10.5px] font-medium text-zinc-500 leading-tight">
+                    <p className="text-[10.5px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight">
                       指定每次产生的文字大小。建议 2048 - 4096 范围。
                     </p>
                   </div>

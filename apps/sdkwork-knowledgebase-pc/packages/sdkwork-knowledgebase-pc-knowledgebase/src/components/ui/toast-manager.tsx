@@ -197,9 +197,9 @@ export function ToastContainer() {
           key={t.id}
           className={`px-4 py-3 rounded-xl shadow-lg border text-sm font-medium flex flex-col gap-2.5 transition-all animate-in fade-in slide-in-from-top-4 pointer-events-auto max-w-[min(92vw,620px)] ${
             t.type === 'success'
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
               : t.type === 'error'
-                ? 'bg-red-50 text-red-700 border-red-200'
+                ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800'
                 : 'bg-zinc-900 text-zinc-100 border-zinc-800'
           }`}
         >
@@ -259,9 +259,9 @@ export function ToastContainer() {
                           ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
                           : 'bg-zinc-700 text-white hover:bg-zinc-600 shadow-sm'
                       : t.type === 'success'
-                        ? 'bg-white/80 text-emerald-800 border border-emerald-300 hover:bg-white hover:border-emerald-400'
+                        ? 'bg-white/80 text-emerald-800 border border-emerald-300 hover:bg-white hover:border-emerald-400 dark:bg-white/5 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-white/10 dark:hover:border-emerald-700'
                         : t.type === 'error'
-                          ? 'bg-white/80 text-red-800 border border-red-300 hover:bg-white'
+                          ? 'bg-white/80 text-red-800 border border-red-300 hover:bg-white dark:bg-white/5 dark:text-red-300 dark:border-red-800 dark:hover:bg-white/10 dark:hover:border-red-700'
                           : 'bg-zinc-800 text-zinc-100 border border-zinc-700 hover:bg-zinc-700'
                   }`}
                 >

@@ -273,6 +273,8 @@ test('knowledgebase dev orchestrator uses orchestration spec and gateway config'
   assert.doesNotMatch(devScript, /createPlatformGatewayProcess/);
   assert.match(devScript, /resolveIamDevEnv/);
   assert.match(devScript, /IAM_APPLICATION_BOOTSTRAP_ENV/);
+  assert.match(devScript, /resolveKnowledgebaseCargoDevEnv/);
+  assert.match(devScript, /prebuildKnowledgebaseBackendPackages/);
   const retiredCloudGatewayToken = 'sdkwork-api-' + 'cloud-gateway';
   assert.doesNotMatch(devScript, new RegExp(`--config|${retiredCloudGatewayToken}`));
   assert.match(devScript, /--deployment-profile/);

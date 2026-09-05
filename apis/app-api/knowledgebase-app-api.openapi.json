@@ -342,7 +342,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Create a knowledge space",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -2863,7 +2862,7 @@
         },
         "responses": {
           "201": {
-            "description": "OK",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -6360,7 +6359,7 @@
         ],
         "responses": {
           "201": {
-            "description": "OK",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -6899,7 +6898,7 @@
         ],
         "responses": {
           "201": {
-            "description": "OK",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -7087,7 +7086,7 @@
         ],
         "responses": {
           "201": {
-            "description": "OK",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -7504,7 +7503,7 @@
         },
         "responses": {
           "201": {
-            "description": "OK",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -7891,7 +7890,7 @@
         },
         "responses": {
           "201": {
-            "description": "OK",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
