@@ -37,6 +37,13 @@ profiles:
         aliases:
           - knowledgebase-admin-test.dtupay.com
           - knowledgebase-test.dtupay.com
+      - domain: knowledge-test.noaper.com
+        tls: noaper.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.noaper.com
+          - knowledgebase-test.noaper.com
       - domain: knowledge-test.sdkwork.cn
         tls: sdkwork.cn
         mode: web+api
@@ -58,6 +65,13 @@ profiles:
         aliases:
           - knowledgebase-admin-test.dtupay.cn
           - knowledgebase-test.dtupay.cn
+      - domain: knowledge-test.noaper.cn
+        tls: noaper.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-test.noaper.cn
+          - knowledgebase-test.noaper.cn
       - domain: knowledge-test.skubc.com
         tls: skubc.com
         mode: web+api
@@ -158,6 +172,13 @@ profiles:
         aliases:
           - knowledgebase-admin-staging.dtupay.com
           - knowledgebase-staging.dtupay.com
+      - domain: knowledge-staging.noaper.com
+        tls: noaper.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.noaper.com
+          - knowledgebase-staging.noaper.com
       - domain: knowledge-staging.sdkwork.cn
         tls: sdkwork.cn
         mode: web+api
@@ -179,6 +200,13 @@ profiles:
         aliases:
           - knowledgebase-admin-staging.dtupay.cn
           - knowledgebase-staging.dtupay.cn
+      - domain: knowledge-staging.noaper.cn
+        tls: noaper.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin-staging.noaper.cn
+          - knowledgebase-staging.noaper.cn
       - domain: knowledge-staging.skubc.com
         tls: skubc.com
         mode: web+api
@@ -279,6 +307,13 @@ profiles:
         aliases:
           - knowledgebase-admin.dtupay.com
           - knowledgebase.dtupay.com
+      - domain: knowledge.noaper.com
+        tls: noaper.com
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.noaper.com
+          - knowledgebase.noaper.com
       - domain: knowledge.sdkwork.cn
         tls: sdkwork.cn
         mode: web+api
@@ -300,6 +335,13 @@ profiles:
         aliases:
           - knowledgebase-admin.dtupay.cn
           - knowledgebase.dtupay.cn
+      - domain: knowledge.noaper.cn
+        tls: noaper.cn
+        mode: web+api
+        web: pc
+        aliases:
+          - knowledgebase-admin.noaper.cn
+          - knowledgebase.noaper.cn
       - domain: knowledge.skubc.com
         tls: skubc.com
         mode: web+api
@@ -403,6 +445,14 @@ profiles:
         aliases:
           - knowledgebase-admin.dtupay.com
           - knowledgebase.dtupay.com
+      - domain: knowledge.noaper.com
+        tls: noaper.com
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.noaper.com
+          - knowledgebase.noaper.com
       - domain: knowledge.sdkwork.cn
         tls: sdkwork.cn
         mode: web+api
@@ -427,6 +477,14 @@ profiles:
         aliases:
           - knowledgebase-admin.dtupay.cn
           - knowledgebase.dtupay.cn
+      - domain: knowledge.noaper.cn
+        tls: noaper.cn
+        mode: web+api
+        web: pc
+        apiPathStyle: full-prefix
+        aliases:
+          - knowledgebase-admin.noaper.cn
+          - knowledgebase.noaper.cn
       - domain: knowledge.skubc.com
         tls: skubc.com
         mode: web+api
