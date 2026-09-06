@@ -311,17 +311,23 @@ export async function getKnowledgeBases(): Promise<{
     public: [],
   };
 
-  for (const entry of registry) {
-    if (!entry.spaceId || entry.spaceId === '0') {
-      continue;
+  // Concurrent resolution keeps the sidebar's first paint independent of the registry
+  // size; a serialized loop makes group latency grow linearly with each round trip.
+  const registeredEntries = registry.filter((entry) => entry.spaceId && entry.spaceId !== '0');
+  const settleResults = await Promise.allSettled(
+    registeredEntries.map((entry) => client.knowledge.spaces.retrieve(entry.spaceId)),
+  );
+  registeredEntries.forEach((entry, index) => {
+    const result = settleResults[index];
+    if (!result) {
+      return;
     }
-    try {
-      const space = await client.knowledge.spaces.retrieve(entry.spaceId);
-      grouped[entry.kbType].push(buildKnowledgeBase(entry, space.name));
-    } catch {
+    if (result.status === 'fulfilled') {
+      grouped[entry.kbType].push(buildKnowledgeBase(entry, result.value.name));
+    } else {
       removeRegisteredSpace(tenantId, entry.spaceId);
     }
-  }
+  });
 
   return grouped;
 }

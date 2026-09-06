@@ -1,19 +1,19 @@
 import { createKnowledgebaseAppClient, type SdkworkKnowledgebaseAppClient } from '@sdkwork/knowledgebase-app-sdk';
 import type { KnowledgebaseRuntimeConfig } from '../config/runtimeConfig';
-import type { KnowledgebaseSessionTokenManager } from '../session/sessionTokenManager';
+import type { KnowledgebaseSdkTokenManager } from './sdkTokenManager';
 
 const APP_API_PREFIX = '/app/v3/api';
 const KNOWLEDGEBASE_APP_SDK_FAMILY_ID = 'sdkwork-knowledgebase-app-sdk';
 
 export interface KnowledgebaseAppSdkClient {
   client: SdkworkKnowledgebaseAppClient;
-  setTokenManager(manager: KnowledgebaseSessionTokenManager): void;
+  setTokenManager(manager: KnowledgebaseSdkTokenManager): void;
 }
 
 export interface KnowledgebaseAppSdkClientOptions {
   config: KnowledgebaseRuntimeConfig;
   sdkClient?: SdkworkKnowledgebaseAppClient;
-  tokenManager: KnowledgebaseSessionTokenManager;
+  tokenManager: KnowledgebaseSdkTokenManager;
 }
 
 function normalizeGeneratedSdkBaseUrl(baseUrl: string, apiPrefix: string): string {

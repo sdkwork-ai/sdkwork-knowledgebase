@@ -83,14 +83,11 @@ pub fn ensure_runtime_organization(
 ) -> Result<(), BackendApiProblem> {
     let runtime_org = configured_runtime_organization_id();
     let context_org = context.organization_id.unwrap_or(0);
-    if runtime_org != 0 && context_org == 0 {
-        return Err(BackendApiProblem::new(
-            StatusCode::FORBIDDEN,
-            "missing_organization_id",
-            "organization context is required for this operation",
-        ));
-    };
-    if context_org != runtime_org {
+    // Tenant-level (personal) sessions (organization_id absent/zero) are the default
+    // first-party context and MUST NOT be rejected for lacking organization login
+    // scope. Only a session that actively claims an organization context must match
+    // the configured runtime organization.
+    if context_org != 0 && context_org != runtime_org {
         return Err(BackendApiProblem::new(
             StatusCode::FORBIDDEN,
             "organization_id_mismatch",

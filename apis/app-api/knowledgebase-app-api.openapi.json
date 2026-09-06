@@ -165,7 +165,6 @@
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.spaces.read",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-idempotent": true,
         "x-sdkwork-tenant-scope": "tenant",
@@ -704,7 +703,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Update a knowledge space",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       },
@@ -851,7 +849,6 @@
         "summary": "Delete a knowledge space",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -1027,7 +1024,6 @@
         "summary": "Import a drive object into knowledgebase",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.imports.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -1203,7 +1199,6 @@
         "summary": "Import a Git repository into knowledgebase",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.imports.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -1379,7 +1374,6 @@
         "summary": "Create an ingestion job",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.ingests.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -1935,7 +1929,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Create a knowledge document",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.documents.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -2298,7 +2291,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Update a knowledge document",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.documents.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       },
@@ -2445,7 +2437,6 @@
         "summary": "Delete a knowledge document",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.documents.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -3014,7 +3005,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Create a document version",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.documents.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -3527,7 +3517,6 @@
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.okf.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -4384,7 +4373,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Create an OKF query",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.okf.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -4572,7 +4560,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "File an answer for an OKF query",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.okf.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -4747,7 +4734,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Create an OKF context pack",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.okf.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -5139,7 +5125,6 @@
         "summary": "Create a knowledge retrieval",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.retrievals.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -5491,7 +5476,6 @@
         "summary": "Create a knowledge context pack",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.context_packs.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -5666,7 +5650,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Create a knowledge agent profile",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.agent_profiles.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -6027,7 +6010,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Update a knowledge agent profile",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.agent_profiles.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       },
@@ -6172,7 +6154,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Delete a knowledge agent profile",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.agent_profiles.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -6533,7 +6514,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Create an agent profile binding",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.agent_profiles.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -6730,7 +6710,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Update an agent profile binding",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.agent_profiles.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       },
@@ -6885,7 +6864,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Delete an agent profile binding",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.agent_profiles.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -7073,7 +7051,6 @@
         "summary": "Preview retrieval for an agent profile",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.agent_profiles.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -7261,7 +7238,6 @@
         "summary": "Chat with a knowledge-backed agent profile",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.agent_profiles.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -7648,7 +7624,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "description": "Create a knowledge space context binding",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -8027,7 +8002,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "description": "Grant knowledge space member access",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       },
@@ -8188,7 +8162,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "description": "Revoke knowledge space member access",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -8549,7 +8522,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "description": "Update a knowledge space context binding",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.context_bindings.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       },
@@ -8694,7 +8666,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "description": "Delete a knowledge space context binding",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.context_bindings.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -8869,7 +8840,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "summary": "Upsert an OKF concept revision",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.okf.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -9045,7 +9015,6 @@
         "summary": "Create an OKF bundle export",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.okf.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -9398,7 +9367,6 @@
         "summary": "Import an OKF bundle from drive staging",
         "x-sdkwork-rate-limit-tier": "write-heavy",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.okf.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -9573,7 +9541,6 @@
         },
         "summary": "Create an OKF bundle lint run",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.okf.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -9912,7 +9879,6 @@
           }
         },
         "description": "Replace WeChat official accounts",
-        "x-sdkwork-permission": "knowledge.wechat.manage",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -10406,7 +10372,6 @@
           }
         },
         "description": "Replace WeChat applets",
-        "x-sdkwork-permission": "knowledge.wechat.manage",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -10574,7 +10539,6 @@
           }
         },
         "description": "Publish WeChat articles",
-        "x-sdkwork-permission": "knowledge.wechat.manage",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -10742,7 +10706,6 @@
           }
         },
         "description": "Preview WeChat articles",
-        "x-sdkwork-permission": "knowledge.wechat.manage",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -10910,7 +10873,6 @@
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "dual-token",
         "description": "Sync knowledge space documents to a Git repository",
-        "x-sdkwork-permission": "knowledge.imports.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -11269,7 +11231,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.market.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -11417,7 +11378,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.market.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -11584,7 +11544,6 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "knowledge.media.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
       }
@@ -11958,7 +11917,6 @@
         "x-sdkwork-resource": "wiki-publication",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-idempotent": true,
         "x-sdkwork-audit-event": "knowledge.wiki.publication.activated"
@@ -12154,7 +12112,6 @@
         "x-sdkwork-resource": "wiki-publication",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-idempotent": true,
         "x-sdkwork-audit-event": "knowledge.wiki.publication.paused"
@@ -12360,7 +12317,6 @@
         "x-sdkwork-resource": "wiki-source-file",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-idempotent": true,
         "x-sdkwork-audit-event": "knowledge.wiki.source_file.published"
@@ -12566,7 +12522,6 @@
         "x-sdkwork-resource": "wiki-source-file",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-idempotent": true,
         "x-sdkwork-audit-event": "knowledge.wiki.source_file.unpublished"
@@ -12772,7 +12727,6 @@
         "x-sdkwork-resource": "wiki-source-file",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization",
-        "x-sdkwork-permission": "knowledge.spaces.write",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-idempotent": true,
         "x-sdkwork-audit-event": "knowledge.wiki.source_file.visibility_changed"

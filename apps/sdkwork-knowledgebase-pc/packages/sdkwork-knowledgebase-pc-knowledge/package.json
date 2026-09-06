@@ -21,7 +21,8 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit --project ../../tsconfig.json"
+    "typecheck": "tsc --noEmit --project ../../tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "@sdkwork/utils": "workspace:*",
@@ -49,6 +50,7 @@
   },
   "devDependencies": {
     "@types/react": "catalog:",
-    "@types/react-dom": "catalog:"
+    "@types/react-dom": "catalog:",
+    "vitest": "^3.2.4"
   }
 }

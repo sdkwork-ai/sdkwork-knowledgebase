@@ -51,14 +51,13 @@ pub(crate) fn ensure_runtime_organization(
 ) -> ApiResult<()> {
     let runtime_org = runtime.organization_id();
     let context_org = context.organization_id.unwrap_or(0);
-    if runtime_org != 0 && context_org == 0 {
-        return Err(ApiError::new(
-            StatusCode::FORBIDDEN,
-            "missing_organization_id",
-            "organization context is required for this operation",
-        ));
-    };
-    if context_org != runtime_org {
+    // Consumer app-api policy (PERMISSION_STANDARD_SPEC §Surface Authorization Tiers): a
+    // personal (tenant-scope) session (`organization_id` absent/zero) is a first-party
+    // consumer context and MUST NOT be rejected for lacking organization login scope.
+    // Personal knowledge spaces are tenant-scoped resources owned by the actor through the
+    // space access-control layer. Only a session that actively claims an organization
+    // context must match the deployment-owned runtime organization.
+    if context_org != 0 && context_org != runtime_org {
         return Err(ApiError::new(
             StatusCode::FORBIDDEN,
             "organization_id_mismatch",
@@ -66,6 +65,17 @@ pub(crate) fn ensure_runtime_organization(
         ));
     }
     Ok(())
+}
+
+/// Effective organization for persistence scopes: `organization_id` absent/zero
+/// normalizes to `0` (tenant-level, personal scope) per the tenant-default policy;
+/// an organization session keeps its own (already validated) context.
+pub(crate) fn effective_organization_id(
+    runtime: &KnowledgebaseRuntime,
+    context: &KnowledgeAppRequestContext,
+) -> u64 {
+    let _ = runtime;
+    context.organization_id.unwrap_or(0)
 }
 
 pub(crate) fn require_actor_id(context: &KnowledgeAppRequestContext) -> ApiResult<String> {
@@ -319,7 +329,7 @@ pub(crate) async fn create_space_with_context(
         .with_wiki_context(
             sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_persistence::WikiPersistenceScope {
                 tenant_id: context.tenant_id,
-                organization_id: context.organization_id.unwrap_or(0),
+                organization_id: effective_organization_id(runtime, context),
             },
             actor_id,
         )

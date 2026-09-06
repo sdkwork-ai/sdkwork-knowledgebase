@@ -3,20 +3,20 @@ import {
   type SdkworkDriveAppClient,
 } from '@sdkwork/drive-app-sdk';
 import type { KnowledgebaseRuntimeConfig } from '../config/runtimeConfig';
-import type { KnowledgebaseSessionTokenManager } from '../session/sessionTokenManager';
+import type { KnowledgebaseSdkTokenManager } from './sdkTokenManager';
 
 const APP_API_PREFIX = '/app/v3/api';
 const DRIVE_APP_SDK_FAMILY_ID = 'sdkwork-drive-app-sdk';
 
 export interface KnowledgebaseDriveAppSdkClient {
   client: SdkworkDriveAppClient;
-  setTokenManager(manager: KnowledgebaseSessionTokenManager): void;
+  setTokenManager(manager: KnowledgebaseSdkTokenManager): void;
 }
 
 export interface KnowledgebaseDriveAppSdkClientOptions {
   config: KnowledgebaseRuntimeConfig;
   sdkClient?: SdkworkDriveAppClient;
-  tokenManager: KnowledgebaseSessionTokenManager;
+  tokenManager: KnowledgebaseSdkTokenManager;
 }
 
 function normalizeGeneratedSdkBaseUrl(baseUrl: string, apiPrefix: string): string {

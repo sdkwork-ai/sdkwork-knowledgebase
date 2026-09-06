@@ -22,6 +22,27 @@ interface KnowledgeBaseListProps {
   onMouseDownDrag?: () => void;
 }
 
+function KnowledgeBaseGroupSkeleton({ rows, loadingLabel }: { rows: number; loadingLabel: string }) {
+  return (
+    <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col" role="status">
+      <span className="sr-only">{loadingLabel}</span>
+      {Array.from({ length: rows }, (_, index) => (
+        <div
+          key={index}
+          aria-hidden="true"
+          className="flex items-center h-[32px] px-2 mb-[2px] w-full rounded-[8px]"
+        >
+          <div className="w-[22px] h-[22px] rounded-lg mr-2.5 flex-shrink-0 bg-[var(--color-kb-panel-hover)] animate-pulse" />
+          <div
+            className="h-[10px] rounded-full bg-[var(--color-kb-panel-hover)] animate-pulse"
+            style={{ width: `${58 + ((index * 17) % 26)}%` }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCreateKbSelect, onOpenSettings, onOpenMarket, onImportGit, onSyncGit, onImportCloudDrive, onUpdateKbs, width = 240, isDragging, onMouseDownDrag }: KnowledgeBaseListProps) {
   const { t } = useTranslation(['kb', 'common']);
   const [renameItem, setRenameItem] = useState<KnowledgeBase | null>(null);
@@ -69,10 +90,7 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
 
       <div className="flex-1 hover-scrollbar overflow-y-auto overflow-x-hidden min-w-0 bg-black/[0.015] dark:bg-black/10">
 
-        {loadingKbs ? (
-          <div className="p-4 text-xs text-[var(--color-kb-text-muted)]">{t('loading', { ns: 'common' })}</div>
-        ) : (
-          <div className="py-2">
+        <div className="py-2" aria-busy={loadingKbs}>
             {/* 1. 订阅知识库 (Subscribed Knowledge Bases) */}
             <div className="flex flex-col mb-2 min-w-0">
               <div 
@@ -98,7 +116,9 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
               </div>
               {expanded.subscribed && (
                 <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
-                  {subscribedKbs.length === 0 ? (
+                  {loadingKbs ? (
+                    <KnowledgeBaseGroupSkeleton rows={2} loadingLabel={t('loading', { ns: 'common' })} />
+                  ) : subscribedKbs.length === 0 ? (
                     <div className="px-5 py-2 text-[11px] text-[var(--color-kb-text-muted)] italic">
                       {t('noSubscribedKb')}
                     </div>
@@ -119,7 +139,7 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                       />
                     ))
                   )}
-                  {subscribedKbs.length > limitSubscribed ? (
+                  {!loadingKbs && (subscribedKbs.length > limitSubscribed ? (
                     <button 
                       onClick={() => setLimitSubscribed(prev => prev + 5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
@@ -127,13 +147,13 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                       {t('showMore', { count: subscribedKbs.length - limitSubscribed })}
                     </button>
                   ) : subscribedKbs.length > 5 ? (
-                    <button 
+                    <button
                       onClick={() => setLimitSubscribed(5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text-muted)] dark:hover:text-zinc-200 hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
                     >
                       {t('showLess')}
                     </button>
-                  ) : null}
+                  ) : null)}
                 </div>
               )}
             </div>
@@ -163,22 +183,26 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
               </div>
               {expanded.team && (
                 <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
-                  {visibleTeam.map((kb) => (
-                    <KnowledgeBaseItem
-                      key={kb.id}
-                      kb={kb}
-                      activeKb={activeKb}
-                      onSelectKb={onSelectKb}
-                      onRename={setRenameItem}
-                      onDelete={handleDeleteKb}
-                      onOpenSettings={onOpenSettings}
-                      onImportGit={onImportGit}
-                      onSyncGit={onSyncGit}
-                      onImportCloudDrive={onImportCloudDrive}
-                      t={t}
-                    />
-                  ))}
-                  {kbs.team.length > limitTeam ? (
+                  {loadingKbs ? (
+                    <KnowledgeBaseGroupSkeleton rows={3} loadingLabel={t('loading', { ns: 'common' })} />
+                  ) : (
+                    visibleTeam.map((kb) => (
+                      <KnowledgeBaseItem
+                        key={kb.id}
+                        kb={kb}
+                        activeKb={activeKb}
+                        onSelectKb={onSelectKb}
+                        onRename={setRenameItem}
+                        onDelete={handleDeleteKb}
+                        onOpenSettings={onOpenSettings}
+                        onImportGit={onImportGit}
+                        onSyncGit={onSyncGit}
+                        onImportCloudDrive={onImportCloudDrive}
+                        t={t}
+                      />
+                    ))
+                  )}
+                  {!loadingKbs && (kbs.team.length > limitTeam ? (
                     <button 
                       onClick={() => setLimitTeam(prev => prev + 5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
@@ -186,13 +210,13 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                       {t('showMore', { count: kbs.team.length - limitTeam })}
                     </button>
                   ) : kbs.team.length > 5 ? (
-                    <button 
+                    <button
                       onClick={() => setLimitTeam(5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text-muted)] dark:hover:text-zinc-200 hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
                     >
                       {t('showLess')}
                     </button>
-                  ) : null}
+                  ) : null)}
                 </div>
               )}
             </div>
@@ -222,22 +246,26 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
               </div>
               {expanded.personal && (
                 <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
-                  {visiblePersonal.map((kb) => (
-                    <KnowledgeBaseItem
-                      key={kb.id}
-                      kb={kb}
-                      activeKb={activeKb}
-                      onSelectKb={onSelectKb}
-                      onRename={setRenameItem}
-                      onDelete={handleDeleteKb}
-                      onOpenSettings={onOpenSettings}
-                      onImportGit={onImportGit}
-                      onSyncGit={onSyncGit}
-                      onImportCloudDrive={onImportCloudDrive}
-                      t={t}
-                    />
-                  ))}
-                  {kbs.personal.length > limitPersonal ? (
+                  {loadingKbs ? (
+                    <KnowledgeBaseGroupSkeleton rows={3} loadingLabel={t('loading', { ns: 'common' })} />
+                  ) : (
+                    visiblePersonal.map((kb) => (
+                      <KnowledgeBaseItem
+                        key={kb.id}
+                        kb={kb}
+                        activeKb={activeKb}
+                        onSelectKb={onSelectKb}
+                        onRename={setRenameItem}
+                        onDelete={handleDeleteKb}
+                        onOpenSettings={onOpenSettings}
+                        onImportGit={onImportGit}
+                        onSyncGit={onSyncGit}
+                        onImportCloudDrive={onImportCloudDrive}
+                        t={t}
+                      />
+                    ))
+                  )}
+                  {!loadingKbs && (kbs.personal.length > limitPersonal ? (
                     <button 
                       onClick={() => setLimitPersonal(prev => prev + 5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
@@ -245,13 +273,13 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                       {t('showMore', { count: kbs.personal.length - limitPersonal })}
                     </button>
                   ) : kbs.personal.length > 5 ? (
-                    <button 
+                    <button
                       onClick={() => setLimitPersonal(5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text-muted)] dark:hover:text-zinc-200 hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
                     >
                       {t('showLess')}
                     </button>
-                  ) : null}
+                  ) : null)}
                 </div>
               )}
             </div>
@@ -281,22 +309,26 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
               </div>
               {expanded.public && (
                 <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
-                  {visiblePublic.map((kb) => (
-                    <KnowledgeBaseItem
-                      key={kb.id}
-                      kb={kb}
-                      activeKb={activeKb}
-                      onSelectKb={onSelectKb}
-                      onRename={setRenameItem}
-                      onDelete={handleDeleteKb}
-                      onOpenSettings={onOpenSettings}
-                      onImportGit={onImportGit}
-                      onSyncGit={onSyncGit}
-                      onImportCloudDrive={onImportCloudDrive}
-                      t={t}
-                    />
-                  ))}
-                  {regularPublicKbs.length > limitPublic ? (
+                  {loadingKbs ? (
+                    <KnowledgeBaseGroupSkeleton rows={2} loadingLabel={t('loading', { ns: 'common' })} />
+                  ) : (
+                    visiblePublic.map((kb) => (
+                      <KnowledgeBaseItem
+                        key={kb.id}
+                        kb={kb}
+                        activeKb={activeKb}
+                        onSelectKb={onSelectKb}
+                        onRename={setRenameItem}
+                        onDelete={handleDeleteKb}
+                        onOpenSettings={onOpenSettings}
+                        onImportGit={onImportGit}
+                        onSyncGit={onSyncGit}
+                        onImportCloudDrive={onImportCloudDrive}
+                        t={t}
+                      />
+                    ))
+                  )}
+                  {!loadingKbs && (regularPublicKbs.length > limitPublic ? (
                     <button 
                       onClick={() => setLimitPublic(prev => prev + 5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
@@ -304,19 +336,18 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                       {t('showMore', { count: regularPublicKbs.length - limitPublic })}
                     </button>
                   ) : regularPublicKbs.length > 5 ? (
-                    <button 
+                    <button
                       onClick={() => setLimitPublic(5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text-muted)] dark:hover:text-zinc-200 hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
                     >
                       {t('showLess')}
                     </button>
-                  ) : null}
+                  ) : null)}
                 </div>
               )}
             </div>
             <div className="h-4 w-full shrink-0"></div>
           </div>
-        )}
       </div>
 
       <div 

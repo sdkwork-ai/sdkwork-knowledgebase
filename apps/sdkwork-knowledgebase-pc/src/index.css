@@ -2,7 +2,12 @@
 @source "../../../../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/src";
 @source "../../../../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react/src";
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* `:is` (not `:where`) gives dark utilities the `.dark` class specificity so
+   they beat plain light utilities from ANY sheet that loads later — the
+   embedded BirdCoder document carries several sibling tailwind sheets whose
+   `.bg-white`-class rules would otherwise outrank this sheet's dark variants
+   on cascade order alone. Matching is identical in the standalone app. */
+@custom-variant dark (&:is(.dark, .dark *));
 
 @theme {
   --color-kb-nav: var(--theme-nav);
@@ -26,6 +31,9 @@
   --color-kb-accent: var(--theme-accent);
   --color-kb-accent-hover: var(--theme-accent-hover);
   --color-kb-input-bg: var(--theme-input-bg);
+  /* The app canvas color (`body` and the host-embed root); was referenced
+     without ever being defined, so embeds fell back to a hardcoded dark. */
+  --color-kb-bg-app: var(--theme-editor);
 
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;

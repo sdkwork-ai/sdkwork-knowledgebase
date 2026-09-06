@@ -22,10 +22,12 @@ export { resolveKnowledgebaseFeatureFlags } from './config/knowledgebaseFeatureF
 export type { KnowledgebaseFeatureFlags } from './config/knowledgebaseFeatureFlags';
 export * from './sdk/knowledgebaseAppSdkClient';
 export * from './sdk/driveAppSdkClient';
+export * from './sdk/sdkTokenManager';
 export * from './sdk/groupKnowledgebaseLaunch';
 export * from './sdk/sdkContractTypes';
 export * from './session/sessionStore';
 export * from './session/sessionTokenManager';
+export * from './session/sessionTokenClaims';
 export {
   signOutKnowledgebaseAccount,
   signOutKnowledgebaseSession,

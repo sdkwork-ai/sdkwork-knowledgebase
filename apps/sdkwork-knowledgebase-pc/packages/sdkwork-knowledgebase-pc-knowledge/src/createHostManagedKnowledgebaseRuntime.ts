@@ -29,8 +29,26 @@ export function createHostManagedKnowledgebaseRuntime(): KnowledgebasePcRuntime 
     VITE_SDKWORK_KNOWLEDGEBASE_TOKEN_MANAGER_MODE: 'appbase-global',
   });
   const session = createSessionStore();
-  const tokenManager = createKnowledgebaseSessionTokenManager(session);
   const ports = getKnowledgebasePcSdkPorts();
+  // APP_SDK_INTEGRATION_SPEC TokenManager closure rule: one TokenManager per
+  // authenticated session context. Host-managed surfaces reuse the host's
+  // shared instance; without the port the runtime owns exactly one of its own.
+  const hostTokenManager = ports.getTokenManager?.();
+  const tokenManager = hostTokenManager ?? createKnowledgebaseSessionTokenManager(session);
+  if (hostTokenManager) {
+    // Mirror session-store tokens into the host manager so every bound SDK
+    // client reads current credentials even when the host relies on the
+    // embedded session bridge instead of syncing its manager itself.
+    session.subscribe((snapshot) => {
+      if (snapshot.accessToken || snapshot.authToken || snapshot.refreshToken) {
+        hostTokenManager.setTokens({
+          accessToken: snapshot.accessToken,
+          authToken: snapshot.authToken,
+          refreshToken: snapshot.refreshToken,
+        });
+      }
+    });
+  }
   const appSdkClient = createKnowledgebaseAppSdkClient({
     config,
     sdkClient: ports.getKnowledgebaseClient(),
