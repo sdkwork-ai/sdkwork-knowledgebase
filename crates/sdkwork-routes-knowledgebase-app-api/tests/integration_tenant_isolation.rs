@@ -165,6 +165,45 @@ async fn organization_id_mismatch_rejects_when_runtime_org_configured() {
     assert_eq!(body["code"].as_i64(), Some(40304));
 }
 
+/// Regression (PERMISSION_STANDARD_SPEC §Tenant-Default Organization Context): a personal
+/// (tenant-scope) session without organization context `MUST NOT` be rejected with
+/// 40304 `organization context is required` even when a runtime organization is configured.
+/// The space is persisted with the normalized organization `0`.
+#[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
+#[tokio::test]
+async fn personal_tenant_session_creates_space_when_runtime_org_configured() {
+    let _guard = tenant_isolation_test_lock().await;
+    let _org_env = TestEnvVarGuard::set("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID", "100");
+    let Some(runtime) = test_runtime().await else {
+        eprintln!(
+            "skipping integration test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL"
+        );
+        return;
+    };
+    let app = runtime.build_full_app_router();
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(paths::SPACES)
+                .header("content-type", "application/json")
+                .extension(app_context(1, 42, None))
+                .body(Body::from(
+                    json!({
+                        "name": "personal-tenant-space",
+                        "description": "must succeed without organization context"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+}
+
 async fn create_space(runtime: &KnowledgebaseRuntime, context: KnowledgeAppRequestContext) -> u64 {
     let app = runtime.build_full_app_router();
     let response = app

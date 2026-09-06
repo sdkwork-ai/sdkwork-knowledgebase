@@ -175,7 +175,7 @@ async fn wiki_routes_preserve_tenant_and_organization_denial() {
 }
 
 #[test]
-fn wiki_route_manifest_declares_permissions_rate_limits_and_idempotency() {
+fn wiki_route_manifest_forbids_per_route_scopes_and_keeps_rate_limits_and_idempotency() {
     let manifest = app_route_manifest();
     let routes = [
         (
@@ -225,7 +225,13 @@ fn wiki_route_manifest_declares_permissions_rate_limits_and_idempotency() {
     for (method, path, operation_id, permission, mutation) in routes {
         let route = manifest.match_route(method, path).expect(operation_id);
         assert_eq!(route.operation_id, operation_id);
-        assert_eq!(route.required_permission, Some(permission));
+        // PERMISSION_STANDARD_SPEC §Surface Authorization Tiers: first-party app-api
+        // consumer routes MUST NOT declare per-route scopes; the `permission` tuple
+        // entry documents the legacy scope that was removed.
+        assert_eq!(
+            route.required_permission, None,
+            "app-api route `{operation_id}` must not declare per-route scope `{permission}`"
+        );
         assert_eq!(route.idempotent, mutation);
         assert_eq!(
             route.rate_limit_tier,

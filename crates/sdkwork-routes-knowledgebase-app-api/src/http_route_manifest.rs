@@ -6,8 +6,12 @@ const fn knowledge_route(
     operation_id: &'static str,
     permission: &'static str,
 ) -> HttpRoute {
+    // PERMISSION_STANDARD_SPEC §Surface Authorization Tiers: this is a first-party
+    // app-api consumer surface (tier 0–2). Per-route OAuth-style scopes are contract
+    // violations here; access is enforced by the service layer's space ownership/ACL
+    // checks. The permission argument remains at call sites for documentation only.
+    let _ = permission;
     HttpRoute::dual_token(method, path, "knowledge", operation_id)
-        .with_required_permission(permission)
 }
 
 const fn knowledge_read_route(
