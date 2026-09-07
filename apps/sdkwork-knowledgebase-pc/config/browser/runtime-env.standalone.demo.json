@@ -1,0 +1,47 @@
+{
+  "environment": "demo",
+  "deploymentProfile": "standalone",
+  "profileId": "standalone.demo",
+  "runtimeTarget": "browser",
+  "browserOriginMode": "same-origin",
+  "configProfile": "dev",
+  "buildMode": "development",
+  "appKey": "sdkwork-knowledgebase-pc",
+  "sdkBaseUrls": {
+    "appApiBaseUrl": "http://127.0.0.1:18081",
+    "openApiBaseUrl": "http://127.0.0.1:18081",
+    "platformApiGatewayBaseUrl": "http://127.0.0.1:3900"
+  },
+  "featureFlags": {
+    "enableDemoMode": true
+  },
+  "notes": "Safe checked-in browser runtime example for local development. Production/staging examples disable demo mode.",
+  "auth": {
+    "tokenStorage": "browser-local"
+  },
+  "cloudApiBaseUrls": [
+    "https://api-dev.sdkwork.com",
+    "https://api-dev.birdcoder.com",
+    "https://api-dev.noaper.com",
+    "https://api-dev.dtupay.com",
+    "https://api-dev.sdkwork.cn",
+    "https://api-dev.birdcoder.cn",
+    "https://api-dev.noaper.cn",
+    "https://api-dev.dtupay.cn",
+    "https://api-dev.skubc.com",
+    "https://api-dev.skubc.cn",
+    "https://api-dev.zowalk.com",
+    "https://api-dev.zowalk.cn",
+    "https://api-dev.offer86.com",
+    "https://api-dev.offer86.cn",
+    "https://api-dev.86offer.com",
+    "https://api-dev.86offer.cn"
+  ],
+  "appApiBaseUrl": "/",
+  "backendApiBaseUrl": "/",
+  "driveAppApiBaseUrl": "/",
+  "appbaseAppApiBaseUrl": "/",
+  "deployAppApiBaseUrl": "/",
+  "openApiBaseUrl": "/",
+  "sdkBaseUrl": "/"
+}

@@ -77,13 +77,13 @@ function printHostsInstructions() {
 [deploy] Windows hosts not writable from this shell.
 Run once in an elevated (Administrator) PowerShell:
 
-  Add-Content -Path C:\\Windows\\System32\\drivers\\etc\\hosts -Value "\`n# sdkwork-knowledgebase docker test domains\`n127.0.0.1 testapikb.sdkwork.com testapikb.birdcoder.com testapikb.dtupay.com"
+  Add-Content -Path C:\\Windows\\System32\\drivers\\etc\\hosts -Value "\`n# sdkwork-knowledgebase docker test domains\`n127.0.0.1 testapikb.sdkwork.com testapikb.birdcoder.com testapikb.noaper.com testapikb.dtupay.com"
 `);
 }
 
 async function tryUpdateWindowsHosts() {
   const hostsPath = 'C:\\Windows\\System32\\drivers\\etc\\hosts';
-  const line = '127.0.0.1 testapikb.sdkwork.com testapikb.birdcoder.com testapikb.dtupay.com';
+  const line = '127.0.0.1 testapikb.sdkwork.com testapikb.birdcoder.com testapikb.noaper.com testapikb.dtupay.com';
   try {
     const fs = await import('node:fs');
     const content = fs.readFileSync(hostsPath, 'utf8');

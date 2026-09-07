@@ -55,7 +55,7 @@ PORTAL_DIR="${TARGET_ROOT}/${APP_REPO}/apps/sdkwork-knowledgebase-pc/dist"
 NGINX_SITE_DIR="/etc/nginx/sites-enabled/sdkwork"
 NGINX_SITE_FILE="testapikb-knowledgebase.conf"
 PORTAL_DEPLOY_ROOT="/opt/sdkwork/knowledgebase/portal"
-DOMAINS="testapikb.sdkwork.com testapikb.birdcoder.com testapikb.dtupay.com"
+DOMAINS="testapikb.sdkwork.com testapikb.birdcoder.com testapikb.noaper.com testapikb.dtupay.com"
 HOSTS_LINE="127.0.0.1 ${DOMAINS}"
 
 # Repositories required for the cargo + vite builds are discovered
@@ -245,7 +245,7 @@ update_hosts() {
 [deploy] cannot write C:\Windows\System32\drivers\etc\hosts from WSL.
 Run this once in an elevated (Administrator) PowerShell on Windows:
 
-  Add-Content -Path C:\Windows\System32\drivers\etc\hosts -Value "`n# sdkwork-knowledgebase docker test domains`n127.0.0.1 testapikb.sdkwork.com testapikb.birdcoder.com testapikb.dtupay.com"
+  Add-Content -Path C:\Windows\System32\drivers\etc\hosts -Value "`n# sdkwork-knowledgebase docker test domains`n127.0.0.1 testapikb.sdkwork.com testapikb.birdcoder.com testapikb.noaper.com testapikb.dtupay.com"
 
 EOF
   fi
