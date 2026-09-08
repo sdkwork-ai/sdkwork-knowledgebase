@@ -1,5 +1,9 @@
 import { createClient, type SdkworkKnowledgebaseBackendClient } from '@sdkwork/knowledgebase-backend-sdk';
-import type { KnowledgebaseRuntimeConfig, KnowledgebaseSdkTokenManager } from 'sdkwork-knowledgebase-pc-core';
+import {
+  resolveSharedSdkApiBaseUrl,
+  type KnowledgebaseRuntimeConfig,
+  type KnowledgebaseSdkTokenManager,
+} from 'sdkwork-knowledgebase-pc-core';
 
 const BACKEND_API_PREFIX = '/backend/v3/api';
 const KNOWLEDGEBASE_BACKEND_SDK_FAMILY_ID = 'sdkwork-knowledgebase-backend-sdk';
@@ -25,7 +29,10 @@ function normalizeGeneratedSdkBaseUrl(baseUrl: string, apiPrefix: string): strin
 }
 
 function resolveKnowledgebaseBackendApiBaseUrl(config: KnowledgebaseRuntimeConfig): string {
-  return config.backendApiBaseUrl
+  // The shared `SDKWORK_API_BASE_URL` key resolved through `@sdkwork/sdk-common`
+  // wins; the per-app keys behind the runtime config only survive as a fallback.
+  return resolveSharedSdkApiBaseUrl()
+    ?? config.backendApiBaseUrl
     ?? config.sdkBaseUrls.dependencySdkBaseUrls[KNOWLEDGEBASE_BACKEND_SDK_FAMILY_ID]?.appApiBaseUrl
     ?? config.appApiBaseUrl;
 }

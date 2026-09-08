@@ -2,6 +2,7 @@ import {
   createClient,
   type SdkworkDriveAppClient,
 } from '@sdkwork/drive-app-sdk';
+import { resolveSharedSdkApiBaseUrl } from '../config/resolveSdkApiBaseUrl';
 import type { KnowledgebaseRuntimeConfig } from '../config/runtimeConfig';
 import type { KnowledgebaseSdkTokenManager } from './sdkTokenManager';
 
@@ -29,7 +30,10 @@ function normalizeGeneratedSdkBaseUrl(baseUrl: string, apiPrefix: string): strin
 }
 
 function resolveDriveAppApiBaseUrl(config: KnowledgebaseRuntimeConfig): string {
-  return config.sdkBaseUrls.dependencySdkBaseUrls[DRIVE_APP_SDK_FAMILY_ID]?.appApiBaseUrl
+  // The shared `SDKWORK_API_BASE_URL` key resolved through `@sdkwork/sdk-common`
+  // wins; the per-app keys behind the runtime config only survive as a fallback.
+  return resolveSharedSdkApiBaseUrl()
+    ?? config.sdkBaseUrls.dependencySdkBaseUrls[DRIVE_APP_SDK_FAMILY_ID]?.appApiBaseUrl
     ?? config.platformApiGatewayBaseUrl;
 }
 

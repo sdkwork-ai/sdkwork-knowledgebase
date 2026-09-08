@@ -24,6 +24,7 @@
     "@tauri-apps/api": "^2.11.1",
     "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/knowledgebase-app-sdk": "workspace:*",
+    "@sdkwork/sdk-common": "workspace:*",
     "@sdkwork/sdkwork-knowledgebase-pc-commons": "workspace:*",
     "@sdkwork/utils": "workspace:*"
   },

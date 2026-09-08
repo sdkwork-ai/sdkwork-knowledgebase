@@ -18,6 +18,7 @@ export {
   normalizeKnowledgebaseBrowserBasePath,
   toKnowledgebaseViteBasePath,
 } from './config/browserBasePath';
+export { resolveSharedSdkApiBaseUrl } from './config/resolveSdkApiBaseUrl';
 export { resolveKnowledgebaseFeatureFlags } from './config/knowledgebaseFeatureFlags';
 export type { KnowledgebaseFeatureFlags } from './config/knowledgebaseFeatureFlags';
 export * from './sdk/knowledgebaseAppSdkClient';

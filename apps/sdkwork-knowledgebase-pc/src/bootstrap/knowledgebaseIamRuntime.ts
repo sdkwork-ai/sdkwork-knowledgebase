@@ -1,6 +1,7 @@
 import {
   createKnowledgebaseSessionTokenManager,
   KnowledgebaseErrorCodes,
+  resolveSharedSdkApiBaseUrl,
   throwKnowledgebaseError,
 } from 'sdkwork-knowledgebase-pc-core';
 import type {
@@ -159,8 +160,11 @@ function ensureIamTenantSelectionCompat(client: SdkworkAppClient): SdkworkAppCli
 }
 
 function resolveAppbaseAppApiBaseUrl(config: KnowledgebaseRuntimeConfig): string {
+  // The shared `SDKWORK_API_BASE_URL` key resolved through `@sdkwork/sdk-common`
+  // wins; the per-app keys behind the runtime config only survive as a fallback.
   const configured =
-    config.sdkBaseUrls.dependencySdkBaseUrls[APPBASE_APP_SDK_FAMILY_ID]?.appApiBaseUrl;
+    resolveSharedSdkApiBaseUrl()
+    ?? config.sdkBaseUrls.dependencySdkBaseUrls[APPBASE_APP_SDK_FAMILY_ID]?.appApiBaseUrl;
   if (configured !== undefined) {
     return configured;
   }
