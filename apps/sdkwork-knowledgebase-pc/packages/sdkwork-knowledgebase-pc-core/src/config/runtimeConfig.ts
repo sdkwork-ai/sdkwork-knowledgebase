@@ -1,4 +1,5 @@
 import { isBlank, trim } from '@sdkwork/utils';
+import {resolveBaseUrlWithAlignProtocol} from '@sdkwork/sdk-common';
 
 import { buildDependencySdkBaseUrls } from '../composition/dependency-runtime.js';
 import { normalizeKnowledgebaseBrowserBasePath } from './browserBasePath';
@@ -84,13 +85,14 @@ export interface RuntimeEnv {
 }
 
 const APP_KEY = 'sdkwork-knowledgebase-pc';
+// base-url-check: exempt (standalone/test local-stack listeners and
+// no-window SSR last-ditch fallbacks; browser cloud resolution goes through
+// @sdkwork/sdk-common resolveBaseUrl below, ENVIRONMENT_SPEC §6.3)
 const LOCAL_APP_API_BASE_URL = 'http://127.0.0.1:18081';
 const LOCAL_OPEN_API_BASE_URL = 'http://127.0.0.1:18081';
 const LOCAL_PLATFORM_API_GATEWAY_BASE_URL = 'http://127.0.0.1:3900';
 
-const CLOUD_APP_API_BASE_URL = 'https://knowledgebase.sdkwork.com/app/v3/api';
 const CLOUD_OPEN_API_BASE_URL = 'https://knowledge.sdkwork.com/knowledge/v3/api';
-const CLOUD_PLATFORM_API_GATEWAY_BASE_URL = 'https://api.sdkwork.com';
 
 const VALID_ENVIRONMENTS: SdkworkEnvironment[] = [
   'development',
@@ -201,6 +203,12 @@ function normalizeDeploymentProfile(
   return 'cloud';
 }
 
+/**
+ * Cloud platform-gateway default: resolved through the shared
+ * `resolveBaseUrl` contract (ENVIRONMENT_SPEC.md §6.3) so the built cloud
+ * page derives `api[-<env>].<brand>` from the current host and `pnpm dev`
+ * cloud pages resolve to the local cloud-gateway dev port.
+ */
 function defaultPlatformApiGatewayBaseUrl(
   deploymentProfile: SdkworkDeploymentProfile,
   environment: SdkworkEnvironment,
@@ -208,7 +216,7 @@ function defaultPlatformApiGatewayBaseUrl(
   if (deploymentProfile === 'standalone' || environment === 'test') {
     return LOCAL_PLATFORM_API_GATEWAY_BASE_URL;
   }
-  return CLOUD_PLATFORM_API_GATEWAY_BASE_URL;
+  return resolveBaseUrlWithAlignProtocol({ mode: 'cloud' }).url;
 }
 
 function defaultAppApiBaseUrl(
@@ -218,7 +226,7 @@ function defaultAppApiBaseUrl(
   if (deploymentProfile === 'standalone' || environment === 'test') {
     return LOCAL_APP_API_BASE_URL;
   }
-  return CLOUD_APP_API_BASE_URL;
+  return `${resolveBaseUrlWithAlignProtocol({ mode: 'cloud' }).url}/app/v3/api`;
 }
 
 function defaultOpenApiBaseUrl(
