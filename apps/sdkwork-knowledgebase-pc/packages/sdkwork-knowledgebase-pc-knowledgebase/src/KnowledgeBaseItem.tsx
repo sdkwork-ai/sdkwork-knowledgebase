@@ -49,19 +49,19 @@ export function KnowledgeBaseItem({
     let IconComponent = BookOpen;
 
     if (kb.type === 'team') {
-      GradientClass = isActive 
-        ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white border-blue-405' 
-        : 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border-blue-105';
+      GradientClass = isActive
+        ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white border-white/25'
+        : 'bg-blue-50 text-blue-600 border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-500/25';
       IconComponent = Users;
     } else if (kb.type === 'personal') {
-      GradientClass = isActive 
-        ? 'bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white border-purple-405' 
-        : 'bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 border-purple-105';
+      GradientClass = isActive
+        ? 'bg-gradient-to-br from-sky-500 to-blue-600 text-white border-white/25'
+        : 'bg-sky-50 text-sky-600 border-sky-200/70 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-500/25';
       IconComponent = User;
     } else {
-      GradientClass = isActive 
-        ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white border-emerald-405' 
-        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-105';
+      GradientClass = isActive
+        ? 'bg-gradient-to-br from-cyan-500 to-teal-500 text-white border-white/25'
+        : 'bg-cyan-50 text-cyan-700 border-cyan-200/70 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-500/25';
       IconComponent = Globe;
     }
 
@@ -82,10 +82,14 @@ export function KnowledgeBaseItem({
     <ContextMenu>
       <DropdownMenu>
         <ContextMenuTrigger asChild>
-          <div 
+          <div
             onClick={() => onSelectKb(kb)}
-            className={`flex items-center px-2 h-[32px] mx-0 mb-[2px] w-full min-w-0 overflow-hidden rounded-[8px] cursor-pointer text-[13.5px] group/node relative transition-all duration-150 ${isActive ? 'bg-black/5 dark:bg-white/10 text-[var(--color-kb-text-heading)] font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.04)]' : 'text-[var(--color-kb-text)] hover:bg-[var(--color-kb-panel-hover)]'}`}
+            className={`flex items-center px-2 h-[32px] mx-0 mb-[2px] w-full min-w-0 overflow-hidden rounded-[8px] cursor-pointer text-[13.5px] group/node relative transition-all duration-150 ${isActive ? 'bg-[var(--color-kb-panel-active)] text-[var(--color-kb-text-heading)] font-semibold' : 'text-[var(--color-kb-text)] hover:bg-[var(--color-kb-panel-hover)]'}`}
           >
+            <span
+              aria-hidden="true"
+              className={`absolute left-0 top-1/2 -translate-y-1/2 h-[16px] w-[3px] rounded-r-full bg-[var(--color-kb-accent)] transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`}
+            />
             {renderVisualIcon()}
             <span className={`truncate flex-1 min-w-0 transition-colors tracking-wide pr-6 ${!isActive && 'group-hover/node:text-[var(--color-kb-text-heading)]'}`}>{kb.title}</span>
             

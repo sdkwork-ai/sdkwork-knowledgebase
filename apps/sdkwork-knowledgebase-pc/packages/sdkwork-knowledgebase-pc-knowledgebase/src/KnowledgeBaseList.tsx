@@ -43,13 +43,53 @@ function KnowledgeBaseGroupSkeleton({ rows, loadingLabel }: { rows: number; load
   );
 }
 
+interface KnowledgeBaseGroupHeaderProps {
+  label: string;
+  count: number;
+  expanded: boolean;
+  onToggle: () => void;
+  actionTitle: string;
+  onAction: () => void;
+}
+
+function KnowledgeBaseGroupHeader({ label, count, expanded, onToggle, actionTitle, onAction }: KnowledgeBaseGroupHeaderProps) {
+  return (
+    <div
+      className="flex items-center justify-between px-4 py-2 group/header mb-1 cursor-pointer select-none"
+      onClick={onToggle}
+    >
+      <div className="flex items-center gap-1.5 min-w-0 text-[12px] font-semibold text-[var(--color-kb-text-heading)] uppercase tracking-wider pl-1 font-sans">
+        <span className="text-[var(--color-kb-text-muted)] group-hover/header:text-[var(--color-kb-accent)] transition-colors shrink-0">
+          {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        </span>
+        <span className="truncate">{label}</span>
+        {!expanded && count > 0 && (
+          <span className="ml-0.5 px-1.5 py-px rounded-full text-[10px] font-semibold leading-[14px] bg-[var(--color-kb-panel-hover)] text-[var(--color-kb-text-muted)] shrink-0">
+            {count}
+          </span>
+        )}
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAction();
+        }}
+        className="text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] transition-colors p-0.5 rounded hover:bg-[var(--color-kb-panel-hover)] opacity-0 group-hover/header:opacity-100 focus-visible:opacity-100"
+        title={actionTitle}
+      >
+        <Plus size={14} />
+      </button>
+    </div>
+  );
+}
+
 export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCreateKbSelect, onOpenSettings, onOpenMarket, onImportGit, onSyncGit, onImportCloudDrive, onUpdateKbs, width = 240, isDragging, onMouseDownDrag }: KnowledgeBaseListProps) {
   const { t } = useTranslation(['kb', 'common']);
   const [renameItem, setRenameItem] = useState<KnowledgeBase | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    subscribed: true,
-    team: true,
     personal: true,
+    team: true,
+    subscribed: true,
     public: true
   });
 
@@ -72,48 +112,143 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
   const visiblePublic = regularPublicKbs.slice(0, limitPublic);
 
   return (
-    <div 
+    <div
       className="flex-shrink-0 flex flex-col bg-[var(--color-kb-panel)] border-r border-[var(--color-kb-panel-border)] relative overflow-hidden"
       style={{ width }}
     >
-      <div className="px-5 h-[40px] flex items-center justify-between min-w-0 bg-[var(--color-kb-panel)] z-10 border-b border-zinc-200/80 dark:border-[var(--color-kb-panel-border)]/50 shadow-sm flex-none">
+      <div className="px-5 h-[40px] flex items-center justify-between min-w-0 bg-[var(--color-kb-panel)] z-10 border-b border-[var(--color-kb-panel-border)] shadow-sm flex-none">
         <div className="flex items-center min-w-0 pr-2">
-          <div className="w-6 h-6 rounded bg-[var(--color-kb-accent)]/10 text-[var(--color-kb-accent)] flex items-center justify-center mr-2.5 shadow-sm shrink-0">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[var(--color-kb-accent)] to-[var(--color-kb-accent-hover)] text-white flex items-center justify-center mr-2.5 shadow-sm shrink-0">
             <Box size={14} />
           </div>
           <h2 className="font-bold text-[14px] tracking-wide text-[var(--color-kb-text-heading)] truncate">{t('kbManagement')}</h2>
         </div>
-        <button onClick={() => onCreateKbSelect('team')} className="p-1.5 hover:bg-[var(--color-kb-panel-border)] rounded-md text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] transition-all shadow-sm" title={t('newKb')}>
+        <button onClick={() => onCreateKbSelect('team')} className="p-1.5 hover:bg-[var(--color-kb-panel-hover)] rounded-md text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] transition-all" title={t('newKb')}>
           <Plus size={15} />
         </button>
       </div>
 
-      <div className="flex-1 hover-scrollbar overflow-y-auto overflow-x-hidden min-w-0 bg-black/[0.015] dark:bg-black/10">
+      <div className="flex-1 hover-scrollbar overflow-y-auto overflow-x-hidden min-w-0">
 
         <div className="py-2" aria-busy={loadingKbs}>
-            {/* 1. 订阅知识库 (Subscribed Knowledge Bases) */}
+            {/* 1. 个人知识库 (Personal Knowledge Bases) */}
             <div className="flex flex-col mb-2 min-w-0">
-              <div 
-                className="flex items-center justify-between px-4 py-2 group/header mb-1 cursor-pointer select-none" 
-                onClick={() => setExpanded(prev => ({ ...prev, subscribed: !prev.subscribed }))}
-              >
-                <div className="flex items-center gap-1.5 min-w-0 text-[13px] font-semibold text-[var(--color-kb-text-heading)] uppercase tracking-wider pl-1 font-sans">
-                  <span className="text-[var(--color-kb-text-muted)] group-hover/header:text-[var(--color-kb-text-heading)] transition-colors shrink-0">
-                    {expanded.subscribed ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                  </span>
-                  <span>{t('subscribedKb')}</span>
+              <KnowledgeBaseGroupHeader
+                label={t('personalKb')}
+                count={kbs.personal.length}
+                expanded={expanded.personal}
+                onToggle={() => setExpanded(prev => ({ ...prev, personal: !prev.personal }))}
+                actionTitle={t('newKb')}
+                onAction={() => onCreateKbSelect('personal')}
+              />
+              {expanded.personal && (
+                <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
+                  {loadingKbs ? (
+                    <KnowledgeBaseGroupSkeleton rows={3} loadingLabel={t('loading', { ns: 'common' })} />
+                  ) : kbs.personal.length === 0 ? (
+                    <div className="px-5 py-2 text-[11px] text-[var(--color-kb-text-muted)] italic">
+                      {t('noPersonalKb')}
+                    </div>
+                  ) : (
+                    visiblePersonal.map((kb) => (
+                      <KnowledgeBaseItem
+                        key={kb.id}
+                        kb={kb}
+                        activeKb={activeKb}
+                        onSelectKb={onSelectKb}
+                        onRename={setRenameItem}
+                        onDelete={handleDeleteKb}
+                        onOpenSettings={onOpenSettings}
+                        onImportGit={onImportGit}
+                        onSyncGit={onSyncGit}
+                        onImportCloudDrive={onImportCloudDrive}
+                        t={t}
+                      />
+                    ))
+                  )}
+                  {!loadingKbs && (kbs.personal.length > limitPersonal ? (
+                    <button
+                      onClick={() => setLimitPersonal(prev => prev + 5)}
+                      className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
+                    >
+                      {t('showMore', { count: kbs.personal.length - limitPersonal })}
+                    </button>
+                  ) : kbs.personal.length > 5 ? (
+                    <button
+                      onClick={() => setLimitPersonal(5)}
+                      className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
+                    >
+                      {t('showLess')}
+                    </button>
+                  ) : null)}
                 </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenMarket();
-                  }}
-                  className="text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] transition-colors p-0.5 rounded hover:bg-[var(--color-kb-panel-hover)]" 
-                  title={t('subscribeNewSharedKb')}
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
+              )}
+            </div>
+
+            {/* 2. 团队知识库 (Team Knowledge Bases) */}
+            <div className="flex flex-col mb-2 min-w-0">
+              <KnowledgeBaseGroupHeader
+                label={t('teamKb')}
+                count={kbs.team.length}
+                expanded={expanded.team}
+                onToggle={() => setExpanded(prev => ({ ...prev, team: !prev.team }))}
+                actionTitle={t('newKb')}
+                onAction={() => onCreateKbSelect('team')}
+              />
+              {expanded.team && (
+                <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
+                  {loadingKbs ? (
+                    <KnowledgeBaseGroupSkeleton rows={3} loadingLabel={t('loading', { ns: 'common' })} />
+                  ) : kbs.team.length === 0 ? (
+                    <div className="px-5 py-2 text-[11px] text-[var(--color-kb-text-muted)] italic">
+                      {t('noTeamKb')}
+                    </div>
+                  ) : (
+                    visibleTeam.map((kb) => (
+                      <KnowledgeBaseItem
+                        key={kb.id}
+                        kb={kb}
+                        activeKb={activeKb}
+                        onSelectKb={onSelectKb}
+                        onRename={setRenameItem}
+                        onDelete={handleDeleteKb}
+                        onOpenSettings={onOpenSettings}
+                        onImportGit={onImportGit}
+                        onSyncGit={onSyncGit}
+                        onImportCloudDrive={onImportCloudDrive}
+                        t={t}
+                      />
+                    ))
+                  )}
+                  {!loadingKbs && (kbs.team.length > limitTeam ? (
+                    <button
+                      onClick={() => setLimitTeam(prev => prev + 5)}
+                      className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
+                    >
+                      {t('showMore', { count: kbs.team.length - limitTeam })}
+                    </button>
+                  ) : kbs.team.length > 5 ? (
+                    <button
+                      onClick={() => setLimitTeam(5)}
+                      className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
+                    >
+                      {t('showLess')}
+                    </button>
+                  ) : null)}
+                </div>
+              )}
+            </div>
+
+            {/* 3. 订阅知识库 (Subscribed Knowledge Bases) */}
+            <div className="flex flex-col mb-2 min-w-0">
+              <KnowledgeBaseGroupHeader
+                label={t('subscribedKb')}
+                count={subscribedKbs.length}
+                expanded={expanded.subscribed}
+                onToggle={() => setExpanded(prev => ({ ...prev, subscribed: !prev.subscribed }))}
+                actionTitle={t('subscribeNewSharedKb')}
+                onAction={onOpenMarket}
+              />
               {expanded.subscribed && (
                 <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
                   {loadingKbs ? (
@@ -140,7 +275,7 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                     ))
                   )}
                   {!loadingKbs && (subscribedKbs.length > limitSubscribed ? (
-                    <button 
+                    <button
                       onClick={() => setLimitSubscribed(prev => prev + 5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
                     >
@@ -149,133 +284,7 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                   ) : subscribedKbs.length > 5 ? (
                     <button
                       onClick={() => setLimitSubscribed(5)}
-                      className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text-muted)] dark:hover:text-zinc-200 hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
-                    >
-                      {t('showLess')}
-                    </button>
-                  ) : null)}
-                </div>
-              )}
-            </div>
-
-            {/* 2. 团队知识库 (Team Knowledge Bases) */}
-            <div className="flex flex-col mb-2 min-w-0">
-              <div 
-                className="flex items-center justify-between px-4 py-2 group/header mb-1 cursor-pointer select-none" 
-                onClick={() => setExpanded(prev => ({ ...prev, team: !prev.team }))}
-              >
-                <div className="flex items-center gap-1.5 min-w-0 text-[13px] font-semibold text-[var(--color-kb-text-heading)] uppercase tracking-wider pl-1 font-sans">
-                  <span className="text-[var(--color-kb-text-muted)] group-hover/header:text-[var(--color-kb-text-heading)] transition-colors shrink-0">
-                    {expanded.team ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                  </span>
-                  <span>{t('teamKb')}</span>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onCreateKbSelect('team');
-                  }}
-                  className="text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] transition-colors p-0.5 rounded hover:bg-[var(--color-kb-panel-hover)]" 
-                  title={t('newKb')}
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-              {expanded.team && (
-                <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
-                  {loadingKbs ? (
-                    <KnowledgeBaseGroupSkeleton rows={3} loadingLabel={t('loading', { ns: 'common' })} />
-                  ) : (
-                    visibleTeam.map((kb) => (
-                      <KnowledgeBaseItem
-                        key={kb.id}
-                        kb={kb}
-                        activeKb={activeKb}
-                        onSelectKb={onSelectKb}
-                        onRename={setRenameItem}
-                        onDelete={handleDeleteKb}
-                        onOpenSettings={onOpenSettings}
-                        onImportGit={onImportGit}
-                        onSyncGit={onSyncGit}
-                        onImportCloudDrive={onImportCloudDrive}
-                        t={t}
-                      />
-                    ))
-                  )}
-                  {!loadingKbs && (kbs.team.length > limitTeam ? (
-                    <button 
-                      onClick={() => setLimitTeam(prev => prev + 5)}
-                      className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
-                    >
-                      {t('showMore', { count: kbs.team.length - limitTeam })}
-                    </button>
-                  ) : kbs.team.length > 5 ? (
-                    <button
-                      onClick={() => setLimitTeam(5)}
-                      className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text-muted)] dark:hover:text-zinc-200 hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
-                    >
-                      {t('showLess')}
-                    </button>
-                  ) : null)}
-                </div>
-              )}
-            </div>
-            
-            {/* 3. 个人知识库 (Personal Knowledge Bases) */}
-            <div className="flex flex-col mb-2 min-w-0">
-              <div 
-                className="flex items-center justify-between px-4 py-2 group/header mb-1 cursor-pointer select-none" 
-                onClick={() => setExpanded(prev => ({ ...prev, personal: !prev.personal }))}
-              >
-                <div className="flex items-center gap-1.5 min-w-0 text-[13px] font-semibold text-[var(--color-kb-text-heading)] uppercase tracking-wider pl-1 font-sans">
-                  <span className="text-[var(--color-kb-text-muted)] group-hover/header:text-[var(--color-kb-text-heading)] transition-colors shrink-0">
-                    {expanded.personal ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                  </span>
-                  <span>{t('personalKb')}</span>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onCreateKbSelect('personal');
-                  }}
-                  className="text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] transition-colors p-0.5 rounded hover:bg-[var(--color-kb-panel-hover)]" 
-                  title={t('newKb')}
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-              {expanded.personal && (
-                <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
-                  {loadingKbs ? (
-                    <KnowledgeBaseGroupSkeleton rows={3} loadingLabel={t('loading', { ns: 'common' })} />
-                  ) : (
-                    visiblePersonal.map((kb) => (
-                      <KnowledgeBaseItem
-                        key={kb.id}
-                        kb={kb}
-                        activeKb={activeKb}
-                        onSelectKb={onSelectKb}
-                        onRename={setRenameItem}
-                        onDelete={handleDeleteKb}
-                        onOpenSettings={onOpenSettings}
-                        onImportGit={onImportGit}
-                        onSyncGit={onSyncGit}
-                        onImportCloudDrive={onImportCloudDrive}
-                        t={t}
-                      />
-                    ))
-                  )}
-                  {!loadingKbs && (kbs.personal.length > limitPersonal ? (
-                    <button 
-                      onClick={() => setLimitPersonal(prev => prev + 5)}
-                      className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
-                    >
-                      {t('showMore', { count: kbs.personal.length - limitPersonal })}
-                    </button>
-                  ) : kbs.personal.length > 5 ? (
-                    <button
-                      onClick={() => setLimitPersonal(5)}
-                      className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text-muted)] dark:hover:text-zinc-200 hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
+                      className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
                     >
                       {t('showLess')}
                     </button>
@@ -286,31 +295,22 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
 
             {/* 4. 共享知识库 (Shared Knowledge Bases) */}
             <div className="flex flex-col mb-2 min-w-0">
-              <div 
-                className="flex items-center justify-between px-4 py-2 group/header mb-1 cursor-pointer select-none" 
-                onClick={() => setExpanded(prev => ({ ...prev, public: !prev.public }))}
-              >
-                <div className="flex items-center gap-1.5 min-w-0 text-[13px] font-semibold text-[var(--color-kb-text-heading)] uppercase tracking-wider pl-1 flex items-center gap-1 font-sans">
-                  <span className="text-[var(--color-kb-text-muted)] group-hover/header:text-[var(--color-kb-text-heading)] transition-colors shrink-0">
-                    {expanded.public ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                  </span>
-                  <span>{t('sharedKb')}</span>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onCreateKbSelect('public');
-                  }}
-                  className="text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] transition-colors p-0.5 rounded hover:bg-[var(--color-kb-panel-hover)]" 
-                  title={t('newKb')}
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
+              <KnowledgeBaseGroupHeader
+                label={t('sharedKb')}
+                count={regularPublicKbs.length}
+                expanded={expanded.public}
+                onToggle={() => setExpanded(prev => ({ ...prev, public: !prev.public }))}
+                actionTitle={t('newKb')}
+                onAction={() => onCreateKbSelect('public')}
+              />
               {expanded.public && (
                 <div className="space-y-[2px] px-[5px] min-w-0 overflow-hidden flex flex-col">
                   {loadingKbs ? (
                     <KnowledgeBaseGroupSkeleton rows={2} loadingLabel={t('loading', { ns: 'common' })} />
+                  ) : regularPublicKbs.length === 0 ? (
+                    <div className="px-5 py-2 text-[11px] text-[var(--color-kb-text-muted)] italic">
+                      {t('noSharedKb')}
+                    </div>
                   ) : (
                     visiblePublic.map((kb) => (
                       <KnowledgeBaseItem
@@ -329,7 +329,7 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                     ))
                   )}
                   {!loadingKbs && (regularPublicKbs.length > limitPublic ? (
-                    <button 
+                    <button
                       onClick={() => setLimitPublic(prev => prev + 5)}
                       className="mt-1 mx-[5px] py-1 text-[11px] font-semibold text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-accent)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
                     >
@@ -338,7 +338,7 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
                   ) : regularPublicKbs.length > 5 ? (
                     <button
                       onClick={() => setLimitPublic(5)}
-                      className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text-muted)] dark:hover:text-zinc-200 hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
+                      className="mt-1 mx-[5px] py-1 text-[11px] font-medium text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)] hover:bg-[var(--color-kb-panel-hover)] rounded-md transition-all flex items-center justify-center gap-1 shrink-0 select-none cursor-pointer"
                     >
                       {t('showLess')}
                     </button>
@@ -350,7 +350,7 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
           </div>
       </div>
 
-      <div 
+      <div
         className={`absolute top-0 right-[-3px] w-[6px] h-full cursor-col-resize z-20 group ${isDragging ? 'bg-[var(--color-kb-accent)]/20' : 'hover:bg-[var(--color-kb-accent)]/10'}`}
         onMouseDown={onMouseDownDrag}
       >
@@ -358,15 +358,15 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
       </div>
 
       {renameItem && (
-        <RenameModal 
-          initialTitle={renameItem.title} 
-          onClose={() => setRenameItem(null)} 
+        <RenameModal
+          initialTitle={renameItem.title}
+          onClose={() => setRenameItem(null)}
           onConfirm={(newTitle) => {
             DocumentService.updateKnowledgeBase(renameItem.id, { title: newTitle }).then(() => {
               setRenameItem(null);
               if (onUpdateKbs) onUpdateKbs();
             });
-          }} 
+          }}
         />
       )}
     </div>

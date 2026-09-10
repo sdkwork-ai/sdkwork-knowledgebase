@@ -48,7 +48,7 @@ export function KnowledgeFileHeader({
   return (
     <div className="h-[40px] px-5 flex items-center justify-between min-w-0 border-b border-zinc-200/80 dark:border-[var(--color-kb-panel-border)]/50 sticky top-0 z-10 bg-[var(--color-kb-panel)]/90 backdrop-blur-md shadow-sm">
       {isSearchOpen ? (
-        <div className="flex-1 flex items-center h-[28px] bg-white dark:bg-[var(--color-kb-input-bg)] rounded-lg text-zinc-950 dark:text-[var(--color-kb-text)] px-2.5 border border-zinc-200/90 dark:border-[var(--color-kb-panel-border)]/80 hover:border-zinc-350 dark:hover:border-zinc-700 focus-within:border-[var(--color-kb-accent)] focus-within:ring-2 focus-within:ring-[var(--color-kb-accent)]/15 transition-all shadow-sm">
+        <div className="flex-1 flex items-center h-[28px] bg-white dark:bg-[var(--color-kb-input-bg)] rounded-lg text-zinc-950 dark:text-[var(--color-kb-text)] px-2.5 border border-zinc-200/90 dark:border-[var(--color-kb-panel-border)]/80 hover:border-zinc-300 dark:hover:border-zinc-700 focus-within:border-[var(--color-kb-accent)] focus-within:ring-2 focus-within:ring-[var(--color-kb-accent)]/15 transition-all shadow-sm">
           <Search size={13} strokeWidth={2.5} className="text-zinc-400 dark:text-[var(--color-kb-text-muted)] mr-1.5 flex-shrink-0" />
           <input 
             type="text" 

@@ -107,6 +107,8 @@
   "importFromPersonalDesc": "Batch import docs from your personal KB to current team space",
   "personalKbList": "Personal KB List",
   "noPersonalKb": "No personal KB",
+  "noTeamKb": "No team KBs yet",
+  "noSharedKb": "No shared KBs yet",
   "searchInKb": "Search docs in \"{{kbName}}\"...",
   "loadingDocs": "Loading document list...",
   "noImportableDocs": "No importable files in this KB",

@@ -107,6 +107,8 @@
   "importFromPersonalDesc": "一键多选导入您其它的个人知识库文档到当前团队空间",
   "personalKbList": "个人知识库列表",
   "noPersonalKb": "暂无个人知识库",
+  "noTeamKb": "暂无团队知识库",
+  "noSharedKb": "暂无共享知识库",
   "searchInKb": "搜索 \"{{kbName}}\" 内的文档...",
   "loadingDocs": "正在加载文档列表...",
   "noImportableDocs": "此库内无可导入文件",

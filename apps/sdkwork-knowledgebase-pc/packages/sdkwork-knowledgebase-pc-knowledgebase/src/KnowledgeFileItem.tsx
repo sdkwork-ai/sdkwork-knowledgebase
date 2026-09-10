@@ -158,7 +158,7 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
     }
     if (isTxt) {
       return (
-        <div className="w-[38px] h-[38px] rounded-xl bg-zinc-500/10 text-zinc-650 dark:bg-zinc-500/15 dark:text-zinc-400 flex items-center justify-center mr-2.5 shrink-0 shadow-sm font-extrabold text-[9px] tracking-tighter">
+        <div className="w-[38px] h-[38px] rounded-xl bg-zinc-500/10 text-zinc-600 dark:bg-zinc-500/15 dark:text-zinc-400 flex items-center justify-center mr-2.5 shrink-0 shadow-sm font-extrabold text-[9px] tracking-tighter">
           TXT
         </div>
       );
@@ -297,11 +297,11 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
               isLocateHighlight
                 ? 'kb-file-item--highlight bg-[var(--color-kb-panel-active)] text-[var(--color-kb-text-heading)]'
                 : isActive && !isSelected
-                ? 'bg-black/5 dark:bg-white/10 text-[var(--color-kb-text-heading)] font-medium'
+                ? 'bg-[var(--color-kb-panel-active)] text-[var(--color-kb-text-heading)] font-medium'
                 : 'text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)] hover:bg-[var(--color-kb-panel-hover)] font-medium'
             } ${
-              isSelected 
-                ? 'bg-black/5 dark:bg-white/10 text-[var(--color-kb-text-heading)]' 
+              isSelected
+                ? 'bg-[var(--color-kb-panel-active)] text-[var(--color-kb-text-heading)]'
                 : ''
             }`}
             onClick={(e) => {

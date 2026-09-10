@@ -67,7 +67,7 @@ export function GlobalNav({
         <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
 
         {/* Small active status indicator in bottom right */}
-        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-zinc-850 ${statusMap[profile?.status || 'online']}`} />
+        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-zinc-700 ${statusMap[profile?.status || 'online']}`} />
       </div>
 
       <div className="flex-1 w-full flex flex-col items-center space-y-4 pt-4">
@@ -80,7 +80,7 @@ export function GlobalNav({
               onClick={() => onTabChange(item.id)}
               title={item.title}
               data-testid={`knowledgebase-pc-nav-${item.id}`}
-              className={`w-11 h-11 rounded-xl flex justify-center items-center transition-all duration-350 relative group ${isActive ? 'bg-black/5 dark:bg-white/10 text-[var(--color-kb-text-heading)] shadow-inner' : 'text-[var(--color-kb-nav-text)] hover:bg-[var(--color-kb-panel-hover)] hover:text-[var(--color-kb-nav-text-hover)]'}`}
+              className={`w-11 h-11 rounded-xl flex justify-center items-center transition-all duration-350 relative group ${isActive ? 'bg-[var(--color-kb-panel-active)] text-[var(--color-kb-accent)]' : 'text-[var(--color-kb-nav-text)] hover:bg-[var(--color-kb-panel-hover)] hover:text-[var(--color-kb-nav-text-hover)]'}`}
             >
               <Icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
               

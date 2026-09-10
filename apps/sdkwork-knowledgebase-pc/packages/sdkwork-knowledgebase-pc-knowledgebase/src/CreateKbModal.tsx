@@ -137,21 +137,21 @@ export function CreateKbModal({
           <div className="flex flex-col space-y-2">
             <label className="text-[13px] font-semibold text-[var(--color-kb-text-heading)]">{t('kbType')}</label>
             <div className="grid grid-cols-3 gap-2.5">
-              <button 
-                type="button"
-                onClick={() => setNewKbType('team')}
-                className={`flex flex-col items-start px-3 py-2.5 rounded-xl border transition-all shadow-sm ${newKbType === 'team' ? 'border-[var(--color-kb-accent)] bg-[var(--color-kb-accent)]/5 text-[var(--color-kb-accent)]' : 'border-[var(--color-kb-panel-border)] bg-[var(--color-kb-panel)] text-[var(--color-kb-text)] hover:bg-[var(--color-kb-panel-hover)] hover:border-[var(--color-kb-text-muted)]/30'}`}
-              >
-                <span className="font-semibold text-[13px] mb-0.5 tracking-wide">{t('teamKb')}</span>
-                <span className={`text-[11px] leading-tight ${newKbType === 'team' ? 'text-[var(--color-kb-accent)]/80' : 'text-[var(--color-kb-text-muted)]'}`}>{t('teamKbDesc')}</span>
-              </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setNewKbType('personal')}
                 className={`flex flex-col items-start px-3 py-2.5 rounded-xl border transition-all shadow-sm ${newKbType === 'personal' ? 'border-[var(--color-kb-accent)] bg-[var(--color-kb-accent)]/5 text-[var(--color-kb-accent)]' : 'border-[var(--color-kb-panel-border)] bg-[var(--color-kb-panel)] text-[var(--color-kb-text)] hover:bg-[var(--color-kb-panel-hover)] hover:border-[var(--color-kb-text-muted)]/30'}`}
               >
                 <span className="font-semibold text-[13px] mb-0.5 tracking-wide">{t('personalKb')}</span>
                 <span className={`text-[11px] leading-tight ${newKbType === 'personal' ? 'text-[var(--color-kb-accent)]/80' : 'text-[var(--color-kb-text-muted)]'}`}>{t('personalKbDesc')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewKbType('team')}
+                className={`flex flex-col items-start px-3 py-2.5 rounded-xl border transition-all shadow-sm ${newKbType === 'team' ? 'border-[var(--color-kb-accent)] bg-[var(--color-kb-accent)]/5 text-[var(--color-kb-accent)]' : 'border-[var(--color-kb-panel-border)] bg-[var(--color-kb-panel)] text-[var(--color-kb-text)] hover:bg-[var(--color-kb-panel-hover)] hover:border-[var(--color-kb-text-muted)]/30'}`}
+              >
+                <span className="font-semibold text-[13px] mb-0.5 tracking-wide">{t('teamKb')}</span>
+                <span className={`text-[11px] leading-tight ${newKbType === 'team' ? 'text-[var(--color-kb-accent)]/80' : 'text-[var(--color-kb-text-muted)]'}`}>{t('teamKbDesc')}</span>
               </button>
               <button 
                 type="button"

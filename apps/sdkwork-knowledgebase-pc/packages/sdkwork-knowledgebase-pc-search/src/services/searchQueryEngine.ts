@@ -203,6 +203,7 @@ void (query.toLowerCase());
   const webSources = webSearchEnabled ? await buildWebSources(query) : [];
   if (webSearchEnabled && webSources.length === 0) {
     console.warn(
+      // base-url-check: exempt (diagnostic message text referencing backend config keys, not a browser resolution point)
       '[SearchQueryEngine] Web search is enabled but no public web hits were returned. Enable SDKWORK_KNOWLEDGEBASE_PUBLIC_WEB_SEARCH_ENABLED on the backend or configure SDKWORK_KNOWLEDGEBASE_SEARXNG_BASE_URL.',
     );
   }

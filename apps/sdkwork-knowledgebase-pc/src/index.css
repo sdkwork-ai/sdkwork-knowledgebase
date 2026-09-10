@@ -39,28 +39,31 @@
   --font-display: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
 }
 
+/* Tech-blue commercial theme. Neutrals carry a cool blue tint (light: blue-gray
+   slate; dark: deep navy) so the blue accent reads as one coherent brand color
+   across nav, panels, editor chrome, and controls. */
 :root {
-  --theme-nav: #f4f4f5;
-  --theme-nav-hover: rgba(9, 9, 11, 0.04);
-  --theme-nav-text: #71717a;
+  --theme-nav: #f3f6fb;
+  --theme-nav-hover: rgba(37, 99, 235, 0.07);
+  --theme-nav-text: #5b6b84;
   --theme-nav-text-hover: #2563eb;
-  
-  --theme-panel: #f4f4f5;
-  --theme-panel-border: #e4e4e7;
-  --theme-panel-hover: rgba(9, 9, 11, 0.04);
-  --theme-panel-active: rgba(37, 99, 235, 0.08);
+
+  --theme-panel: #f6f8fc;
+  --theme-panel-border: #e2e8f2;
+  --theme-panel-hover: rgba(37, 99, 235, 0.06);
+  --theme-panel-active: rgba(37, 99, 235, 0.10);
   --theme-panel-text: #2563eb;
-  
+
   --theme-editor: #ffffff;
-  --theme-editor-border: #e4e4e7;
-  
-  --theme-text: #27272a;
-  --theme-text-heading: #09090b;
-  --theme-text-muted: #52525b;
-  
+  --theme-editor-border: #e2e8f2;
+
+  --theme-text: #334155;
+  --theme-text-heading: #0f172a;
+  --theme-text-muted: #64748b;
+
   --theme-accent: #2563eb;
   --theme-accent-hover: #1d4ed8;
-  --theme-input-bg: #f4f4f5;
+  --theme-input-bg: #eef2f9;
   
   --scrollbar-thumb: color-mix(in srgb, var(--theme-text-muted) 32%, transparent);
   --scrollbar-thumb-hover: color-mix(in srgb, var(--theme-text-muted) 52%, transparent);
@@ -85,27 +88,27 @@ html.dark * {
 }
 
 html.dark {
-  --theme-nav: #18181a;
-  --theme-nav-hover: rgba(255, 255, 255, 0.04);
-  --theme-nav-text: #a1a1aa;
-  --theme-nav-text-hover: #3b82f6;
-  
-  --theme-panel: #18181a;
-  --theme-panel-border: #262629;
-  --theme-panel-hover: rgba(255, 255, 255, 0.04);
-  --theme-panel-active: rgba(59, 130, 246, 0.12);
-  --theme-panel-text: #3b82f6;
-  
-  --theme-editor: #0c0c0e;
-  --theme-editor-border: #262629;
-  
-  --theme-text: #d4d4d8;
-  --theme-text-heading: #ffffff;
-  --theme-text-muted: #a1a1aa;
-  
+  --theme-nav: #0e1729;
+  --theme-nav-hover: rgba(59, 130, 246, 0.12);
+  --theme-nav-text: #8fa1bd;
+  --theme-nav-text-hover: #60a5fa;
+
+  --theme-panel: #111c30;
+  --theme-panel-border: #1f2d47;
+  --theme-panel-hover: rgba(59, 130, 246, 0.10);
+  --theme-panel-active: rgba(59, 130, 246, 0.16);
+  --theme-panel-text: #60a5fa;
+
+  --theme-editor: #0a1120;
+  --theme-editor-border: #1f2d47;
+
+  --theme-text: #c6d2e4;
+  --theme-text-heading: #eef3fb;
+  --theme-text-muted: #8fa1bd;
+
   --theme-accent: #3b82f6;
   --theme-accent-hover: #60a5fa;
-  --theme-input-bg: #1f1f22;
+  --theme-input-bg: #18243c;
 
   --scrollbar-thumb: color-mix(in srgb, var(--theme-text-muted) 38%, var(--theme-editor) 62%);
   --scrollbar-thumb-hover: color-mix(in srgb, var(--theme-text-muted) 55%, var(--theme-editor) 45%);

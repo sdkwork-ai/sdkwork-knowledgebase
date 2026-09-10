@@ -162,7 +162,7 @@ export function EditorPanel({
               type="button"
               disabled={!activeDoc}
               onClick={() => activeDoc && onPublishDoc(activeDoc)} 
-              className="px-3 py-1 bg-indigo-600 dark:bg-[var(--color-kb-accent)] text-white text-[11.5px] font-bold rounded-lg hover:bg-indigo-700 dark:hover:bg-[var(--color-kb-accent-hover)] transition-all active:scale-95 shadow-sm shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+              className="px-3 py-1 bg-[var(--color-kb-accent)] text-white text-[11.5px] font-bold rounded-lg hover:bg-[var(--color-kb-accent-hover)] transition-all active:scale-95 shadow-sm shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
             >
               {t('publish')}
             </button>
@@ -187,7 +187,7 @@ export function EditorPanel({
               <button 
                 disabled={!activeDoc}
                 onClick={onToggleAI} 
-                className={`p-1 rounded-md transition-all ${isAIOpen && activeDoc ? 'bg-indigo-100 text-indigo-600 dark:bg-[var(--color-kb-accent)]/20 dark:text-[var(--color-kb-accent)] font-semibold' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:text-zinc-500 dark:hover:text-zinc-200'} disabled:opacity-30 disabled:pointer-events-none`}
+                className={`p-1 rounded-md transition-all ${isAIOpen && activeDoc ? 'bg-[var(--color-kb-panel-active)] text-[var(--color-kb-accent)] font-semibold' : 'hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:text-zinc-500 dark:hover:text-zinc-200'} disabled:opacity-30 disabled:pointer-events-none`}
                 title={t('aiWritingAssistant', { defaultValue: 'AI 智能写作助手' })}
               >
                 <Sparkles size={13} strokeWidth={2.5} />

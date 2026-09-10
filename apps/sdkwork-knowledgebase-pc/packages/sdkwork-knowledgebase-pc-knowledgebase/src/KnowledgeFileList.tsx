@@ -373,7 +373,7 @@ export function KnowledgeFileList({
                 <button
                   type="button"
                   onClick={() => handleMenuCreateWrapped('note_doc', currentFolderId ?? undefined)}
-                  className="p-3 bg-zinc-50/50 hover:bg-zinc-100/60 active:bg-zinc-150 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/80 dark:active:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-colors duration-150 cursor-pointer"
+                  className="p-3 bg-zinc-50/50 hover:bg-zinc-100/60 active:bg-zinc-100 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/80 dark:active:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-colors duration-150 cursor-pointer"
                 >
                   <FileEdit size={14} className="text-indigo-500/85 dark:text-indigo-400/85" />
                   <span className="text-[11px] font-medium">{t('note')}</span>
@@ -382,7 +382,7 @@ export function KnowledgeFileList({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-3 bg-zinc-50/50 hover:bg-zinc-100/60 active:bg-zinc-150 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/80 dark:active:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-colors duration-150 cursor-pointer"
+                  className="p-3 bg-zinc-50/50 hover:bg-zinc-100/60 active:bg-zinc-100 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/80 dark:active:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-colors duration-150 cursor-pointer"
                 >
                   <FileUp size={14} className="text-blue-500/85 dark:text-blue-400/85" />
                   <span className="text-[11px] font-medium">{t('localFile')}</span>
@@ -391,7 +391,7 @@ export function KnowledgeFileList({
                 <button
                   type="button"
                   onClick={() => handleMenuCreateWrapped('folder', currentFolderId ?? undefined)}
-                  className="p-3 bg-zinc-50/50 hover:bg-zinc-100/60 active:bg-zinc-150 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/80 dark:active:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-colors duration-150 cursor-pointer"
+                  className="p-3 bg-zinc-50/50 hover:bg-zinc-100/60 active:bg-zinc-100 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/80 dark:active:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-colors duration-150 cursor-pointer"
                 >
                   <FolderPlus size={14} className="text-emerald-500/85 dark:text-emerald-400/85" />
                   <span className="text-[11px] font-medium">{t('newFolder')}</span>
@@ -403,7 +403,7 @@ export function KnowledgeFileList({
                     setLinkUrl('');
                     setIsLinkModalOpen(true);
                   }}
-                  className="p-3 bg-zinc-50/50 hover:bg-zinc-100/60 active:bg-zinc-150 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/80 dark:active:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-colors duration-150 cursor-pointer"
+                  className="p-3 bg-zinc-50/50 hover:bg-zinc-100/60 active:bg-zinc-100 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/80 dark:active:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-800/80 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-colors duration-150 cursor-pointer"
                 >
                   <Link size={14} className="text-amber-500/85 dark:text-amber-400/85" />
                   <span className="text-[11px] font-medium">{t('webLink')}</span>
