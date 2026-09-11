@@ -1,9 +1,13 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-knowledgebase-worker"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_knowledgebase_worker"
 path = "src/lib.rs"

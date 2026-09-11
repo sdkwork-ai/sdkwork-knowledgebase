@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-intelligence-knowledgebase-rpc"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Thin internal group knowledge-space lifecycle RPC adapter."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_intelligence_knowledgebase_rpc"
 path = "src/lib.rs"

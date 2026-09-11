@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-knowledgebase-engine-ragflow"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "RAGFlow external knowledge engine adapter (adapter tier) for SDKWork Knowledgebase SPI"
 
+
+[lints]
+workspace = true
 [dependencies]
 async-trait.workspace = true
 reqwest.workspace = true

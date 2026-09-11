@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-knowledgebase-provider-secret-adapter"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Tenant-context-aware secret adapter for SDKWork Knowledgebase Provider bindings"
 
+
+[lints]
+workspace = true
 [dependencies]
 async-trait.workspace = true
 sdkwork-agent-kernel.workspace = true

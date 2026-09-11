@@ -21,10 +21,10 @@
   },
   "dependencies": {
     "@sdkwork/sdk-common": "^1.0.2",
-    "@sdkwork/utils": "workspace:*"
+    "@sdkwork/utils": "^0.11.0"
   },
   "peerDependencies": {
-    "@sdkwork/iam-app-sdk": "workspace:*"
+    "@sdkwork/iam-app-sdk": "^0.1.6"
   },
   "peerDependenciesMeta": {
     "@sdkwork/iam-app-sdk": {
@@ -41,5 +41,9 @@
     "sdkwork",
     "knowledgebase",
     "app-sdk"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

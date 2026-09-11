@@ -1,4 +1,5 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-api-knowledgebase-standalone-gateway"
 version.workspace = true
 edition.workspace = true
@@ -8,6 +9,9 @@ license.workspace = true
 name = "sdkwork-api-knowledgebase-standalone-gateway"
 path = "src/bin/app_main.rs"
 
+
+[lints]
+workspace = true
 [dependencies]
 sdkwork-api-knowledgebase-assembly.workspace = true
 sdkwork-database-sqlx.workspace = true

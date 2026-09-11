@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-knowledgebase-im-rpc-adapter"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Trusted generated IM RPC adapter for Knowledgebase group-launch tickets."
 
+
+[lints]
+workspace = true
 [dependencies]
 async-trait.workspace = true
 thiserror.workspace = true

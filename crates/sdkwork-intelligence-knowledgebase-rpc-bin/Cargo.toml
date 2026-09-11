@@ -1,10 +1,14 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-intelligence-knowledgebase-rpc-bin"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "Standalone internal RPC host for Knowledgebase group lifecycle operations."
 
+
+[lints]
+workspace = true
 [lib]
 name = "sdkwork_intelligence_knowledgebase_rpc_bin"
 path = "src/lib.rs"

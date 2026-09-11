@@ -1,9 +1,13 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-knowledgebase-agent-provider"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [dependencies]
 cloudrouter-open-sdk.workspace = true
 sdkwork-agent-kernel.workspace = true

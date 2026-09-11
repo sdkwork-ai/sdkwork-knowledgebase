@@ -1,9 +1,13 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-intelligence-knowledgebase-repository-sqlx"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [dependencies]
 sdkwork-database-config.workspace = true
 sdkwork-database-sqlx.workspace = true

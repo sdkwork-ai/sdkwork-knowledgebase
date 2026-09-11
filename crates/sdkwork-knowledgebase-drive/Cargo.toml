@@ -1,9 +1,13 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-knowledgebase-drive"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [dependencies]
 async-trait.workspace = true
 sdkwork-drive-workspace-service.workspace = true

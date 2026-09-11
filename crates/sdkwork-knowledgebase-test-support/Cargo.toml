@@ -1,9 +1,13 @@
 [package]
+rust-version.workspace = true
 name = "sdkwork-knowledgebase-test-support"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [dependencies]
 async-trait.workspace = true
 sdkwork-knowledgebase-contract.workspace = true
