@@ -127,44 +127,23 @@ After the image exists, everyday deployment is a single command:
 docker compose up -d        # start/update the stack (seconds)
 ```
 
-## 4. WSL quick deployment (Windows host + WSL Ubuntu)
+## 4. Deployment channel — `bin/` only (MODULE_BIN_SPEC.md §1)
 
-The one-command orchestration `pnpm deploy:docker:wsl` runs the whole pipeline
-inside WSL Ubuntu (invoked from Windows):
+> **Removed pipeline**: the legacy `pnpm deploy:docker:wsl` orchestration
+> (`scripts/wsl-deploy.sh` / `scripts/deploy-wsl-docker.mjs`, including its
+> host-nginx takeover and Windows hosts binding) has been removed — `bin/`
+> is the single operator channel and `sdkwork-webserver` owns the public
+> edge. The deployment bundle (`deployments/docker/bundle/`) is the
+> prerequisite for `bin/docker-deploy.sh install/upgrade`; until it lands,
+> the deploy sections of the runbooks are not executable (see the wiring
+> checklist in `docs/runbooks/deploy.md`).
+
+Build the canonical image via `bin/`:
 
 ```bash
-pnpm deploy:docker:wsl              # full pipeline (long on first run)
-pnpm deploy:docker:wsl -- --verify-only     # re-verify a running stack
-pnpm deploy:docker:wsl -- --no-cargo --no-frontend   # iterate after first build
+bin/docker-image.sh build        # delegates to the repository's build:container
+bin/docker-image.sh save -o dist/image.tar.gz   # offline transport (tar.gz + sha256)
 ```
-
-What it does (idempotent stages, see `scripts/wsl-deploy.sh`):
-
-1. **Preflight** — installs `docker.io` + compose plugin, `nginx`, `rsync`
-   via apt when missing and starts the docker daemon.
-2. **Workspace sync** — copies the workspace (knowledgebase + the sibling
-   repositories required by cargo path deps and the pnpm workspace) from the
-   Windows filesystem (`/mnt/<drive>/sdkwork-space`) to the WSL ext4
-   filesystem (`~/sdkwork-workspace`, excludes `target/`, `node_modules/`,
-   `dist/`, `.git/`...). Builds run on ext4 because 9p mounts are too slow for
-   cargo/vite.
-3. **Rust build** — installs rustup if missing and runs
-   `cargo build --release -p sdkwork-api-knowledgebase-standalone-gateway -p
-   sdkwork-knowledgebase-worker` (first build takes a while; afterwards
-   incremental).
-4. **Portal build** — installs Node 22 and the pnpm package manager when missing, runs `pnpm install`, then
-   `vite build --mode standalone.docker` (same-origin API profile).
-5. **Image build** — `pnpm build:container` (stage 3 of this guide).
-6. **Compose up** — copies `docker/.env.example` to `.env` when missing and
-   runs `docker compose up -d`, then waits for `/readyz`.
-7. **Nginx + hosts** — copies the portal dist to
-   `/opt/sdkwork/knowledgebase/portal`, installs
-   `docker/nginx/testapikb-knowledgebase.conf` under
-   `/etc/nginx/sites-enabled/sdkwork/`, reloads nginx, and appends the three
-   test domains to the Windows `hosts` file (falls back to printed elevated
-   instructions when not writable).
-8. **Verification** — compose ps, gateway probes, portal and API plane
-   smoke checks.
 
 ### 4.1 Domain chain
 
@@ -255,7 +234,7 @@ The credential-entry login flow (`POST /app/v3/api/auth/registrations`,
 `/sessions`) requires a bootstrap Access-Token JWT (`Access-Token` header).
 The static portal cannot auto-generate it, so the docker build injects one:
 
-- **Build-time injection** — `scripts/wsl-deploy.sh` generates a bootstrap
+- **Build-time injection** — the build pipeline generates a bootstrap
   token (signed with the IAM tenant signing master secret,
   `scripts/generate-bootstrap-token.mjs`) and `vite build --mode
   standalone.docker` bakes it into the bundle
@@ -286,6 +265,8 @@ The static portal cannot auto-generate it, so the docker build injects one:
   ```
 
 ## 7. Upgrading and rollback
+
+> The packaged upgrade/rollback channel is `bin/docker-deploy.sh upgrade|rollback` once the deployment bundle lands (§4). The compose commands below are the local dev-stack fallback only.
 
 1. Rebuild or pull the new image: `pnpm build:container` (or
    `docker pull ghcr.io/...:<version>`).

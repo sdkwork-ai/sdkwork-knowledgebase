@@ -13,6 +13,14 @@
 # Redis stay on the compose network and expose no host ports, so the
 # composition is conflict-free by construction.
 
+# Shared log rotation policy (OPERATIONS_SPEC.md §2.3): every service rotates
+# at 10MB, keeping 3 files, so container logs cannot fill the host disk.
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     # pgvector image: the knowledgebase baseline requires the `vector`
@@ -37,6 +45,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+    logging: *default-logging
 
   redis:
     image: redis:7-alpine
@@ -49,6 +58,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
+    logging: *default-logging
 
   api:
     image: ${KNOWLEDGEBASE_IMAGE:-sdkwork-knowledgebase:local}
@@ -156,6 +166,7 @@ services:
         reservations:
           cpus: ${KNOWLEDGEBASE_CPU_RESERVATION:-1.0}
           memory: ${KNOWLEDGEBASE_MEMORY_RESERVATION:-1g}
+    logging: *default-logging
 
   worker:
     image: ${KNOWLEDGEBASE_IMAGE:-sdkwork-knowledgebase:local}
@@ -214,6 +225,7 @@ services:
         reservations:
           cpus: ${KNOWLEDGEBASE_WORKER_CPU_RESERVATION:-0.5}
           memory: ${KNOWLEDGEBASE_WORKER_MEMORY_RESERVATION:-512m}
+    logging: *default-logging
 
 volumes:
   postgres-data:

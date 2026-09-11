@@ -23,7 +23,6 @@
     "build:server": "cargo build --release -p sdkwork-api-knowledgebase-standalone-gateway",
     "build:container": "node scripts/build-knowledgebase-container.mjs",
     "build:container:check": "node scripts/build-knowledgebase-container.mjs --check --dry-run",
-    "deploy:docker:wsl": "node scripts/deploy-wsl-docker.mjs",
     "test": "pnpm exec sdkwork-app test",
     "test:rust": "cargo test --workspace -- --quiet",
     "test:provider-certification": "node tools/run_provider_certification.mjs --execute",
