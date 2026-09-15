@@ -158,7 +158,7 @@ Generated TypeScript output must be produced through the canonical SDKWork gener
 
 ## Gateway Design
 
-Update `E:/sdkwork-space/sdkwork-api-cloud-gateway` so the public surface is routable in split mode:
+Update `<workspace-root>/sdkwork-api-cloud-gateway` so the public surface is routable in split mode:
 
 - Add service id constant `KNOWLEDGEBASE_OPEN_API_SERVICE_ID`.
 - Add app manifest env var `SDKWORK_KNOWLEDGEBASE_OPEN_API_BASE_URL`.

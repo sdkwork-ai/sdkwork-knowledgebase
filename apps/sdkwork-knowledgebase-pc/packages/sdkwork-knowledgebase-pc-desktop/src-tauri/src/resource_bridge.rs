@@ -403,7 +403,7 @@ pub async fn save_binary_resource(request: SaveBinaryResourceRequest) -> Result<
     Ok(response.saved)
 }
 
-#[cfg(test)]
+#[cfg(test)] // WORKSPACE-PATH:allow-fixture-block: this module is the file's #[cfg(test)] unit-test fixture data
 mod tests {
     use super::*;
 
