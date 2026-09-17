@@ -1,0 +1,11 @@
+{
+  "miniprogramRoot": "src/",
+  "projectname": "sdkwork-knowledgebase-mini-program",
+  "appid": "touristappid",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "minified": true
+  },
+  "compileType": "miniprogram"
+}

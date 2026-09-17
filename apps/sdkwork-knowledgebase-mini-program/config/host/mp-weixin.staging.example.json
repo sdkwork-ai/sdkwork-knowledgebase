@@ -1,0 +1,7 @@
+{
+  "appId": "touristappid",
+  "projectName": "sdkwork-knowledgebase-mini-program",
+  "environment": "staging",
+  "platform": "MP_WEIXIN",
+  "requiredPrivateInfos": []
+}

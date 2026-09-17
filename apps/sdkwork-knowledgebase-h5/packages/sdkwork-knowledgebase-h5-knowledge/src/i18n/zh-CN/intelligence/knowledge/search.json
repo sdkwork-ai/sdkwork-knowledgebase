@@ -1,0 +1,6 @@
+{
+  "title": "检索",
+  "placeholder": "搜索知识库内容",
+  "empty": "没有匹配结果",
+  "resultCount": "共 {{count}} 条结果"
+}

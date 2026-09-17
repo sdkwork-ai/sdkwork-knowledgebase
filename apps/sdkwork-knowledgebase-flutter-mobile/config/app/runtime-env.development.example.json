@@ -1,0 +1,12 @@
+{
+  "knowledge": {
+    "appApiBaseUrl": "http://127.0.0.1:8095/app/v3/api",
+    "dartDefine": "SDKWORK_KNOWLEDGEBASE_APP_API_BASE_URL"
+  },
+  "appbase": {
+    "loginUrl": "http://127.0.0.1:8095"
+  },
+  "metadata": {
+    "purpose": "Checked-in safe template. Copy to a concrete profile file to edit."
+  }
+}

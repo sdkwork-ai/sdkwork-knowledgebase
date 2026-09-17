@@ -1,0 +1,6 @@
+{
+  "@@locale": "zh-CN",
+  "knowledgebase.list.title": "知识库",
+  "knowledgebase.list.empty": "暂无知识库",
+  "knowledgebase.list.loadFailed": "知识库加载失败"
+}

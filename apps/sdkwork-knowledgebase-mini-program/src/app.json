@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/knowledgebase/index",
+    "pages/knowledgebase-detail/index",
+    "pages/knowledgebase-search/index",
+    "pages/group-launch/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "SDKWork Knowledgebase",
+    "navigationBarBackgroundColor": "#1d4ed8",
+    "navigationBarTextStyle": "white"
+  }
+}

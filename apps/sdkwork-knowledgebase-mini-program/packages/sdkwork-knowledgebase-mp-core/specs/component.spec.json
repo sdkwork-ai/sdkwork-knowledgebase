@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-knowledgebase-mp-core",
+    "displayName": "sdkwork-knowledgebase-mp-core",
+    "version": "0.1.0",
+    "type": "typescript-package",
+    "root": "apps/sdkwork-knowledgebase-mini-program/packages/sdkwork-knowledgebase-mp-core",
+    "domain": "intelligence",
+    "capability": "core",
+    "surface": "app",
+    "languages": [
+      "typescript"
+    ],
+    "generated": false,
+    "manifests": [
+      "package.json",
+      "specs/component.spec.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "MINI_PROGRAM_APP_ARCHITECTURE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/MINI_PROGRAM_APP_ARCHITECTURE_SPEC.md",
+      "purpose": "Mini program application root architecture."
+    },
+    {
+      "file": "APP_COMPOSITION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition."
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated app SDK integration."
+    },
+    {
+      "file": "CONFIG_SPEC.md",
+      "path": "../../../../../sdkwork-specs/CONFIG_SPEC.md",
+      "purpose": "Typed runtime config and SDK client initialization rules."
+    },
+    {
+      "file": "TYPESCRIPT_CODE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/TYPESCRIPT_CODE_SPEC.md",
+      "purpose": "TypeScript package structure and public exports."
+    }
+  ],
+  "contracts": {
+    "layerRole": "frontend-core",
+    "publicExports": [
+      ".",
+      "./sdk",
+      "./modules",
+      "./host",
+      "./session",
+      "./composition"
+    ],
+    "providedPorts": [
+      {
+        "name": "knowledgebaseMpCoreRuntime",
+        "export": "."
+      },
+      {
+        "name": "knowledgebaseMpSdkRuntime",
+        "export": "./sdk"
+      },
+      {
+        "name": "knowledgebaseMpModuleRegistry",
+        "export": "./modules"
+      },
+      {
+        "name": "knowledgebaseMpHostRuntime",
+        "export": "./host"
+      },
+      {
+        "name": "knowledgebaseMpSessionRuntime",
+        "export": "./session"
+      },
+      {
+        "name": "knowledgebaseMpComposition",
+        "export": "./composition"
+      }
+    ],
+    "requiredPorts": [],
+    "runtimeEntrypoints": [
+      "package.json#scripts.test"
+    ],
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-drive-app-sdk",
+        "permissionModuleId": "drive",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      },
+      {
+        "workspace": "sdkwork-iam-app-sdk",
+        "permissionModuleId": "iam-kernel",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      },
+      {
+        "workspace": "sdkwork-knowledgebase-app-sdk",
+        "permissionModuleId": "knowledge",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      }
+    ],
+    "sdkClients": [
+      "@sdkwork/drive-app-sdk",
+      "@sdkwork/iam-app-sdk",
+      "@sdkwork/knowledgebase-app-sdk"
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "configKeys": [
+      "SDKWORK_KNOWLEDGEBASE_MP_APP_API_BASE_URL",
+      "SDKWORK_API_BASE_URL"
+    ],
+    "permissionComposition": {
+      "inheritanceMode": "module-catalog-with-overrides",
+      "applicationModule": {
+        "manifestRef": "../../../../specs/iam.module.manifest.json"
+      },
+      "moduleCatalogRefs": [
+        {
+          "moduleId": "drive",
+          "manifestRef": "../../../../../sdkwork-iam/iam/modules/drive/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        },
+        {
+          "moduleId": "iam-kernel",
+          "manifestRef": "../../../../../sdkwork-iam/iam/modules/iam-kernel/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        },
+        {
+          "moduleId": "knowledge",
+          "manifestRef": "../../../../specs/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        }
+      ],
+      "bootstrapAccessTokenScope": {
+        "inheritFrom": "sdkwork.app.config.json#backend.accessTokenPermissionScope",
+        "supplement": [],
+        "overrideReplace": false
+      },
+      "routePermissionHints": {
+        "inheritFromOpenApi": true,
+        "inheritFromModuleManifests": true,
+        "overrides": []
+      },
+      "consumerPolicy": {
+        "forbidLocalPermissionCatalogForDependencyDomains": true,
+        "allowExplicitOverridesOnly": true,
+        "allowFrontendHintsWithoutServerDuplication": true
+      }
+    }
+  },
+  "verification": {
+    "commands": [
+      "pnpm --dir apps/sdkwork-knowledgebase-mini-program typecheck"
+    ]
+  }
+}

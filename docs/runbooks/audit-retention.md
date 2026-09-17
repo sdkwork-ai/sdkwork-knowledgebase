@@ -9,7 +9,7 @@ Related: [tenant-isolation.md](tenant-isolation.md), [backup-restore.md](../../d
 Tables:
 
 - `kb_audit_event` — domain audit trail (visibility, members, admin mutations)
-- `web_audit_event` — framework HTTP audit persistence
+- `framework_audit_event` — framework HTTP audit persistence
 
 ## Retention targets
 
@@ -64,7 +64,7 @@ Content-Type: application/json
 - Backend SDK: `client.knowledge.compliance.auditEvents.anonymizeActor.create({ actorId })`
 - Response envelope: `SdkWorkApiResponse` with `data.item.anonymizedCount`
 - Rows are updated to `actor_id = 'gdpr-redacted'`, `actor_type = 'system'`
-- The current operation targets `kb_audit_event`; `web_audit_event` lifecycle handling remains part
+- The current operation targets `kb_audit_event`; `framework_audit_event` lifecycle handling remains part
   of the pending retention/legal-hold implementation.
 
 Before invoking anonymization:

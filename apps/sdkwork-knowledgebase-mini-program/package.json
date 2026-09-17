@@ -1,0 +1,37 @@
+{
+  "name": "@sdkwork/sdkwork-knowledgebase-mini-program",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm dev:standalone",
+    "dev:standalone": "pnpm exec sdkwork-app dev --root ../.. --deployment-profile standalone",
+    "dev:cloud": "pnpm exec sdkwork-app dev --root ../.. --deployment-profile cloud",
+    "stop": "pnpm exec sdkwork-app stop --root ../..",
+    "build": "node scripts/build-runtime.mjs",
+    "build:mini-program": "node scripts/build-runtime.mjs",
+    "build:mini-program:staging": "node scripts/build-runtime.mjs --deployment-profile cloud --environment staging",
+    "build:mini-program:prod": "node scripts/build-runtime.mjs --deployment-profile cloud --environment production",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test tests/architecture-alignment.test.mjs",
+    "check": "pnpm typecheck && pnpm test",
+    "verify": "pnpm check && pnpm build",
+    "clean": "node -e \"const fs=require('node:fs'); for(const p of ['dist','.cache']) fs.rmSync(p,{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@sdkwork/drive-app-sdk": "workspace:*",
+    "@sdkwork/iam-app-sdk": "workspace:*",
+    "@sdkwork/knowledgebase-app-sdk": "workspace:*",
+    "@sdkwork/sdk-common": "workspace:*",
+    "@sdkwork/knowledgebase-mp-commons": "workspace:*",
+    "@sdkwork/knowledgebase-mp-core": "workspace:*",
+    "@sdkwork/knowledgebase-mp-host": "workspace:*",
+    "@sdkwork/knowledgebase-mp-knowledge": "workspace:*",
+    "@sdkwork/knowledgebase-mp-shell": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.10",
+    "miniprogram-api-typings": "^4.1.0",
+    "typescript": "catalog:"
+  }
+}

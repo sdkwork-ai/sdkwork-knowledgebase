@@ -1,0 +1,6 @@
+{
+  "title": "Search",
+  "placeholder": "Search knowledge base content",
+  "empty": "No matching result",
+  "resultCount": "{{count}} results"
+}

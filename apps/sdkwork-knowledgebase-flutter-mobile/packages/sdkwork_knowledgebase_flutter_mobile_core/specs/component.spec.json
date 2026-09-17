@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork_knowledgebase_flutter_mobile_core",
+    "displayName": "sdkwork_knowledgebase_flutter_mobile_core",
+    "version": "0.1.0",
+    "type": "dart-package",
+    "root": "apps/sdkwork-knowledgebase-flutter-mobile/packages/sdkwork_knowledgebase_flutter_mobile_core",
+    "domain": "intelligence",
+    "capability": "core",
+    "surface": "app",
+    "languages": [
+      "dart"
+    ],
+    "generated": false,
+    "manifests": [
+      "pubspec.yaml",
+      "specs/component.spec.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md",
+      "purpose": "Flutter mobile application root and package taxonomy."
+    },
+    {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package role and dependency-direction alignment."
+    },
+    {
+      "file": "APP_COMPOSITION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition."
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated app SDK and dependency SDK integration."
+    },
+    {
+      "file": "CODE_STYLE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/CODE_STYLE_SPEC.md",
+      "purpose": "Authored source structure and generated code boundaries."
+    },
+    {
+      "file": "NAMING_SPEC.md",
+      "path": "../../../../../sdkwork-specs/NAMING_SPEC.md",
+      "purpose": "Canonical SDKWork naming rules."
+    }
+  ],
+  "contracts": {
+    "layerRole": "frontend-core",
+    "publicExports": [
+      ".",
+      "./sdk",
+      "./modules",
+      "./host",
+      "./session",
+      "./composition"
+    ],
+    "providedPorts": [
+      {
+        "name": "knowledgebaseFlutterCoreRuntime",
+        "export": "."
+      },
+      {
+        "name": "knowledgebaseFlutterSdkRuntime",
+        "export": "./sdk"
+      },
+      {
+        "name": "knowledgebaseFlutterModuleRegistry",
+        "export": "./modules"
+      },
+      {
+        "name": "knowledgebaseFlutterHostRuntime",
+        "export": "./host"
+      },
+      {
+        "name": "knowledgebaseFlutterSessionRuntime",
+        "export": "./session"
+      },
+      {
+        "name": "knowledgebaseFlutterComposition",
+        "export": "./composition"
+      }
+    ],
+    "requiredPorts": [],
+    "runtimeEntrypoints": [
+      "pubspec.yaml"
+    ],
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-drive-app-sdk",
+        "permissionModuleId": "drive",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api",
+        "status": "active",
+        "runtimeAdaptation": "dart-pending"
+      },
+      {
+        "workspace": "sdkwork-iam-app-sdk",
+        "permissionModuleId": "iam-kernel",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api",
+        "status": "active",
+        "runtimeAdaptation": "dart-pending"
+      },
+      {
+        "workspace": "sdkwork-knowledgebase-app-sdk",
+        "permissionModuleId": "knowledge",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api",
+        "status": "active",
+        "runtimeAdaptation": "dart-pending"
+      }
+    ],
+    "sdkClients": [
+      "KnowledgebaseAppSdkPort"
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "configKeys": [
+      "SDKWORK_KNOWLEDGEBASE_APP_API_BASE_URL",
+      "SDKWORK_API_BASE_URL"
+    ],
+    "permissionComposition": {
+      "inheritanceMode": "module-catalog-with-overrides",
+      "applicationModule": {
+        "manifestRef": "../../../../specs/iam.module.manifest.json"
+      },
+      "moduleCatalogRefs": [
+        {
+          "moduleId": "drive",
+          "manifestRef": "../../../../../sdkwork-iam/iam/modules/drive/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        },
+        {
+          "moduleId": "iam-kernel",
+          "manifestRef": "../../../../../sdkwork-iam/iam/modules/iam-kernel/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        },
+        {
+          "moduleId": "knowledge",
+          "manifestRef": "../../../../specs/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        }
+      ],
+      "bootstrapAccessTokenScope": {
+        "inheritFrom": "sdkwork.app.config.json#backend.accessTokenPermissionScope",
+        "supplement": [],
+        "overrideReplace": false
+      },
+      "routePermissionHints": {
+        "inheritFromOpenApi": true,
+        "inheritFromModuleManifests": true,
+        "overrides": []
+      },
+      "consumerPolicy": {
+        "forbidLocalPermissionCatalogForDependencyDomains": true,
+        "allowExplicitOverridesOnly": true,
+        "allowFrontendHintsWithoutServerDuplication": true
+      }
+    }
+  },
+  "verification": {
+    "commands": [
+      "flutter analyze apps/sdkwork-knowledgebase-flutter-mobile/packages/sdkwork_knowledgebase_flutter_mobile_core"
+    ]
+  }
+}

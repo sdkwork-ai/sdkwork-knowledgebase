@@ -4,6 +4,7 @@
  */
 export type {
   IngestionJob,
+  AuthTokenManager,
   KnowledgeAccessLevel,
   KnowledgeAgentKnowledgeMode,
   KnowledgeBrowserListData,

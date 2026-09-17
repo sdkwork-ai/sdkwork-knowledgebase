@@ -1,0 +1,9 @@
+{
+  name: '@sdkwork/sdkwork-knowledgebase-harmony-mobile-host',
+  version: '0.1.0',
+  description: 'SDKWork Knowledgebase HarmonyOS mobile host: typed HarmonyOS platform adapters behind core-owned contracts.',
+  main: 'src/main/ets/Index.ets',
+  author: 'SDKWork',
+  license: 'Apache-2.0',
+  dependencies: {}
+}

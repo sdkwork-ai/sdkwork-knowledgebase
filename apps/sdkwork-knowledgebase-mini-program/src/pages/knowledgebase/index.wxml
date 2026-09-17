@@ -1,0 +1,4 @@
+<view class="container">
+  <text class="title">{{title}}</text>
+  <text class="state">{{screenState}}</text>
+</view>

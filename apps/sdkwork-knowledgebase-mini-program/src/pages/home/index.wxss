@@ -1,0 +1,3 @@
+.container { padding: 24rpx; }
+.title { font-size: 34rpx; font-weight: 600; }
+.state { color: #64748b; }

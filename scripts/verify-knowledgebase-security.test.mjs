@@ -272,7 +272,7 @@ describe('knowledgebase security standard alignment', () => {
     assert.match(hostedBackend, /BackendApiError::sanitized_internal/);
   });
 
-  it('wires framework web_audit_event persistence across HTTP surfaces', () => {
+  it('wires framework_audit_event persistence across HTTP surfaces', () => {
     const webAuditStore = readRepoFile(
       'crates/sdkwork-routes-knowledgebase-backend-api/src/web_audit_store.rs',
     );
@@ -285,7 +285,7 @@ describe('knowledgebase security standard alignment', () => {
     const baseline = readRepoFile('database/ddl/baseline/postgres/0001_knowledgebase_baseline.sql');
     assert.doesNotMatch(
       baseline,
-      /web_audit_event/,
+      /framework_audit_event/,
       'framework web audit schema must remain owned by sdkwork-web-store-sqlx',
     );
     assert.match(webAuditStore, /connect_and_bootstrap_webstore_database_from_env/);
@@ -580,7 +580,7 @@ describe('knowledgebase security standard alignment', () => {
     const policyBootstrap = readRepoFile(
       'crates/sdkwork-routes-knowledgebase-backend-api/src/web_policy_bootstrap.rs',
     );
-    assert.match(policyBootstrap, /web_rate_limit_policy/);
-    assert.match(policyBootstrap, /web_tenant_runtime_profile/);
+    assert.match(policyBootstrap, /framework_rate_limit_policy/);
+    assert.match(policyBootstrap, /framework_tenant_runtime_profile/);
   });
 });

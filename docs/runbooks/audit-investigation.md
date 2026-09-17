@@ -8,13 +8,13 @@ Owner: SDKWork Knowledgebase security operators
 - Structured logs with `audit_event = knowledge.*`
 - Prometheus counters: `knowledge_audit_*`
 - Durable table: `kb_audit_event`
-- Framework HTTP audit: `web_audit_event` when Postgres or WEB_STORE sqlite adapters are enabled
+- Framework HTTP audit: `framework_audit_event` when Postgres or WEB_STORE sqlite adapters are enabled
 
 ## Framework HTTP audit query
 
 ```sql
 SELECT request_id, tenant_id, user_id, api_surface, path, method, operation_id, status_code, duration_ms, created_at
-FROM web_audit_event
+FROM framework_audit_event
 WHERE tenant_id = $1
   AND created_at >= $2
 ORDER BY created_at DESC
@@ -26,7 +26,7 @@ LIMIT 200;
 Production-like HTTP surfaces fail closed when no framework audit emitter is available. Before rollout:
 
 1. Set the authoritative PostgreSQL `SDKWORK_DATABASE_URL` for the serving process.
-2. Verify `sdkwork-web-store-sqlx` lifecycle bootstrap creates and validates `web_audit_event`;
+2. Verify `sdkwork-web-store-sqlx` lifecycle bootstrap creates and validates `framework_audit_event`;
    Knowledgebase must not duplicate this framework-owned table in its application baseline.
 3. Confirm startup fails closed in staging and production when the shared framework audit emitter
    cannot be initialized.

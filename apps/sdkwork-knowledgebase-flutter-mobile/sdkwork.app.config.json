@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 3,
+  "kind": "sdkwork.app",
+  "app": {
+    "key": "sdkwork-knowledgebase-flutter-mobile",
+    "name": "SDKWork Knowledgebase Mobile",
+    "displayName": "SDKWork Knowledgebase Mobile",
+    "description": "SDKWork Knowledgebase Flutter mobile client application.",
+    "vendor": "SDKWork",
+    "officialWebsiteUrl": "https://sdkwork.com/apps/knowledgebase-flutter-mobile",
+    "supportUrl": "https://sdkwork.com/support",
+    "privacyPolicyUrl": "https://sdkwork.com/privacy",
+    "termsOfServiceUrl": "https://sdkwork.com/terms",
+    "appType": "APP_FLUTTER",
+    "versionSource": "pubspec.yaml",
+    "identifiers": {
+      "packageName": "com.sdkwork.knowledgebase.mobile",
+      "bundleId": "com.sdkwork.knowledgebase.mobile",
+      "desktopAppId": null,
+      "containerImage": "registry.sdkwork.com/apps/knowledgebase-flutter-mobile"
+    }
+  },
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "APP",
+    "appId": "sdkwork-knowledgebase",
+    "organizationId": "0",
+    "tenantId": "100001",
+    "accessTokenPermissionScope": [
+      "iam.users.read",
+      "iam.organizations.read",
+      "iam.roles.read",
+      "iam.permissions.read"
+    ]
+  },
+  "runtime": {
+    "family": "mobile",
+    "framework": "flutter",
+    "runtimes": [
+      "APP",
+      "APP_ANDROID",
+      "APP_IOS"
+    ],
+    "deliveryModes": [
+      "DIRECT_DOWNLOAD"
+    ],
+    "defaultPlatform": "APP_ANDROID",
+    "defaultArchitecture": "universal",
+    "supportedDeploymentProfiles": [
+      "standalone",
+      "cloud"
+    ],
+    "defaultDeploymentProfile": "standalone"
+  },
+  "media": {
+    "icons": {
+      "primary": {
+        "id": "knowledgebase-flutter-mobile-primary-icon",
+        "type": "ICON",
+        "purpose": "PRIMARY",
+        "platform": "APP",
+        "locale": "en-US",
+        "width": 1024,
+        "height": 1024,
+        "format": "PNG",
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true
+        }
+      },
+      "platform": [],
+      "metadata": {
+        "generatedPlaceholder": true
+      }
+    },
+    "screenshots": [],
+    "previews": [],
+    "metadata": {
+      "assetVersion": "0.1.0",
+      "defaultLocale": "en-US"
+    }
+  },
+  "publish": {
+    "status": "DRAFT",
+    "installSkill": false,
+    "platforms": [
+      "APP",
+      "APP_ANDROID",
+      "APP_IOS"
+    ],
+    "installPlatforms": [
+      "APP",
+      "APP_ANDROID",
+      "APP_IOS"
+    ],
+    "config": {
+      "workspaceRoot": "apps/sdkwork-knowledgebase-flutter-mobile",
+      "framework": "flutter",
+      "managedBy": "sdkwork-knowledgebase-client-scaffold"
+    }
+  },
+  "artifacts": {
+    "installConfig": {
+      "packages": [],
+      "metadata": {
+        "workspaceRoot": "apps/sdkwork-knowledgebase-flutter-mobile",
+        "framework": "flutter",
+        "packageManager": "flutter",
+        "deferred": true,
+        "deferredReason": "Flutter SDK is not available in the current environment."
+      }
+    }
+  },
+  "release": {
+    "currentVersion": "0.1.0",
+    "defaultChannel": "BETA",
+    "latest": {
+      "BETA": "0.1.0"
+    },
+    "notes": []
+  },
+  "security": {
+    "checksumRequired": true,
+    "signatureRequired": false,
+    "sbomRequired": true
+  },
+  "devApp": {
+    "build": {
+      "targets": []
+    },
+    "sourceRoot": "apps/sdkwork-knowledgebase-flutter-mobile"
+  },
+  "metadata": {
+    "standardOwner": "sdkwork-knowledgebase",
+    "architectureSpec": "FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md",
+    "runtimeTarget": "flutter-mobile",
+    "deploymentConfig": "etc/sdkwork.deployment.config.json",
+    "releaseAuthority": "../../sdkwork.workflow.json"
+  }
+}

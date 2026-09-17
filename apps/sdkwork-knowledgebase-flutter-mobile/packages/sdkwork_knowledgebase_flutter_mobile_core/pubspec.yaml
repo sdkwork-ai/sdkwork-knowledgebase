@@ -1,0 +1,15 @@
+name: sdkwork_knowledgebase_flutter_mobile_core
+description: SDKWork Knowledgebase Flutter mobile core package
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

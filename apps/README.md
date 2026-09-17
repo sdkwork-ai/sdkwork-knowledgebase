@@ -14,7 +14,12 @@ The repository root `sdkwork.app.config.json` governs the primary application ma
 
 | Directory | Surface role | Runnable | Purpose | Entry |
 | --- | --- | --- | --- | --- |
-| sdkwork-knowledgebase-pc | pc | yes | SDKWork Knowledgebase PC browser/desktop | [README](sdkwork-knowledgebase-pc/README.md) |
+| sdkwork-knowledgebase-common | common | no | sdkwork-knowledgebase-common common application root. | `sdkwork-knowledgebase-common/` |
+| sdkwork-knowledgebase-flutter-mobile | flutter-mobile | yes | SDKWork Knowledgebase Mobile flutter-mobile application root. | [README](sdkwork-knowledgebase-flutter-mobile/README.md) |
+| sdkwork-knowledgebase-h5 | h5 | yes | SDKWork Knowledgebase H5 h5 application root. | [README](sdkwork-knowledgebase-h5/README.md) |
+| sdkwork-knowledgebase-harmony-mobile | harmony-mobile | yes | SDKWork Knowledgebase HarmonyOS Mobile harmony-mobile application root. | [README](sdkwork-knowledgebase-harmony-mobile/README.md) |
+| sdkwork-knowledgebase-mini-program | mini-program | yes | SDKWork Knowledgebase Mini Program mini-program application root. | [README](sdkwork-knowledgebase-mini-program/README.md) |
+| sdkwork-knowledgebase-pc | pc | yes | SDKWork Knowledgebase PC pc application root. | [README](sdkwork-knowledgebase-pc/README.md) |
 
 ## Allowed Content
 

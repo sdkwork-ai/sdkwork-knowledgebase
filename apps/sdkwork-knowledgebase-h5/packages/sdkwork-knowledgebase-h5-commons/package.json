@@ -1,0 +1,21 @@
+{
+  "name": "@sdkwork/knowledgebase-h5-commons",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "clsx": "catalog:",
+    "motion": "catalog:",
+    "tailwind-merge": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "*"
+  }
+}

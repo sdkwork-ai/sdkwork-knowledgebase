@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 3,
+  "kind": "sdkwork.app",
+  "app": {
+    "key": "sdkwork-knowledgebase-harmony-mobile",
+    "name": "SDKWork Knowledgebase HarmonyOS Mobile",
+    "displayName": "SDKWork Knowledgebase HarmonyOS Mobile",
+    "description": "SDKWork Knowledgebase native HarmonyOS (ArkTS/ArkUI) mobile client application.",
+    "vendor": "SDKWork",
+    "officialWebsiteUrl": "https://sdkwork.com/apps/knowledgebase-harmony-mobile",
+    "supportUrl": "https://sdkwork.com/support",
+    "privacyPolicyUrl": "https://sdkwork.com/privacy",
+    "termsOfServiceUrl": "https://sdkwork.com/terms",
+    "appType": "APP_HARMONY",
+    "versionSource": "oh-package.json5",
+    "identifiers": {
+      "packageName": "com.sdkwork.knowledgebase.mobile",
+      "bundleId": "com.sdkwork.knowledgebase.mobile",
+      "desktopAppId": null,
+      "containerImage": "registry.sdkwork.com/apps/knowledgebase-harmony-mobile"
+    }
+  },
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "APP_HARMONY",
+    "appId": "sdkwork-knowledgebase",
+    "organizationId": "0",
+    "tenantId": "100001",
+    "accessTokenPermissionScope": [
+      "iam.users.read",
+      "iam.organizations.read",
+      "iam.roles.read",
+      "iam.permissions.read"
+    ]
+  },
+  "runtime": {
+    "family": "mobile",
+    "framework": "harmony-native",
+    "runtimes": [
+      "APP_HARMONY"
+    ],
+    "deliveryModes": [
+      "APP_GALLERY",
+      "DIRECT_DOWNLOAD"
+    ],
+    "defaultPlatform": "APP_HARMONY",
+    "defaultArchitecture": "harmony-native",
+    "supportedDeploymentProfiles": [
+      "standalone",
+      "cloud"
+    ],
+    "defaultDeploymentProfile": "standalone"
+  },
+  "media": {
+    "icons": {
+      "primary": {
+        "id": "knowledgebase-harmony-mobile-primary-icon",
+        "type": "ICON",
+        "purpose": "PRIMARY",
+        "platform": "APP",
+        "locale": "en-US",
+        "width": 1024,
+        "height": 1024,
+        "format": "PNG",
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true
+        }
+      },
+      "platform": [],
+      "metadata": {
+        "generatedPlaceholder": true
+      }
+    },
+    "screenshots": [],
+    "previews": [],
+    "metadata": {
+      "assetVersion": "0.1.0",
+      "defaultLocale": "en-US"
+    }
+  },
+  "publish": {
+    "status": "DRAFT",
+    "installSkill": false,
+    "platforms": [
+      "APP_HARMONY"
+    ],
+    "installPlatforms": [
+      "APP_HARMONY"
+    ],
+    "config": {
+      "workspaceRoot": "apps/sdkwork-knowledgebase-harmony-mobile",
+      "framework": "harmony-native",
+      "managedBy": "sdkwork-knowledgebase-harmony-scaffold",
+      "distribution": {
+        "appGallery": {
+          "appIdPlaceholder": "<appgallery-app-id>",
+          "signingReference": "<deveco-signing-profile-name>"
+        },
+        "privateDistribution": {
+          "channelPlaceholder": "<private-distribution-channel>"
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "installConfig": {
+      "packages": [],
+      "metadata": {
+        "workspaceRoot": "apps/sdkwork-knowledgebase-harmony-mobile",
+        "framework": "harmony-native",
+        "packageManager": "ohpm",
+        "deferred": true,
+        "deferredReason": "HarmonyOS SDK/hvigor/ohpm toolchain and signing profile are not available in the current environment."
+      }
+    }
+  },
+  "release": {
+    "currentVersion": "0.1.0",
+    "defaultChannel": "BETA",
+    "latest": {
+      "BETA": "0.1.0"
+    },
+    "notes": []
+  },
+  "security": {
+    "checksumRequired": true,
+    "signatureRequired": true,
+    "sbomRequired": true
+  },
+  "devApp": {
+    "build": {
+      "targets": []
+    },
+    "sourceRoot": "apps/sdkwork-knowledgebase-harmony-mobile"
+  },
+  "metadata": {
+    "standardOwner": "sdkwork-knowledgebase",
+    "architectureSpec": "HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md",
+    "runtimeTarget": "harmony-native",
+    "deploymentConfig": "etc/sdkwork.deployment.config.json"
+  }
+}

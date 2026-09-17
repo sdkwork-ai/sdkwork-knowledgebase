@@ -1,0 +1,32 @@
+{
+  "environment": "development",
+  "deploymentProfile": "standalone",
+  "profileId": "standalone.development",
+  "runtimeTarget": "browser",
+  "browserOriginMode": "same-origin",
+  "configProfile": "dev",
+  "buildMode": "development",
+  "appKey": "sdkwork-knowledgebase-h5",
+  "browserBasePath": "/",
+  "sdkBaseUrls": {
+    "appApiBaseUrl": "/",
+    "openApiBaseUrl": "/",
+    "platformApiGatewayBaseUrl": "/"
+  },
+  "featureFlags": {
+    "enableDemoMode": true,
+    "enableSearchMedia": true,
+    "enableGroupLaunchTicket": true
+  },
+  "auth": {
+    "tokenStorage": "browser-session"
+  },
+  "appApiBaseUrl": "/",
+  "backendApiBaseUrl": "/",
+  "driveAppApiBaseUrl": "/",
+  "appbaseAppApiBaseUrl": "/",
+  "deployAppApiBaseUrl": "/",
+  "openApiBaseUrl": "/",
+  "sdkBaseUrl": "/",
+  "notes": "Standalone profile: the H5 root is served from the application same-origin ingress."
+}

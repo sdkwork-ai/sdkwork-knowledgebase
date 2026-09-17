@@ -1,0 +1,31 @@
+{
+  "SDKWORK_DEPLOYMENT_PROFILE": "cloud",
+  "SDKWORK_ENVIRONMENT": "staging",
+  "SDKWORK_PROFILE_ID": "cloud.staging",
+  "SDKWORK_RUNTIME_TARGET": "mini-program",
+  "SDKWORK_KNOWLEDGEBASE_MP_APP_API_BASE_URL": "https://api-staging.sdkwork.com/app/v3/api",
+  "SDKWORK_KNOWLEDGEBASE_MP_APPLICATION_PUBLIC_HTTP_URL": "https://api-staging.sdkwork.com",
+  "SDKWORK_KNOWLEDGEBASE_MP_DEPLOYMENT_PROFILE": "cloud",
+  "SDKWORK_KNOWLEDGEBASE_MP_ENVIRONMENT": "staging",
+  "SDKWORK_KNOWLEDGEBASE_MP_PROFILE_ID": "cloud.staging",
+  "SDKWORK_KNOWLEDGEBASE_MP_RUNTIME_TARGET": "mini-program",
+  "SDKWORK_KNOWLEDGEBASE_MP_PLATFORM": "MP_WEIXIN",
+  "SDKWORK_KNOWLEDGEBASE_MP_CLOUD_API_BASE_URLS": [
+    "https://api-staging.sdkwork.com",
+    "https://api-staging.birdcoder.com",
+    "https://api-staging.dtupay.com",
+    "https://api-staging.noaper.com",
+    "https://api-staging.sdkwork.cn",
+    "https://api-staging.birdcoder.cn",
+    "https://api-staging.dtupay.cn",
+    "https://api-staging.noaper.cn",
+    "https://api-staging.skubc.com",
+    "https://api-staging.skubc.cn",
+    "https://api-staging.zowalk.com",
+    "https://api-staging.zowalk.cn",
+    "https://api-staging.offer86.com",
+    "https://api-staging.offer86.cn",
+    "https://api-staging.86offer.com",
+    "https://api-staging.86offer.cn"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  name: '@sdkwork/sdkwork-knowledgebase-harmony-mobile-core',
+  version: '0.1.0',
+  description: 'SDKWork Knowledgebase HarmonyOS mobile core: runtime config, SDK factories, token manager, session stores, route registry, host adapter contracts.',
+  main: 'src/main/ets/Index.ets',
+  author: 'SDKWork',
+  license: 'Apache-2.0',
+  dependencies: {}
+}

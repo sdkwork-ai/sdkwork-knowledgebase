@@ -1040,8 +1040,8 @@ CREATE INDEX IF NOT EXISTS idx_kb_audit_event_resource
 CREATE INDEX IF NOT EXISTS idx_kb_audit_event_event_type
     ON kb_audit_event (tenant_id, event_type, created_at DESC);
 
--- source: sdkwork-web-framework/crates/sdkwork-web-store-sqlx/migrations/003_web_audit_event.sql, 009_web_audit_outcome.sql, 013_web_event_expires_at.sql (folded)
-CREATE TABLE IF NOT EXISTS web_audit_event (
+-- source: sdkwork-web-framework/crates/sdkwork-web-store-sqlx/migrations/003_framework_audit_event.sql, 009_framework_audit_outcome.sql, 013_framework_event_expires_at.sql (folded)
+CREATE TABLE IF NOT EXISTS framework_audit_event (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     request_id TEXT NOT NULL,
     tenant_id TEXT,
@@ -1056,17 +1056,17 @@ CREATE TABLE IF NOT EXISTS web_audit_event (
     created_at INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_web_audit_event_created
-    ON web_audit_event (created_at);
+CREATE INDEX IF NOT EXISTS idx_framework_audit_event_created
+    ON framework_audit_event (created_at);
 
-CREATE INDEX IF NOT EXISTS idx_web_audit_event_request
-    ON web_audit_event (request_id);
+CREATE INDEX IF NOT EXISTS idx_framework_audit_event_request
+    ON framework_audit_event (request_id);
 
-CREATE INDEX IF NOT EXISTS idx_web_audit_event_tenant
-    ON web_audit_event (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_framework_audit_event_tenant
+    ON framework_audit_event (tenant_id);
 
-CREATE INDEX IF NOT EXISTS idx_web_audit_expires
-    ON web_audit_event (expires_at);
+CREATE INDEX IF NOT EXISTS idx_framework_audit_expires
+    ON framework_audit_event (expires_at);
 
 -- Canonical live Wiki publication authority (ADR-20260721).
 -- Shared scoped parent key for Wiki publication and Provider Binding foreign keys.

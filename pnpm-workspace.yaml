@@ -1,4 +1,8 @@
 packages:
+  - "apps/sdkwork-knowledgebase-h5"
+  - "apps/sdkwork-knowledgebase-h5/packages/*"
+  - "apps/sdkwork-knowledgebase-mini-program"
+  - "apps/sdkwork-knowledgebase-mini-program/packages/*"
   - "apps/sdkwork-knowledgebase-pc"
   - "apps/sdkwork-knowledgebase-pc/packages/*"
   - "sdks/sdkwork-knowledgebase-app-sdk/sdkwork-knowledgebase-app-sdk-typescript"

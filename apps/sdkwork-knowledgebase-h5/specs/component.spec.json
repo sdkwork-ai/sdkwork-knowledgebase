@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-knowledgebase-h5",
+    "displayName": "SDKWork Knowledgebase H5",
+    "version": "0.1.0",
+    "type": "h5-app-root",
+    "root": "apps/sdkwork-knowledgebase-h5",
+    "domain": "intelligence",
+    "capability": "knowledgebase",
+    "surface": "app",
+    "languages": [
+      "typescript"
+    ],
+    "generated": false,
+    "manifests": [
+      "package.json",
+      "sdkwork.app.config.json",
+      "vite.config.ts"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "APP_H5_ARCHITECTURE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_H5_ARCHITECTURE_SPEC.md",
+      "purpose": "H5 application root architecture standard."
+    },
+    {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package taxonomy and dependency direction."
+    },
+    {
+      "file": "APP_COMPOSITION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition."
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated app SDK integration and TokenManager wiring."
+    },
+    {
+      "file": "APP_MOBILE_REACT_UI_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_MOBILE_REACT_UI_SPEC.md",
+      "purpose": "H5/mobile React UI package rules."
+    },
+    {
+      "file": "CODE_STYLE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/CODE_STYLE_SPEC.md",
+      "purpose": "Authored source structure and generated code boundaries."
+    },
+    {
+      "file": "NAMING_SPEC.md",
+      "path": "../../../../../sdkwork-specs/NAMING_SPEC.md",
+      "purpose": "Canonical SDKWork naming rules."
+    }
+  ],
+  "contracts": {
+    "layerRole": "runtime-composition",
+    "publicExports": [
+      "src/main.tsx"
+    ],
+    "runtimeEntrypoints": [
+      "package.json#scripts.dev"
+    ],
+    "sdkClients": [],
+    "sdkDependencies": [
+      "sdkwork-drive-app-sdk",
+      "sdkwork-iam-app-sdk",
+      "sdkwork-knowledgebase-app-sdk"
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": []
+  },
+  "verification": {
+    "commands": [
+      "pnpm --dir apps/sdkwork-knowledgebase-h5 typecheck",
+      "pnpm --dir apps/sdkwork-knowledgebase-h5 test"
+    ]
+  }
+}

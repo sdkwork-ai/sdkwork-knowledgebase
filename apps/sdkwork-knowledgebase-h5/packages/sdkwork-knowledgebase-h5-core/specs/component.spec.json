@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-knowledgebase-h5-core",
+    "displayName": "sdkwork-knowledgebase-h5-core",
+    "version": "0.1.0",
+    "type": "typescript-package",
+    "root": "apps/sdkwork-knowledgebase-h5/packages/sdkwork-knowledgebase-h5-core",
+    "domain": "intelligence",
+    "capability": "core",
+    "surface": "app",
+    "languages": [
+      "typescript"
+    ],
+    "generated": false,
+    "manifests": [
+      "package.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "CODE_STYLE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/CODE_STYLE_SPEC.md",
+      "purpose": "Authored code organization, public exports, and generated-code boundaries."
+    },
+    {
+      "file": "NAMING_SPEC.md",
+      "path": "../../../../../sdkwork-specs/NAMING_SPEC.md",
+      "purpose": "Component, package, domain, capability, and surface naming."
+    },
+    {
+      "file": "MODULE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/MODULE_SPEC.md",
+      "purpose": "Reusable module public contract and dependency direction."
+    },
+    {
+      "file": "APP_H5_ARCHITECTURE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_H5_ARCHITECTURE_SPEC.md",
+      "purpose": "H5 application root architecture."
+    },
+    {
+      "file": "APP_COMPOSITION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition and core-package import entrypoints."
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated app SDK integration and auth/session wiring."
+    },
+    {
+      "file": "CONFIG_SPEC.md",
+      "path": "../../../../../sdkwork-specs/CONFIG_SPEC.md",
+      "purpose": "Typed runtime config and SDK client initialization rules."
+    },
+    {
+      "file": "TYPESCRIPT_CODE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/TYPESCRIPT_CODE_SPEC.md",
+      "purpose": "TypeScript package structure and public exports."
+    }
+  ],
+  "contracts": {
+    "layerRole": "frontend-core",
+    "publicExports": [
+      ".",
+      "./sdk",
+      "./modules",
+      "./host",
+      "./session",
+      "./composition"
+    ],
+    "providedPorts": [
+      {
+        "name": "knowledgebaseH5CoreRuntime",
+        "export": "."
+      },
+      {
+        "name": "knowledgebaseH5SdkRuntime",
+        "export": "./sdk"
+      },
+      {
+        "name": "knowledgebaseH5ModuleRegistry",
+        "export": "./modules"
+      },
+      {
+        "name": "knowledgebaseH5HostRuntime",
+        "export": "./host"
+      },
+      {
+        "name": "knowledgebaseH5SessionRuntime",
+        "export": "./session"
+      },
+      {
+        "name": "knowledgebaseH5Composition",
+        "export": "./composition"
+      }
+    ],
+    "requiredPorts": [],
+    "runtimeEntrypoints": [
+      "package.json#scripts.test"
+    ],
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-drive-app-sdk",
+        "permissionModuleId": "drive",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      },
+      {
+        "workspace": "sdkwork-iam-app-sdk",
+        "permissionModuleId": "iam-kernel",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      },
+      {
+        "workspace": "sdkwork-knowledgebase-app-sdk",
+        "permissionModuleId": "knowledge",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      }
+    ],
+    "sdkClients": [
+      "@sdkwork/drive-app-sdk",
+      "@sdkwork/iam-app-sdk",
+      "@sdkwork/knowledgebase-app-sdk"
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "configKeys": [
+      "SDKWORK_API_BASE_URL"
+    ],
+    "permissionComposition": {
+      "inheritanceMode": "module-catalog-with-overrides",
+      "applicationModule": {
+        "manifestRef": "../../../../specs/iam.module.manifest.json"
+      },
+      "moduleCatalogRefs": [
+        {
+          "moduleId": "drive",
+          "manifestRef": "../../../../../sdkwork-iam/iam/modules/drive/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        },
+        {
+          "moduleId": "iam-kernel",
+          "manifestRef": "../../../../../sdkwork-iam/iam/modules/iam-kernel/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        },
+        {
+          "moduleId": "knowledge",
+          "manifestRef": "../../../../specs/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        }
+      ],
+      "bootstrapAccessTokenScope": {
+        "inheritFrom": "sdkwork.app.config.json#backend.accessTokenPermissionScope",
+        "supplement": [],
+        "overrideReplace": false
+      },
+      "routePermissionHints": {
+        "inheritFromOpenApi": true,
+        "inheritFromModuleManifests": true,
+        "overrides": []
+      },
+      "consumerPolicy": {
+        "forbidLocalPermissionCatalogForDependencyDomains": true,
+        "allowExplicitOverridesOnly": true,
+        "allowFrontendHintsWithoutServerDuplication": true
+      }
+    }
+  },
+  "verification": {
+    "commands": [
+      "pnpm --dir apps/sdkwork-knowledgebase-h5 typecheck"
+    ]
+  }
+}

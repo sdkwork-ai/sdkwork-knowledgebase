@@ -1,0 +1,32 @@
+{
+  "environment": "test",
+  "deploymentProfile": "standalone",
+  "profileId": "standalone.test",
+  "runtimeTarget": "browser",
+  "browserOriginMode": "same-origin",
+  "configProfile": "test",
+  "buildMode": "test",
+  "appKey": "sdkwork-knowledgebase-h5",
+  "browserBasePath": "/",
+  "sdkBaseUrls": {
+    "appApiBaseUrl": "/",
+    "openApiBaseUrl": "/",
+    "platformApiGatewayBaseUrl": "/"
+  },
+  "featureFlags": {
+    "enableDemoMode": false,
+    "enableSearchMedia": true,
+    "enableGroupLaunchTicket": true
+  },
+  "auth": {
+    "tokenStorage": "browser-session"
+  },
+  "appApiBaseUrl": "/",
+  "backendApiBaseUrl": "/",
+  "driveAppApiBaseUrl": "/",
+  "appbaseAppApiBaseUrl": "/",
+  "deployAppApiBaseUrl": "/",
+  "openApiBaseUrl": "/",
+  "sdkBaseUrl": "/",
+  "notes": "Safe checked-in example. Do not commit machine-local overrides or secrets."
+}

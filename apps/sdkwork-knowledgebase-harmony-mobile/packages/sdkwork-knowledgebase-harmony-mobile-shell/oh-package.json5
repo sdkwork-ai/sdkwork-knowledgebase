@@ -1,0 +1,9 @@
+{
+  name: '@sdkwork/sdkwork-knowledgebase-harmony-mobile-shell',
+  version: '0.1.0',
+  description: 'SDKWork Knowledgebase HarmonyOS mobile shell: navigation stack and auth gate.',
+  main: 'src/main/ets/Index.ets',
+  author: 'SDKWork',
+  license: 'Apache-2.0',
+  dependencies: {}
+}

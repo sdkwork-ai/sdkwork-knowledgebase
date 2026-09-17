@@ -1,0 +1,15 @@
+{
+  name: 'entry',
+  version: '0.1.0',
+  description: 'SDKWork Knowledgebase HarmonyOS entry and composition module',
+  main: '',
+  author: 'SDKWork',
+  license: 'Apache-2.0',
+  dependencies: {
+    '@sdkwork/sdkwork-knowledgebase-harmony-mobile-core': 'file:../packages/sdkwork-knowledgebase-harmony-mobile-core',
+    '@sdkwork/sdkwork-knowledgebase-harmony-mobile-commons': 'file:../packages/sdkwork-knowledgebase-harmony-mobile-commons',
+    '@sdkwork/sdkwork-knowledgebase-harmony-mobile-shell': 'file:../packages/sdkwork-knowledgebase-harmony-mobile-shell',
+    '@sdkwork/sdkwork-knowledgebase-harmony-mobile-host': 'file:../packages/sdkwork-knowledgebase-harmony-mobile-host',
+    '@sdkwork/sdkwork-knowledgebase-harmony-mobile-knowledge': 'file:../packages/sdkwork-knowledgebase-harmony-mobile-knowledge'
+  }
+}

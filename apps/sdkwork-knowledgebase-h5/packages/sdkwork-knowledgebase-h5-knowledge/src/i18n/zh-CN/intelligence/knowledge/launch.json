@@ -1,0 +1,8 @@
+{
+  "title": "群知识库",
+  "verifying": "正在校验启动票据",
+  "accepted": "已进入群知识库",
+  "expired": "启动票据已过期",
+  "invalid": "启动票据无效",
+  "replayed": "启动票据已被使用"
+}

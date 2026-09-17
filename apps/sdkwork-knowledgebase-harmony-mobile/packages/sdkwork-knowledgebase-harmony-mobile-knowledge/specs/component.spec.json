@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-knowledgebase-harmony-mobile-knowledge",
+    "displayName": "sdkwork-knowledgebase-harmony-mobile-knowledge",
+    "version": "0.1.0",
+    "type": "arkts-package",
+    "root": "apps/sdkwork-knowledgebase-harmony-mobile/packages/sdkwork-knowledgebase-harmony-mobile-knowledge",
+    "domain": "intelligence",
+    "capability": "knowledge",
+    "surface": "app",
+    "languages": [
+      "arkts"
+    ],
+    "generated": false,
+    "manifests": [
+      "oh-package.json5",
+      "specs/component.spec.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md",
+      "purpose": "HarmonyOS mobile application root architecture."
+    },
+    {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package taxonomy and dependency direction."
+    },
+    {
+      "file": "APP_HARMONY_NATIVE_UI_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_HARMONY_NATIVE_UI_SPEC.md",
+      "purpose": "Harmony native ArkUI capability package rules."
+    },
+    {
+      "file": "PAGINATION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/PAGINATION_SPEC.md",
+      "purpose": "Interactive list pagination."
+    },
+    {
+      "file": "I18N_SPEC.md",
+      "path": "../../../../../sdkwork-specs/I18N_SPEC.md",
+      "purpose": "Runtime locale and message catalog rules."
+    }
+  ],
+  "contracts": {
+    "layerRole": "frontend-feature",
+    "publicExports": [
+      "Index.ets"
+    ],
+    "sdkClients": [],
+    "sdkDependencies": [
+      "sdkwork-drive-app-sdk",
+      "sdkwork-iam-app-sdk",
+      "sdkwork-knowledgebase-app-sdk"
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "providedPorts": [
+      {
+        "name": "knowledgebaseHarmonyCatalogViews",
+        "export": "Index.ets"
+      },
+      {
+        "name": "knowledgebaseHarmonyRoutes",
+        "export": "Index.ets"
+      }
+    ],
+    "requiredPorts": [
+      {
+        "name": "knowledgebaseAppSdkClient",
+        "package": "@sdkwork/sdkwork-knowledgebase-harmony-mobile-core",
+        "export": "src/main/ets/sdk/KnowledgebaseAppSdkClient.ets"
+      },
+      {
+        "name": "knowledgebaseHarmonyCommons",
+        "package": "@sdkwork/sdkwork-knowledgebase-harmony-mobile-commons",
+        "export": "Index.ets"
+      }
+    ]
+  },
+  "verification": {
+    "commands": [
+      "node ../sdkwork-specs/tools/check-frontend-composition.mjs --root ."
+    ]
+  }
+}

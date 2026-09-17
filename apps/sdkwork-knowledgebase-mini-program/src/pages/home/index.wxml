@@ -1,0 +1,5 @@
+<view class="container">
+  <text class="title">{{title}}</text>
+  <button class="entry" bindtap="openKnowledgebase">我的知识库</button>
+  <button class="entry" bindtap="openSearch">检索</button>
+</view>

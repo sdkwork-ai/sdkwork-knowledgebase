@@ -1,0 +1,31 @@
+{
+  "SDKWORK_DEPLOYMENT_PROFILE": "cloud",
+  "SDKWORK_ENVIRONMENT": "development",
+  "SDKWORK_PROFILE_ID": "cloud.development",
+  "SDKWORK_RUNTIME_TARGET": "mini-program",
+  "SDKWORK_KNOWLEDGEBASE_MP_APP_API_BASE_URL": "https://api-dev.sdkwork.com/app/v3/api",
+  "SDKWORK_KNOWLEDGEBASE_MP_APPLICATION_PUBLIC_HTTP_URL": "https://api-dev.sdkwork.com",
+  "SDKWORK_KNOWLEDGEBASE_MP_DEPLOYMENT_PROFILE": "cloud",
+  "SDKWORK_KNOWLEDGEBASE_MP_ENVIRONMENT": "development",
+  "SDKWORK_KNOWLEDGEBASE_MP_PROFILE_ID": "cloud.development",
+  "SDKWORK_KNOWLEDGEBASE_MP_RUNTIME_TARGET": "mini-program",
+  "SDKWORK_KNOWLEDGEBASE_MP_PLATFORM": "MP_WEIXIN",
+  "SDKWORK_KNOWLEDGEBASE_MP_CLOUD_API_BASE_URLS": [
+    "https://api-dev.sdkwork.com",
+    "https://api-dev.birdcoder.com",
+    "https://api-dev.dtupay.com",
+    "https://api-dev.noaper.com",
+    "https://api-dev.sdkwork.cn",
+    "https://api-dev.birdcoder.cn",
+    "https://api-dev.dtupay.cn",
+    "https://api-dev.noaper.cn",
+    "https://api-dev.skubc.com",
+    "https://api-dev.skubc.cn",
+    "https://api-dev.zowalk.com",
+    "https://api-dev.zowalk.cn",
+    "https://api-dev.offer86.com",
+    "https://api-dev.offer86.cn",
+    "https://api-dev.86offer.com",
+    "https://api-dev.86offer.cn"
+  ]
+}

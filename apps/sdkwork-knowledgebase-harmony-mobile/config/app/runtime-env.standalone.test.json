@@ -1,0 +1,18 @@
+{
+  "environment": "test",
+  "deploymentProfile": "standalone",
+  "profileId": "standalone.test",
+  "runtimeTarget": "harmony-native",
+  "knowledge": {
+    "apiBaseUrl": "http://127.0.0.1:8095/app/v3/api",
+    "backendApiBaseUrl": "http://127.0.0.1:8095/backend/v3/api"
+  },
+  "appbase": {
+    "appApiBaseUrl": "http://127.0.0.1:8095",
+    "loginUrl": "http://127.0.0.1:8095"
+  },
+  "metadata": {
+    "profileBinding": "runtime-configurable",
+    "applicationPublicHttpUrl": "http://127.0.0.1:8095"
+  }
+}

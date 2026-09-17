@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {},
+  "include": [
+    "src",
+    "packages/sdkwork-knowledgebase-h5-core/src",
+    "packages/sdkwork-knowledgebase-h5-commons/src",
+    "packages/sdkwork-knowledgebase-h5-knowledge/src",
+    "packages/sdkwork-knowledgebase-h5-shell/src",
+    "src/vite-env.d.ts"
+  ]
+}

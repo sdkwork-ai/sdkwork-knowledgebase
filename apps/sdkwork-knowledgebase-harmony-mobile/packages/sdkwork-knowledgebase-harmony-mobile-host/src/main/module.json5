@@ -1,0 +1,10 @@
+{
+  module: {
+    name: 'sdkwork_knowledgebase_harmony_mobile_host',
+    type: 'har',
+    deviceTypes: [
+      'phone',
+      'tablet'
+    ]
+  }
+}

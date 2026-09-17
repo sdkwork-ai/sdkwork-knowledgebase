@@ -1,0 +1,8 @@
+{
+  "title": "Group Knowledge Base",
+  "verifying": "Verifying launch ticket",
+  "accepted": "Group knowledge base opened",
+  "expired": "Launch ticket expired",
+  "invalid": "Launch ticket invalid",
+  "replayed": "Launch ticket already used"
+}

@@ -532,12 +532,57 @@
             "binary": "sdkwork-knowledgebase-worker",
             "required": true,
             "role": "worker"
+          },
+          {
+            "id": "knowledgebase-browser",
+            "role": "client",
+            "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+            "bindEnv": "SDKWORK_KNOWLEDGEBASE_WEB_DEV_INGRESS_BIND",
+            "runtimeTargets": [
+              "browser"
+            ],
+            "clientArchitectures": [
+              "pc-web",
+              "h5"
+            ],
+            "required": true
           }
         ],
         "healthSurfaces": [
           "application.public-ingress"
         ],
-        "browserDeliveries": []
+        "browserDeliveries": [
+          {
+            "id": "knowledgebase-adaptive-web",
+            "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+            "clientArchitectures": [
+              "pc-web",
+              "h5"
+            ],
+            "originMode": "same-origin",
+            "deliveryMode": "dev-server-proxy",
+            "clientProcessId": "knowledgebase-browser",
+            "apiSurfaceId": "application.public-ingress",
+            "preserveCanonicalPaths": true,
+            "tabletArchitecture": "pc-web",
+            "renderers": {
+              "pc-web": {
+                "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+                "script": "dev",
+                "defaultPort": 4649,
+                "portEnv": "SDKWORK_KNOWLEDGEBASE_PC_INTERNAL_DEV_PORT",
+                "env": {}
+              },
+              "h5": {
+                "applicationRoot": "apps/sdkwork-knowledgebase-h5",
+                "script": "dev:standalone",
+                "defaultPort": 4650,
+                "portEnv": "SDKWORK_KNOWLEDGEBASE_H5_INTERNAL_DEV_PORT",
+                "env": {}
+              }
+            }
+          }
+        ]
       },
       "standalone.production": {
         "processes": [
@@ -562,9 +607,55 @@
         "browserDeliveries": []
       },
       "standalone.test": {
-        "processes": [],
+        "processes": [
+          {
+            "id": "knowledgebase-browser",
+            "role": "client",
+            "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+            "bindEnv": "SDKWORK_KNOWLEDGEBASE_WEB_DEV_INGRESS_BIND",
+            "runtimeTargets": [
+              "browser"
+            ],
+            "clientArchitectures": [
+              "pc-web",
+              "h5"
+            ],
+            "required": true
+          }
+        ],
         "healthSurfaces": [],
-        "browserDeliveries": []
+        "browserDeliveries": [
+          {
+            "id": "knowledgebase-adaptive-web",
+            "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+            "clientArchitectures": [
+              "pc-web",
+              "h5"
+            ],
+            "originMode": "same-origin",
+            "deliveryMode": "dev-server-proxy",
+            "clientProcessId": "knowledgebase-browser",
+            "apiSurfaceId": "application.public-ingress",
+            "preserveCanonicalPaths": true,
+            "tabletArchitecture": "pc-web",
+            "renderers": {
+              "pc-web": {
+                "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+                "script": "dev",
+                "defaultPort": 4649,
+                "portEnv": "SDKWORK_KNOWLEDGEBASE_PC_INTERNAL_DEV_PORT",
+                "env": {}
+              },
+              "h5": {
+                "applicationRoot": "apps/sdkwork-knowledgebase-h5",
+                "script": "dev:standalone",
+                "defaultPort": 4650,
+                "portEnv": "SDKWORK_KNOWLEDGEBASE_H5_INTERNAL_DEV_PORT",
+                "env": {}
+              }
+            }
+          }
+        ]
       },
       "standalone.staging": {
         "processes": [],
@@ -572,15 +663,109 @@
         "browserDeliveries": []
       },
       "cloud.development": {
-        "processes": [],
+        "processes": [
+          {
+            "id": "knowledgebase-browser",
+            "role": "client",
+            "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+            "bindEnv": "SDKWORK_KNOWLEDGEBASE_WEB_DEV_INGRESS_BIND",
+            "runtimeTargets": [
+              "browser"
+            ],
+            "clientArchitectures": [
+              "pc-web",
+              "h5"
+            ],
+            "required": true
+          }
+        ],
         "healthSurfaces": [
           "application.public-ingress",
           "platform.api-gateway"
+        ],
+        "browserDeliveries": [
+          {
+            "id": "knowledgebase-adaptive-web",
+            "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+            "clientArchitectures": [
+              "pc-web",
+              "h5"
+            ],
+            "originMode": "same-origin",
+            "deliveryMode": "dev-server-proxy",
+            "clientProcessId": "knowledgebase-browser",
+            "apiSurfaceId": "application.public-ingress",
+            "preserveCanonicalPaths": true,
+            "tabletArchitecture": "pc-web",
+            "renderers": {
+              "pc-web": {
+                "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+                "script": "dev",
+                "defaultPort": 4649,
+                "portEnv": "SDKWORK_KNOWLEDGEBASE_PC_INTERNAL_DEV_PORT",
+                "env": {}
+              },
+              "h5": {
+                "applicationRoot": "apps/sdkwork-knowledgebase-h5",
+                "script": "dev:cloud",
+                "defaultPort": 4650,
+                "portEnv": "SDKWORK_KNOWLEDGEBASE_H5_INTERNAL_DEV_PORT",
+                "env": {}
+              }
+            }
+          }
         ]
       },
       "cloud.test": {
-        "processes": [],
-        "healthSurfaces": []
+        "processes": [
+          {
+            "id": "knowledgebase-browser",
+            "role": "client",
+            "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+            "bindEnv": "SDKWORK_KNOWLEDGEBASE_WEB_DEV_INGRESS_BIND",
+            "runtimeTargets": [
+              "browser"
+            ],
+            "clientArchitectures": [
+              "pc-web",
+              "h5"
+            ],
+            "required": true
+          }
+        ],
+        "healthSurfaces": [],
+        "browserDeliveries": [
+          {
+            "id": "knowledgebase-adaptive-web",
+            "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+            "clientArchitectures": [
+              "pc-web",
+              "h5"
+            ],
+            "originMode": "same-origin",
+            "deliveryMode": "dev-server-proxy",
+            "clientProcessId": "knowledgebase-browser",
+            "apiSurfaceId": "application.public-ingress",
+            "preserveCanonicalPaths": true,
+            "tabletArchitecture": "pc-web",
+            "renderers": {
+              "pc-web": {
+                "applicationRoot": "apps/sdkwork-knowledgebase-pc",
+                "script": "dev",
+                "defaultPort": 4649,
+                "portEnv": "SDKWORK_KNOWLEDGEBASE_PC_INTERNAL_DEV_PORT",
+                "env": {}
+              },
+              "h5": {
+                "applicationRoot": "apps/sdkwork-knowledgebase-h5",
+                "script": "dev:cloud",
+                "defaultPort": 4650,
+                "portEnv": "SDKWORK_KNOWLEDGEBASE_H5_INTERNAL_DEV_PORT",
+                "env": {}
+              }
+            }
+          }
+        ]
       },
       "cloud.staging": {
         "processes": [],

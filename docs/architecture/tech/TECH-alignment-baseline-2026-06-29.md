@@ -73,8 +73,8 @@ Re-run before release cutover:
 | Space ACL fail-closed without `drive_space_id` | enforced |
 | PC WeChat editor HTML sanitization | enforced |
 | Production demo/synthetic media gating | enforced (`shouldUseKnowledgebaseDemoFallback` across WeChat, search, asset library, music player) |
-| Tenant-scoped dynamic rate limit policy (`web_rate_limit_policy`) | wired on app/backend/open HTTP surfaces |
+| Tenant-scoped dynamic rate limit policy (`framework_rate_limit_policy`) | wired on app/backend/open HTTP surfaces |
 | Backend `tenants.current.list` implementation | wired in `HostedBackendApi` |
 | PC admin console (`/admin`) | tenant status, spaces, members, sources, indexes, retrieval traces, provider health via backend SDK |
 | Backend `spaces.list` / `spaces.members.list` | admin operator APIs on `/backend/v3/api/knowledge/spaces` |
-| Web policy bootstrap | idempotent `web_rate_limit_policy` + `web_tenant_runtime_profile` seeds on web store connect |
+| Web policy bootstrap | idempotent `framework_rate_limit_policy` + `framework_tenant_runtime_profile` seeds on web store connect |

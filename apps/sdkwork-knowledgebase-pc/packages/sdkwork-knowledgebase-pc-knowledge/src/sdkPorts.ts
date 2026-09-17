@@ -1,7 +1,10 @@
-import type { AuthTokenManager } from '@sdkwork/knowledgebase-app-sdk';
-import type { SessionSnapshot } from 'sdkwork-knowledgebase-pc-core';
 import { KnowledgebaseErrorCodes, throwKnowledgebaseError } from 'sdkwork-knowledgebase-pc-core';
-import type { SdkworkKnowledgebaseAppClient, SdkworkDriveAppClient } from 'sdkwork-knowledgebase-pc-core';
+import type {
+  AuthTokenManager,
+  SessionSnapshot,
+  SdkworkKnowledgebaseAppClient,
+  SdkworkDriveAppClient,
+} from 'sdkwork-knowledgebase-pc-core';
 
 import type { HostKnowledgeWindowRequest } from './hostKnowledgeWindowRequest';
 

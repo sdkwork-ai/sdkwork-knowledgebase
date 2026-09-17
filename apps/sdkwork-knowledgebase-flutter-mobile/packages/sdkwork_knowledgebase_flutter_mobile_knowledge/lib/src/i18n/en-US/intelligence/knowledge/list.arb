@@ -1,0 +1,6 @@
+{
+  "@@locale": "en-US",
+  "knowledgebase.list.title": "Knowledgebase",
+  "knowledgebase.list.empty": "No knowledgebase yet",
+  "knowledgebase.list.loadFailed": "Failed to load knowledgebase"
+}

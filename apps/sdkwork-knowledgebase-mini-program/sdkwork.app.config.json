@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 3,
+  "kind": "sdkwork.app",
+  "app": {
+    "key": "sdkwork-knowledgebase-mini-program",
+    "name": "SDKWork Knowledgebase Mini Program",
+    "displayName": "SDKWork Knowledgebase Mini Program",
+    "description": "SDKWork Knowledgebase WeChat mini program application surface.",
+    "vendor": "SDKWork",
+    "officialWebsiteUrl": "https://sdkwork.com/apps/sdkwork-knowledgebase-mini-program",
+    "supportUrl": "https://sdkwork.com/support",
+    "privacyPolicyUrl": "https://sdkwork.com/privacy",
+    "termsOfServiceUrl": "https://sdkwork.com/terms",
+    "appType": "APP_UNIAPP",
+    "versionSource": "package.json",
+    "identifiers": {
+      "packageName": null,
+      "bundleId": null,
+      "desktopAppId": null,
+      "containerImage": "registry.sdkwork.com/apps/sdkwork-knowledgebase-mini-program"
+    }
+  },
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "MP_WEIXIN",
+    "appId": "sdkwork-knowledgebase",
+    "tenantId": "100001",
+    "organizationId": "0",
+    "accessTokenPermissionScope": [
+      "iam:self",
+      "knowledge.*"
+    ]
+  },
+  "runtime": {
+    "family": "mini-program",
+    "framework": "mp-weixin",
+    "runtimes": [
+      "MP_WEIXIN"
+    ],
+    "deliveryModes": [
+      "WEB_URL"
+    ],
+    "defaultPlatform": "MP_WEIXIN",
+    "defaultArchitecture": "universal",
+    "clientArchitectures": [
+      "mp"
+    ],
+    "supportedDeploymentProfiles": [
+      "standalone",
+      "cloud"
+    ],
+    "defaultDeploymentProfile": "standalone"
+  },
+  "media": {
+    "icons": {
+      "primary": {
+        "id": "sdkwork-knowledgebase-mini-program-primary-icon",
+        "type": "ICON",
+        "purpose": "PRIMARY",
+        "platform": "APP",
+        "locale": "en-US",
+        "width": 1024,
+        "height": 1024,
+        "format": "PNG",
+        "enabled": false,
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-knowledgebase-mini-program/assets/icon-1024.png",
+        "metadata": {
+          "generatedPlaceholder": true,
+          "releaseStatus": "prelaunch-placeholder"
+        }
+      },
+      "platform": [],
+      "metadata": {
+        "generatedPlaceholder": true
+      }
+    },
+    "screenshots": [],
+    "previews": [],
+    "metadata": {
+      "assetVersion": "0.1.0",
+      "defaultLocale": "en-US"
+    }
+  },
+  "publish": {
+    "status": "DRAFT",
+    "preLaunch": true,
+    "installSkill": false,
+    "platforms": [
+      "MP_WEIXIN"
+    ],
+    "installPlatforms": [
+      "MP_WEIXIN"
+    ],
+    "config": {
+      "workspaceRoot": "apps/sdkwork-knowledgebase-mini-program",
+      "framework": "mp-weixin",
+      "managedBy": "sdkwork-specs client family alignment"
+    }
+  },
+  "artifacts": {
+    "installConfig": {
+      "packages": [],
+      "metadata": {
+        "workspaceRoot": "apps/sdkwork-knowledgebase-mini-program",
+        "framework": "mp-weixin",
+        "packageManager": "pnpm"
+      }
+    }
+  },
+  "release": {
+    "currentVersion": "0.1.0",
+    "defaultChannel": "DEV",
+    "latest": {
+      "DEV": "0.1.0"
+    },
+    "notes": [
+      {
+        "version": "0.1.0",
+        "releaseChannel": "DEV",
+        "channel": "DEV",
+        "title": "SDKWork Knowledgebase Mini Program 0.1.0",
+        "summary": "Mini program surface manifest aligned to the PC workbench capability set.",
+        "current": true,
+        "packageIds": []
+      }
+    ]
+  },
+  "security": {
+    "checksumRequired": true,
+    "signatureRequired": false,
+    "sbomRequired": true
+  },
+  "devApp": {
+    "build": {
+      "targets": []
+    },
+    "sourceRoot": "apps/sdkwork-knowledgebase-mini-program"
+  },
+  "metadata": {
+    "standardOwner": "sdkwork-platform",
+    "deploymentConfig": "etc/sdkwork.deployment.config.json",
+    "releaseAuthority": "../../sdkwork.workflow.json"
+  }
+}

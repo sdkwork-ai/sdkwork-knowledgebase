@@ -1,0 +1,13 @@
+page { background: #f8fafc; }
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16rpx;
+}
+
+.title { font-size: 36rpx; font-weight: 600; }
+.entry { margin-top: 24rpx; }

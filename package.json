@@ -116,7 +116,15 @@
     "build:pc:test:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment test --deployment-profile cloud",
     "build:pc:staging:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment staging --deployment-profile cloud",
     "build:pc:demo:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment demo --deployment-profile cloud",
-    "build:pc:prod:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment prod --deployment-profile cloud"
+    "build:pc:prod:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture pc --environment prod --deployment-profile cloud",
+    "build:h5:dev": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture h5 --environment dev",
+    "build:h5:dev:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture h5 --environment dev --deployment-profile cloud",
+    "build:h5:test": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture h5 --environment test",
+    "build:h5:test:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture h5 --environment test --deployment-profile cloud",
+    "build:h5:staging": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture h5 --environment staging",
+    "build:h5:staging:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture h5 --environment staging --deployment-profile cloud",
+    "build:h5:prod": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture h5 --environment prod",
+    "build:h5:prod:cloud": "node ../sdkwork-specs/tools/build-browser-client.mjs --root . --architecture h5 --environment prod --deployment-profile cloud"
   },
   "exports": {
     ".": {

@@ -1,0 +1,11 @@
+# Dart / Flutter build output
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+*.iml
+.idea/
+.metadata
+*.g.dart
+*.freezed.dart

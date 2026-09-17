@@ -1,0 +1,4 @@
+local/
+tmp/
+cache/
+secrets/

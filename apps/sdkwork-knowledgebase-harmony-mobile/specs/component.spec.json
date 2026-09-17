@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-knowledgebase-harmony-mobile",
+    "displayName": "SDKWork Knowledgebase HarmonyOS Mobile",
+    "version": "0.1.0",
+    "type": "harmony-mobile-app-root",
+    "root": "apps/sdkwork-knowledgebase-harmony-mobile",
+    "domain": "intelligence",
+    "capability": "knowledge",
+    "surface": "app",
+    "languages": [
+      "arkts"
+    ],
+    "generated": false,
+    "manifests": [
+      "oh-package.json5",
+      "build-profile.json5",
+      "sdkwork.app.config.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md",
+      "path": "../../../../../sdkwork-specs/HARMONY_APP_MOBILE_ARCHITECTURE_SPEC.md",
+      "purpose": "HarmonyOS native mobile application root architecture."
+    },
+    {
+      "file": "APP_HARMONY_NATIVE_UI_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_HARMONY_NATIVE_UI_SPEC.md",
+      "purpose": "Harmony native ArkUI package rules."
+    },
+    {
+      "file": "APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md",
+      "purpose": "Cross-client package taxonomy and dependency direction."
+    },
+    {
+      "file": "APP_COMPOSITION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_COMPOSITION_SPEC.md",
+      "purpose": "Native-authority application composition."
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "path": "../../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Generated ArkTS/TypeScript app SDK and TokenManager integration."
+    }
+  ],
+  "contracts": {
+    "publicExports": [
+      "entry/src/main/ets/entryability/EntryAbility.ets"
+    ],
+    "runtimeEntrypoints": [
+      "oh-package.json5#dependencies"
+    ],
+    "sdkClients": [
+      "KnowledgebaseAppSdkClient"
+    ],
+    "sdkDependencies": [
+      "sdkwork-drive-app-sdk",
+      "sdkwork-iam-app-sdk",
+      "sdkwork-knowledgebase-app-sdk"
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": []
+  },
+  "verification": {
+    "commands": [
+      "node ../sdkwork-specs/tools/check-apps-directory-index.mjs --root .",
+      "node --test apps/sdkwork-knowledgebase-harmony-mobile/tests/harmony-surface-contract.test.mjs"
+    ]
+  }
+}

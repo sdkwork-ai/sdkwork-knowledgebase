@@ -1,0 +1,28 @@
+name: sdkwork_knowledgebase_flutter_mobile
+description: SDKWork Knowledgebase Flutter Mobile Application
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sdkwork_knowledgebase_flutter_mobile_core:
+    path: packages/sdkwork_knowledgebase_flutter_mobile_core
+  sdkwork_knowledgebase_flutter_mobile_commons:
+    path: packages/sdkwork_knowledgebase_flutter_mobile_commons
+  sdkwork_knowledgebase_flutter_mobile_shell:
+    path: packages/sdkwork_knowledgebase_flutter_mobile_shell
+  sdkwork_knowledgebase_flutter_mobile_knowledge:
+    path: packages/sdkwork_knowledgebase_flutter_mobile_knowledge
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
