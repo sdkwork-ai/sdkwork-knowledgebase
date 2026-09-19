@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "appId": "sdkwork-knowledgebase-pc",
+  "declarations": [
+    {
+      "appResourceType": "knowledgebase.document_source",
+      "appResourceIdKind": "entity",
+      "scene": "document-upload",
+      "source": "sdkwork-knowledgebase-pc",
+      "uploadProfileCode": "document",
+      "retention": "long_term",
+      "purpose": "PDF source document uploaded into a knowledge base so it can be imported and indexed."
+    },
+    {
+      "appResourceType": "knowledgebase.document_source",
+      "appResourceIdKind": "entity",
+      "scene": "document-upload",
+      "source": "sdkwork-knowledgebase-pc",
+      "uploadProfileCode": "text",
+      "retention": "long_term",
+      "purpose": "Plain-text, Markdown, or source-code file uploaded into a knowledge base so it can be imported and indexed."
+    },
+    {
+      "appResourceType": "knowledgebase.document_source",
+      "appResourceIdKind": "entity",
+      "scene": "document-upload",
+      "source": "sdkwork-knowledgebase-pc",
+      "uploadProfileCode": "image",
+      "retention": "long_term",
+      "purpose": "Image source uploaded into a knowledge base so it can be imported and indexed."
+    },
+    {
+      "appResourceType": "knowledgebase.document_source",
+      "appResourceIdKind": "entity",
+      "scene": "document-upload",
+      "source": "sdkwork-knowledgebase-pc",
+      "uploadProfileCode": "audio",
+      "retention": "long_term",
+      "purpose": "Audio source uploaded into a knowledge base so it can be transcribed and indexed."
+    },
+    {
+      "appResourceType": "knowledgebase.document_source",
+      "appResourceIdKind": "entity",
+      "scene": "document-upload",
+      "source": "sdkwork-knowledgebase-pc",
+      "uploadProfileCode": "video",
+      "retention": "long_term",
+      "purpose": "Video source uploaded into a knowledge base so it can be transcribed and indexed."
+    },
+    {
+      "appResourceType": "knowledgebase.document_source",
+      "appResourceIdKind": "entity",
+      "scene": "document-upload",
+      "source": "sdkwork-knowledgebase-pc",
+      "uploadProfileCode": "attachment",
+      "retention": "long_term",
+      "purpose": "Knowledge-base source file whose content shape is not one of the more specific profiles, stored as a generic attachment."
+    }
+  ]
+}

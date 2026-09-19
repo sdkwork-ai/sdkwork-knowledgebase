@@ -1,6 +1,12 @@
 import type { DriveUploaderProfile } from 'sdkwork-knowledgebase-pc-core';
 import { formatBytes } from '@sdkwork/utils';
 import {
+  KNOWLEDGEBASE_PC_ATTACHMENT_UPLOAD,
+  KNOWLEDGEBASE_PC_AUDIO_UPLOAD,
+  KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD,
+  KNOWLEDGEBASE_PC_IMAGE_UPLOAD,
+  KNOWLEDGEBASE_PC_TEXT_UPLOAD,
+  KNOWLEDGEBASE_PC_VIDEO_UPLOAD,
   getKnowledgebaseAppSdkClient,
   getKnowledgebaseTenantId,
   isKnowledgebaseDriveApiAvailable,
@@ -97,23 +103,31 @@ function isTextIngestible(file: File): boolean {
   return TEXT_EXTENSIONS.has(lower.slice(dot));
 }
 
+/**
+ * Resolves the declared upload profile for a picked file.
+ *
+ * The returned value is the declaration-derived profile code, not a bare
+ * literal: DRIVE_SPEC.md §18.3 requires every declared value consumed at a call
+ * site to come from the declaration, so that the gate validating
+ * `specs/upload.declaration.json` actually governs what is sent on the wire.
+ */
 function inferUploaderProfile(file: File): DriveUploaderProfile {
   if (file.type.startsWith('image/')) {
-    return 'image';
+    return KNOWLEDGEBASE_PC_IMAGE_UPLOAD.uploadProfileCode;
   }
   if (file.type.startsWith('video/')) {
-    return 'video';
+    return KNOWLEDGEBASE_PC_VIDEO_UPLOAD.uploadProfileCode;
   }
   if (file.type.startsWith('audio/')) {
-    return 'audio';
+    return KNOWLEDGEBASE_PC_AUDIO_UPLOAD.uploadProfileCode;
   }
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-    return 'document';
+    return KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.uploadProfileCode;
   }
   if (isTextIngestible(file)) {
-    return 'text';
+    return KNOWLEDGEBASE_PC_TEXT_UPLOAD.uploadProfileCode;
   }
-  return 'attachment';
+  return KNOWLEDGEBASE_PC_ATTACHMENT_UPLOAD.uploadProfileCode;
 }
 
 function buildIdempotencyKey(spaceId: string, file: File, index: number): string {
@@ -244,10 +258,10 @@ async function uploadBinaryThroughDrive(
 
   const uploadResult = await driveClient.uploader.upload({
     file,
-    appResourceType: 'knowledgebase-pc-file-upload',
+    appResourceType: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.appResourceType,
     appResourceId: String(spaceId),
-    scene: 'knowledgebase_pc_upload',
-    source: 'pc_local_file',
+    scene: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.scene,
+    source: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.source,
     spaceId: driveSpaceId,
     parentNodeId: resolvedParentId,
     uploadProfileCode: inferUploaderProfile(file),
