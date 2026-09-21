@@ -25,6 +25,7 @@
     "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/knowledgebase-app-sdk": "workspace:*",
     "@sdkwork/sdk-common": "workspace:*",
+    "@sdkwork/iam-credential-entry": "workspace:*",
     "@sdkwork/sdkwork-knowledgebase-pc-commons": "workspace:*",
     "@sdkwork/utils": "workspace:*"
   },

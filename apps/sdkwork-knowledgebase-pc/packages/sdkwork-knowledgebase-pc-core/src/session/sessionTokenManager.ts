@@ -1,3 +1,4 @@
+import { readBootstrapAccessTokenFromProcessEnv } from '@sdkwork/iam-credential-entry';
 import { isBlank } from '@sdkwork/utils';
 
 import type { SessionSnapshot, SessionStore } from './sessionStore';
@@ -49,7 +50,10 @@ export function createKnowledgebaseSessionTokenManager(
       session.clearSession();
     },
     getAccessToken() {
-      return normalizeDualTokenValue(session.getSnapshot().accessToken);
+      // Fall back to the private bootstrap Access-Token artifact when no
+      // interactive session exists (APP_SDK_INTEGRATION_SPEC section 4).
+      return normalizeDualTokenValue(session.getSnapshot().accessToken)
+        ?? normalizeDualTokenValue(readBootstrapAccessTokenFromProcessEnv());
     },
     getAuthToken() {
       return normalizeDualTokenValue(session.getSnapshot().authToken);

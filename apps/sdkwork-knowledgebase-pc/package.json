@@ -37,6 +37,7 @@
     "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/iam-app-sdk": "workspace:*",
     "@sdkwork/iam-contracts": "workspace:*",
+    "@sdkwork/iam-credential-entry": "workspace:*",
     "@sdkwork/knowledgebase-app-sdk": "workspace:*",
     "@sdkwork/knowledgebase-pc-knowledge": "workspace:*",
     "@sdkwork/sdkwork-knowledgebase-pc-knowledgebase": "workspace:*",

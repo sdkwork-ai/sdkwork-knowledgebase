@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import {defineConfig, loadEnv} from 'vite';
+import { createSdkworkCredentialEntryBootstrapVitePlugin } from '@sdkwork/iam-credential-entry/vite';
 import { browserSecurityHeadersPlugin } from './config/browser/securityHeaders';
 import { toKnowledgebaseViteBasePath } from './packages/sdkwork-knowledgebase-pc-core/src/config/browserBasePath';
 
@@ -107,6 +108,7 @@ function bundleSizeBudgetPlugin() {
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, __dirname, '');
+  const bootstrapAccessToken = env.SDKWORK_ACCESS_TOKEN ?? process.env.SDKWORK_ACCESS_TOKEN;
   const browserBasePath = toKnowledgebaseViteBasePath(
     env.VITE_SDKWORK_KNOWLEDGEBASE_BROWSER_BASE_PATH
     || process.env.VITE_SDKWORK_KNOWLEDGEBASE_BROWSER_BASE_PATH,
@@ -198,20 +200,16 @@ export default defineConfig(({mode}) => {
 
   return {
     base: browserBasePath,
-    ...(mode === 'development' || mode === 'standalone.docker'
-      ? {
-          define: {
-            // Injects the credential-entry bootstrap Access-Token into the
-            // bundle (dev servers and the docker standalone container build;
-            // read from SDKWORK_ACCESS_TOKEN at build time). Other modes must
-            // not bake a token into the static bundle.
-            'process.env.SDKWORK_ACCESS_TOKEN': JSON.stringify(
-              env.SDKWORK_ACCESS_TOKEN ?? process.env.SDKWORK_ACCESS_TOKEN ?? '',
-            ),
-          },
-        }
-      : {}),
     plugins: [
+      // The bootstrap credential reaches the renderer only through the shared IAM
+      // plugin (dev-server HTML injection as
+      // `globalThis.__SDKWORK_CREDENTIAL_ENTRY_BOOTSTRAP_ACCESS_TOKEN__`).
+      // `define['process.env.SDKWORK_ACCESS_TOKEN']` is NOT a valid handoff
+      // (IAM_CREDENTIAL_ENTRY_SPEC.md section 4/5).
+      createSdkworkCredentialEntryBootstrapVitePlugin({
+        accessToken: bootstrapAccessToken,
+        environment: resolveViteEnvironment(mode, process.env),
+      }),
       react(),
       tailwindcss(),
       browserSecurityHeadersPlugin(mode === 'development'),

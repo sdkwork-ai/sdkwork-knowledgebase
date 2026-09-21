@@ -5,6 +5,7 @@ packages:
   - "apps/sdkwork-knowledgebase-mini-program/packages/*"
   - "apps/sdkwork-knowledgebase-pc"
   - "apps/sdkwork-knowledgebase-pc/packages/*"
+  - "apps/sdkwork-knowledgebase-common/packages/*"
   - "sdks/sdkwork-knowledgebase-app-sdk/sdkwork-knowledgebase-app-sdk-typescript"
   - "sdks/sdkwork-knowledgebase-backend-sdk/sdkwork-knowledgebase-backend-sdk-typescript"
   - "sdks/sdkwork-knowledgebase-internal-sdk/sdkwork-knowledgebase-internal-sdk-typescript"
