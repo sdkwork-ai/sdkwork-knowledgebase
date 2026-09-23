@@ -120,6 +120,8 @@ async fn web_framework_prefers_auth_token_tenant_and_organization_context() {
             "session_id": "session-1",
             "app_id": "sdkwork-knowledgebase",
             "auth_level": "password",
+            // token-claims-gate: legacy-fixture — constructs a pre-slimming credential so this
+            // test can assert the claim is no longer an authorization source.
             "permission_scope": "knowledge.spaces.read"
         }))
     );

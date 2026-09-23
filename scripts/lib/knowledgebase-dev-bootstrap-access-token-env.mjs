@@ -77,6 +77,14 @@ export function createDevBootstrapAccessTokenJwt(options = {}) {
   };
 
   if (permissionScope.length > 0) {
+    // token-claims-gate: credential-entry-exception
+    //
+    // This is the ONE bounded exception the contract allows, and it is defined
+    // by APP_PERMISSION_COMPOSITION_SPEC: the bootstrap access token scope only
+    // gates credential-entry and pre-login SDK transport. It is NOT user session
+    // RBAC — that is server-resolved (IAM_SPEC §5.6) and MUST NOT be signed in.
+    // Keep it bounded to the manifest's small `accessTokenPermissionScope` list;
+    // never widen it with tenant or user grants, which is what produced HTTP 431.
     claims.permission_scope = permissionScope.join(',');
   }
 
