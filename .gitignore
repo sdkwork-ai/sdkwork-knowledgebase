@@ -126,3 +126,11 @@ __pycache__/
 # Agent scratch: session memory and generated reports (the portability and
 # shell-portability gates exclude this directory as scratch too)
 .workbuddy/
+
+# Compiler emit beside source is not content (REPOSITORY_BASELINE_SPEC.md section 2).
+# The negations keep authored ambient declarations committable.
+**/composed/**/*.js
+**/composed/**/*.d.ts
+!**/src/**/vite-env.d.ts
+!**/src/**/global.d.ts
+!**/src/**/shims.d.ts
