@@ -3942,6 +3942,7 @@ version = "0.1.0"
 dependencies = [
  "dotenvy",
  "sdkwork-database-config",
+ "sdkwork-database-drift",
  "sdkwork-database-lifecycle",
  "sdkwork-database-spi",
  "sdkwork-database-sqlx",
