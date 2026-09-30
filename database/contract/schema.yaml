@@ -132,3 +132,6 @@ tables:
   - name: kb_provider_migration_operation
     lifecycle_status: active
     owner: knowledgebase-platform
+  - name: kb_tenant_quota_usage
+    lifecycle_status: active
+    owner: knowledgebase-platform

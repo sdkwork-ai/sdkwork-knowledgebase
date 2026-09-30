@@ -46,6 +46,11 @@ pub const ROUTES: &[RouteManifestEntry] = &[
         operation_id: "wikiPublications.retrieve",
     },
     RouteManifestEntry {
+        method: "GET",
+        path: "/app/v3/api/knowledge/spaces/{spaceId}/wiki_source_files",
+        operation_id: "wikiSourceFiles.list",
+    },
+    RouteManifestEntry {
         method: "POST",
         path: "/app/v3/api/knowledge/spaces/{spaceId}/wiki_publication/activate",
         operation_id: "wikiPublications.activate",

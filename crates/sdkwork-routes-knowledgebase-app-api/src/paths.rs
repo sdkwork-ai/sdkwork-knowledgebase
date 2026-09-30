@@ -10,6 +10,8 @@ pub const WIKI_PUBLICATION_ACTIVATE: &str =
     "/app/v3/api/knowledge/spaces/{space_id}/wiki_publication/activate";
 pub const WIKI_PUBLICATION_PAUSE: &str =
     "/app/v3/api/knowledge/spaces/{space_id}/wiki_publication/pause";
+pub const WIKI_SOURCE_FILES: &str =
+    "/app/v3/api/knowledge/spaces/{space_id}/wiki_source_files";
 pub const WIKI_SOURCE_FILE_PUBLISH: &str =
     "/app/v3/api/knowledge/spaces/{space_id}/wiki_source_files/{source_file_uuid}/publish";
 pub const WIKI_SOURCE_FILE_UNPUBLISH: &str =

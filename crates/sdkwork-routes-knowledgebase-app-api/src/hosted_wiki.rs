@@ -1,5 +1,9 @@
 use crate::{
     hosted_access::{require_numeric_actor_id, require_space_access_with_role},
+    pagination::{
+        cursor_page_data, encode_opaque_next_cursor, normalize_api_page_size,
+        parse_opaque_u64_cursor,
+    },
     ApiError, ApiResult, KnowledgeAppRequestContext, KnowledgeWikiPublicationAppService,
     KnowledgebaseRuntime,
 };
@@ -8,9 +12,10 @@ use sdkwork_intelligence_knowledgebase_service::{
     ports::{
         knowledge_access_control::KnowledgeAccessRole,
         knowledge_wiki_persistence::{
-            WikiIndexState, WikiPagePublicationState, WikiPersistenceScope, WikiPublicationMode,
-            WikiPublicationStatus, WikiPublicationStore, WikiSourceFileKind, WikiSourceProjection,
-            WikiSourceState, WikiUpdatePolicy, WikiVisibility,
+            ListWikiSourceProjectionsRequest, WikiIndexState, WikiPagePublicationState,
+            WikiPersistenceScope, WikiPublicationMode, WikiPublicationStatus,
+            WikiPublicationStore, WikiSourceFileKind, WikiSourceProjection, WikiSourceState,
+            WikiSourceProjectionStore, WikiUpdatePolicy, WikiVisibility,
         },
         knowledge_wiki_publication_lifecycle::{
             ChangeWikiPageVisibilityRequest, ChangeWikiPublicationStatusRequest,
@@ -30,6 +35,7 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeWikiSourceFileVersionCommandRequest, KnowledgeWikiSourceState,
     KnowledgeWikiUpdatePolicy, KnowledgeWikiVisibility, PublishKnowledgeWikiSourceFileRequest,
 };
+use sdkwork_utils_rust::SdkWorkPageData;
 
 #[derive(Clone)]
 pub(crate) struct HostedWikiPublicationService {
@@ -230,6 +236,62 @@ impl KnowledgeWikiPublicationAppService for HostedWikiPublicationService {
             .await
             .map_err(map_lifecycle_error)?;
         Ok(map_page_result(result.publication, result.page))
+    }
+
+    async fn list_wiki_source_files(
+        &self,
+        context: KnowledgeAppRequestContext,
+        space_id: u64,
+        cursor: Option<String>,
+        page_size: Option<u32>,
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWikiSourceFile>> {
+        require_space_access_with_role(
+            &self.runtime,
+            &context,
+            space_id,
+            KnowledgeAccessRole::Reader,
+        )
+        .await?;
+        let normalized_page_size = normalize_api_page_size(page_size)?;
+        let after_projection_id =
+            parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
+                ApiError::invalid_request(
+                    "invalid_parameter",
+                    "cursor must reference a valid Wiki source file position",
+                )
+            })?;
+        let publication = self
+            .runtime
+            .wiki_store()
+            .get_publication_for_space(self.scope(&context), space_id)
+            .await
+            .map_err(map_persistence_error)?
+            .ok_or_else(|| {
+                ApiError::not_found(
+                    "wiki_publication_not_found",
+                    "Wiki publication was not found for the knowledge space",
+                )
+            })?;
+        let page = self
+            .runtime
+            .wiki_store()
+            .list_source_projections(ListWikiSourceProjectionsRequest {
+                scope: self.scope(&context),
+                site_publication_id: publication.id,
+                after_projection_id,
+                limit: normalized_page_size,
+            })
+            .await
+            .map_err(map_persistence_error)?;
+        let next_cursor =
+            encode_opaque_next_cursor(page.next_after_projection_id.map(|id| id.to_string()));
+        let has_more = next_cursor.is_some();
+        Ok(cursor_page_data(
+            page.projections.into_iter().map(map_source_file).collect(),
+            next_cursor,
+            has_more,
+            normalized_page_size,
+        ))
     }
 }
 

@@ -4,13 +4,13 @@ const fn knowledge_route(
     method: HttpMethod,
     path: &'static str,
     operation_id: &'static str,
-    permission: &'static str,
 ) -> HttpRoute {
     // PERMISSION_STANDARD_SPEC §Surface Authorization Tiers: this is a first-party
-    // app-api consumer surface (tier 0–2). Per-route OAuth-style scopes are contract
-    // violations here; access is enforced by the service layer's space ownership/ACL
-    // checks. The permission argument remains at call sites for documentation only.
-    let _ = permission;
+    // app-api consumer surface (tier 0-2). OAuth-style per-route scopes are
+    // contract violations on this surface; tier 2 operations MUST be enforced by
+    // the service layer's space ownership/ACL checks, never by domain permission
+    // codes, and tier 1 routes require authentication only. Routes therefore
+    // carry dual-token authentication without any `required_permission`.
     HttpRoute::dual_token(method, path, "knowledge", operation_id)
 }
 
@@ -19,16 +19,15 @@ const fn knowledge_read_route(
     path: &'static str,
     operation_id: &'static str,
 ) -> HttpRoute {
-    HttpRoute::dual_token(method, path, "knowledge", operation_id)
+    knowledge_route(method, path, operation_id)
 }
 
 const fn knowledge_abuse_route(
     method: HttpMethod,
     path: &'static str,
     operation_id: &'static str,
-    permission: &'static str,
 ) -> HttpRoute {
-    knowledge_route(method, path, operation_id, permission)
+    knowledge_route(method, path, operation_id)
         .with_rate_limit_tier(RateLimitTier::AuthCritical)
 }
 
@@ -37,7 +36,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/group_launches/consume",
         "groupLaunches.consume",
-        "knowledge.spaces.read",
     )
     .with_idempotent(true),
     // Any authenticated principal may create a knowledge space: dual-token
@@ -57,71 +55,66 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Patch,
         "/app/v3/api/knowledge/spaces/{spaceId}",
         "spaces.update",
-        "knowledge.spaces.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Delete,
         "/app/v3/api/knowledge/spaces/{spaceId}",
         "spaces.delete",
-        "knowledge.spaces.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
         "/app/v3/api/knowledge/spaces/{spaceId}/wiki_publication",
         "wikiPublications.retrieve",
     ),
+    knowledge_read_route(
+        HttpMethod::Get,
+        "/app/v3/api/knowledge/spaces/{spaceId}/wiki_source_files",
+        "wikiSourceFiles.list",
+    ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/wiki_publication/activate",
         "wikiPublications.activate",
-        "knowledge.spaces.write",
     )
     .with_idempotent(true),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/wiki_publication/pause",
         "wikiPublications.pause",
-        "knowledge.spaces.write",
     )
     .with_idempotent(true),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/wiki_source_files/{sourceFileUuid}/publish",
         "wikiSourceFiles.publish",
-        "knowledge.spaces.write",
     )
     .with_idempotent(true),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/wiki_source_files/{sourceFileUuid}/unpublish",
         "wikiSourceFiles.unpublish",
-        "knowledge.spaces.write",
     )
     .with_idempotent(true),
     knowledge_abuse_route(
         HttpMethod::Patch,
         "/app/v3/api/knowledge/spaces/{spaceId}/wiki_source_files/{sourceFileUuid}/visibility",
         "wikiSourceFiles.visibility.update",
-        "knowledge.spaces.write",
     )
     .with_idempotent(true),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/drive_imports",
         "driveImports.create",
-        "knowledge.imports.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/git_imports",
         "gitImports.create",
-        "knowledge.imports.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/git_syncs",
         "gitSyncs.create",
-        "knowledge.imports.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -132,7 +125,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Put,
         "/app/v3/api/knowledge/wechat/official_accounts",
         "wechat.officialAccounts.update",
-        "knowledge.wechat.manage",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -148,25 +140,21 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Put,
         "/app/v3/api/knowledge/wechat/applets",
         "wechat.applets.update",
-        "knowledge.wechat.manage",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/wechat/articles/publish",
         "wechat.articles.publish",
-        "knowledge.wechat.manage",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/wechat/articles/preview",
         "wechat.articles.preview",
-        "knowledge.wechat.manage",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/ingests",
         "ingests.create",
-        "knowledge.ingests.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -182,7 +170,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/documents",
         "documents.create",
-        "knowledge.documents.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -193,13 +180,11 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Patch,
         "/app/v3/api/knowledge/documents/{documentId}",
         "documents.update",
-        "knowledge.documents.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Delete,
         "/app/v3/api/knowledge/documents/{documentId}",
         "documents.delete",
-        "knowledge.documents.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -215,7 +200,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/documents/{documentId}/versions",
         "documents.versions.create",
-        "knowledge.documents.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -226,7 +210,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Put,
         "/app/v3/api/knowledge/okf/concepts/upsert",
         "okf.concepts.update",
-        "knowledge.okf.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -237,7 +220,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Delete,
         "/app/v3/api/knowledge/okf/concepts/{conceptId}",
         "okf.concepts.delete",
-        "knowledge.okf.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -263,25 +245,21 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/okf/queries",
         "okf.queries.create",
-        "knowledge.okf.write",
     ),
     knowledge_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/okf/queries/{queryId}/file_answer",
         "okf.queries.fileAnswer",
-        "knowledge.okf.write",
     ),
     knowledge_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/okf/context_packs",
         "okf.contextPacks.create",
-        "knowledge.okf.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/okf/exports",
         "okf.bundle.export.create",
-        "knowledge.okf.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -292,13 +270,11 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/okf/imports",
         "okf.bundle.import.create",
-        "knowledge.okf.write",
     ),
     knowledge_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/okf/lint_runs",
         "okf.lintRuns.create",
-        "knowledge.okf.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -309,7 +285,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/retrievals",
         "retrievals.create",
-        "knowledge.retrievals.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -320,13 +295,11 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/context_packs",
         "contextPacks.create",
-        "knowledge.context_packs.write",
     ),
     knowledge_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/agent_profiles",
         "agentProfiles.create",
-        "knowledge.agent_profiles.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -337,13 +310,11 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Patch,
         "/app/v3/api/knowledge/agent_profiles/{profileId}",
         "agentProfiles.update",
-        "knowledge.agent_profiles.write",
     ),
     knowledge_route(
         HttpMethod::Delete,
         "/app/v3/api/knowledge/agent_profiles/{profileId}",
         "agentProfiles.delete",
-        "knowledge.agent_profiles.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -354,31 +325,26 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings",
         "agentProfiles.bindings.create",
-        "knowledge.agent_profiles.write",
     ),
     knowledge_route(
         HttpMethod::Patch,
         "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings/{bindingId}",
         "agentProfiles.bindings.update",
-        "knowledge.agent_profiles.write",
     ),
     knowledge_route(
         HttpMethod::Delete,
         "/app/v3/api/knowledge/agent_profiles/{profileId}/bindings/{bindingId}",
         "agentProfiles.bindings.delete",
-        "knowledge.agent_profiles.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview",
         "agentProfiles.retrievalPreview.create",
-        "knowledge.agent_profiles.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/agent_profiles/{profileId}/chat",
         "agentProfiles.chat.create",
-        "knowledge.agent_profiles.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -389,7 +355,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/context_bindings",
         "spaces.contextBindings.create",
-        "knowledge.spaces.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -400,13 +365,11 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/members",
         "spaces.members.create",
-        "knowledge.spaces.write",
     ),
     knowledge_route(
         HttpMethod::Delete,
         "/app/v3/api/knowledge/spaces/{spaceId}/members",
         "spaces.members.delete",
-        "knowledge.spaces.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -417,13 +380,11 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Patch,
         "/app/v3/api/knowledge/context_bindings/{bindingId}",
         "contextBindings.update",
-        "knowledge.context_bindings.write",
     ),
     knowledge_route(
         HttpMethod::Delete,
         "/app/v3/api/knowledge/context_bindings/{bindingId}",
         "contextBindings.delete",
-        "knowledge.context_bindings.write",
     ),
     knowledge_read_route(
         HttpMethod::Get,
@@ -434,19 +395,16 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/market/subscriptions",
         "market.subscriptions.create",
-        "knowledge.market.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Delete,
         "/app/v3/api/knowledge/market/subscriptions/{listingId}",
         "market.subscriptions.delete",
-        "knowledge.market.write",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/media_tasks",
         "mediaTasks.create",
-        "knowledge.media.write",
     ),
 ];
 

@@ -42,6 +42,7 @@
   "validation.parentFolderNotFound": "Parent folder was not found in the knowledge browser tree.",
   "validation.parentDriveNodeMissing": "Parent folder does not have an associated Drive node.",
   "validation.transferSameKnowledgeBase": "Source and target knowledge bases must differ.",
+  "validation.transferScanLimitExceeded": "Folder transfer scan exceeded the limit; split the folder before transferring.",
   "validation.documentNotIndexed": "Document content can only be persisted for indexed Knowledgebase documents.",
   "validation.importDocumentIdMissing": "Import failed because the document id is missing.",
   "feature.previewOnly": "This preview-only feature is unavailable while the Knowledgebase API is connected.",

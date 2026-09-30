@@ -17,6 +17,17 @@ export type {
   KnowledgeWechatApplet,
   KnowledgeWechatArticle,
   KnowledgeWechatOfficialAccount,
+  KnowledgeWikiIndexState,
+  KnowledgeWikiPagePublicationState,
+  KnowledgeWikiPublication,
+  KnowledgeWikiPublicationMode,
+  KnowledgeWikiPublicationStatus,
+  KnowledgeWikiSourceFile,
+  KnowledgeWikiSourceFileCommandResult,
+  KnowledgeWikiSourceFileKind,
+  KnowledgeWikiSourceState,
+  KnowledgeWikiUpdatePolicy,
+  KnowledgeWikiVisibility,
   SdkworkKnowledgebaseAppClient,
 } from '@sdkwork/knowledgebase-app-sdk';
 

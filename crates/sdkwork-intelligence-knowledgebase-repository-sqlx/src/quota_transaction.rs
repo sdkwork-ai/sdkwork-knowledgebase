@@ -35,12 +35,28 @@ pub(crate) enum TenantQuotaTransactionError {
     Invalid(String),
 }
 
-pub(crate) async fn enforce_tenant_quotas_after_write(
+/// O(1) active-document count read from the trigger-maintained usage row in
+/// `kb_tenant_quota_usage`, falling back to the exact aggregate scan only when
+/// the counter row has not been materialized yet (cold scope or drift repair).
+/// The row triggers on `kb_document` keep the counter exact within the caller's
+/// transaction, so the advisory-locked quota check stays atomic without paying
+/// one full COUNT scan per write.
+pub(crate) async fn tenant_active_document_count(
     connection: &mut AnyConnection,
     tenant_id: i64,
     organization_id: i64,
-    limits: KnowledgebaseTenantQuotaLimits,
-) -> Result<(), TenantQuotaTransactionError> {
+) -> Result<u64, sqlx::Error> {
+    let counter: Option<i64> = sqlx::query_scalar(
+        "SELECT document_count FROM kb_tenant_quota_usage \
+         WHERE tenant_id = $1 AND organization_id = $2",
+    )
+    .bind(tenant_id)
+    .bind(organization_id)
+    .fetch_optional(&mut *connection)
+    .await?;
+    if let Some(document_count) = counter {
+        return Ok(document_count.max(0) as u64);
+    }
     let document_count: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM kb_document WHERE tenant_id = $1 AND organization_id = $2 AND status = 1",
     )
@@ -48,8 +64,49 @@ pub(crate) async fn enforce_tenant_quotas_after_write(
     .bind(organization_id)
     .fetch_one(&mut *connection)
     .await?;
-    let document_count = u64::try_from(document_count.max(0))
-        .map_err(|error| TenantQuotaTransactionError::Invalid(error.to_string()))?;
+    Ok(document_count.max(0) as u64)
+}
+
+/// O(1) active storage-bytes total read from the trigger-maintained usage row
+/// in `kb_tenant_quota_usage`, falling back to the exact aggregate scan only
+/// when the counter row has not been materialized yet. The row triggers on
+/// `kb_drive_object_ref` keep the counter exact within the caller's
+/// transaction, so the advisory-locked quota check stays atomic without paying
+/// one full SUM scan per write.
+pub(crate) async fn tenant_active_storage_bytes(
+    connection: &mut AnyConnection,
+    tenant_id: i64,
+    organization_id: i64,
+) -> Result<u64, sqlx::Error> {
+    let counter: Option<i64> = sqlx::query_scalar(
+        "SELECT storage_bytes FROM kb_tenant_quota_usage \
+         WHERE tenant_id = $1 AND organization_id = $2",
+    )
+    .bind(tenant_id)
+    .bind(organization_id)
+    .fetch_optional(&mut *connection)
+    .await?;
+    if let Some(storage_bytes) = counter {
+        return Ok(storage_bytes.max(0) as u64);
+    }
+    let storage_bytes: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(size_bytes), 0) FROM kb_drive_object_ref WHERE tenant_id = $1 AND organization_id = $2 AND status = 1",
+    )
+    .bind(tenant_id)
+    .bind(organization_id)
+    .fetch_one(&mut *connection)
+    .await?;
+    Ok(storage_bytes.max(0) as u64)
+}
+
+pub(crate) async fn enforce_tenant_quotas_after_write(
+    connection: &mut AnyConnection,
+    tenant_id: i64,
+    organization_id: i64,
+    limits: KnowledgebaseTenantQuotaLimits,
+) -> Result<(), TenantQuotaTransactionError> {
+    let document_count =
+        tenant_active_document_count(connection, tenant_id, organization_id).await?;
     if document_count > limits.max_documents {
         return Err(TenantQuotaExceeded {
             kind: TenantQuotaKind::Documents,
@@ -101,15 +158,8 @@ pub(crate) async fn enforce_tenant_quotas_after_write(
         .into());
     }
 
-    let storage_bytes: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(size_bytes), 0) FROM kb_drive_object_ref WHERE tenant_id = $1 AND organization_id = $2 AND status = 1",
-    )
-    .bind(tenant_id)
-    .bind(organization_id)
-    .fetch_one(connection)
-    .await?;
-    let storage_bytes = u64::try_from(storage_bytes.max(0))
-        .map_err(|error| TenantQuotaTransactionError::Invalid(error.to_string()))?;
+    let storage_bytes =
+        tenant_active_storage_bytes(connection, tenant_id, organization_id).await?;
     if storage_bytes > limits.max_storage_bytes {
         return Err(TenantQuotaExceeded {
             kind: TenantQuotaKind::StorageBytes,

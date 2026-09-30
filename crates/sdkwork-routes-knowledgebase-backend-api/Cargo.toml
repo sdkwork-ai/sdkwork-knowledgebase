@@ -29,3 +29,4 @@ sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio",
 [dev-dependencies]
 tower.workspace = true
 sdkwork-web-core.workspace = true
+serde_urlencoded.workspace = true

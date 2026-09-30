@@ -1,5 +1,6 @@
 import type { KnowledgeSpaceMember, KnowledgeSpaceMemberRole } from 'sdkwork-knowledgebase-pc-core';
 import { getKnowledgebaseAppSdkClient } from 'sdkwork-knowledgebase-pc-core';
+import { MAX_AGGREGATION_SCAN_PAGES } from './knowledgeBrowserListService';
 import { normalizeSdkWorkListPage } from './sdkWorkListPage';
 
 export interface KnowledgeSpaceMemberUi {
@@ -84,8 +85,18 @@ export async function loadKnowledgeSpaceMembers(
 ): Promise<KnowledgeSpaceMemberUi[]> {
   const members: KnowledgeSpaceMemberUi[] = [];
   let cursor: string | null = null;
+  let scannedPages = 0;
 
   do {
+    scannedPages += 1;
+    if (scannedPages > MAX_AGGREGATION_SCAN_PAGES) {
+      // Display-only degradation: the member list stops growing past the scan
+      // bound and the truncation is surfaced in the console.
+      console.warn(
+        `[knowledgeSpaceMembers] member aggregation truncated after ${MAX_AGGREGATION_SCAN_PAGES} pages for space ${spaceId}`,
+      );
+      break;
+    }
     const page = await loadKnowledgeSpaceMembersPage(spaceId, cursor, 100);
     members.push(...page.items);
     cursor = page.hasMore ? page.nextCursor : null;

@@ -247,6 +247,12 @@
       "owner": "knowledgebase-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
+    },
+    {
+      "table_name": "kb_tenant_quota_usage",
+      "owner": "knowledgebase-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
     }
   ]
 }

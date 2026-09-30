@@ -5,8 +5,9 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context:
 };
 use sdkwork_knowledgebase_contract::rag::KnowledgeMemoryContextFragment;
 use sdkwork_memory_spi::{
-    AssembleMemoryContextCommand, MemoryContextAssemblerPort, MemoryContextPackDraft,
-    MemoryRetrieverPort, RetrieveMemoryCandidatesCommand,
+    AssembleMemoryContextCommand, MAX_MEMORY_RETRIEVAL_CANDIDATES, MemoryContextAssemblerPort,
+    MemoryContextPackDraft, MemoryRetrieverPort, MemorySensitivityReadScope,
+    RetrieveMemoryCandidatesCommand,
 };
 use sdkwork_utils_rust::{is_blank, trim};
 use std::sync::Arc;
@@ -39,9 +40,17 @@ impl KnowledgeMemoryContextProvider for KnowledgebaseMemoryContextProviderAdapte
 
         let query = trim(request.query.as_str());
         let policy_ref = trim(request.memory_policy_ref.as_str());
+        // Fail-closed sensitivity ceiling: the knowledgebase memory context is a
+        // cross-actor shared surface, so it reads only Public-sensitivity
+        // memories until a caller-facing scope contract exists (upstream
+        // forbids stores from choosing a scope themselves).
         let candidates = self
             .retriever
-            .retrieve(RetrieveMemoryCandidatesCommand { query })
+            .retrieve(RetrieveMemoryCandidatesCommand {
+                query,
+                read_scope: MemorySensitivityReadScope::Public,
+                limit: MAX_MEMORY_RETRIEVAL_CANDIDATES,
+            })
             .await
             .map_err(map_memory_spi_error)?;
         if candidates.memory_ids.is_empty() {

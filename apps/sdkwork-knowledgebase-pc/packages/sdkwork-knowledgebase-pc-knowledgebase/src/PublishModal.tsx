@@ -24,7 +24,6 @@ const PUBLISH_PLATFORMS = [
 
 export function PublishModal({ documents, onClose, onWechatFlow }: PublishModalProps) {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('wechat');
-  const isPublishing = false;
   const apiMode = isKnowledgebaseApiAvailable();
 
   const togglePlatform = (id: string) => {
@@ -32,6 +31,9 @@ export function PublishModal({ documents, onClose, onWechatFlow }: PublishModalP
   };
 
   const handlePublish = () => {
+    // The only enabled platform right now is WeChat, which hands off to the
+    // dedicated WeChat publish flow; aggregating additional platforms is a
+    // future feature and will introduce real in-progress state when it lands.
     if (selectedPlatform === 'wechat') {
       onWechatFlow?.();
     }
@@ -82,10 +84,10 @@ export function PublishModal({ documents, onClose, onWechatFlow }: PublishModalP
               {PUBLISH_PLATFORMS.map(platform => {
                 const isSelected = selectedPlatform === platform.id;
                 return (
-                  <div 
+                  <div
                     key={platform.id}
                     onClick={() => {
-                      if (platform.disabled || isPublishing) return;
+                      if (platform.disabled) return;
                       togglePlatform(platform.id);
                     }}
                     className={`flex items-center p-3.5 rounded-2xl border-2 transition-all ${
@@ -130,29 +132,19 @@ export function PublishModal({ documents, onClose, onWechatFlow }: PublishModalP
             已选中 <span className="text-[var(--color-kb-text-heading)] mx-1">{selectedPlatform && !PUBLISH_PLATFORMS.find(p => p.id === selectedPlatform)?.disabled ? 1 : 0}</span> 个聚合渠道
           </div>
           <div className="flex space-x-3">
-            <button 
+            <button
               onClick={onClose}
-              disabled={isPublishing}
               className="px-5 py-2.5 text-[13px] font-bold text-[var(--color-kb-text)] border border-[var(--color-kb-panel-border)] bg-[var(--color-kb-editor)] hover:bg-[var(--color-kb-panel)] rounded-xl transition-all disabled:opacity-50 active:scale-95 shadow-sm"
             >
               放弃
             </button>
-            <button 
+            <button
               onClick={handlePublish}
-              disabled={!selectedPlatform || isPublishing || PUBLISH_PLATFORMS.find(p => p.id === selectedPlatform)?.disabled}
+              disabled={!selectedPlatform || PUBLISH_PLATFORMS.find(p => p.id === selectedPlatform)?.disabled}
               className="px-6 py-2.5 text-[13px] font-extrabold bg-[var(--color-kb-accent)] hover:bg-[var(--color-kb-accent-hover)] text-white rounded-xl transition-all disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-95 flex items-center space-x-2"
             >
-              {isPublishing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>分发执行中...</span>
-                </>
-              ) : (
-                <>
-                  <Send size={15} strokeWidth={2.5} />
-                  <span>{selectedPlatform === 'wechat' ? '进入公众号发布' : `一键聚合发布 (${documents.length} 篇)`}</span>
-                </>
-              )}
+              <Send size={15} strokeWidth={2.5} />
+              <span>{selectedPlatform === 'wechat' ? '进入公众号发布' : `一键聚合发布 (${documents.length} 篇)`}</span>
             </button>
           </div>
         </div>

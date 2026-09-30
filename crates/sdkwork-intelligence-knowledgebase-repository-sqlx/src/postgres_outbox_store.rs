@@ -2,7 +2,8 @@ use async_trait::async_trait;
 use sdkwork_database_config::DatabaseEngine;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_outbox_store::{
     AppendOutboxEventRecord, ClaimedOutboxEvent, KnowledgeOutboxStore, KnowledgeOutboxStoreError,
-    OutboxClaim, OutboxRequeueResult, PendingOutboxEvent, MAX_KNOWLEDGE_OUTBOX_PAYLOAD_BYTES,
+    OutboxClaim, OutboxRequeueResult, OutboxStaleReleaseResult, PendingOutboxEvent,
+    MAX_KNOWLEDGE_OUTBOX_PAYLOAD_BYTES,
 };
 use sdkwork_utils_rust::{is_blank, truncate};
 use sqlx::{AnyPool, Row};
@@ -20,6 +21,7 @@ const OUTBOX_STATUS_CLAIMED: i64 = 3;
 const OUTBOX_STATUS_DEAD_LETTER: i64 = 4;
 const INITIAL_VERSION: i64 = 0;
 const DEFAULT_STALE_CLAIM_SECS: u64 = 300;
+const DEFAULT_MAX_RETRY_COUNT: u32 = 5;
 const MAX_CLAIM_OWNER_BYTES: usize = 128;
 
 #[derive(Debug, Clone)]
@@ -29,7 +31,9 @@ pub struct PostgresKnowledgeOutboxStore {
     organization_id: u64,
     claim_owner: String,
     id_generator: Arc<dyn KnowledgeIdGenerator>,
-    use_postgres_skip_locked_claim: bool,
+    /// Retry budget shared by delivery failures (`mark_failed`) and stale-claim
+    /// releases; exhausted events dead-letter instead of looping forever.
+    max_retry_count: u32,
     timestamp_dialect: SqlTimestampDialect,
 }
 
@@ -49,8 +53,8 @@ impl PostgresKnowledgeOutboxStore {
         )
     }
 
-    pub fn with_postgres_skip_locked_claim(mut self, enabled: bool) -> Self {
-        self.use_postgres_skip_locked_claim = enabled;
+    pub fn with_max_retry_count(mut self, max_retry_count: u32) -> Self {
+        self.max_retry_count = max_retry_count.clamp(1, 32);
         self
     }
 
@@ -72,7 +76,7 @@ impl PostgresKnowledgeOutboxStore {
             organization_id,
             claim_owner: claim_owner.into(),
             id_generator,
-            use_postgres_skip_locked_claim: false,
+            max_retry_count: DEFAULT_MAX_RETRY_COUNT,
             timestamp_dialect: SqlTimestampDialect::default(),
         }
     }
@@ -197,7 +201,7 @@ impl KnowledgeOutboxStore for PostgresKnowledgeOutboxStore {
         limit: u32,
     ) -> Result<Vec<ClaimedOutboxEvent>, KnowledgeOutboxStoreError> {
         let _ = self
-            .release_stale_claimed_events(DEFAULT_STALE_CLAIM_SECS)
+            .release_stale_claimed_events(DEFAULT_STALE_CLAIM_SECS, self.max_retry_count)
             .await?;
 
         validate_claim_owner(&self.claim_owner)?;
@@ -207,67 +211,43 @@ impl KnowledgeOutboxStore for PostgresKnowledgeOutboxStore {
         let now = now_rfc3339()?;
         let claim_token = Uuid::new_v4().to_string();
         let claimed_at_expr = self.timestamp_dialect.sql_timestamp_expr("$2");
+        let next_attempt_due_expr = self.timestamp_dialect.sql_timestamp_expr("$9");
 
-        let rows = if self.use_postgres_skip_locked_claim {
-            let query = format!(
-                r#"
-                UPDATE kb_outbox_event
-                SET status = $1, claimed_at = {claimed_at_expr}, claim_owner = $3,
-                    claim_token = $4, dead_lettered_at = NULL, version = version + 1
-                WHERE id IN (
-                    SELECT id
-                    FROM kb_outbox_event
-                    WHERE tenant_id = $5 AND organization_id = $6 AND status = $7
-                    ORDER BY created_at ASC, id ASC
-                    LIMIT $8
-                    FOR UPDATE SKIP LOCKED
-                )
-                RETURNING id, uuid, aggregate_type, aggregate_id, event_type, retry_count,
-                          CAST(payload AS TEXT) AS payload
-                "#,
-            );
-            sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
-                .bind(OUTBOX_STATUS_CLAIMED)
-                .bind(&now)
-                .bind(&self.claim_owner)
-                .bind(&claim_token)
-                .bind(tenant_id)
-                .bind(organization_id)
-                .bind(OUTBOX_STATUS_PENDING)
-                .bind(limit)
-                .fetch_all(&self.pool)
-                .await
-                .map_err(sqlx_error)?
-        } else {
-            let query = format!(
-                r#"
-                UPDATE kb_outbox_event
-                SET status = $1, claimed_at = {claimed_at_expr}, claim_owner = $3,
-                    claim_token = $4, dead_lettered_at = NULL, version = version + 1
-                WHERE id IN (
-                    SELECT id
-                    FROM kb_outbox_event
-                    WHERE tenant_id = $5 AND organization_id = $6 AND status = $7
-                    ORDER BY created_at ASC, id ASC
-                    LIMIT $8
-                )
-                RETURNING id, uuid, aggregate_type, aggregate_id, event_type, retry_count,
-                          CAST(payload AS TEXT) AS payload
-                "#,
-            );
-            sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
-                .bind(OUTBOX_STATUS_CLAIMED)
-                .bind(&now)
-                .bind(&self.claim_owner)
-                .bind(&claim_token)
-                .bind(tenant_id)
-                .bind(organization_id)
-                .bind(OUTBOX_STATUS_PENDING)
-                .bind(limit)
-                .fetch_all(&self.pool)
-                .await
-                .map_err(sqlx_error)?
-        };
+        // Single-statement claim: FOR UPDATE SKIP LOCKED lets concurrent worker
+        // replicas claim disjoint batches without blocking or wasted ticks, and
+        // the next_attempt_at guard keeps future-dated events parked until their
+        // backoff window elapses.
+        let query = format!(
+            r#"
+            UPDATE kb_outbox_event
+            SET status = $1, claimed_at = {claimed_at_expr}, claim_owner = $3,
+                claim_token = $4, dead_lettered_at = NULL, version = version + 1
+            WHERE id IN (
+                SELECT id
+                FROM kb_outbox_event
+                WHERE tenant_id = $5 AND organization_id = $6 AND status = $7
+                  AND (next_attempt_at IS NULL OR next_attempt_at <= {next_attempt_due_expr})
+                ORDER BY created_at ASC, id ASC
+                LIMIT $8
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING id, uuid, aggregate_type, aggregate_id, event_type, retry_count,
+                      CAST(payload AS TEXT) AS payload
+            "#,
+        );
+        let rows = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
+            .bind(OUTBOX_STATUS_CLAIMED)
+            .bind(&now)
+            .bind(&self.claim_owner)
+            .bind(&claim_token)
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(OUTBOX_STATUS_PENDING)
+            .bind(limit)
+            .bind(&now)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(sqlx_error)?;
 
         let claim = OutboxClaim {
             owner: self.claim_owner.clone(),
@@ -286,39 +266,100 @@ impl KnowledgeOutboxStore for PostgresKnowledgeOutboxStore {
     async fn release_stale_claimed_events(
         &self,
         stale_after_secs: u64,
-    ) -> Result<usize, KnowledgeOutboxStoreError> {
+        max_retry_count: u32,
+    ) -> Result<OutboxStaleReleaseResult, KnowledgeOutboxStoreError> {
         let tenant_id = to_i64("tenant_id", self.tenant_id)?;
         let organization_id = to_i64("organization_id", self.organization_id)?;
+        let max_retry_count = i64::from(max_retry_count.max(1));
         let cutoff = OffsetDateTime::now_utc()
             - time::Duration::seconds(i64::try_from(stale_after_secs).unwrap_or(300));
         let cutoff = cutoff
             .format(&Rfc3339)
             .map_err(|error| KnowledgeOutboxStoreError::Internal(error.to_string()))?;
-        let cutoff_expr = self.timestamp_dialect.sql_timestamp_expr("$5");
+        let cutoff_expr = self.timestamp_dialect.sql_timestamp_expr("$6");
+        let now_expr = self.timestamp_dialect.sql_timestamp_expr("$2");
+        let now = now_rfc3339()?;
 
-        let query = format!(
+        // A stale release counts as a failed delivery attempt. Workers that die
+        // before mark_failed must not loop an event forever: once the retry
+        // budget is exhausted by the release increment, the event dead-letters.
+        let mut transaction = self.pool.begin().await.map_err(sqlx_error)?;
+        let dead_letter_query = format!(
             r#"
             UPDATE kb_outbox_event
-            SET status = $1, claimed_at = NULL, claim_owner = NULL, claim_token = NULL,
+            SET status = $1,
+                dead_lettered_at = {now_expr},
+                last_error = 'stale claim released after worker loss; retry budget exhausted',
+                claimed_at = NULL,
+                claim_owner = NULL,
+                claim_token = NULL,
+                next_attempt_at = NULL,
+                retry_count = retry_count + 1,
                 version = version + 1
-            WHERE tenant_id = $2
-              AND organization_id = $3
-              AND status = $4
+            WHERE tenant_id = $3
+              AND organization_id = $4
+              AND status = $5
               AND claimed_at IS NOT NULL
               AND claimed_at < {cutoff_expr}
+              AND retry_count + 1 >= $7
             "#,
         );
-        let updated = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
-            .bind(OUTBOX_STATUS_PENDING)
+        let dead_lettered = sqlx::query(sqlx::AssertSqlSafe(dead_letter_query.as_str()))
+            .bind(OUTBOX_STATUS_DEAD_LETTER)
+            .bind(&now)
             .bind(tenant_id)
             .bind(organization_id)
             .bind(OUTBOX_STATUS_CLAIMED)
-            .bind(cutoff)
-            .execute(&self.pool)
+            .bind(&cutoff)
+            .bind(max_retry_count)
+            .execute(&mut *transaction)
             .await
-            .map_err(sqlx_error)?;
+            .map_err(sqlx_error)?
+            .rows_affected() as usize;
 
-        Ok(updated.rows_affected() as usize)
+        // Survivors return to PENDING with exponential backoff (same schedule as
+        // mark_failed) so a crash-looping event cannot be re-claimed hot.
+        // PG evaluates SET expressions against the pre-update row, so the
+        // exponent `retry_count` is the pre-increment count (new_count - 1).
+        let requeue_query = format!(
+            r#"
+            UPDATE kb_outbox_event
+            SET status = $1,
+                claimed_at = NULL,
+                claim_owner = NULL,
+                claim_token = NULL,
+                next_attempt_at = {now_expr} + (
+                    LEAST(GREATEST(30 * POWER(2, LEAST(retry_count, 7)), 30), 3600)::double precision
+                    * INTERVAL '1 second'
+                ),
+                retry_count = retry_count + 1,
+                version = version + 1
+            WHERE tenant_id = $3
+              AND organization_id = $4
+              AND status = $5
+              AND claimed_at IS NOT NULL
+              AND claimed_at < {cutoff_expr}
+              AND retry_count + 1 < $7
+            "#,
+        );
+        let requeued = sqlx::query(sqlx::AssertSqlSafe(requeue_query.as_str()))
+            .bind(OUTBOX_STATUS_PENDING)
+            .bind(&now)
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(OUTBOX_STATUS_CLAIMED)
+            .bind(&cutoff)
+            .bind(max_retry_count)
+            .execute(&mut *transaction)
+            .await
+            .map_err(sqlx_error)?
+            .rows_affected() as usize;
+        transaction.commit().await.map_err(sqlx_error)?;
+
+        Ok(OutboxStaleReleaseResult {
+            requeued,
+            dead_lettered,
+        })
     }
 
     async fn mark_published(

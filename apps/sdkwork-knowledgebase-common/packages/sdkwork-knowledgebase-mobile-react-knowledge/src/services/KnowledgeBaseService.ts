@@ -73,6 +73,15 @@ export function resetKnowledgeBaseRuntime(): void {
 }
 
 /**
+ * Clears the in-process space registry for every principal scope. Mirrors
+ * `resetKnowledgeBaseRuntime` so test isolation and host-level sign-out can
+ * drop device-local registry state together with the SDK wiring.
+ */
+export function resetRegisteredSpaces(): void {
+  registeredSpacesByScope.clear();
+}
+
+/**
  * Local knowledge space registry (mirrors the PC `knowledgebaseSpaceRegistry`).
  * Stores display-only metadata (icon/color) plus device-local timestamps that
  * the server model does not carry.
@@ -195,6 +204,12 @@ function mapServerDocument(
 }
 
 const DOCUMENTS_PAGE_SIZE = 100;
+/**
+ * Upper bound for cursor-following document aggregation: a server pagination
+ * defect or an outsized space cannot turn a mobile list load into an
+ * unbounded request storm; aggregation beyond the bound degrades display.
+ */
+const MAX_DOCUMENT_SCAN_PAGES = 500;
 
 export class KnowledgeBaseService {
   /** Lists knowledge bases from the local registry, verified against the server. */
@@ -372,7 +387,16 @@ export class KnowledgeBaseService {
     const { client } = requireRuntime();
     const documents: KnowledgeDocument[] = [];
     let cursor: string | undefined;
+    let scannedPages = 0;
     do {
+      scannedPages += 1;
+      if (scannedPages > MAX_DOCUMENT_SCAN_PAGES) {
+        // Display-only degradation: stop growing the list past the scan bound.
+        console.warn(
+          `[KnowledgeBaseService] document aggregation truncated after ${MAX_DOCUMENT_SCAN_PAGES} pages for space ${knowledgeBaseId}`,
+        );
+        break;
+      }
       const page = await client.knowledge.documents.list({
         spaceId: knowledgeBaseId,
         cursor,

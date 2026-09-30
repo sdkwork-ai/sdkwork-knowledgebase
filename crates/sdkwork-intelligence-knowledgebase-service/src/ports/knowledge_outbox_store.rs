@@ -20,10 +20,19 @@ pub trait KnowledgeOutboxStore: Send + Sync {
         limit: u32,
     ) -> Result<Vec<ClaimedOutboxEvent>, KnowledgeOutboxStoreError>;
 
+    /// Releases claims that have been held longer than `stale_after_secs`
+    /// (typically after a worker crash).
+    ///
+    /// A stale release counts as a failed delivery attempt: `retry_count` is
+    /// incremented and the event is rescheduled with exponential backoff.
+    /// Events whose retry budget (`max_retry_count`) is exhausted by the
+    /// increment move directly to the dead-letter status, so a worker that
+    /// crashes before `mark_failed` cannot loop an event forever.
     async fn release_stale_claimed_events(
         &self,
         stale_after_secs: u64,
-    ) -> Result<usize, KnowledgeOutboxStoreError>;
+        max_retry_count: u32,
+    ) -> Result<OutboxStaleReleaseResult, KnowledgeOutboxStoreError>;
 
     async fn mark_published(
         &self,
@@ -41,6 +50,16 @@ pub trait KnowledgeOutboxStore: Send + Sync {
         limit: u32,
         max_retry_count: u32,
     ) -> Result<OutboxRequeueResult, KnowledgeOutboxStoreError>;
+}
+
+/// Outcome of a stale-claim release sweep.
+///
+/// `requeued` events became pending again (with backoff applied); events whose
+/// retry budget was exhausted by the release were `dead_lettered`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct OutboxStaleReleaseResult {
+    pub requeued: usize,
+    pub dead_lettered: usize,
 }
 
 /// Outcome of a failed-event requeue sweep.

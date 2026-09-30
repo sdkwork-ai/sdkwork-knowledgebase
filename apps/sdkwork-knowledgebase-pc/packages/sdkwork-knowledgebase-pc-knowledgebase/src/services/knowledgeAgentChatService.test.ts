@@ -116,7 +116,7 @@ describe('knowledge agent prompt builders', () => {
             retrieve: async () => ({ knowledgeMode: 'okf_bundle' }),
             update: async () => ({ profileId: 'profile-1' }),
             chat: {
-              chat: async (_profileId: string, request: Record<string, unknown>) => {
+              create: async (_profileId: string, request: Record<string, unknown>) => {
                 chatRequests.push(request);
                 return { answer: 'real provider answer' };
               },

@@ -150,6 +150,11 @@ impl PostgresKnowledgeEmbeddingStore {
             .model
             .clone()
             .unwrap_or_else(|| DEFAULT_EMBEDDING_MODEL.to_string());
+        // Content hash over model + serialized vector so consumers can detect
+        // re-embedding changes (model swap or vector update). The historical
+        // `sha256:chunk:{id}:index:{id}` value was identity-derived and never
+        // changed with content, breaking change detection.
+        let embedding_hash = embedding_content_hash(&model, vector_json.as_bytes());
 
         Ok(PreparedEmbeddingUpsert {
             id: next_i64_id(&self.id_generator).map_err(id_error)?,
@@ -158,7 +163,7 @@ impl PostgresKnowledgeEmbeddingStore {
             organization_id,
             index_id,
             chunk_id,
-            embedding_hash: format!("sha256:chunk:{chunk_id}:index:{index_id}"),
+            embedding_hash,
             vector_ref: format!("inline://vector_json/{chunk_id}"),
             vector_json,
             pgvector_literal: format_pgvector_literal(&request.vector),
@@ -302,6 +307,29 @@ async fn bulk_upsert_embeddings_postgres(
     Ok(())
 }
 
+/// Deterministic SHA-256 content hash over the embedding model identifier and
+/// the serialized vector bytes, prefixed with `sha256:`. Consumers compare this
+/// value to detect re-embedding changes (model swap or vector update); the
+/// historical identity-derived `sha256:chunk:{id}:index:{id}` value never
+/// changed with content and broke change detection.
+fn embedding_content_hash(model: &str, vector_json_bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+
+    let mut hasher = Sha256::new();
+    hasher.update(model.as_bytes());
+    hasher.update(b"\x00");
+    hasher.update(vector_json_bytes);
+    let digest = hasher.finalize();
+
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut hex = String::with_capacity(2 * digest.len());
+    for byte in digest {
+        hex.push(HEX[(byte >> 4) as usize] as char);
+        hex.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    format!("sha256:{hex}")
+}
+
 fn ensure_tenant_scope(
     expected: u64,
     actual: u64,
@@ -377,5 +405,43 @@ impl KnowledgeEmbeddingStore for PostgresKnowledgeEmbeddingStore {
         )
         .await
         .map_err(|error| KnowledgeEmbeddingStoreError::Internal(error.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod embedding_content_hash_tests {
+    use super::embedding_content_hash;
+
+    #[test]
+    fn hash_is_deterministic_and_prefixed() {
+        let first = embedding_content_hash("openai/text-embedding-3-small", b"[0.1,0.2]");
+        let second = embedding_content_hash("openai/text-embedding-3-small", b"[0.1,0.2]");
+        assert_eq!(first, second);
+        assert!(first.starts_with("sha256:"));
+        // 64 hex chars after the prefix.
+        assert_eq!(first["sha256:".len()..].len(), 64);
+        assert!(first["sha256:".len()..]
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+    }
+
+    #[test]
+    fn hash_changes_with_model_and_vector() {
+        let base = embedding_content_hash("openai/text-embedding-3-small", b"[0.1,0.2]");
+        let other_model =
+            embedding_content_hash("openai/text-embedding-3-large", b"[0.1,0.2]");
+        let other_vector =
+            embedding_content_hash("openai/text-embedding-3-small", b"[0.3,0.4]");
+        assert_ne!(base, other_model);
+        assert_ne!(base, other_vector);
+    }
+
+    #[test]
+    fn hash_separates_model_from_vector_domain() {
+        // The NUL domain separator must prevent the concatenation
+        // ("a", "bcd") from colliding with ("ab", "cd").
+        let left = embedding_content_hash("a", b"bcd");
+        let right = embedding_content_hash("ab", b"cd");
+        assert_ne!(left, right);
     }
 }

@@ -10,31 +10,10 @@ import {
   configureKnowledgeBaseRuntime,
   readRegisteredSpaces,
   resetKnowledgeBaseRuntime,
+  resetRegisteredSpaces,
+  upsertRegisteredSpace,
 } from "./KnowledgeBaseService";
-
-/**
- * In-memory localStorage polyfill so registry behaviour can be exercised in
- * Node (the browser `window` is absent by default).
- */
-const registryStore = new Map<string, string>();
-
-function installLocalStorage(): void {
-  const localStorage = {
-    getItem: (key: string) => registryStore.get(key) ?? null,
-    setItem: (key: string, value: string) => {
-      registryStore.set(key, value);
-    },
-    removeItem: (key: string) => {
-      registryStore.delete(key);
-    },
-  };
-  (globalThis as Record<string, unknown>).window = { localStorage };
-}
-
-function uninstallLocalStorage(): void {
-  registryStore.clear();
-  delete (globalThis as Record<string, unknown>).window;
-}
+import type { RegisteredKnowledgebaseSpace } from "./KnowledgeBaseService";
 
 interface StubSpaceRecord {
   id: string;
@@ -238,19 +217,19 @@ test("knowledge base operations fail closed until the owner SDK is composed", as
 });
 
 test("list returns an empty array when the registry is empty", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const { client } = createStubClient();
   configureKnowledgeBaseRuntime({ client, resolveScopeKey: () => "user-1" });
   try {
     assert.deepEqual(await KnowledgeBaseService.getKnowledgeBases(), []);
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("createKnowledgeBase creates the space through the app SDK and registers it locally", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   configureKnowledgeBaseRuntime({ client: stub.client, resolveScopeKey: () => "user-1" });
   try {
@@ -279,12 +258,12 @@ test("createKnowledgeBase creates the space through the app SDK and registers it
     });
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("getKnowledgeBase maps the server space and refreshes the registry", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   stub.spaces.push({
     id: "7",
@@ -306,12 +285,12 @@ test("getKnowledgeBase maps the server space and refreshes the registry", async 
     assert.equal(registered[0].description, "产品文档");
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("getKnowledgeBase returns null and prunes the registry when the space is gone", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   configureKnowledgeBaseRuntime({ client: stub.client, resolveScopeKey: () => "user-1" });
   try {
@@ -319,12 +298,12 @@ test("getKnowledgeBase returns null and prunes the registry when the space is go
     assert.equal(readRegisteredSpaces("user-1").length, 0);
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("getKnowledgeBases syncs registry entries, prunes deleted ones and keeps transient failures", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   stub.spaces.push(
     { id: "1", name: "A", description: "a", status: "active" },
@@ -334,13 +313,14 @@ test("getKnowledgeBases syncs registry entries, prunes deleted ones and keeps tr
   configureKnowledgeBaseRuntime({ client: stub.client, resolveScopeKey: () => "user-1" });
   try {
     // Seed the registry with three spaces; one of them is deleted server-side.
-    const registry = [
+    const seeded: RegisteredKnowledgebaseSpace[] = [
       { spaceId: "1", name: "Old A", description: "old-a", createdAt: "2026-01-01T00:00:00Z" },
       { spaceId: "2", name: "Old B", description: "old-b", createdAt: "2026-01-02T00:00:00Z" },
       { spaceId: "3", name: "Old C", description: "old-c", createdAt: "2026-01-03T00:00:00Z" },
     ];
-    const rawKey = "sdkwork.knowledgebase.spaces.v1.h5.user-1";
-    registryStore.set(rawKey, JSON.stringify(registry));
+    for (const entry of seeded) {
+      upsertRegisteredSpace("user-1", entry);
+    }
 
     const list = await KnowledgeBaseService.getKnowledgeBases();
     assert.equal(list.length, 2);
@@ -357,12 +337,12 @@ test("getKnowledgeBases syncs registry entries, prunes deleted ones and keeps tr
     assert.equal(remaining.find((entry) => entry.spaceId === "1")?.name, "A");
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("deleteKnowledgeBase deletes through the SDK and removes the registry entry", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   configureKnowledgeBaseRuntime({ client: stub.client, resolveScopeKey: () => "user-1" });
   try {
@@ -381,12 +361,12 @@ test("deleteKnowledgeBase deletes through the SDK and removes the registry entry
     });
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("getDocumentsByKbId paginates through the documents list", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   for (let index = 1; index <= 5; index += 1) {
     stub.documents.push({
@@ -408,12 +388,12 @@ test("getDocumentsByKbId paginates through the documents list", async () => {
     assert.ok(listCalls.length >= 3, "expected cursor pagination across pages");
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("getDocument returns the document with authoritative markdown content", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   stub.documents.push({
     id: "doc-1",
@@ -431,12 +411,12 @@ test("getDocument returns the document with authoritative markdown content", asy
     assert.equal(doc.contentState, "ready");
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("createDocument creates metadata and pushes content through the ingest pipeline", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   configureKnowledgeBaseRuntime({ client: stub.client, resolveScopeKey: () => "user-1" });
   try {
@@ -469,12 +449,12 @@ test("createDocument creates metadata and pushes content through the ingest pipe
     assert.ok((ingestBody.idempotencyKey as string).startsWith("kb-h5-doc-"));
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("updateDocument patches the title with the resolved spaceId", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   stub.documents.push({
     id: "doc-1",
@@ -492,12 +472,12 @@ test("updateDocument patches the title with the resolved spaceId", async () => {
     assert.deepEqual(updateCall?.body, { spaceId: "1", title: "新标题" });
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });
 
 test("deleteDocument deletes through the SDK", async () => {
-  installLocalStorage();
+  resetRegisteredSpaces();
   const stub = createStubClient();
   stub.documents.push({
     id: "doc-1",
@@ -514,6 +494,6 @@ test("deleteDocument deletes through the SDK", async () => {
     });
   } finally {
     resetKnowledgeBaseRuntime();
-    uninstallLocalStorage();
+    resetRegisteredSpaces();
   }
 });

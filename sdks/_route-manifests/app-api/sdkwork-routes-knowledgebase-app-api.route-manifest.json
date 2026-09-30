@@ -148,6 +148,28 @@
       "apiSurface": "app-api"
     },
     {
+      "method": "GET",
+      "path": "/app/v3/api/knowledge/spaces/{spaceId}/wiki_source_files",
+      "operationId": "wikiSourceFiles.list",
+      "tags": [
+        "knowledge"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-knowledgebase",
+        "apiAuthority": "sdkwork-knowledgebase-app-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "app-api"
+    },
+    {
       "method": "POST",
       "path": "/app/v3/api/knowledge/spaces/{spaceId}/wiki_publication/activate",
       "operationId": "wikiPublications.activate",

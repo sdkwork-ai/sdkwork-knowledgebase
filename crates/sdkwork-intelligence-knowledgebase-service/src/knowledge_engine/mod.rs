@@ -1,11 +1,14 @@
 //! Native and external knowledge engine implementations for the product SPI.
 
+mod cached_binding_engine;
 mod execution_handle;
 mod kernel_bridge;
 mod okf_native;
 mod okf_search;
 mod rag_native;
 mod space_resolver;
+
+pub use cached_binding_engine::{ProviderBindingEngineCache, ProviderBindingEngineKey};
 
 pub use kernel_bridge::{
     format_scoped_document_id, parse_namespace_space_id, parse_scoped_document_id,

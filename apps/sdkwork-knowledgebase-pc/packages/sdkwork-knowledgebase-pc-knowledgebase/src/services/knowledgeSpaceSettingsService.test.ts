@@ -52,7 +52,7 @@ describe('knowledge space agent profile defaults', () => {
               return { profileId: 'profile-1' };
             },
             bindings: {
-              bindings: async (_profileId: string, request: Record<string, unknown>) => {
+              create: async (_profileId: string, request: Record<string, unknown>) => {
                 bindingRequests.push(request);
                 return { accepted: true };
               },
@@ -167,7 +167,7 @@ describe('knowledge space agent profile defaults', () => {
           agentProfiles: {
             create: async () => ({ profileId: 'group-profile-1' }),
             bindings: {
-              bindings: async () => ({ accepted: true }),
+              create: async () => ({ accepted: true }),
             },
           },
         },

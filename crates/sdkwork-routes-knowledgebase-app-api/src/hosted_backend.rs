@@ -776,14 +776,46 @@ impl KnowledgeBackendApi for HostedBackendApi {
             .map_err(|error| map_internal(error.to_string()))?;
 
         if space.knowledge_mode == KnowledgeAgentKnowledgeMode::Rag {
-            if let Ok(client) = resolve_cloud_router_client_from_env() {
-                let embedder = CloudRouterEmbeddingClient::new(Arc::new(client));
-                let _ = self
-                    .runtime
-                    .knowledge_engines()
-                    .embed_rag_index(index.index_id, index.space_id, embedder)
-                    .await;
-            }
+            // The index row is already persisted, so embedding failures must not be
+            // silently dropped: a zero-embedding index would make every RAG
+            // retrieval return empty results without any operator-visible signal.
+            // Surfacing the failure keeps parity with `rebuild_index`, which
+            // propagates the same embedding errors, and the error detail names the
+            // rebuild endpoint as the repair path for the persisted index row.
+            let client = resolve_cloud_router_client_from_env().map_err(|error| {
+                tracing::error!(
+                    index_id = index.index_id,
+                    space_id = index.space_id,
+                    error = %error,
+                    "rag index created without embeddings: cloud-router client unavailable"
+                );
+                map_internal(format!(
+                    "rag index {} created in space {} without embeddings because the \
+                     cloud-router embedding client is unavailable; configure the \
+                     cloud-router environment and repair the index via the index \
+                     rebuild endpoint: {error}",
+                    index.index_id, index.space_id
+                ))
+            })?;
+            let embedder = CloudRouterEmbeddingClient::new(Arc::new(client));
+            self.runtime
+                .knowledge_engines()
+                .embed_rag_index(index.index_id, index.space_id, embedder)
+                .await
+                .map_err(|error| {
+                    tracing::error!(
+                        index_id = index.index_id,
+                        space_id = index.space_id,
+                        error = %error,
+                        "rag index initial embedding failed"
+                    );
+                    map_internal(format!(
+                        "rag index {} created in space {} but initial embedding failed; \
+                         the persisted index has no embeddings and can be repaired via \
+                         the index rebuild endpoint: {error}",
+                        index.index_id, index.space_id
+                    ))
+                })?;
         }
 
         Ok(index)

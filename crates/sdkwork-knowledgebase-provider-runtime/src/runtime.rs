@@ -363,9 +363,12 @@ struct CircuitState {
 #[derive(Clone)]
 pub struct ProviderRuntime {
     /// Lazily built HTTP client whose target host is DNS-resolved, validated as public,
-    /// and pinned, so a rebinding DNS record cannot redirect provider traffic into an
-    /// internal network after validation.
-    client: OnceCell<Result<Client, ProviderError>>,
+    /// and pinned (every public resolved address, so a provider's DNS failover records
+    /// stay reachable), so a rebinding DNS record cannot redirect provider traffic into
+    /// an internal network after validation. Only successful builds are cached: a
+    /// transient DNS or construction failure retries on the next call instead of
+    /// poisoning the provider for the process lifetime.
+    client: OnceCell<Client>,
     base_url: Url,
     config: ProviderRuntimeConfig,
     concurrency: Arc<Semaphore>,
@@ -408,14 +411,9 @@ impl ProviderRuntime {
     }
 
     async fn pinned_client(&self) -> Result<&Client, ProviderError> {
-        let cell = self
-            .client
-            .get_or_init(|| build_pinned_client(&self.base_url, &self.config));
-        let result = cell.await;
-        match result {
-            Ok(client) => Ok(client),
-            Err(error) => Err(error.clone()),
-        }
+        self.client
+            .get_or_try_init(|| build_pinned_client(&self.base_url, &self.config))
+            .await
     }
 
     pub async fn execute(
@@ -883,8 +881,8 @@ async fn build_pinned_client(
     base_url: &Url,
     config: &ProviderRuntimeConfig,
 ) -> Result<Client, ProviderError> {
-    let socket =
-        crate::target_security::resolve_public_socket_addr(base_url, config.connect_timeout)
+    let sockets =
+        crate::target_security::resolve_public_socket_addrs(base_url, config.connect_timeout)
             .await?;
     let mut builder = Client::builder()
         .connect_timeout(config.connect_timeout)
@@ -895,7 +893,7 @@ async fn build_pinned_client(
         .user_agent("sdkwork-knowledgebase-provider-runtime/0.1");
     if let Some(host) = base_url.host_str() {
         if host.parse::<std::net::IpAddr>().is_err() {
-            builder = builder.resolve(host, socket);
+            builder = builder.resolve_to_addrs(host, &sockets);
         }
     }
     builder.build().map_err(|_| {

@@ -77,6 +77,10 @@ const appOperations = [
       itemRef: '#/components/schemas/KnowledgeWikiSourceFileCommandResult',
     },
   ),
+  list('get', '/app/v3/api/knowledge/spaces/{spaceId}/wiki_source_files', {
+    operationId: 'wikiSourceFiles.list',
+    itemRef: '#/components/schemas/KnowledgeWikiSourceFile',
+  }),
   resource('post', '/app/v3/api/knowledge/documents/{documentId}/versions', {
     operationId: 'documents.versions.create',
     status: '201',

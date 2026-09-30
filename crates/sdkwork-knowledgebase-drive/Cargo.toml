@@ -17,6 +17,7 @@ sdkwork-drive-config.workspace = true
 sdkwork-drive-internal-sdk-generated-rust.workspace = true
 sdkwork-drive-storage-contract.workspace = true
 sdkwork-database-config.workspace = true
+sdkwork-knowledgebase-database-host.workspace = true
 sdkwork-intelligence-knowledgebase-service.workspace = true
 sdkwork-intelligence-knowledgebase-object-key-service.workspace = true
 sdkwork-utils-rust.workspace = true

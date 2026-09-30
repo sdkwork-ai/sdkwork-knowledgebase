@@ -379,6 +379,23 @@ pub struct ClaimWikiSourceProcessingRequest {
     pub limit: u32,
 }
 
+/// Read-only, cursor-paginated listing of source-file projections for one
+/// Wiki publication. Powers the app-api `wikiSourceFiles.list` inspection
+/// surface; ordering is stable by projection row id.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ListWikiSourceProjectionsRequest {
+    pub scope: WikiPersistenceScope,
+    pub site_publication_id: u64,
+    pub after_projection_id: Option<u64>,
+    pub limit: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WikiSourceProjectionPage {
+    pub projections: Vec<WikiSourceProjection>,
+    pub next_after_projection_id: Option<u64>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompleteWikiSourceProcessingRequest {
     pub scope: WikiPersistenceScope,
@@ -632,6 +649,11 @@ pub trait WikiSourceProjectionStore: Send + Sync {
         site_publication_id: u64,
         drive_node_uuid: &str,
     ) -> Result<Option<WikiSourceProjection>, WikiPersistenceError>;
+
+    async fn list_source_projections(
+        &self,
+        request: ListWikiSourceProjectionsRequest,
+    ) -> Result<WikiSourceProjectionPage, WikiPersistenceError>;
 
     async fn claim_source_processing(
         &self,

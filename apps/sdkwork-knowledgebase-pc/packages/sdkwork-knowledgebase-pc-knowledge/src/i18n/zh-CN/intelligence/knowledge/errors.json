@@ -42,6 +42,7 @@
   "validation.parentFolderNotFound": "在知识浏览器树中未找到父文件夹。",
   "validation.parentDriveNodeMissing": "父文件夹未关联 Drive 节点。",
   "validation.transferSameKnowledgeBase": "源与目标知识库必须不同。",
+  "validation.transferScanLimitExceeded": "文件夹迁移扫描超过上限，请先拆分文件夹后再迁移。",
   "validation.documentNotIndexed": "仅已索引的知识库文档可持久化内容。",
   "validation.importDocumentIdMissing": "导入失败：缺少文档 ID。",
   "feature.previewOnly": "知识库 API 已连接时，此预览功能不可用。",

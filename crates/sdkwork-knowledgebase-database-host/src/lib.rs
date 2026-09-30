@@ -9,8 +9,10 @@ use sdkwork_database_sqlx::{create_pool_from_config, DatabasePool};
 pub mod postgres_scope;
 
 pub use postgres_scope::{
-    postgres_url_with_deployment_scope, require_postgres_rls_organization_id,
-    require_postgres_rls_tenant_id, POSTGRES_ORGANIZATION_SESSION_KEY, POSTGRES_TENANT_SESSION_KEY,
+    postgres_url_with_deployment_scope, postgres_url_with_statement_timeout,
+    require_postgres_rls_organization_id, require_postgres_rls_tenant_id,
+    POSTGRES_ORGANIZATION_SESSION_KEY, POSTGRES_STATEMENT_TIMEOUT_OPTION,
+    POSTGRES_TENANT_SESSION_KEY,
 };
 
 pub struct KnowledgebaseDatabaseHost {

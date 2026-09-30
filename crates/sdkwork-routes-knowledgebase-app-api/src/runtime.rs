@@ -792,7 +792,10 @@ impl KnowledgebaseRuntime {
             .map_err(|error| sqlx::Error::Configuration(error.to_string().into()))?;
         let pool = connect_knowledgebase_and_install_schema(database_url).await?;
         let snowflake_node_lease = initialize_runtime_id_generator(database_url).await?;
-        let database_config = database_config_from_url(database_url)
+        // Validation-only call: the drive pool consumes the raw database URL and
+        // injects its own statement guard, but this resolves and enforces the
+        // engine, RLS scope environment, and sslmode before any pool is opened.
+        database_config_from_url(database_url)
             .map_err(|error| sqlx::Error::Configuration(error.to_string().into()))?;
         let pool_budget = knowledgebase_process_pool_budget_from_url(database_url)
             .map_err(|error| sqlx::Error::Configuration(error.to_string().into()))?;
@@ -800,7 +803,7 @@ impl KnowledgebaseRuntime {
             configuration_error("server Knowledgebase runtime requires PostgreSQL")
         })?;
         let drive_pool = connect_knowledgebase_drive_pool_with_max_connections(
-            &database_config.url,
+            database_url,
             postgres_max_connections,
         )
         .await?;
@@ -1139,10 +1142,8 @@ impl KnowledgebaseRuntime {
                     organization_id,
                     default_outbox_claim_owner(),
                 )
-                    .with_database_engine(database_engine)
-                    .with_postgres_skip_locked_claim(
-                        database_engine == sdkwork_database_config::DatabaseEngine::Postgres,
-                    ),
+                .with_database_engine(database_engine)
+                .with_max_retry_count(outbox_max_retries()),
             ),
             outbox_dispatcher:
                 sdkwork_intelligence_knowledgebase_service::outbox::knowledge_outbox_dispatcher_from_env(),

@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { isBlank } from '@sdkwork/utils';
 import { useTranslation } from 'react-i18next';
-import { X, Shield, Settings, Sliders, UserPlus, Globe, Check, AlertCircle } from 'lucide-react';
+import { X, Shield, Settings, Sliders, UserPlus, Globe, Check, AlertCircle, BookOpen, Code2 } from 'lucide-react';
 import { isKnowledgebaseApiAvailable } from 'sdkwork-knowledgebase-pc-core';
 import { KnowledgeBase, DocumentService } from './services/document';
 import type { KnowledgeSpaceMemberUi } from './services/knowledgeSpaceMembersService';
+import { WikiManagePanel } from './WikiManagePanel';
+import { OpenApiDeveloperPanel } from './OpenApiDeveloperPanel';
 import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
 import {
   KNOWLEDGE_AGENT_DEFAULT_UI_PROVIDER,
@@ -23,7 +25,9 @@ interface KnowledgeSpaceMemberDraft extends KnowledgeSpaceMemberUi {}
 
 export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBaseSettingsModalProps) {
   const { t } = useTranslation(['kb', 'common']);
-  const [activeTab, setActiveTab] = useState<'basic' | 'permissions' | 'model'>('basic');
+  const numericKbId = Number(kb.id);
+  const wikiTabAvailable = Number.isFinite(numericKbId) && numericKbId > 0;
+  const [activeTab, setActiveTab] = useState<'basic' | 'permissions' | 'model' | 'wiki' | 'developer'>('basic');
   
   // Basic Settings States
   const [title, setTitle] = useState(kb.title);
@@ -207,6 +211,22 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
               <Sliders size={15} />
               <span>智脑模型设置</span>
             </button>
+            {wikiTabAvailable && (
+              <button
+                onClick={() => setActiveTab('wiki')}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${activeTab === 'wiki' ? 'bg-zinc-900 text-white dark:bg-[var(--color-kb-accent)] shadow-md' : 'text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text)] hover:bg-black/5 dark:hover:bg-[var(--color-kb-panel-hover)]'}`}
+              >
+                <BookOpen size={15} />
+                <span>Wiki 发布管理</span>
+              </button>
+            )}
+            <button
+              onClick={() => setActiveTab('developer')}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${activeTab === 'developer' ? 'bg-zinc-900 text-white dark:bg-[var(--color-kb-accent)] shadow-md' : 'text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text)] hover:bg-black/5 dark:hover:bg-[var(--color-kb-panel-hover)]'}`}
+            >
+              <Code2 size={15} />
+              <span>Open API</span>
+            </button>
           </div>
 
         </div>
@@ -219,11 +239,15 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
                 {activeTab === 'basic' && t('basicSettings')}
                 {activeTab === 'permissions' && t('permissionsSettingsDesc')}
                 {activeTab === 'model' && t('modelSettingsDesc')}
+                {activeTab === 'wiki' && t('wikiPanelTitle', { defaultValue: 'Wiki 站点发布管理' })}
+                {activeTab === 'developer' && t('openApiPanelTitle', { defaultValue: 'Open API 接入' })}
               </h3>
               <p className="text-[12px] text-zinc-500 dark:text-[var(--color-kb-text-muted)] mt-1 font-medium">
                 {activeTab === 'basic' && t('basicSettingsDesc')}
                 {activeTab === 'permissions' && t('permissionsSettingsDesc2')}
                 {activeTab === 'model' && t('modelSettingsDesc2')}
+                {activeTab === 'wiki' && t('wikiPanelDesc', { defaultValue: '管理 Wiki 站点的发布状态与页面可见性' })}
+                {activeTab === 'developer' && t('openApiPanelDesc', { defaultValue: '面向组织开发者的程序化接入接口' })}
               </p>
             </div>
             <button onClick={onClose} className="text-zinc-400 dark:text-[var(--color-kb-text-muted)] hover:text-red-500 transition-all p-2 rounded-xl hover:bg-black/5 dark:hover:bg-[var(--color-kb-panel-hover)] group">
@@ -542,25 +566,50 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
                 </div>
               </div>
             )}
+            {/* TAB: WIKI PUBLICATION MANAGEMENT */}
+            {activeTab === 'wiki' && (
+              <div className="animate-in fade-in duration-300">
+                <WikiManagePanel kb={kb} />
+              </div>
+            )}
+
+            {/* TAB: OPEN API DEVELOPER */}
+            {activeTab === 'developer' && (
+              <div className="animate-in fade-in duration-300">
+                <OpenApiDeveloperPanel />
+              </div>
+            )}
           </div>
 
           {/* Bottom Dialog Action footer */}
           <div className="px-8 py-5 border-t border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] bg-[#fafafa] dark:bg-[var(--color-kb-panel)]/30 backdrop-blur-sm flex justify-end gap-3 z-30">
-            <button 
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2.5 rounded-xl border-2 border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] text-[13.5px] font-bold text-zinc-600 dark:text-[var(--color-kb-text)] hover:bg-zinc-100 dark:hover:bg-[var(--color-kb-panel-hover)] hover:text-zinc-900 transition-colors shadow-sm focus:outline-none focus:ring-4 focus:ring-zinc-900/5 active:scale-95"
-            >
-              放弃更改
-            </button>
-            <button 
-              type="button"
-              disabled={membersSaving}
-              onClick={handleSaveAll}
-              className="px-6 py-2.5 rounded-xl bg-[var(--color-kb-accent)] text-white hover:bg-[var(--color-kb-accent-hover)] text-[13.5px] font-extrabold transition-all shadow-md shadow-[var(--color-kb-accent)]/10 active:scale-95 flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-[var(--color-kb-accent)]/20 disabled:opacity-50 disabled:pointer-events-none"
-            >
-              <Check size={16} strokeWidth={3} /> 保存并应用设置
-            </button>
+            {activeTab === 'wiki' || activeTab === 'developer' ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2.5 rounded-xl border-2 border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] text-[13.5px] font-bold text-zinc-600 dark:text-[var(--color-kb-text)] hover:bg-zinc-100 dark:hover:bg-[var(--color-kb-panel-hover)] hover:text-zinc-900 transition-colors shadow-sm focus:outline-none focus:ring-4 focus:ring-zinc-900/5 active:scale-95"
+              >
+                {t('close', { ns: 'common', defaultValue: '关闭' })}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl border-2 border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] text-[13.5px] font-bold text-zinc-600 dark:text-[var(--color-kb-text)] hover:bg-zinc-100 dark:hover:bg-[var(--color-kb-panel-hover)] hover:text-zinc-900 transition-colors shadow-sm focus:outline-none focus:ring-4 focus:ring-zinc-900/5 active:scale-95"
+                >
+                  放弃更改
+                </button>
+                <button
+                  type="button"
+                  disabled={membersSaving}
+                  onClick={handleSaveAll}
+                  className="px-6 py-2.5 rounded-xl bg-[var(--color-kb-accent)] text-white hover:bg-[var(--color-kb-accent-hover)] text-[13.5px] font-extrabold transition-all shadow-md shadow-[var(--color-kb-accent)]/10 active:scale-95 flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-[var(--color-kb-accent)]/20 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <Check size={16} strokeWidth={3} /> 保存并应用设置
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

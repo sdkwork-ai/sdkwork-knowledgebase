@@ -9,7 +9,9 @@ import {
 import type { DocumentMeta } from './document';
 import {
   listKnowledgeBrowserNodesPage,
-  invalidateKnowledgeBrowserNodeCacheForSpaceIds} from './knowledgeBrowserListService';
+  invalidateKnowledgeBrowserNodeCacheForSpaceIds,
+  MAX_AGGREGATION_SCAN_PAGES,
+} from './knowledgeBrowserListService';
 
 const OKF_BUNDLE_BROWSER_VIEW = 'okf_bundle' as const;
 
@@ -83,6 +85,7 @@ async function findOkfConceptRowIdInPaginatedBrowser(
   );
   const folderQueue: Array<string | null> = [null];
   const visitedParents = new Set<string>();
+  let scannedPages = 0;
 
   while (folderQueue.length > 0) {
     const parentId = folderQueue.shift()!;
@@ -94,6 +97,12 @@ async function findOkfConceptRowIdInPaginatedBrowser(
 
     let cursor: string | null = null;
     do {
+      scannedPages += 1;
+      if (scannedPages > MAX_AGGREGATION_SCAN_PAGES) {
+        // Resolution-scan bound: giving up beats an unbounded request storm;
+        // the caller surfaces the null result as "concept not found".
+        return null;
+      }
       const page = await listKnowledgeBrowserNodesPage(spaceId, parentId, {
         cursor,
         view: OKF_BUNDLE_BROWSER_VIEW,
@@ -119,8 +128,14 @@ async function findOkfConceptRowIdViaRootBrowserPages(
 ): Promise<string | null> {
   const client = requireSdkClient();
   let cursor: string | null = null;
+  let scannedPages = 0;
 
   do {
+    scannedPages += 1;
+    if (scannedPages > MAX_AGGREGATION_SCAN_PAGES) {
+      // Resolution-scan bound: giving up beats an unbounded request storm.
+      return null;
+    }
     const page = await listKnowledgeBrowserNodesPage(spaceId, null, {
       cursor,
       view: OKF_BUNDLE_BROWSER_VIEW,

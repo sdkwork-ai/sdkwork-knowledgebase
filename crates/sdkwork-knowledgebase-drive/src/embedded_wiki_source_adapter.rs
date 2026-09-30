@@ -132,7 +132,7 @@ impl KnowledgeWikiDriveSource for KnowledgebaseDriveEmbeddedWikiSourceAdapter {
             .object_runtime
             .resolve(
                 &resolved.content_locator.storage_provider_id,
-                resolved.content_locator.storage_provider_version,
+                sdkwork_drive_object_runtime::ProviderAccessIntent::Read,
             )
             .await
             .map_err(map_object_error)?;

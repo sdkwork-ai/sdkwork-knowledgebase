@@ -5,6 +5,7 @@ use sdkwork_knowledgebase_contract::rag::KnowledgeAgentKnowledgeMode;
 use std::sync::Arc;
 
 use crate::knowledge_engine::KnowledgeEngineExecutionHandle;
+use crate::knowledge_engine::cached_binding_engine::ProviderBindingEngineCache;
 use crate::ports::knowledge_engine::{KnowledgeEngineRegistry, KnowledgeEngineSpaceRegistry};
 use crate::ports::knowledge_provider_binding_store::{
     KnowledgeEngineProviderBindingStore, KnowledgeEngineProviderScope,
@@ -18,6 +19,10 @@ pub struct KnowledgeEngineSpaceResolver<R> {
     provider_binding_store: Arc<dyn KnowledgeEngineProviderBindingStore>,
     provider_scope: KnowledgeEngineProviderScope,
     credential_resolver: Arc<dyn KnowledgeEngineProviderCredentialResolver>,
+    /// Process-lifetime cache of bound external engines; shared by every
+    /// per-request execution handle created by this resolver so adapter
+    /// ProviderRuntimes (circuit breaker, bulkhead, pinned client) persist.
+    bind_cache: Arc<ProviderBindingEngineCache>,
 }
 
 impl<R> KnowledgeEngineSpaceResolver<R>
@@ -37,6 +42,7 @@ where
             provider_binding_store,
             provider_scope,
             credential_resolver,
+            bind_cache: Arc::new(ProviderBindingEngineCache::with_default_capacity()),
         }
     }
 
@@ -86,14 +92,15 @@ where
         }
 
         let engine = self.registry.resolve_by_id(&binding.implementation_id)?;
-        KnowledgeEngineExecutionHandle::external(
+        Ok(KnowledgeEngineExecutionHandle::external(
             engine,
             binding,
             self.provider_scope,
             space_id,
             Some(self.provider_binding_store.clone()),
             Some(self.credential_resolver.clone()),
-        )
+        )?
+        .with_bind_cache(self.bind_cache.clone()))
     }
 }
 

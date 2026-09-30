@@ -25,6 +25,23 @@ const SUCCEEDED_STATUS: i64 = 1;
 const INITIAL_VERSION: i64 = 0;
 /// Maximum hits returned per retrieval trace (bounded to avoid OOM).
 const MAX_RETRIEVAL_TRACE_HITS: i64 = 256;
+/// Upper bound on full rows (content + serialized vector) loaded per query for
+/// in-process cosine scoring on the embedded fallback backend.
+///
+/// Production servers always wire `PgVectorLayeredRetrievalBackend`, which
+/// routes Vector/Hybrid scoring to the pgvector index and uses this store only
+/// for keyword search, so this in-process path is a degraded mode for runtimes
+/// without a PgPool (tests and tooling). The bound keeps the worst-case
+/// per-query payload at `256 * (content + vector_json)` rows, which the
+/// connection-pool ceiling then bounds per process. Candidate selection in the
+/// degraded mode is the deterministic ascending chunk-id prefix, so results are
+/// exact for spaces within the bound and a bounded approximation beyond it.
+const MAX_IN_PROCESS_EMBEDDING_CANDIDATES: i64 = 256;
+
+/// `u32` view of [`MAX_IN_PROCESS_EMBEDDING_CANDIDATES`] for callers that
+/// clamp in the `u32` domain (for example the `top_k`-derived candidate limit).
+const MAX_IN_PROCESS_EMBEDDING_CANDIDATES_U32: u32 =
+    MAX_IN_PROCESS_EMBEDDING_CANDIDATES as u32;
 
 #[derive(Debug, Clone)]
 pub struct PostgresKnowledgeChunkRetrievalStore {
@@ -474,7 +491,9 @@ impl PostgresKnowledgeChunkRetrievalStore {
             .collection_id
             .map(|value| backend_to_i64("collection_id", value))
             .transpose()?;
-        let top_k = i64::from((request.top_k.clamp(1, 64) * 4).clamp(4, 256));
+        let top_k = i64::from(
+            (request.top_k.clamp(1, 64) * 4).clamp(4, MAX_IN_PROCESS_EMBEDDING_CANDIDATES_U32),
+        );
         let query_terms = normalized_query_terms(&request.query);
 
         let mut query = QueryBuilder::new(

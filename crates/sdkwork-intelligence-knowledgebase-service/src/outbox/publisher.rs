@@ -142,7 +142,7 @@ mod tests {
     use crate::ports::knowledge_outbox_dispatcher::KnowledgeOutboxDispatchError;
     use crate::ports::knowledge_outbox_store::{
         AppendOutboxEventRecord, ClaimedOutboxEvent, OutboxClaim, OutboxRequeueResult,
-        PendingOutboxEvent,
+        OutboxStaleReleaseResult, PendingOutboxEvent,
     };
 
     struct InMemoryOutboxStore {
@@ -227,8 +227,9 @@ mod tests {
         async fn release_stale_claimed_events(
             &self,
             _stale_after_secs: u64,
-        ) -> Result<usize, KnowledgeOutboxStoreError> {
-            Ok(0)
+            _max_retry_count: u32,
+        ) -> Result<OutboxStaleReleaseResult, KnowledgeOutboxStoreError> {
+            Ok(OutboxStaleReleaseResult::default())
         }
 
         async fn mark_published(

@@ -23,7 +23,8 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeWechatFanTagList, KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult,
     KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest,
     KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest,
-    KnowledgeWikiSourceFileCommandResult, KnowledgeWikiSourceFileVersionCommandRequest,
+    KnowledgeWikiSourceFile, KnowledgeWikiSourceFileCommandResult,
+    KnowledgeWikiSourceFileVersionCommandRequest,
     ListKnowledgeBrowserRequest, OkfBundleExportRequest, OkfBundleImportRequest,
     OkfBundleImportResult, OkfConceptSummary, OkfConceptUpsertRequest, OkfContextPackRequest,
     OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun,
@@ -141,6 +142,16 @@ pub trait KnowledgeWikiPublicationAppService: Send + Sync + 'static {
         source_file_uuid: String,
         request: ChangeKnowledgeWikiSourceFileVisibilityRequest,
     ) -> ApiResult<KnowledgeWikiSourceFileCommandResult>;
+
+    /// Lists the projected Wiki source files of one space's publication with
+    /// opaque-cursor pagination (PAGINATION_SPEC v1.3).
+    async fn list_wiki_source_files(
+        &self,
+        context: KnowledgeAppRequestContext,
+        space_id: u64,
+        cursor: Option<String>,
+        page_size: Option<u32>,
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWikiSourceFile>>;
 }
 
 /// User-facing ticket-consumption surface. Trusted IM provisioning and membership synchronization
@@ -648,6 +659,16 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         Err(ApiError::unsupported_operation(
             "wikiSourceFiles.visibility.update",
         ))
+    }
+
+    async fn list_wiki_source_files(
+        &self,
+        _context: KnowledgeAppRequestContext,
+        _space_id: u64,
+        _cursor: Option<String>,
+        _page_size: Option<u32>,
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWikiSourceFile>> {
+        Err(ApiError::unsupported_operation("wikiSourceFiles.list"))
     }
 
     async fn list_space_members(

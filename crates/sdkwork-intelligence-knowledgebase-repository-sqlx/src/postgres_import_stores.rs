@@ -604,17 +604,12 @@ impl PostgresKnowledgeDocumentStore {
     ) -> Result<(), KnowledgeDocumentStoreError> {
         let tenant_id = document_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = document_to_i64("organization_id", self.organization_id)?;
-        let count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM kb_document WHERE tenant_id = $1 AND organization_id = $2 AND status = $3",
-        )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(ACTIVE_STATUS)
-        .fetch_one(connection)
-        .await
-        .map_err(document_sqlx_error)?;
-        let count = u64::try_from(count.max(0))
-            .map_err(|error| KnowledgeDocumentStoreError::Internal(error.to_string()))?;
+        // O(1) trigger-maintained counter read; falls back to the exact
+        // aggregate scan only while the counter row is not materialized yet.
+        let count =
+            crate::quota_transaction::tenant_active_document_count(connection, tenant_id, organization_id)
+                .await
+                .map_err(document_sqlx_error)?;
         ensure_document_capacity(count, &limits)?;
         Ok(())
     }

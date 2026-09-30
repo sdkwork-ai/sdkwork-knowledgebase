@@ -10,12 +10,15 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use crate::{ProviderError, ProviderErrorCategory, ProviderOperation};
 
-/// Resolves the first public socket for `url` or fails closed when every resolved address
+/// Resolves every public socket for `url` or fails closed when every resolved address
 /// is private or non-public.
-pub(crate) async fn resolve_public_socket_addr(
+///
+/// All public addresses are returned (not just the first) so the caller can pin the
+/// full resolved set and keep failover across a provider's DNS records.
+pub(crate) async fn resolve_public_socket_addrs(
     url: &Url,
     connect_timeout: std::time::Duration,
-) -> Result<SocketAddr, ProviderError> {
+) -> Result<Vec<SocketAddr>, ProviderError> {
     let port = url.port_or_known_default().unwrap_or(443);
     let host = url
         .host_str()
@@ -30,20 +33,24 @@ pub(crate) async fn resolve_public_socket_addr(
     // Literal IP hosts are validated directly; domain hosts go through DNS with the same
     // public-address filter, so metadata endpoints and private ranges always fail closed.
     if let Ok(ip) = host.parse::<IpAddr>() {
-        return validated_socket_addr(ip, port);
+        return validated_socket_addr(ip, port).map(|socket| vec![socket]);
     }
 
     let authority = format!("{host}:{port}");
-    let mut addresses =
+    let addresses =
         tokio::time::timeout(connect_timeout, tokio::net::lookup_host(authority.as_str()))
             .await
             .map_err(|_| target_error("provider URL DNS lookup timed out"))?
             .map_err(|_| target_error("provider URL DNS lookup failed"))?;
-    addresses
-        .find(|address| !is_blocked_ip(address.ip()))
-        .ok_or_else(|| {
-            target_error("provider URL resolves only to private or non-public addresses")
-        })
+    let public: Vec<SocketAddr> = addresses
+        .filter(|address| !is_blocked_ip(address.ip()))
+        .collect();
+    if public.is_empty() {
+        return Err(target_error(
+            "provider URL resolves only to private or non-public addresses",
+        ));
+    }
+    Ok(public)
 }
 
 fn validated_socket_addr(ip: IpAddr, port: u16) -> Result<SocketAddr, ProviderError> {

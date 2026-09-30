@@ -47,8 +47,13 @@ pub async fn resolve_cloud_knowledgebase_drive_storage(
         ));
     }
 
+    // Cloud Knowledgebase storage is the tenant's active write surface; the
+    // Write intent requires an active provider (also enforced explicitly above).
     let object_store = DriveObjectStoreRuntime::new(pool)
-        .resolve(&provider.id, provider.version)
+        .resolve(
+            &provider.id,
+            sdkwork_drive_object_runtime::ProviderAccessIntent::Write,
+        )
         .await?;
     let bucket_health = object_store
         .head_bucket(HeadBucketRequest {

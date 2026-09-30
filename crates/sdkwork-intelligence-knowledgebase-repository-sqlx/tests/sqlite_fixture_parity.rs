@@ -94,10 +94,30 @@ fn migration_files() -> Vec<PathBuf> {
 
 fn sql_statements(sql: &str) -> Vec<String> {
     // Drop full-line `--` comments first so a comment block fused with the following
-    // statement (same `;` fragment) never hides that statement.
+    // statement (same `;` fragment) never hides that statement, and mask semicolons
+    // inside `$$` dollar-quoted bodies (plpgsql functions, DO blocks) so statement
+    // splitting stays accurate for schemas that define procedural SQL objects.
+    let mut has_dollar_quote = false;
     let cleaned = sql
         .lines()
         .filter(|line| !line.trim_start().starts_with("--"))
+        .map(|line| {
+            if !line.contains("$$") {
+                return line.to_string();
+            }
+            let mut masked = String::with_capacity(line.len());
+            let mut chars = line.chars().peekable();
+            while let Some(ch) = chars.next() {
+                if ch == '$' && chars.peek() == Some(&'$') {
+                    chars.next();
+                    has_dollar_quote = !has_dollar_quote;
+                    masked.push_str("$$");
+                } else {
+                    masked.push(if has_dollar_quote && ch == ';' { ' ' } else { ch });
+                }
+            }
+            masked
+        })
         .collect::<Vec<_>>()
         .join("\n");
     cleaned
@@ -215,16 +235,18 @@ fn alter_added_columns(sql: &str) -> BTreeMap<String, BTreeMap<String, String>> 
 fn index_names(sql: &str) -> BTreeSet<String> {
     sql_statements(sql)
         .into_iter()
-        .filter(|statement| statement.starts_with("CREATE"))
-        .filter(|statement| !statement.starts_with("CREATE EXTENSION"))
+        // Only index definitions are collected here; CREATE TABLE/ FUNCTION/
+        // TRIGGER statements are parsed by their own helpers or are irrelevant
+        // to the index-parity contract.
+        .filter(|statement| {
+            statement.starts_with("CREATE INDEX") || statement.starts_with("CREATE UNIQUE INDEX")
+        })
         .filter_map(|statement| {
             let mut tokens = statement.split_whitespace();
             let mut name = None;
             for token in tokens.by_ref() {
                 match token {
-                    "CREATE" | "UNIQUE" | "INDEX" | "IF" | "NOT" | "EXISTS" | "EXTENSION" => {
-                        continue
-                    }
+                    "CREATE" | "UNIQUE" | "INDEX" | "IF" | "NOT" | "EXISTS" => continue,
                     _ => {
                         name = Some(token.trim());
                         break;

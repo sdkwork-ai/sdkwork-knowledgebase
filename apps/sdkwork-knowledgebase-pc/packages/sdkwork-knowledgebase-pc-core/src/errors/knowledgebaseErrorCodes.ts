@@ -45,6 +45,7 @@ export const KnowledgebaseErrorCodes = {
   PARENT_FOLDER_NOT_FOUND: 'validation.parentFolderNotFound',
   PARENT_DRIVE_NODE_MISSING: 'validation.parentDriveNodeMissing',
   TRANSFER_SAME_KB: 'validation.transferSameKnowledgeBase',
+  TRANSFER_SCAN_LIMIT_EXCEEDED: 'validation.transferScanLimitExceeded',
   DOCUMENT_NOT_INDEXED: 'validation.documentNotIndexed',
   DOCUMENT_RESOLVE_FAILED: 'operation.documentResolveFailed',
   DOCUMENT_CONFLICT: 'operation.documentConflict',

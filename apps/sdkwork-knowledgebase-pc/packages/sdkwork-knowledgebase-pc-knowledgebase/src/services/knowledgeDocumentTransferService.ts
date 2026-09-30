@@ -11,7 +11,10 @@ import {
 } from 'sdkwork-knowledgebase-pc-core';
 
 import type { DocumentMeta } from './document';
-import { invalidateKnowledgeBrowserNodeCacheForKbIds } from './knowledgeBrowserListService';
+import {
+  invalidateKnowledgeBrowserNodeCacheForKbIds,
+  MAX_AGGREGATION_SCAN_PAGES,
+} from './knowledgeBrowserListService';
 import { resolveKnowledgeBrowserParentDriveNodeId } from './knowledgeBrowserParentResolver';
 import { resolveDriveNodeId } from './knowledgeDriveDocumentMetadataService';
 import { normalizeDriveNodePage, readDriveNode } from './knowledgeDriveSdkResponse';
@@ -110,6 +113,7 @@ async function collectDriveFileNodesForFolderTransfer(
   const files: DriveNode[] = [];
   const queue: string[] = [rootNodeId];
   const visited = new Set<string>();
+  let scannedPages = 0;
 
   while (queue.length > 0) {
     const parentId = queue.shift()!;
@@ -120,6 +124,14 @@ async function collectDriveFileNodesForFolderTransfer(
 
     let cursor: string | null = null;
     do {
+      scannedPages += 1;
+      if (scannedPages > MAX_AGGREGATION_SCAN_PAGES) {
+        // Failing closed instead of truncating: a partial file list would
+        // silently drop documents from the transfer.
+        throwKnowledgebaseError(
+          KnowledgebaseErrorCodes.TRANSFER_SCAN_LIMIT_EXCEEDED,
+        );
+      }
       const page = normalizeDriveNodePage(await drive.drive.nodes.list(driveSpaceId, {
         parentNodeId: parentId,
         pageSize: '100',

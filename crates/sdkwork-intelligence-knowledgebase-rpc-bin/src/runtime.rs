@@ -71,7 +71,10 @@ impl KnowledgebaseGroupKnowledgeSpaceLifecycleRuntime {
         let pool = connect_knowledgebase_and_install_schema(database_url)
             .await
             .map_err(|error| dependency_failure("knowledgebase-schema-connect", error))?;
-        let database_config = database_config_from_url(database_url)
+        // Validation-only call: the drive pool consumes the raw database URL and
+        // injects its own statement guard, but this resolves and enforces the
+        // engine, RLS scope environment, and sslmode before any pool is opened.
+        database_config_from_url(database_url)
             .map_err(|_| dependency_unavailable("knowledgebase-database-config"))?;
         let pool_budget = knowledgebase_process_pool_budget_from_url(database_url)
             .map_err(|_| dependency_unavailable("knowledgebase-pool-budget"))?;
@@ -79,7 +82,7 @@ impl KnowledgebaseGroupKnowledgeSpaceLifecycleRuntime {
             .postgres_max_connections
             .ok_or_else(|| dependency_unavailable("knowledgebase-postgres-required"))?;
         let drive_pool = connect_knowledgebase_drive_pool_with_max_connections(
-            &database_config.url,
+            database_url,
             postgres_max_connections,
         )
         .await

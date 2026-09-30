@@ -171,6 +171,7 @@ fn build_business_router(api: Arc<dyn KnowledgeAppApi>) -> Router {
             post(activate_wiki_publication),
         )
         .route(paths::WIKI_PUBLICATION_PAUSE, post(pause_wiki_publication))
+        .route(paths::WIKI_SOURCE_FILES, get(list_wiki_source_files))
         .route(
             paths::WIKI_SOURCE_FILE_PUBLISH,
             post(publish_wiki_source_file),
@@ -424,6 +425,21 @@ async fn pause_wiki_publication(
         state
             .api
             .pause_wiki_publication(context, space_id, request)
+            .await,
+    )
+}
+
+async fn list_wiki_source_files(
+    State(state): State<AppState>,
+    context: RequiredAppContext,
+    Path(space_id): Path<u64>,
+    CheckedQuery(query): CheckedQuery<ListWikiSourceFilesQuery>,
+) -> Result<Response, ApiProblem> {
+    let context = require_app_context(context)?;
+    ok_list_json(
+        state
+            .api
+            .list_wiki_source_files(context, space_id, query.cursor, query.page_size)
             .await,
     )
 }
@@ -1534,6 +1550,14 @@ fn invalid_query_parameter(detail: impl Into<String>) -> ApiProblem {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ListSpaceMembersQuery {
+    cursor: Option<String>,
+    #[serde(rename = "page_size")]
+    page_size: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ListWikiSourceFilesQuery {
     cursor: Option<String>,
     #[serde(rename = "page_size")]
     page_size: Option<u32>,

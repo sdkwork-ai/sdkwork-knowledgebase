@@ -1,6 +1,6 @@
 //! PostgreSQL pgvector ANN retrieval backend.
 
-use crate::binding_scope_filters::push_binding_scope_filters_postgres;
+use crate::binding_scope_filters::push_binding_scope_filters;
 use async_trait::async_trait;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_retrieval_backend::{
     KnowledgeChunkSearchHit, KnowledgeChunkSearchRequest, KnowledgeRetrievalBackend,
@@ -123,7 +123,7 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
             query.push(" AND c.collection_id = ");
             query.push_bind(collection_id);
         }
-        push_binding_scope_filters_postgres(
+        push_binding_scope_filters(
             &mut query,
             tenant_id,
             organization_id,

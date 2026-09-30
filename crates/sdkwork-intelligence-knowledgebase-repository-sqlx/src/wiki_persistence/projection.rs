@@ -1,8 +1,9 @@
 use async_trait::async_trait;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_persistence::{
     ClaimWikiSourceProcessingRequest, CompleteWikiSourceProcessingRequest,
-    RetryWikiSourceProcessingRequest, UpsertWikiSourceProjectionRequest, WikiPersistenceError,
-    WikiPersistenceScope, WikiSourceProjection, WikiSourceProjectionStore,
+    ListWikiSourceProjectionsRequest, RetryWikiSourceProcessingRequest,
+    UpsertWikiSourceProjectionRequest, WikiPersistenceError, WikiPersistenceScope,
+    WikiSourceProjection, WikiSourceProjectionPage, WikiSourceProjectionStore,
     WikiSourceProjectionUpsertDisposition, WikiSourceProjectionUpsertResult, WikiUpdatePolicy,
 };
 use sdkwork_utils_rust::uuid;
@@ -23,6 +24,11 @@ pub(super) const PROJECTION_COLUMNS: &str = r#"
     last_source_event_id, processing_attempt_count, processing_lease_token,
     processing_fence, version
 "#;
+
+/// Inspection page bound aligned with the app-api `page_size` contract
+/// (1..=200). Deliberately not `MAX_CLAIM_BATCH_SIZE`: claim batches and
+/// reader pages are different budgets.
+const MAX_SOURCE_PROJECTION_PAGE_SIZE: u32 = 200;
 
 #[async_trait]
 impl WikiSourceProjectionStore for SqlxWikiPersistenceStore {
@@ -241,6 +247,58 @@ impl WikiSourceProjectionStore for SqlxWikiPersistenceStore {
             .map_err(sql_error)?
             .map(|row| projection_from_row(&row))
             .transpose()
+    }
+
+    async fn list_source_projections(
+        &self,
+        request: ListWikiSourceProjectionsRequest,
+    ) -> Result<WikiSourceProjectionPage, WikiPersistenceError> {
+        validate_scope(request.scope)?;
+        if request.limit == 0 || request.limit > MAX_SOURCE_PROJECTION_PAGE_SIZE {
+            return Err(WikiPersistenceError::InvalidRequest(format!(
+                "limit must be between 1 and {MAX_SOURCE_PROJECTION_PAGE_SIZE}"
+            )));
+        }
+        let limit = i64::from(request.limit);
+        let query = format!(
+            "SELECT {PROJECTION_COLUMNS} FROM kb_source_file_projection \
+             WHERE tenant_id = $1 AND organization_id = $2 AND site_publication_id = $3 \
+             AND id > COALESCE($4, 0) AND status = 1 \
+             ORDER BY id ASC LIMIT $5",
+        );
+        let rows = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
+            .bind(to_i64("tenant_id", request.scope.tenant_id)?)
+            .bind(to_i64("organization_id", request.scope.organization_id)?)
+            .bind(require_id(
+                "site_publication_id",
+                request.site_publication_id,
+            )?)
+            .bind(
+                request
+                    .after_projection_id
+                    .map(|value| to_i64("after_projection_id", value))
+                    .transpose()?,
+            )
+            .bind(limit + 1)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(sql_error)?;
+
+        let mut projections = rows
+            .iter()
+            .map(projection_from_row)
+            .collect::<Result<Vec<_>, _>>()?;
+        let has_more = projections.len() > usize::try_from(limit).unwrap_or(0);
+        if has_more {
+            projections.truncate(usize::try_from(limit).unwrap_or(0));
+        }
+        let next_after_projection_id = has_more
+            .then(|| projections.last().map(|projection| projection.id))
+            .flatten();
+        Ok(WikiSourceProjectionPage {
+            projections,
+            next_after_projection_id,
+        })
     }
 
     async fn claim_source_processing(

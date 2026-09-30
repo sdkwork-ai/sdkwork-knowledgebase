@@ -32,6 +32,10 @@ pub struct KnowledgeEngineExecutionHandle {
     space_id: u64,
     binding_store: Option<Arc<dyn KnowledgeEngineProviderBindingStore>>,
     credential_resolver: Option<Arc<dyn KnowledgeEngineProviderCredentialResolver>>,
+    /// Process-level cache for bound external engines. Sharing one cache
+    /// across per-request handles is what keeps adapter ProviderRuntimes
+    /// (circuit breaker, bulkhead, pinned client) alive between requests.
+    bind_cache: Option<Arc<super::cached_binding_engine::ProviderBindingEngineCache>>,
 }
 
 impl KnowledgeEngineExecutionHandle {
@@ -47,6 +51,7 @@ impl KnowledgeEngineExecutionHandle {
             space_id,
             binding_store: None,
             credential_resolver: None,
+            bind_cache: None,
         }
     }
 
@@ -78,7 +83,18 @@ impl KnowledgeEngineExecutionHandle {
             space_id,
             binding_store,
             credential_resolver,
+            bind_cache: None,
         })
+    }
+
+    /// Attaches the shared process-level bound-engine cache. Call once on the
+    /// per-request handle at construction time (see `KnowledgeEngineSpaceResolver`).
+    pub fn with_bind_cache(
+        mut self,
+        bind_cache: Arc<super::cached_binding_engine::ProviderBindingEngineCache>,
+    ) -> Self {
+        self.bind_cache = Some(bind_cache);
+        self
     }
 
     pub fn descriptor(&self) -> KnowledgeEngineDescriptor {
@@ -156,7 +172,7 @@ impl KnowledgeEngineExecutionHandle {
                 capability_label(capability)
             )));
         }
-        let credential = match binding.credential_reference_id {
+        let credential_freshness = match binding.credential_reference_id {
             Some(credential_reference_id) => {
                 let store = self.binding_store.as_ref().ok_or_else(|| {
                     credential_failure(
@@ -182,21 +198,45 @@ impl KnowledgeEngineExecutionHandle {
                         "Provider credential resolver is unavailable",
                     )
                 })?;
-                Some(
-                    resolver
-                        .resolve(
-                            &KnowledgeEngineProviderCredentialAccessContext::for_binding(
-                                context, binding, &reference, operation,
-                            ),
-                            &reference,
-                        )
-                        .await
-                        .map_err(|error| map_credential_error(binding, operation, error))?,
-                )
+                let credential = resolver
+                    .resolve(
+                        &KnowledgeEngineProviderCredentialAccessContext::for_binding(
+                            context, binding, &reference, operation,
+                        ),
+                        &reference,
+                    )
+                    .await
+                    .map_err(|error| map_credential_error(binding, operation, error))?;
+                Ok::<_, KnowledgeEngineError>((
+                    Some(credential),
+                    (
+                        Some(reference.credential_reference_id),
+                        Some(reference.version),
+                    ),
+                ))
             }
-            None => None,
+            None => Ok((None, (None, None))),
+        }?;
+        let (credential, (reference_id, reference_version)) = credential_freshness;
+        // Reuse the bound adapter (and its ProviderRuntime) across requests via
+        // the shared process-level cache; the credential reference version is
+        // the freshness token, so rotation produces a fresh bind.
+        let engine = match self.bind_cache.as_ref() {
+            Some(cache) => {
+                cache
+                    .get_or_bind(
+                        super::cached_binding_engine::ProviderBindingEngineKey {
+                            implementation_id: binding.implementation_id.clone(),
+                            binding_id: binding.id,
+                            credential_reference_id: reference_id,
+                            credential_reference_version: reference_version,
+                            credential_bound: credential.is_some(),
+                        },
+                        || self.engine.bind_provider(binding, credential),
+                    )?
+            }
+            None => self.engine.bind_provider(binding, credential)?,
         };
-        let engine = self.engine.bind_provider(binding, credential)?;
         if !engine.descriptor().supports(capability) {
             return Err(KnowledgeEngineError::Unsupported(format!(
                 "Provider implementation_id={} no longer supports {}",

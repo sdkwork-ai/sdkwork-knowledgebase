@@ -14,14 +14,15 @@ use sdkwork_intelligence_knowledgebase_service::{
             AdvanceWikiReconciliationRequest, BindWikiSourceScopeRequest,
             ClaimWikiReconciliationRequest, ClaimWikiSourceProcessingRequest,
             CompleteWikiReconciliationRequest, CompleteWikiSourceProcessingRequest,
-            ListWikiDriveCheckpointsRequest, MarkWikiPublicationReadyRequest,
-            ProvisionWikiDriveCheckpointRequest, ProvisionWikiPublicationRequest,
-            RetryWikiSourceProcessingRequest, UpsertWikiSourceProjectionRequest,
-            WikiDriveCheckpoint, WikiDriveCheckpointPage, WikiDriveCheckpointStore,
-            WikiDriveStreamState, WikiIndexState, WikiPagePublicationState, WikiPersistenceError,
-            WikiPersistenceScope, WikiPublication, WikiPublicationMode,
-            WikiPublicationProvisioningResult, WikiPublicationStatus, WikiPublicationStore,
-            WikiSourceFileKind, WikiSourceProjection, WikiSourceProjectionStore,
+            ListWikiDriveCheckpointsRequest, ListWikiSourceProjectionsRequest,
+            MarkWikiPublicationReadyRequest, ProvisionWikiDriveCheckpointRequest,
+            ProvisionWikiPublicationRequest, RetryWikiSourceProcessingRequest,
+            UpsertWikiSourceProjectionRequest, WikiDriveCheckpoint, WikiDriveCheckpointPage,
+            WikiDriveCheckpointStore, WikiDriveStreamState, WikiIndexState,
+            WikiPagePublicationState, WikiPersistenceError, WikiPersistenceScope,
+            WikiPublication, WikiPublicationMode, WikiPublicationProvisioningResult,
+            WikiPublicationStatus, WikiPublicationStore, WikiSourceFileKind,
+            WikiSourceProjection, WikiSourceProjectionPage, WikiSourceProjectionStore,
             WikiSourceProjectionUpsertResult, WikiSourceState, WikiUpdatePolicy, WikiVisibility,
         },
         knowledge_wiki_publication_lifecycle::{
@@ -417,6 +418,25 @@ impl WikiSourceProjectionStore for FakePersistence {
             && site_publication_id == state.projection.site_publication_id
             && drive_node_uuid == state.projection.drive_node_uuid)
             .then(|| state.projection.clone()))
+    }
+
+    async fn list_source_projections(
+        &self,
+        request: ListWikiSourceProjectionsRequest,
+    ) -> Result<WikiSourceProjectionPage, WikiPersistenceError> {
+        let state = self.state.lock().expect("fake persistence lock");
+        let matches = request.scope == state.projection.scope
+            && request.site_publication_id == state.projection.site_publication_id
+            && request
+                .after_projection_id
+                .is_none_or(|after| state.projection.id > after);
+        let projections = matches
+            .then(|| vec![state.projection.clone()])
+            .unwrap_or_default();
+        Ok(WikiSourceProjectionPage {
+            projections,
+            next_after_projection_id: None,
+        })
     }
 
     async fn claim_source_processing(

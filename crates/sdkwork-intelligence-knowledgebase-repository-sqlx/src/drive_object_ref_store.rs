@@ -238,17 +238,15 @@ impl PostgresKnowledgeDriveObjectRefStore {
     ) -> Result<(), KnowledgeDriveObjectRefStoreError> {
         let tenant_id = to_i64("tenant_id", self.tenant_id)?;
         let organization_id = to_i64("organization_id", self.organization_id)?;
-        let total: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(SUM(size_bytes), 0) FROM kb_drive_object_ref WHERE tenant_id = $1 AND organization_id = $2 AND status = $3",
+        // O(1) trigger-maintained counter read; falls back to the exact
+        // aggregate scan only while the counter row is not materialized yet.
+        let total = crate::quota_transaction::tenant_active_storage_bytes(
+            connection,
+            tenant_id,
+            organization_id,
         )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(ACTIVE_STATUS)
-        .fetch_one(connection)
         .await
         .map_err(sqlx_error)?;
-        let total = u64::try_from(total.max(0))
-            .map_err(|error| KnowledgeDriveObjectRefStoreError::Internal(error.to_string()))?;
         ensure_storage_capacity(total, additional_bytes, &limits)?;
         Ok(())
     }

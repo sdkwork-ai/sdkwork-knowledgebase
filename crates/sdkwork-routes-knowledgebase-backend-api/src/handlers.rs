@@ -43,7 +43,7 @@ macro_rules! backend_handler {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct ListOkfCandidatesQuery {
     pub space_id: u64,
     pub cursor: Option<String>,
@@ -449,6 +449,7 @@ pub(crate) async fn retrieve_provider_health(
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ListProviderCredentialReferencesQuery {
     pub implementation_id: Option<String>,
     pub rotation_state: Option<KnowledgeEngineProviderCredentialRotationState>,
@@ -457,6 +458,7 @@ pub(crate) struct ListProviderCredentialReferencesQuery {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ListProviderBindingsQuery {
     pub lifecycle_state: Option<KnowledgeEngineProviderBindingState>,
     pub cursor: Option<String>,
@@ -474,6 +476,7 @@ pub(crate) struct CreateProviderBindingBody {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ListProviderMigrationsQuery {
     pub operation_state: Option<KnowledgeEngineProviderMigrationState>,
     pub cursor: Option<String>,
@@ -885,7 +888,7 @@ backend_handler!(retrieve_current_tenant, |state: BackendState| async move {
 });
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct ListSpaceMembersQuery {
     pub cursor: Option<String>,
     #[serde(rename = "page_size")]
@@ -893,7 +896,7 @@ pub(crate) struct ListSpaceMembersQuery {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct ListSpacesQuery {
     pub cursor: Option<String>,
     #[serde(rename = "page_size")]
@@ -1024,5 +1027,29 @@ mod tests {
         .await;
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn list_query_accepts_canonical_pagination_parameters() {
+        let query: ListSpacesQuery =
+            serde_urlencoded::from_str("cursor=aXQ&page_size=25").expect("canonical query");
+        assert_eq!(query.page_size, Some(25));
+        assert_eq!(query.cursor.as_deref(), Some("aXQ"));
+    }
+
+    #[test]
+    fn list_query_rejects_pagination_aliases_and_unknown_parameters() {
+        // camelCase alias must not be silently ignored: a dropped alias would make
+        // the request fall back to the default page size without the caller knowing.
+        let alias: Result<ListSpacesQuery, _> = serde_urlencoded::from_str("pageSize=25");
+        assert!(alias.is_err(), "pageSize alias must be rejected");
+
+        let unknown: Result<ListSpacesQuery, _> =
+            serde_urlencoded::from_str("page_size=25&limit=9");
+        assert!(unknown.is_err(), "unknown parameters must be rejected");
+
+        let provider_alias: Result<ListProviderBindingsQuery, _> =
+            serde_urlencoded::from_str("page_size=25&pageSize=25");
+        assert!(provider_alias.is_err(), "provider list alias must be rejected");
     }
 }

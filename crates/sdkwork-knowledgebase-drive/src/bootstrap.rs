@@ -1,6 +1,7 @@
 use sdkwork_database_config::workspace_database::normalize_workspace_postgres_url;
 use sdkwork_drive_config::DatabaseConfig as DriveDatabaseConfig;
 use sdkwork_drive_workspace_service::infrastructure::sql::connect_postgres_database_and_install_schema;
+use sdkwork_knowledgebase_database_host::postgres_url_with_statement_timeout;
 use sqlx::PgPool;
 
 const DEFAULT_DRIVE_PROVIDER_ID: &str = "sdkwork-knowledgebase-local";
@@ -28,8 +29,13 @@ pub async fn connect_knowledgebase_drive_pool_with_max_connections(
     }
     let normalized = normalize_workspace_postgres_url(database_url.trim())
         .map_err(|error| sqlx::Error::Configuration(error.to_string().into()))?;
+    // The drive schema ships no RLS policies, so the pool needs the deployment
+    // statement guard only; the tenant/organization session scope stays
+    // knowledgebase-pool-specific.
+    let guarded = postgres_url_with_statement_timeout(normalized.as_str())
+        .map_err(|error| sqlx::Error::Configuration(error.to_string().into()))?;
     let drive_config =
-        DriveDatabaseConfig::from_url_with_max_connections(normalized.as_str(), max_connections)
+        DriveDatabaseConfig::from_url_with_max_connections(guarded.as_str(), max_connections)
             .map_err(|error| sqlx::Error::Configuration(error.to_string().into()))?;
     let pool = connect_postgres_database_and_install_schema(&drive_config).await?;
     if should_seed_standalone_local_provider()? {

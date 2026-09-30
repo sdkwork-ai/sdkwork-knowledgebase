@@ -3,6 +3,7 @@ import { isBlank, trim } from '@sdkwork/utils';
 import { isKnowledgebaseDriveApiAvailable, requireDriveApiClient } from 'sdkwork-knowledgebase-pc-core';
 
 import type { DocumentMeta, FolderNode } from './document';
+import { MAX_AGGREGATION_SCAN_PAGES } from './knowledgeBrowserListService';
 import { normalizeDriveNodePage, normalizeDriveNodePropertyPage } from './knowledgeDriveSdkResponse';
 
 export const DOCUMENT_TAGS_PROPERTY_KEY = 'sdkwork.knowledgebase.document.tags.v1';
@@ -98,8 +99,17 @@ export async function listDriveFavoriteNodeIds(driveSpaceId: string): Promise<Se
   const favorites = new Set<string>();
   const drive = requireDriveClient();
   let cursor: string | null = null;
+  let scannedPages = 0;
+  let truncated = false;
 
   do {
+    scannedPages += 1;
+    if (scannedPages > MAX_AGGREGATION_SCAN_PAGES) {
+      // Display-only degradation: favorite markers beyond the scan bound are
+      // simply not shown, and the truncation is surfaced in the console.
+      truncated = true;
+      break;
+    }
     const page = normalizeDriveNodePage(await drive.drive.favorites.list({
       spaceId: driveSpaceId,
       pageSize: '100',
@@ -113,6 +123,11 @@ export async function listDriveFavoriteNodeIds(driveSpaceId: string): Promise<Se
     cursor = page.hasMore ? page.nextCursor : null;
   } while (cursor);
 
+  if (truncated) {
+    console.warn(
+      `[knowledgeDriveDocumentMetadata] favorite scan truncated after ${MAX_AGGREGATION_SCAN_PAGES} pages for space ${driveSpaceId}`,
+    );
+  }
   return favorites;
 }
 

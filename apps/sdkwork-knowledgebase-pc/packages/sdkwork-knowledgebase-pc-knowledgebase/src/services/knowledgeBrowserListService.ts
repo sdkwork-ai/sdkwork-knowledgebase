@@ -15,6 +15,14 @@ const DEFAULT_BROWSER_PAGE_SIZE = 100;
  * unbounded request storm (PAGINATION_SPEC §8 on-demand paging).
  */
 export const MAX_BROWSER_RESOLVE_SCAN_PAGES = 25;
+/**
+ * Upper bound for client-side cursor-following aggregations (favorites, members,
+ * document listings, transfer collection): the loop stops after this many pages
+ * so a server-side pagination defect or an outsized space cannot turn a UI
+ * action into an unbounded request storm (PAGINATION_SPEC §8). Callers decide
+ * whether hitting the bound degrades display or fails the operation.
+ */
+export const MAX_AGGREGATION_SCAN_PAGES = 500;
 const browserParentCache = new Map<string, BrowserNodeCacheEntry>();
 
 interface BrowserNodeCacheEntry {

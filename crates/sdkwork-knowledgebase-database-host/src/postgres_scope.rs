@@ -19,6 +19,11 @@ use url::Url;
 pub const POSTGRES_TENANT_SESSION_KEY: &str = "app.current_tenant_id";
 pub const POSTGRES_ORGANIZATION_SESSION_KEY: &str = "app.current_organization_id";
 
+/// Statement guard injected into every Knowledgebase-owned PostgreSQL pool URL:
+/// statements running longer than 30 s are cancelled server-side so one slow
+/// query cannot monopolize the fixed per-process connection budget.
+pub const POSTGRES_STATEMENT_TIMEOUT_OPTION: &str = "-c statement_timeout=30000";
+
 /// Returns the tenant id required for PostgreSQL pool checkout, failing closed in
 /// production-like environments.
 pub fn require_postgres_rls_tenant_id() -> Result<u64, PoolError> {
@@ -95,7 +100,7 @@ pub fn postgres_url_with_deployment_scope(
     }
 
     let scope_options = format!(
-        "-c {POSTGRES_TENANT_SESSION_KEY}={tenant_id} -c {POSTGRES_ORGANIZATION_SESSION_KEY}={organization_id} -c statement_timeout=30000"
+        "-c {POSTGRES_TENANT_SESSION_KEY}={tenant_id} -c {POSTGRES_ORGANIZATION_SESSION_KEY}={organization_id} {POSTGRES_STATEMENT_TIMEOUT_OPTION}"
     );
     if let Some(index) = options_index {
         let existing = query_pairs[index].1.trim();
@@ -106,6 +111,55 @@ pub fn postgres_url_with_deployment_scope(
         };
     } else {
         query_pairs.push(("options".to_string(), scope_options));
+    }
+
+    url.query_pairs_mut().clear().extend_pairs(query_pairs);
+    Ok(url.into())
+}
+
+/// Injects the deployment-owned 30 s `statement_timeout` into a PostgreSQL
+/// connection URL for pools that access schemas without Knowledgebase RLS
+/// policies (for example the drive pool) and therefore need the guard without
+/// the tenant/organization session scope.
+///
+/// Fails closed when the caller already sets `statement_timeout`, so exactly
+/// one source of truth controls the guard.
+pub fn postgres_url_with_statement_timeout(database_url: &str) -> Result<String, PoolError> {
+    let mut url = Url::parse(database_url)
+        .map_err(|error| PoolError::InvalidUrl(format!("invalid PostgreSQL URL: {error}")))?;
+    let mut query_pairs = url
+        .query_pairs()
+        .map(|(key, value)| (key.into_owned(), value.into_owned()))
+        .collect::<Vec<_>>();
+    let mut options_index = None;
+    for (index, (key, value)) in query_pairs.iter().enumerate() {
+        if !key.eq_ignore_ascii_case("options") {
+            continue;
+        }
+        if options_index.replace(index).is_some() {
+            return Err(PoolError::DatabaseConfig(
+                "PostgreSQL URL must not contain duplicate options parameters".to_string(),
+            ));
+        }
+        if value.to_ascii_lowercase().contains("statement_timeout") {
+            return Err(PoolError::DatabaseConfig(
+                "PostgreSQL URL must not set the deployment-owned statement_timeout".to_string(),
+            ));
+        }
+    }
+
+    if let Some(index) = options_index {
+        let existing = query_pairs[index].1.trim();
+        query_pairs[index].1 = if existing.is_empty() {
+            POSTGRES_STATEMENT_TIMEOUT_OPTION.to_string()
+        } else {
+            format!("{existing} {POSTGRES_STATEMENT_TIMEOUT_OPTION}")
+        };
+    } else {
+        query_pairs.push((
+            "options".to_string(),
+            POSTGRES_STATEMENT_TIMEOUT_OPTION.to_string(),
+        ));
     }
 
     url.query_pairs_mut().clear().extend_pairs(query_pairs);
@@ -164,6 +218,52 @@ mod tests {
             "postgresql://app@localhost/sdkwork_ai_dev?options=-c%20timezone%3DUTC&options=-c%20search_path%3Dsdkwork_ai_dev",
             7,
             11,
+        )
+        .expect_err("duplicate options must fail closed");
+        assert!(error.to_string().contains("duplicate options"));
+    }
+
+    #[test]
+    fn statement_timeout_preserves_existing_connection_options() {
+        let configured = postgres_url_with_statement_timeout(
+            "postgresql://app:secret@localhost/sdkwork_ai_dev?sslmode=verify-full&options=-c%20search_path%3Dsdkwork_ai_dev%2Cpublic",
+        )
+        .expect("guarded URL");
+        let parsed = Url::parse(&configured).expect("valid URL");
+        let options = parsed
+            .query_pairs()
+            .find(|(key, _)| key == "options")
+            .map(|(_, value)| value.into_owned())
+            .expect("options parameter");
+        assert_eq!(
+            options,
+            "-c search_path=sdkwork_ai_dev,public -c statement_timeout=30000"
+        );
+    }
+
+    #[test]
+    fn statement_timeout_is_added_when_options_are_absent() {
+        let configured =
+            postgres_url_with_statement_timeout("postgresql://app@localhost/sdkwork_ai_dev")
+                .expect("guarded URL");
+        let parsed = Url::parse(&configured).expect("valid URL");
+        assert!(parsed.query_pairs().any(|(key, value)| key == "options"
+            && value == "-c statement_timeout=30000"));
+    }
+
+    #[test]
+    fn caller_owned_statement_timeout_is_rejected() {
+        let error = postgres_url_with_statement_timeout(
+            "postgresql://app@localhost/sdkwork_ai_dev?options=-c%20statement_timeout%3D60000",
+        )
+        .expect_err("caller statement_timeout must fail closed");
+        assert!(error.to_string().contains("deployment-owned statement_timeout"));
+    }
+
+    #[test]
+    fn duplicate_options_are_rejected_for_statement_timeout() {
+        let error = postgres_url_with_statement_timeout(
+            "postgresql://app@localhost/sdkwork_ai_dev?options=-c%20timezone%3DUTC&options=-c%20search_path%3Dsdkwork_ai_dev",
         )
         .expect_err("duplicate options must fail closed");
         assert!(error.to_string().contains("duplicate options"));
