@@ -1,6 +1,10 @@
 import type { DriveUploaderProfile } from 'sdkwork-knowledgebase-pc-core';
 import { formatBytes } from '@sdkwork/utils';
 import {
+  createDriveNodesImagePreviewReader,
+  createDriveUploadImageService,
+} from '@sdkwork/drive-upload-image-core';
+import {
   KNOWLEDGEBASE_PC_ATTACHMENT_UPLOAD,
   KNOWLEDGEBASE_PC_AUDIO_UPLOAD,
   KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD,
@@ -230,6 +234,57 @@ async function resolveUploadParentNodeId(
   return ensureDriveFolderPath(driveSpaceId, driveParentId, relativePath, folderCache);
 }
 
+/** Structural slices of the Drive client the shared image service binds. */
+type KnowledgebaseImageUploader = Parameters<typeof createDriveUploadImageService>[0]['uploader'];
+type KnowledgebaseImageNodes = Parameters<typeof createDriveNodesImagePreviewReader>[0];
+
+/**
+ * Image-profile upload through the shared Drive image-upload service.
+ *
+ * The service binds the DECLARED image entry (`KNOWLEDGEBASE_PC_IMAGE_UPLOAD`,
+ * `DRIVE_SPEC.md` §18.3) instead of hand-assembling the uploader request, and
+ * retention travels from the declaration (`long_term`). It is created per call
+ * because the explicit Drive target (§9.4: the knowledge-base space plus the
+ * per-file resolved parent folder) is an option of the factory, not of a single
+ * upload — construction is pure, so there is nothing to memoize beyond the SDK
+ * client the callers already hold.
+ */
+async function uploadImageProfileThroughSharedService(
+  driveClient: { uploader: KnowledgebaseImageUploader; drive: { nodes: KnowledgebaseImageNodes } },
+  input: {
+    file: File;
+    title: string;
+    appResourceId: string;
+    driveSpaceId: string;
+    parentNodeId?: string | undefined;
+  },
+): Promise<string> {
+  const imageService = createDriveUploadImageService({
+    uploader: driveClient.uploader,
+    declaration: KNOWLEDGEBASE_PC_IMAGE_UPLOAD,
+    previewReader: createDriveNodesImagePreviewReader(driveClient.drive.nodes),
+    spaceId: input.driveSpaceId,
+    ...(input.parentNodeId === undefined ? {} : { parentNodeId: input.parentNodeId }),
+  });
+  // Type/content-name normalization matches the generic path: empty browser
+  // MIME becomes absent, and the relative-path-derived title (not the raw
+  // File.name) is what Drive records as the original file name.
+  const value = await imageService.upload({
+    file: {
+      size: input.file.size,
+      type: input.file.type || undefined,
+      name: input.title,
+      arrayBuffer: () => input.file.arrayBuffer(),
+    },
+    appResourceId: input.appResourceId,
+  });
+  const nodeId = value.metadata?.drive?.nodeId;
+  if (!nodeId) {
+    throw new Error('Drive image upload did not return a stable node identity.');
+  }
+  return nodeId;
+}
+
 async function uploadBinaryThroughDrive(
   spaceId: string,
   kbId: string,
@@ -256,25 +311,39 @@ async function uploadBinaryThroughDrive(
     folderCache ?? new Map<string, string>(),
   );
 
-  const uploadResult = await driveClient.uploader.upload({
-    file,
-    appResourceType: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.appResourceType,
-    appResourceId: String(spaceId),
-    scene: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.scene,
-    source: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.source,
-    spaceId: driveSpaceId,
-    parentNodeId: resolvedParentId,
-    uploadProfileCode: inferUploaderProfile(file),
-    originalFileName: title,
-    contentType: file.type || undefined,
-  });
+  const uploadProfile = inferUploaderProfile(file);
+  // The image profile rides the shared Drive image-upload service bound to the
+  // declared image entry; every other profile keeps the generic composed
+  // uploader path. Both branches return the uploaded Drive node id.
+  const uploadNodeId = uploadProfile === KNOWLEDGEBASE_PC_IMAGE_UPLOAD.uploadProfileCode
+    ? await uploadImageProfileThroughSharedService(driveClient, {
+        file,
+        title,
+        appResourceId: String(spaceId),
+        driveSpaceId,
+        parentNodeId: resolvedParentId,
+      })
+    : (
+        await driveClient.uploader.upload({
+          file,
+          appResourceType: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.appResourceType,
+          appResourceId: String(spaceId),
+          scene: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.scene,
+          source: KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.source,
+          spaceId: driveSpaceId,
+          parentNodeId: resolvedParentId,
+          uploadProfileCode: uploadProfile,
+          originalFileName: title,
+          contentType: file.type || undefined,
+        })
+      ).uploadItem.nodeId;
 
   const importResult = await knowledgeClient.client.knowledge.driveImports.create({
     spaceId,
     title,
     idempotencyKey: buildIdempotencyKey(spaceId, file, index),
     driveSpaceId,
-    driveNodeId: uploadResult.uploadItem.nodeId,
+    driveNodeId: uploadNodeId,
     language: null,
   });
 
@@ -285,11 +354,11 @@ async function uploadBinaryThroughDrive(
     importResult.document.title,
     type,
     parentId ?? null,
-    { driveSpaceId, driveNodeId: uploadResult.uploadItem.nodeId },
+    { driveSpaceId, driveNodeId: uploadNodeId },
   );
 
   try {
-    const url = await resolveDriveNodeDownloadUrl(uploadResult.uploadItem.nodeId);
+    const url = await resolveDriveNodeDownloadUrl(uploadNodeId);
     if (url) {
       return { ...meta, url };
     }

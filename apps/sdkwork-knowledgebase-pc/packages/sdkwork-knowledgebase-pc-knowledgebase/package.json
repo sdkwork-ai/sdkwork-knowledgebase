@@ -47,6 +47,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-context-menu": "^2.3.0",
     "@radix-ui/react-dropdown-menu": "^2.1.17",
+    "@sdkwork/drive-upload-image-core": "workspace:*",
     "@sdkwork/sdkwork-knowledgebase-pc-commons": "workspace:*",
     "@sdkwork/utils": "workspace:*",
     "@tanstack/react-virtual": "^3.13.12",
