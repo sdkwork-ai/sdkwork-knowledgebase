@@ -11,6 +11,13 @@ staging = "apps/sdkwork-knowledgebase-pc/dist/standalone/staging"
 demo = "apps/sdkwork-knowledgebase-pc/dist/standalone/demo"
 production = "apps/sdkwork-knowledgebase-pc/dist/standalone/prod"
 
+[app_roots.h5_static_by_environment]
+development = "apps/sdkwork-knowledgebase-h5/dist/standalone/dev"
+test = "apps/sdkwork-knowledgebase-h5/dist/standalone/test"
+staging = "apps/sdkwork-knowledgebase-h5/dist/standalone/staging"
+demo = "apps/sdkwork-knowledgebase-h5/dist/standalone/demo"
+production = "apps/sdkwork-knowledgebase-h5/dist/standalone/prod"
+
 [app_roots.static_fallback_by_environment]
 development = "deployments/webserver/static"
 test = "deployments/webserver/static"
