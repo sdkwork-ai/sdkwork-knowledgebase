@@ -15,6 +15,7 @@ import {
   KNOWLEDGEBASE_PC_APP_ID,
   KNOWLEDGEBASE_PC_ATTACHMENT_UPLOAD,
   KNOWLEDGEBASE_PC_AUDIO_UPLOAD,
+  KNOWLEDGEBASE_PC_AVATAR_UPLOAD,
   KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD,
   KNOWLEDGEBASE_PC_IMAGE_UPLOAD,
   KNOWLEDGEBASE_PC_TEXT_UPLOAD,
@@ -202,6 +203,7 @@ describe('upload declaration constants', () => {
       [
         KNOWLEDGEBASE_PC_ATTACHMENT_UPLOAD,
         KNOWLEDGEBASE_PC_AUDIO_UPLOAD,
+        KNOWLEDGEBASE_PC_AVATAR_UPLOAD,
         KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD,
         KNOWLEDGEBASE_PC_IMAGE_UPLOAD,
         KNOWLEDGEBASE_PC_TEXT_UPLOAD,
@@ -219,8 +221,14 @@ describe('upload declaration constants', () => {
   });
 
   it('keeps one shared identity and varies only the profile', () => {
-    // The scene and appResourceType are the same for all branches; only the profile differs.
-    for (const entry of KNOWLEDGEBASE_PC_UPLOAD_DECLARATIONS) {
+    // The knowledgebase.document_source family shares one scene and
+    // appResourceType and varies only the profile. Other declared purposes
+    // (the shell avatar) carry their own identity by design.
+    const documentSourceEntries = KNOWLEDGEBASE_PC_UPLOAD_DECLARATIONS.filter(
+      (entry) => entry.appResourceType === KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.appResourceType,
+    );
+    expect(documentSourceEntries.length).toBeGreaterThan(0);
+    for (const entry of documentSourceEntries) {
       expect(entry.appResourceType).toBe(KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.appResourceType);
       expect(entry.scene).toBe(KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.scene);
     }

@@ -92,6 +92,23 @@ export const KNOWLEDGEBASE_PC_ATTACHMENT_UPLOAD = {
     'Knowledge-base source file whose content shape is not one of the more specific profiles, stored as a generic attachment.',
 } as const satisfies KnowledgebaseUploadDeclarationEntry;
 
+/**
+ * The signed-in user's profile avatar uploaded from the shell's profile modal.
+ *
+ * `entity`-kind id: the avatar belongs to the signed-in user (`account.id`),
+ * so uploads attribute to that user (`DRIVE_SPEC.md` §18.3). The stored value
+ * is the `drive://` reference — never a base64 data URL.
+ */
+export const KNOWLEDGEBASE_PC_AVATAR_UPLOAD = {
+  appResourceType: 'profile.avatar',
+  appResourceIdKind: 'entity',
+  scene: 'avatar',
+  source: KNOWLEDGEBASE_PC_UPLOAD_SOURCE,
+  uploadProfileCode: 'avatar',
+  retention: 'long_term',
+  purpose: 'Knowledgebase shell user avatar uploaded to Drive and referenced by the local profile.',
+} as const satisfies KnowledgebaseUploadDeclarationEntry;
+
 export const KNOWLEDGEBASE_PC_UPLOAD_DECLARATIONS: readonly KnowledgebaseUploadDeclarationEntry[] = [
   KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD,
   KNOWLEDGEBASE_PC_TEXT_UPLOAD,
@@ -99,4 +116,5 @@ export const KNOWLEDGEBASE_PC_UPLOAD_DECLARATIONS: readonly KnowledgebaseUploadD
   KNOWLEDGEBASE_PC_AUDIO_UPLOAD,
   KNOWLEDGEBASE_PC_VIDEO_UPLOAD,
   KNOWLEDGEBASE_PC_ATTACHMENT_UPLOAD,
+  KNOWLEDGEBASE_PC_AVATAR_UPLOAD,
 ];

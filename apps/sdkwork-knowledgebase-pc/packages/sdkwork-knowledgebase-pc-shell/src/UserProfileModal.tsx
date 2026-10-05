@@ -2,8 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { isBlank } from '@sdkwork/utils';
 import { X, Camera, Mail, Phone, Briefcase, Info, Clock, Check, Edit2, AlertCircle, Sparkles, Smile, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { DriveUploadImageService } from '@sdkwork/drive-upload-image-core';
 import { useLocalStorage } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
 import { toast } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
+import {
+  resolveKnowledgebaseAvatarDisplayUrl,
+  uploadKnowledgebaseUserAvatar,
+} from './avatarUpload';
 
 export interface UserProfile {
   name: string;
@@ -20,6 +25,15 @@ export interface UserProfile {
 
 export interface UserProfileModalProps {
   account?: import('sdkwork-knowledgebase-pc-core').KnowledgebaseAccountViewModel;
+  /**
+   * Host-injected Drive image-upload capability (`createKnowledgebaseAvatarUploadService`).
+   *
+   * Present: the local-image pick uploads through the shared service and the
+   * profile stores the `drive://` reference. Absent: the pick control is
+   * disabled — there is no local data-URL fallback, because persisting a
+   * base64 payload would be a fake upload (`DRIVE_SPEC.md` section 18).
+   */
+  avatarUploadService?: DriveUploadImageService;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -57,12 +71,12 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   statusText: '在架写作中 ✍️'
 };
 
-export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
+export function UserProfileModal({ account, avatarUploadService, isOpen, onClose }: UserProfileModalProps) {
   const { t } = useTranslation('shell');
   const [profile, setProfile] = useLocalStorage<UserProfile>('app-user-profile', DEFAULT_USER_PROFILE);
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'statistics'>('profile');
-  
+
   // Edit form states
   const [editName, setEditName] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
@@ -74,9 +88,39 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
   const [editTimezone, setEditTimezone] = useState('');
   const [editStatus, setEditStatus] = useState<'online' | 'busy' | 'away' | 'offline'>('online');
   const [editStatusText, setEditStatusText] = useState('');
-  
+
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drive-backed avatar references have no delivery URL; their display
+  // resolves through the shared bounded preview reader. Presentation-only
+  // state and never persisted. One effect covers both the stored profile
+  // value (view mode) and the value being edited.
+  const [editAvatarPreview, setEditAvatarPreview] = useState<string>();
+  const [profileAvatarPreview, setProfileAvatarPreview] = useState<string>();
+  useEffect(() => {
+    const target = isEditing ? editAvatar : profile?.avatar;
+    if (!avatarUploadService || !target?.startsWith('drive://')) {
+      if (isEditing) setEditAvatarPreview(undefined);
+      else setProfileAvatarPreview(undefined);
+      return;
+    }
+    let cancelled = false;
+    void resolveKnowledgebaseAvatarDisplayUrl(avatarUploadService, target)
+      .then((url) => {
+        if (cancelled) return;
+        if (isEditing) setEditAvatarPreview(url);
+        else setProfileAvatarPreview(url ?? undefined);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        if (isEditing) setEditAvatarPreview(undefined);
+        else setProfileAvatarPreview(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [editAvatar, profile?.avatar, isEditing, avatarUploadService]);
 
   // Initialize edit form values when edit mode starts or profile changes
   useEffect(() => {
@@ -119,6 +163,13 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
   };
 
   const handleFileUpload = (file: File) => {
+    if (!avatarUploadService || !account?.id) {
+      // No upload capability (or no signed-in user to attribute to): the pick
+      // must not fall back to a local data-URL read — that would be a fake
+      // upload (`DRIVE_SPEC.md` section 18).
+      toast.error(t('avatarUploadUnavailable', { defaultValue: '请先登录后再上传头像' }));
+      return;
+    }
     if (!file.type.startsWith('image/')) {
       toast.error(t('invalidImage', { defaultValue: '请选择有效的图片文件' }));
       return;
@@ -127,14 +178,17 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
       toast.error(t('imageTooLarge', { defaultValue: '图片大小不能超过 2MB' }));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setEditAvatar(e.target.result as string);
-        toast.success(t('avatarReadSuccess', { defaultValue: '头像读取成功！' }));
-      }
-    };
-    reader.readAsDataURL(file);
+    void uploadKnowledgebaseUserAvatar(avatarUploadService, {
+      appResourceId: account.id,
+      file,
+    })
+      .then((uri) => {
+        setEditAvatar(uri);
+        toast.success(t('avatarUploaded', { defaultValue: '头像上传成功！' }));
+      })
+      .catch(() => {
+        toast.error(t('avatarUploadFailed', { defaultValue: '头像上传失败，请重试' }));
+      });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -189,7 +243,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                     {EMOTE_PRESETS.includes(editAvatar) ? (
                       <span className="text-4xl">{editAvatar}</span>
                     ) : (
-                      <img src={editAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                      <img src={editAvatarPreview ?? editAvatar} alt="Avatar" className="w-full h-full object-cover" />
                     )}
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Camera className="text-white" size={20} />
@@ -199,7 +253,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                   profile.avatar && EMOTE_PRESETS.includes(profile.avatar) ? (
                     <div className="w-full h-full flex items-center justify-center text-4xl">{profile.avatar}</div>
                   ) : (
-                    <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    <img src={profileAvatarPreview ?? profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
                   )
                 )}
               </div>

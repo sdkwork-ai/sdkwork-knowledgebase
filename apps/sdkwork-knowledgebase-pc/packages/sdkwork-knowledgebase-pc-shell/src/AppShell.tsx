@@ -28,6 +28,7 @@ import { canAccessKnowledgebaseAdminConsole } from 'sdkwork-knowledgebase-pc-adm
 import { SettingsModal } from './SettingsModal';
 import { GlobalNav } from './GlobalNav';
 import { UserProfileModal, DEFAULT_USER_PROFILE, type UserProfile } from './UserProfileModal';
+import { createKnowledgebaseAvatarUploadService } from './avatarUpload';
 import { SETTINGS_STORAGE_KEYS, type StartupModule } from './settingsModalConstants';
 import { readStoredDesktopPreferences, syncDesktopPreferences } from './settingsDesktopBridge';
 import { useDesktopHostIntegration } from './useDesktopHostIntegration';
@@ -180,6 +181,13 @@ export function AppShell() {
   const account = useMemo(
     () => createKnowledgebaseAccountViewModel(sessionSnapshot),
     [sessionSnapshot],
+  );
+  // Shared Drive image-upload capability for the profile modal's avatar: the
+  // declared avatar intent (`KNOWLEDGEBASE_PC_AVATAR_UPLOAD`) binds to the
+  // runtime's composed drive client, so the modal never touches the SDK.
+  const avatarUploadService = useMemo(
+    () => createKnowledgebaseAvatarUploadService(runtime.sdk.drive.client),
+    [runtime.sdk.drive.client],
   );
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -447,6 +455,7 @@ export function AppShell() {
 
       <UserProfileModal
         account={account}
+        avatarUploadService={avatarUploadService}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
       />

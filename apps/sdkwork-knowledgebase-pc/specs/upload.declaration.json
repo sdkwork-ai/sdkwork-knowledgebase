@@ -55,6 +55,15 @@
       "uploadProfileCode": "attachment",
       "retention": "long_term",
       "purpose": "Knowledge-base source file whose content shape is not one of the more specific profiles, stored as a generic attachment."
+    },
+    {
+      "appResourceType": "profile.avatar",
+      "appResourceIdKind": "entity",
+      "scene": "avatar",
+      "source": "sdkwork-knowledgebase-pc",
+      "uploadProfileCode": "avatar",
+      "retention": "long_term",
+      "purpose": "Knowledgebase shell user avatar uploaded to Drive and referenced by the local profile."
     }
   ]
 }
