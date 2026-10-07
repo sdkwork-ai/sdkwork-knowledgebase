@@ -3,7 +3,7 @@ import {
   createDriveUploadImageService,
   type DriveUploadImageService,
 } from '@sdkwork/drive-upload-image-core';
-import { KNOWLEDGEBASE_PC_AVATAR_UPLOAD } from '@sdkwork/sdkwork-knowledgebase-pc-core';
+import { KNOWLEDGEBASE_PC_AVATAR_UPLOAD } from 'sdkwork-knowledgebase-pc-core';
 
 /**
  * Shell-side user-avatar capability for the profile modal.

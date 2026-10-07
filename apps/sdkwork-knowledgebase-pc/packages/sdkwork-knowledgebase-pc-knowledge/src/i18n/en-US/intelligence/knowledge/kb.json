@@ -175,5 +175,19 @@
   "systemPrompt": "System Prompt & Persona",
   "systemPromptPlaceholder": "E.g., You are a financial advisor...",
   "showMore": "Show More ({{count}})",
-  "showLess": "Show Less"
+  "showLess": "Show Less",
+  "notesWorkspaceTitle": "Notes",
+  "notesNew": "New Note",
+  "notesUntitled": "Untitled Note",
+  "notesSearchPlaceholder": "Search notes…",
+  "notesSearchNoMatch": "No matching notes",
+  "notesLoading": "Loading…",
+  "notesEmpty": "No notes yet — click \"New Note\" in the top right to start",
+  "notesDelete": "Delete note",
+  "notesCreated": "Note created",
+  "notesDeleted": "Note deleted",
+  "notesSaving": "Saving…",
+  "notesEditorEmptyTitle": "No note selected",
+  "notesEditorEmptyHintSelect": "Pick a note from the list, or create a new one",
+  "notesEditorEmptyHintCreate": "Click \"New Note\" in the top right to start your first note"
 }

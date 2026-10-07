@@ -143,3 +143,12 @@ sdks/**/generated/server-openapi/src/**/*.js
 sdks/**/generated/server-openapi/src/**/*.d.ts
 sdks/**/*-typescript/src/*.js
 sdks/**/*-typescript/src/*.d.ts
+
+# Local GUI test screenshots and captured tokens (never commit)
+# Added by repo-commit task 2026-10-07; targeted rules only, compliant with check-gitignore-standard
+/gui-test-screenshots/
+**/gui-test-screenshots/
+
+# Local dev-gateway config artifacts (contain dev credentials; never commit)
+# Added by repo-commit task 2026-10-07; targeted rule only, compliant with check-gitignore-standard
+/artifacts/

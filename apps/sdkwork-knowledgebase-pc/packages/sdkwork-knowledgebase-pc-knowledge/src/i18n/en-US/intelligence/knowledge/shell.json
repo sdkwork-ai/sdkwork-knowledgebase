@@ -263,5 +263,6 @@
   "adminConsoleYes": "Yes",
   "adminConsoleNo": "No",
   "adminConsoleLoadMore": "Load more",
-  "adminConsoleLoadingMore": "Loading…"
+  "adminConsoleLoadingMore": "Loading…",
+  "notesNav": "Notes"
 }

@@ -167,7 +167,17 @@ async fn connect_knowledgebase_any_pool_from_config(
     };
     sqlx::any::AnyPoolOptions::new()
         .max_connections(config.max_connections)
-        .acquire_timeout(std::time::Duration::from_secs(10))
+        // Honor the documented `SDKWORK_DATABASE_ACQUIRE_TIMEOUT` knob. The URL-only
+        // DatabaseConfig constructor defaults this to 10s without reading the env, which
+        // aborted chat/retrieval fan-out while an upstream provider call was still in
+        // flight; resolve_pool_settings() in sdkwork-database-config is private, so the
+        // override is read here until that constructor honors the env itself.
+        .acquire_timeout(std::time::Duration::from_secs(
+            std::env::var("SDKWORK_DATABASE_ACQUIRE_TIMEOUT")
+                .ok()
+                .and_then(|value| value.trim().parse::<u64>().ok())
+                .unwrap_or(config.acquire_timeout_secs),
+        ))
         .connect(&url)
         .await
         .map_err(PoolError::from)

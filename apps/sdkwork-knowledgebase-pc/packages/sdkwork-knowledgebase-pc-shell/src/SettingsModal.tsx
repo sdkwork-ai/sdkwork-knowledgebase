@@ -14,6 +14,7 @@ import { toast } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
 import type { KnowledgebaseAccountViewModel, KnowledgebaseRuntimeConfig } from 'sdkwork-knowledgebase-pc-core';
 
 import {
+  DEFAULT_ACCENT_COLOR,
   SETTINGS_APP_VERSION,
   SETTINGS_NAV_ITEMS,
   SETTINGS_STORAGE_KEYS,
@@ -72,7 +73,7 @@ export function SettingsModal({
     SETTINGS_STORAGE_KEYS.settingsTab,
     'appearance',
   );
-  const [activeColor, setActiveColor] = useLocalStorage(SETTINGS_STORAGE_KEYS.accentColor, '#2563eb');
+  const [activeColor, setActiveColor] = useLocalStorage(SETTINGS_STORAGE_KEYS.accentColor, DEFAULT_ACCENT_COLOR);
   const [fontSize, setFontSize] = useLocalStorage<'small' | 'normal' | 'large'>(
     SETTINGS_STORAGE_KEYS.fontSize,
     'normal',

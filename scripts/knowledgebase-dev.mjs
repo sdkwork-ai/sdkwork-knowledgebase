@@ -347,6 +347,12 @@ function buildProcessesFromOrchestration(profileId, env) {
     if (processDef.id === 'platform.api-gateway') {
       continue;
     }
+    // Client-surface processes (role: client, e.g. knowledgebase-browser) are
+    // spawned later by createBrowserRendererProcess/createDesktopProcess; they
+    // carry no crate and must never become cargo-run backend entries.
+    if (processDef.role === 'client' || !processDef.crate) {
+      continue;
+    }
 
     const crate = processDef.crate ?? DEFAULT_API_SERVER_CRATE;
     const binary = processDef.binary ?? processDef.id;

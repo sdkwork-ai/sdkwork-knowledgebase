@@ -1,4 +1,5 @@
 import {
+  DEFAULT_ACCENT_COLOR,
   SETTINGS_NAV_ITEMS,
   SETTINGS_STORAGE_KEYS,
   type SettingsTabId,
@@ -15,7 +16,7 @@ export const SETTINGS_TAB_IDS: SettingsTabId[] = [
 
 export const SETTINGS_DEFAULTS = {
   theme: 'system' as const,
-  accentColor: '#2563eb',
+  accentColor: DEFAULT_ACCENT_COLOR,
   fontSize: 'normal' as const,
   autoStart: false,
   hideToTray: true,

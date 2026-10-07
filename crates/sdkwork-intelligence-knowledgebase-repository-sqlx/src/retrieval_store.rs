@@ -272,7 +272,7 @@ impl PostgresKnowledgeChunkRetrievalStore {
                 d.title,
                 c.content_text,
                 c.token_count,
-                c.locator,
+                c.locator #>> '{}' AS locator,
                 "kb://documents/" || c.document_id AS source_uri,
             "#,
         );
@@ -362,7 +362,7 @@ impl PostgresKnowledgeChunkRetrievalStore {
                 d.title,
                 c.content_text,
                 c.token_count,
-                c.locator,
+                c.locator #>> '{}' AS locator,
                 "kb://documents/" || c.document_id AS source_uri,
             "#,
         );
@@ -507,7 +507,7 @@ impl PostgresKnowledgeChunkRetrievalStore {
                 d.title,
                 c.content_text,
                 c.token_count,
-                c.locator,
+                c.locator #>> '{}' AS locator,
                 "kb://documents/" || c.document_id AS source_uri,
                 e.vector_json AS vector_json
             FROM kb_chunk c

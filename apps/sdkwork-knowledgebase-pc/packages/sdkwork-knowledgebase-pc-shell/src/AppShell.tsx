@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { KnowledgeBaseApp, ToastContainer, TabCacheService } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
+import { KnowledgeBaseApp, NotesWorkspace, ToastContainer, TabCacheService } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
 import { DocumentService } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/services/document';
 import { findDocInTree } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/utils/docTreeUtils';
 import {
@@ -29,7 +29,7 @@ import { SettingsModal } from './SettingsModal';
 import { GlobalNav } from './GlobalNav';
 import { UserProfileModal, DEFAULT_USER_PROFILE, type UserProfile } from './UserProfileModal';
 import { createKnowledgebaseAvatarUploadService } from './avatarUpload';
-import { SETTINGS_STORAGE_KEYS, type StartupModule } from './settingsModalConstants';
+import { DEFAULT_ACCENT_COLOR, SETTINGS_STORAGE_KEYS, type StartupModule } from './settingsModalConstants';
 import { readStoredDesktopPreferences, syncDesktopPreferences } from './settingsDesktopBridge';
 import { useDesktopHostIntegration } from './useDesktopHostIntegration';
 import { useNetworkAvailability } from './useNetworkAvailability';
@@ -37,7 +37,7 @@ import { useNetworkAvailability } from './useNetworkAvailability';
 const APP_ACTIVE_TAB_STORAGE_KEY = 'app-active-tab';
 const APP_SEARCH_VIEW_SESSION_KEY = 'app-search-view-active';
 
-type PersistedAppTab = 'kb' | 'market';
+type PersistedAppTab = 'kb' | 'market' | 'notes';
 type AppShellTab = PersistedAppTab | 'search';
 
 function readStartupModulePreference(): PersistedAppTab {
@@ -69,8 +69,8 @@ function readPersistedAppTabFromStorage(): PersistedAppTab {
     }
 
     const parsed = JSON.parse(item);
-    if (parsed === 'market') {
-      return 'market';
+    if (parsed === 'market' || parsed === 'notes') {
+      return parsed;
     }
 
     if (parsed === 'search') {
@@ -198,7 +198,7 @@ export function AppShell() {
     'system',
   );
   const { activeTab, setActiveTab } = useAppShellNavigation();
-  const [activeColor] = useLocalStorage(SETTINGS_STORAGE_KEYS.accentColor, '#2563eb');
+  const [activeColor] = useLocalStorage(SETTINGS_STORAGE_KEYS.accentColor, DEFAULT_ACCENT_COLOR);
   const [fontSize] = useLocalStorage<'small' | 'normal' | 'large'>(
     SETTINGS_STORAGE_KEYS.fontSize,
     'normal',
@@ -212,7 +212,13 @@ export function AppShell() {
   }, [networkOnline]);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--theme-accent', activeColor);
+    // The CSS light/dark rules own the default accent so dark mode keeps its
+    // brighter DSW variant; only a non-default user pick is pinned inline.
+    if (activeColor === DEFAULT_ACCENT_COLOR) {
+      document.documentElement.style.removeProperty('--theme-accent');
+    } else {
+      document.documentElement.style.setProperty('--theme-accent', activeColor);
+    }
 
     if (fontSize === 'small') {
       document.documentElement.style.fontSize = '14px';
@@ -403,7 +409,7 @@ export function AppShell() {
         account={account}
         profile={profile}
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as 'kb' | 'market' | 'search')}
+        onTabChange={(tab) => setActiveTab(tab as 'kb' | 'market' | 'notes' | 'search')}
         onOpenSettings={() => openSettings('appearance')}
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenAccountSettings={() => openSettings('account')}
@@ -427,6 +433,8 @@ export function AppShell() {
             onGoToFile={handleGoToFile}
             onOpenWebLink={handleOpenWebLink}
           />
+        ) : activeTab === 'notes' ? (
+          <NotesWorkspace />
         ) : (
           <KnowledgeBaseApp
             activeTab={activeTab}

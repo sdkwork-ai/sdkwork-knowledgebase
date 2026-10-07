@@ -263,5 +263,6 @@
   "adminConsoleYes": "是",
   "adminConsoleNo": "否",
   "adminConsoleLoadMore": "加载更多",
-  "adminConsoleLoadingMore": "加载中…"
+  "adminConsoleLoadingMore": "加载中…",
+  "notesNav": "笔记"
 }

@@ -1,12 +1,12 @@
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_chunk_store::{
     CreateKnowledgeChunkRecord, KnowledgeChunkStoreError,
 };
-use sqlx::{Any, AnyPool, QueryBuilder, Transaction};
+use sqlx::{Any, AnyPool, Transaction};
 use std::sync::Arc;
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use uuid::Uuid;
 
-use crate::db::sql_timestamp::{push_sql_timestamp_bind, SqlTimestampDialect};
+use crate::db::sql_timestamp::SqlTimestampDialect;
 use crate::id::{next_i64_id, KnowledgeIdGenerator};
 
 const ACTIVE_STATUS: i64 = 1;
@@ -108,7 +108,15 @@ async fn bulk_insert_kb_chunks_postgres(
     now: &str,
     batch: &[PreparedChunkRow],
 ) -> Result<(), KnowledgeChunkStoreError> {
-    let mut builder = QueryBuilder::new(
+    // Any-dialect QueryBuilder emits `?` placeholders, which the sqlx 0.9
+    // Postgres backend forwards verbatim; Postgres then parses `?` as the
+    // jsonb key-exists operator and the INSERT dies with a syntax error.
+    // Every other store in this crate hand-writes `$N` placeholders — do the
+    // same here (VALUES tuples of 18 expressions each).
+    const VALUES_PER_ROW: usize = 18;
+    let _ = timestamp_dialect;
+    let mut sql = String::with_capacity(512 + batch.len() * 220);
+    sql.push_str(
         r#"
         INSERT INTO kb_chunk (
             id, uuid, tenant_id, organization_id, space_id, collection_id, document_id,
@@ -116,33 +124,70 @@ async fn bulk_insert_kb_chunks_postgres(
             token_count, locator, status, created_at, updated_at, version,
             search_vector
         )
-        "#,
+        VALUES "#,
     );
-    builder.push_values(batch, |mut row, chunk| {
-        row.push_bind(chunk.id)
-            .push_bind(chunk.uuid.as_str())
-            .push_bind(tenant_id)
-            .push_bind(organization_id)
-            .push_bind(chunk.space_id)
-            .push_bind(chunk.collection_id)
-            .push_bind(chunk.document_id)
-            .push_bind(version_id)
-            .push_bind(chunk.chunk_index)
-            .push_bind(chunk.content_text.as_str())
-            .push_bind(chunk.content_hash.as_str())
-            .push_bind(chunk.token_count)
-            .push_bind(chunk.locator.as_deref())
-            .push_bind(ACTIVE_STATUS);
-        push_sql_timestamp_bind(&mut row, timestamp_dialect, now);
-        push_sql_timestamp_bind(&mut row, timestamp_dialect, now);
-        row.push_bind(INITIAL_VERSION);
-        row.push("to_tsvector('simple', ");
-        row.push_bind_unseparated(chunk.content_text.as_str());
-        row.push_unseparated(")");
-    });
+    for (row_index, _) in batch.iter().enumerate() {
+        if row_index > 0 {
+            sql.push_str(", ");
+        }
+        sql.push('(');
+        let base = row_index * VALUES_PER_ROW;
+        let placeholder = |index: usize| format!("${}", base + index);
+        sql.push_str(&placeholder(1)); // id
+        sql.push_str(&format!(", {}, {}", placeholder(2), placeholder(3))); // uuid, tenant_id
+        sql.push_str(&format!(
+            ", {}, {}, {}, {}, {}, {}, {}, {}, {}",
+            placeholder(4),  // organization_id
+            placeholder(5),  // space_id
+            placeholder(6),  // collection_id
+            placeholder(7),  // document_id
+            placeholder(8),  // document_version_id
+            placeholder(9),  // chunk_index
+            placeholder(10), // content_text
+            placeholder(11), // content_hash
+            placeholder(12), // token_count
+        ));
+        sql.push_str(&format!(
+            ", to_jsonb({}), {}",
+            placeholder(13), // locator (jsonb column; text encoded as a JSON string scalar)
+            placeholder(14), // status
+        ));
+        sql.push_str(&format!(
+            ", CAST({} AS TIMESTAMP), CAST({} AS TIMESTAMP), {}",
+            placeholder(15),
+            placeholder(16),
+            placeholder(17), // version
+        ));
+        sql.push_str(&format!(
+            ", to_tsvector('simple', {})",
+            placeholder(18), // search_vector source text
+        ));
+        sql.push(')');
+    }
 
-    builder
-        .build()
+    let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()));
+    for chunk in batch {
+        query = query
+            .bind(chunk.id)
+            .bind(chunk.uuid.as_str())
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(chunk.space_id)
+            .bind(chunk.collection_id)
+            .bind(chunk.document_id)
+            .bind(version_id)
+            .bind(chunk.chunk_index)
+            .bind(chunk.content_text.as_str())
+            .bind(chunk.content_hash.as_str())
+            .bind(chunk.token_count)
+            .bind(chunk.locator.as_deref())
+            .bind(ACTIVE_STATUS)
+            .bind(now)
+            .bind(now)
+            .bind(INITIAL_VERSION)
+            .bind(chunk.content_text.as_str());
+    }
+    query
         .execute(&mut **transaction)
         .await
         .map_err(chunk_internal_error)?;

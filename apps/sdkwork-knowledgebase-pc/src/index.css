@@ -35,35 +35,127 @@
      without ever being defined, so embeds fell back to a hardcoded dark. */
   --color-kb-bg-app: var(--theme-editor);
 
-  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-code: "SF Mono", "JetBrains Mono", "Fira Code", Consolas, "Liberation Mono", Menlo, Courier, "PingFang SC", "Microsoft YaHei";
+
+  /* Tailwind v4 utilities compile to var(--color-*) references, so overriding
+     the default ramps here re-themes every raw zinc/gray/slate/blue/indigo
+     class across the app in one place. Values come from birdcoder2's DSW
+     platform: the neutral-bluish ramp for neutrals and the DeepSeek blue ramp
+     for the brand accent planes (sky/cyan stay secondary info hues). */
+  --color-zinc-50: #f9fafb;    /* DSW bluish-50 */
+  --color-zinc-100: #f1f3f5;   /* DSW bluish-75 */
+  --color-zinc-200: #e1e5ee;   /* DSW bluish-200 */
+  --color-zinc-250: #e9ecf2;   /* DSW bluish-150 (app-referenced stop) */
+  --color-zinc-300: #cfd3d6;   /* DSW bluish-300 */
+  --color-zinc-400: #adb2b8;   /* DSW bluish-400 */
+  --color-zinc-450: #979da6;   /* DSW bluish-500 (app-referenced stop) */
+  --color-zinc-500: #61666b;   /* DSW bluish-700 (label-secondary) */
+  --color-zinc-550: #81858c;   /* DSW bluish-600 (app-referenced stop) */
+  --color-zinc-600: #43454a;   /* DSW bluish-750 */
+  --color-zinc-650: #3f4045;   /* between bluish-750 and bluish-800 (app-referenced) */
+  --color-zinc-700: #353638;   /* DSW bluish-800 */
+  --color-zinc-800: #2c2c2e;   /* DSW bluish-850 */
+  --color-zinc-850: #232324;   /* DSW bluish-875 (app-referenced stop) */
+  --color-zinc-900: #1b1b1c;   /* DSW bluish-900 */
+  --color-zinc-950: #151517;   /* DSW bluish-950 */
+
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f1f3f5;
+  --color-gray-200: #e1e5ee;
+  --color-gray-300: #cfd3d6;
+  --color-gray-400: #adb2b8;
+  --color-gray-500: #61666b;
+  --color-gray-600: #43454a;
+  --color-gray-700: #353638;
+  --color-gray-800: #2c2c2e;
+  --color-gray-900: #1b1b1c;
+  --color-gray-950: #151517;
+
+  --color-slate-50: #f9fafb;
+  --color-slate-100: #f1f3f5;
+  --color-slate-200: #e1e5ee;
+  --color-slate-300: #cfd3d6;
+  --color-slate-400: #adb2b8;
+  --color-slate-500: #61666b;
+  --color-slate-600: #43454a;
+  --color-slate-700: #353638;
+  --color-slate-800: #2c2c2e;
+  --color-slate-900: #1b1b1c;
+  --color-slate-950: #151517;
+
+  --color-blue-50: #edf3fe;    /* DSW deepseek-50 */
+  --color-blue-100: #e4edfd;   /* DSW deepseek-100 */
+  --color-blue-200: #d3e2ff;   /* DSW deepseek-200 */
+  --color-blue-300: #b7c8fe;   /* DSW deepseek-300 */
+  --color-blue-400: #7aaaff;   /* DSW deepseek-400 */
+  --color-blue-500: #5686fe;   /* DSW deepseek-450 */
+  --color-blue-600: #4176e6;   /* DSW deepseek-500 */
+  --color-blue-700: #4868b2;   /* DSW deepseek-600 */
+  --color-blue-800: #34415b;   /* DSW deepseek-800 */
+  --color-blue-900: #283142;   /* DSW deepseek-900 */
+  --color-blue-950: #172554;   /* DSW deepseek-950 */
+
+  --color-indigo-50: #edf3fe;
+  --color-indigo-100: #e4edfd;
+  --color-indigo-200: #d3e2ff;
+  --color-indigo-300: #b7c8fe;
+  --color-indigo-400: #7aaaff;
+  --color-indigo-500: #5686fe;
+  --color-indigo-600: #4176e6;
+  --color-indigo-700: #4868b2;
+  --color-indigo-800: #34415b;
+  --color-indigo-900: #283142;
+  --color-indigo-950: #172554;
+
+  /* The embedded IAM auth page (bg-primary-600 / text-primary-*) compiles
+     through this stylesheet via @source, so its brand ramp carries the
+     knowledgebase DSW accent too. */
+  --color-primary-50: #edf3fe;
+  --color-primary-100: #e4edfd;
+  --color-primary-200: #d3e2ff;
+  --color-primary-300: #b7c8fe;
+  --color-primary-400: #7aaaff;
+  --color-primary-500: #5686fe;
+  --color-primary-600: #4176e6;
+  --color-primary-700: #4868b2;
+  --color-primary-800: #34415b;
+  --color-primary-900: #283142;
+  --color-primary-950: #172554;
 }
 
-/* Tech-blue commercial theme. Neutrals carry a cool blue tint (light: blue-gray
-   slate; dark: deep navy) so the blue accent reads as one coherent brand color
-   across nav, panels, editor chrome, and controls. */
+/* Theme aligned with sdkwork-birdcoder2's DSW design platform
+   (packages/client/ui-theme/src/styles/design-platform.css): neutral-bluish
+   surfaces (white canvas, bluish-50 chrome, near-black dark) with the
+   DeepSeek blue ramp as the single brand accent. */
 :root {
-  --theme-nav: #f3f6fb;
-  --theme-nav-hover: rgba(37, 99, 235, 0.07);
-  --theme-nav-text: #5b6b84;
-  --theme-nav-text-hover: #2563eb;
+  --theme-nav: #f9fafb;                        /* DSW sidebar-fill: neutral-bluish-50 */
+  --theme-nav-hover: #f1f3f5;                  /* DSW sidebar nav item hover: bluish-75 */
+  --theme-nav-text: #61666b;                   /* DSW label-secondary: bluish-700 */
+  --theme-nav-text-hover: #4176e6;             /* DSW deepseek-500 */
 
-  --theme-panel: #f6f8fc;
-  --theme-panel-border: #e2e8f2;
-  --theme-panel-hover: rgba(37, 99, 235, 0.06);
-  --theme-panel-active: rgba(37, 99, 235, 0.10);
-  --theme-panel-text: #2563eb;
+  --theme-panel: #f9fafb;                      /* DSW surface/code block: bluish-50 */
+  --theme-panel-border: rgba(0, 0, 0, 0.1);    /* DSW border-l2 */
+  --theme-panel-hover: rgba(38, 49, 72, 0.06); /* DSW interactive-bg-hover */
+  --theme-panel-active: rgba(38, 49, 72, 0.1); /* DSW interactive-bg-active */
+  --theme-panel-text: #4176e6;                 /* DSW deepseek-500 */
 
-  --theme-editor: #ffffff;
-  --theme-editor-border: #e2e8f2;
+  --theme-editor: #ffffff;                     /* DSW bg-base: neutral-bluish-00 */
+  --theme-editor-border: rgba(0, 0, 0, 0.1);   /* DSW border-l2 */
 
-  --theme-text: #334155;
-  --theme-text-heading: #0f172a;
-  --theme-text-muted: #64748b;
+  --theme-text: #0f1115;                       /* DSW label-primary: bluish-1000 */
+  --theme-text-heading: #0f1115;
+  --theme-text-muted: #81858c;                 /* DSW label-tertiary: bluish-600 */
 
-  --theme-accent: #2563eb;
-  --theme-accent-hover: #1d4ed8;
-  --theme-input-bg: #eef2f9;
+  --theme-accent: #4176e6;                     /* DSW deepseek-500 */
+  --theme-accent-hover: #4868b2;               /* DSW deepseek-600 (hover darkens for text legibility) */
+  --theme-input-bg: #f5f6f7;                   /* DSW bluish-60 */
+
+  /* Host brand hook consumed by the embedded IAM auth surface
+     (--sdk-color-brand-primary, red fallback) — follows the theme accent so
+     the login page carries the knowledgebase DSW brand in light and dark. */
+  --sdk-color-brand-primary: var(--theme-accent);
   
   --scrollbar-thumb: color-mix(in srgb, var(--theme-text-muted) 32%, transparent);
   --scrollbar-thumb-hover: color-mix(in srgb, var(--theme-text-muted) 52%, transparent);
@@ -88,27 +180,27 @@ html.dark * {
 }
 
 html.dark {
-  --theme-nav: #0e1729;
-  --theme-nav-hover: rgba(59, 130, 246, 0.12);
-  --theme-nav-text: #8fa1bd;
-  --theme-nav-text-hover: #60a5fa;
+  --theme-nav: #1b1b1c;                          /* DSW sidebar-fill dark: bluish-900 */
+  --theme-nav-hover: #2c2c2e;                    /* DSW sidebar nav item hover dark: bluish-850 */
+  --theme-nav-text: #adb2b8;                     /* DSW label-tertiary dark: bluish-400 */
+  --theme-nav-text-hover: #7aaaff;               /* DSW deepseek-400 */
 
-  --theme-panel: #111c30;
-  --theme-panel-border: #1f2d47;
-  --theme-panel-hover: rgba(59, 130, 246, 0.10);
-  --theme-panel-active: rgba(59, 130, 246, 0.16);
-  --theme-panel-text: #60a5fa;
+  --theme-panel: #2c2c2e;                        /* DSW bg-layer-2 dark: bluish-850 */
+  --theme-panel-border: rgba(255, 255, 255, 0.12); /* DSW border-l2 dark */
+  --theme-panel-hover: rgba(255, 255, 255, 0.08);  /* DSW interactive-bg-hover dark */
+  --theme-panel-active: rgba(255, 255, 255, 0.14); /* DSW interactive-bg-active dark */
+  --theme-panel-text: #7aaaff;                   /* DSW deepseek-400 */
 
-  --theme-editor: #0a1120;
-  --theme-editor-border: #1f2d47;
+  --theme-editor: #151517;                       /* DSW bg-base dark: bluish-950 */
+  --theme-editor-border: rgba(255, 255, 255, 0.12);
 
-  --theme-text: #c6d2e4;
-  --theme-text-heading: #eef3fb;
-  --theme-text-muted: #8fa1bd;
+  --theme-text: #f9fafb;                         /* DSW label-primary dark: bluish-50 */
+  --theme-text-heading: #f9fafb;
+  --theme-text-muted: #cfd3d6;                   /* DSW label-secondary dark: bluish-300 */
 
-  --theme-accent: #3b82f6;
-  --theme-accent-hover: #60a5fa;
-  --theme-input-bg: #18243c;
+  --theme-accent: #5686fe;                       /* DSW deepseek-450 (dark brand primary) */
+  --theme-accent-hover: #7aaaff;                 /* DSW deepseek-400 (hover brightens) */
+  --theme-input-bg: #232324;                     /* DSW bg-layer-1 dark: bluish-875 */
 
   --scrollbar-thumb: color-mix(in srgb, var(--theme-text-muted) 38%, var(--theme-editor) 62%);
   --scrollbar-thumb-hover: color-mix(in srgb, var(--theme-text-muted) 55%, var(--theme-editor) 45%);
@@ -257,7 +349,7 @@ body {
 .tiptap-editor pre {
   background: var(--color-kb-panel);
   color: var(--color-kb-text);
-  font-family: monospace;
+  font-family: var(--font-code);
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
 }
@@ -299,7 +391,7 @@ body {
 .markdown-body pre {
   background: var(--color-kb-panel);
   color: var(--color-kb-text);
-  font-family: monospace;
+  font-family: var(--font-code);
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   overflow-x: auto;
@@ -352,7 +444,7 @@ select option {
 .w-md-editor-text-pre > code,
 .w-md-editor-text-input {
   color: var(--color-kb-text) !important;
-  font-family: monospace !important;
+  font-family: var(--font-code) !important;
 }
 
 .wmde-markdown {
@@ -4233,27 +4325,27 @@ select option {
 }
 
 .sdkwork-knowledgebase-auth-shell {
-  --sdkwork-knowledgebase-auth-bg: #0c0d11;
-  --sdkwork-knowledgebase-auth-header-bg: #0e0e11;
+  --sdkwork-knowledgebase-auth-bg: #151517;
+  --sdkwork-knowledgebase-auth-header-bg: #1b1b1c;
   --sdkwork-knowledgebase-auth-header-border: rgba(255, 255, 255, 0.08);
-  --sdkwork-knowledgebase-auth-header-text: #f4f4f5;
-  --sdkwork-knowledgebase-auth-content-bg: rgba(17, 18, 24, 0.96);
-  --sdkwork-knowledgebase-auth-content-text: #f8fafc;
-  --sdkwork-knowledgebase-auth-muted-text: #a1a1aa;
+  --sdkwork-knowledgebase-auth-header-text: #f9fafb;
+  --sdkwork-knowledgebase-auth-content-bg: rgba(35, 35, 36, 0.96);
+  --sdkwork-knowledgebase-auth-content-text: #f9fafb;
+  --sdkwork-knowledgebase-auth-muted-text: #cfd3d6;
   --sdkwork-knowledgebase-auth-field-bg: rgba(255, 255, 255, 0.06);
   --sdkwork-knowledgebase-auth-divider: rgba(255, 255, 255, 0.12);
-  --sdkwork-knowledgebase-auth-aside-bg: #101114;
+  --sdkwork-knowledgebase-auth-aside-bg: #1b1b1c;
   --sdkwork-knowledgebase-auth-aside-border: rgba(255, 255, 255, 0.08);
-  --sdkwork-knowledgebase-auth-aside-text: #f5f5f5;
+  --sdkwork-knowledgebase-auth-aside-text: #f9fafb;
   --sdkwork-knowledgebase-auth-aside-card-bg: rgba(255, 255, 255, 0.08);
   --sdkwork-knowledgebase-auth-aside-card-border: rgba(255, 255, 255, 0.1);
-  --sdkwork-knowledgebase-auth-aside-badge-bg: rgba(96, 165, 250, 0.12);
-  --sdkwork-knowledgebase-auth-aside-badge-text: #93c5fd;
-  --sdkwork-knowledgebase-auth-qr-bg: rgba(8, 11, 18, 0.94);
+  --sdkwork-knowledgebase-auth-aside-badge-bg: rgba(122, 170, 255, 0.14);
+  --sdkwork-knowledgebase-auth-aside-badge-text: #b7c8fe;
+  --sdkwork-knowledgebase-auth-qr-bg: rgba(21, 21, 23, 0.94);
   background:
-    radial-gradient(circle at 18% 24%, rgba(37, 99, 235, 0.16), transparent 30%),
-    radial-gradient(circle at 82% 72%, rgba(16, 185, 129, 0.12), transparent 32%),
-    linear-gradient(180deg, #111217 0%, #0c0d11 100%);
+    radial-gradient(circle at 18% 24%, rgba(65, 118, 230, 0.16), transparent 30%),
+    radial-gradient(circle at 82% 72%, rgba(86, 134, 254, 0.1), transparent 32%),
+    linear-gradient(180deg, #1b1b1c 0%, #151517 100%);
   color: var(--sdkwork-knowledgebase-auth-content-text);
   display: flex;
   flex-direction: column;
@@ -4286,7 +4378,7 @@ select option {
 
 .sdkwork-knowledgebase-auth-header-mark {
   align-items: center;
-  background: linear-gradient(135deg, #2563eb, #10b981);
+  background: linear-gradient(135deg, #4176e6, #7aaaff);
   border-radius: 6px;
   color: #ffffff;
   display: inline-flex;

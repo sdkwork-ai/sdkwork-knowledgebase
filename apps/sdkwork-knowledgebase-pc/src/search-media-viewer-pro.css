@@ -1489,7 +1489,7 @@
 
 
 .search-video-player__badge--shape {
-  color: #93c5fd;
+  color: #b7c8fe;
   background: rgba(147, 197, 253, 0.12);
 }
 
@@ -2165,7 +2165,7 @@
 }
 
 .search-audio-player--immersive .search-audio-player__kind-badge--shape {
-  color: #93c5fd;
+  color: #b7c8fe;
   background: rgba(147, 197, 253, 0.14);
 }
 
@@ -2391,8 +2391,8 @@
 }
 
 .search-video-player__control-btn--active {
-  color: #60a5fa !important;
-  background: rgba(96, 165, 250, 0.18) !important;
+  color: #7aaaff !important;
+  background: rgba(122, 170, 255, 0.18) !important;
 }
 
 .search-media-playlist--video {
@@ -2411,27 +2411,27 @@
 }
 
 .search-media-playlist--video .search-media-playlist__row--playing .search-media-playlist__track-title {
-  color: #60a5fa;
+  color: #7aaaff;
 }
 
 .search-media-playlist--video .search-media-playlist__eq span {
-  background: #60a5fa;
+  background: #7aaaff;
 }
 
 .search-media-playlist--video .search-media-playlist__row--active {
-  background: color-mix(in srgb, #60a5fa 12%, rgba(255, 255, 255, 0.1));
+  background: color-mix(in srgb, #7aaaff 12%, rgba(255, 255, 255, 0.1));
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #60a5fa 26%, rgba(255, 255, 255, 0.12)),
+    0 0 0 1px color-mix(in srgb, #7aaaff 26%, rgba(255, 255, 255, 0.12)),
     0 8px 22px rgba(0, 0, 0, 0.16);
 }
 
 .search-media-playlist--video .search-media-playlist__row--active .search-media-playlist__index {
-  color: #93c5fd;
+  color: #b7c8fe;
 }
 
 .search-media-playlist--video .search-media-playlist__row--active .search-media-playlist__cover {
   box-shadow:
-    0 0 0 2px color-mix(in srgb, #60a5fa 54%, transparent),
+    0 0 0 2px color-mix(in srgb, #7aaaff 54%, transparent),
     0 6px 16px rgba(0, 0, 0, 0.24);
 }
 

@@ -78,7 +78,7 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
                 d.title,
                 c.content_text,
                 c.token_count,
-                c.locator,
+                c.locator #>> '{}' AS locator,
                 'kb://documents/' || c.document_id::text AS source_uri,
                 (1 - (e.embedding_vector <=> CAST(
             "#,

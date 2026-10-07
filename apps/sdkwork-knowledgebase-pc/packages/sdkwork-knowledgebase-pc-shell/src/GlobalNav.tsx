@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { BookOpen, Shield, Store, Settings, Search } from 'lucide-react';
+import { BookOpen, Shield, StickyNote, Store, Settings, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createRuntimeConfig, type KnowledgebaseAccountViewModel } from 'sdkwork-knowledgebase-pc-core';
 import { UserProfile, DEFAULT_USER_PROFILE } from './UserProfileModal';
@@ -32,6 +32,7 @@ export function GlobalNav({
   const navItems = useMemo(() => {
     const items = [
       { id: 'kb', icon: BookOpen, title: t('myKnowledgeBase') },
+      { id: 'notes', icon: StickyNote, title: t('notesNav') },
       { id: 'search', icon: Search, title: t('search') },
     ];
     if (featureFlags.knowledgeMarketCatalog) {

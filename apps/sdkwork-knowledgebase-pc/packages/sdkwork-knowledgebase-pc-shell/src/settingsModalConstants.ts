@@ -2,6 +2,11 @@ export const SETTINGS_APP_VERSION = '0.1.0';
 export const SETTINGS_APP_DISPLAY_NAME = 'SDKWork Knowledgebase';
 export const SETTINGS_VENDOR_NAME = 'SDKWork';
 
+/** Default brand accent — the birdcoder2 DSW DeepSeek blue (deepseek-500).
+ * The CSS light/dark rules own this value; only a non-default user pick is
+ * applied inline (AppShell), so dark mode can keep its brighter variant. */
+export const DEFAULT_ACCENT_COLOR = '#4176e6';
+
 export const SETTINGS_STORAGE_KEYS = {
   settingsTab: 'app-settings-tab',
   themePreference: 'app-theme-preference',
@@ -25,7 +30,7 @@ export const SETTINGS_LINKS = {
 
 export const ACCENT_COLOR_PRESETS = [
   { id: 'wechat', color: '#07c160', labelKey: 'accentPresetWechat' },
-  { id: 'blue', color: '#2563eb', labelKey: 'accentPresetBlue' },
+  { id: 'blue', color: DEFAULT_ACCENT_COLOR, labelKey: 'accentPresetBlue' },
   { id: 'violet', color: '#8b5cf6', labelKey: 'accentPresetViolet' },
   { id: 'rose', color: '#ef4444', labelKey: 'accentPresetRose' },
 ] as const;

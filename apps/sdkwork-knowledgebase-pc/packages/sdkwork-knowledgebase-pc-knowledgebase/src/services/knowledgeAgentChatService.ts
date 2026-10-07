@@ -52,15 +52,24 @@ export async function sendKnowledgeAgentMessage(
   const client = requireKnowledgebaseAppSdkHttpClient();
   const profile = await client.knowledge.agentProfiles.retrieve(profileId);
 
-  const response = await client.knowledge.agentProfiles.chat.create(profileId, {
+  // The gateway rejects client-supplied context selector fields (`sessionId`
+  // included) with 40001, so the key must be absent — never null — unless the
+  // caller explicitly resolved a session.
+  const chatRequest = {
     message: message.trim(),
     mode: options?.mode ?? profile.knowledgeMode ?? 'okf_bundle',
-    sessionId: options?.sessionId ?? null,
+    ...(options?.sessionId !== undefined && options?.sessionId !== null
+      ? { sessionId: options.sessionId }
+      : {}),
     modelProviderId: profile.modelProviderId ?? KNOWLEDGE_AGENT_RIG_MODEL_PROVIDER_ID,
     modelId: profile.modelId ?? KNOWLEDGE_AGENT_RIG_DEFAULT_MODEL_ID,
     agentImplementationId:
       profile.agentImplementationId ?? KNOWLEDGE_AGENT_RIG_IMPLEMENTATION_ID,
-  });
+  };
+  const response = await client.knowledge.agentProfiles.chat.create(
+    profileId,
+    chatRequest,
+  );
 
   return response.answer.trim();
 }

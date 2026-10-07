@@ -175,5 +175,19 @@
   "systemPrompt": "设定专属系统提示词身份 (System Prompt)",
   "systemPromptPlaceholder": "输入身份预设，比如：你现在是金融顾问...",
   "showMore": "展开更多 ({{count}})",
-  "showLess": "折叠"
+  "showLess": "折叠",
+  "notesWorkspaceTitle": "笔记",
+  "notesNew": "新建笔记",
+  "notesUntitled": "未命名笔记",
+  "notesSearchPlaceholder": "搜索笔记…",
+  "notesSearchNoMatch": "没有匹配的笔记",
+  "notesLoading": "加载中…",
+  "notesEmpty": "还没有笔记,点击右上角「新建笔记」开始",
+  "notesDelete": "删除笔记",
+  "notesCreated": "笔记已创建",
+  "notesDeleted": "笔记已删除",
+  "notesSaving": "保存中…",
+  "notesEditorEmptyTitle": "未选择笔记",
+  "notesEditorEmptyHintSelect": "从左侧列表选择一篇笔记,或新建一篇开始创作",
+  "notesEditorEmptyHintCreate": "点击右上角「新建笔记」开始你的第一篇笔记"
 }

@@ -1107,10 +1107,11 @@ export async function updateDocument(id: string, updates: Partial<DocumentMeta>)
     || updates.title !== undefined
     || updates.isPinned !== undefined;
 
-  if (hasDriveMetadataUpdate) {
-    if (!browserMatch) {
-      throwKnowledgebaseError(KnowledgebaseErrorCodes.UNSUPPORTED_OPERATION);
-    }
+  // Drive-node metadata sync only applies to documents that live in the browser
+  // tree. Manual notes (no drive node) fall through to the direct
+  // `documents.update` branch below — the previous early throw made that
+  // fallback unreachable, so manual note titles could never be renamed.
+  if (hasDriveMetadataUpdate && browserMatch) {
     if (!isKnowledgebaseDriveApiAvailable()) {
       throwKnowledgebaseError(KnowledgebaseErrorCodes.API_UNAVAILABLE_DRIVE);
     }
