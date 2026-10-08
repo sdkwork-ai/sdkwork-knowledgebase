@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use axum::http::StatusCode;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_drive_node_tree::{
     GetKnowledgeDriveNodeRequest, KnowledgeDriveNodeTree,
 };
@@ -131,7 +132,7 @@ impl KnowledgeSpaceAppService for HostedSpaceService {
         context: KnowledgeAppRequestContext,
         space_id: u64,
         request: GrantKnowledgeSpaceMemberRequest,
-    ) -> ApiResult<()> {
+    ) -> ApiResult<sdkwork_utils_rust::SdkWorkCommandData> {
         grant_space_member_with_context(&self.runtime, &context, space_id, request).await
     }
 
@@ -226,13 +227,31 @@ impl KnowledgeDriveImportAppService for HostedDriveImportService {
         context: KnowledgeAppRequestContext,
         request: KnowledgeDriveImportRequest,
     ) -> ApiResult<KnowledgeDriveImportResult> {
-        require_space_access_with_role(
+        let space = require_space_access_with_role(
             &self.runtime,
             &context,
             request.space_id,
             KnowledgeAccessRole::Writer,
         )
         .await?;
+        // The drive node tree resolves nodes tenant-scoped, so the client-supplied
+        // drive space must be the authorized space's own binding. Without this check
+        // a Writer on space A could import any ready node from space B in the same
+        // tenant by naming its drive space id.
+        let authorized_drive_space_id = space.drive_space_id.clone().ok_or_else(|| {
+            ApiError::new(
+                StatusCode::FORBIDDEN,
+                "knowledge_space_drive_binding_missing",
+                "knowledge space is not bound to a Drive space",
+            )
+        })?;
+        if request.drive_space_id.trim() != authorized_drive_space_id {
+            return Err(ApiError::new(
+                StatusCode::FORBIDDEN,
+                "drive_import_space_mismatch",
+                "drive_space_id does not match the authorized knowledge space",
+            ));
+        }
         let request = resolve_drive_import_request(self.runtime.drive_tree(), request).await?;
         let service = KnowledgeDriveImportService::new(
             self.runtime.drive_storage(),
@@ -458,7 +477,6 @@ impl KnowledgeDocumentAppService for HostedDocumentService {
             .document_store()
             .create_document(CreateKnowledgeDocumentRecord {
                 space_id: request.space_id,
-                collection_id: request.collection_id.unwrap_or(0),
                 source_id: Some(source_id),
                 identity_scope: KnowledgeDocumentIdentityScope::SourceOnly,
                 original_file_drive_node_id: None,
@@ -1032,7 +1050,7 @@ impl KnowledgeOkfAppService for HostedOkfService {
                 8,
             )
             .await
-            .map_err(|error| ApiError::internal("okf_engine_search_failed", error))?;
+            .map_err(ApiError::from)?;
 
         Ok(OkfQueryResult {
             answer_markdown: format_okf_engine_answer(&search.hits),
@@ -1321,11 +1339,12 @@ async fn resolve_drive_import_request(
 pub(crate) fn map_okf_concept_store_error(
     error: sdkwork_intelligence_knowledgebase_service::ports::knowledge_okf_concept_store::KnowledgeOkfConceptStoreError,
 ) -> ApiError {
-    let detail = error.to_string();
-    if detail.contains("missing okf concept") {
-        ApiError::not_found("okf_concept_not_found", detail)
-    } else {
-        ApiError::internal("knowledge_okf_concept_store_failed", detail)
+    use sdkwork_intelligence_knowledgebase_service::ports::knowledge_okf_concept_store::KnowledgeOkfConceptStoreError;
+    match error {
+        KnowledgeOkfConceptStoreError::NotFound(detail) => {
+            ApiError::not_found("okf_concept_not_found", detail)
+        }
+        other => ApiError::internal("knowledge_okf_concept_store_failed", other.to_string()),
     }
 }
 

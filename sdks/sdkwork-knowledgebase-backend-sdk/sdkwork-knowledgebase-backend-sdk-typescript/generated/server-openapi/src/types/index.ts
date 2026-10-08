@@ -118,7 +118,7 @@ export type { KnowledgeEngineProviderMigrationOperationPage } from './knowledge-
 export type { GroupKnowledgebaseLaunchCapability } from './group-knowledgebase-launch-capability';
 export type { ComplianceAuditEventsAnonymizeActorCreateResponse201 } from './compliance-audit-events-anonymize-actor-create-response201';
 export type { ComplianceAuditEventsExportCreateResponse201 } from './compliance-audit-events-export-create-response201';
-export type { GroupLaunchCapabilityResponse } from './group-launch-capability-response';
+export type { GroupLaunchListResponse } from './group-launch-list-response';
 export type { IndexesCreateResponse201 } from './indexes-create-response201';
 export type { IndexesListResponse } from './indexes-list-response';
 export type { IndexesRetrieveResponse } from './indexes-retrieve-response';

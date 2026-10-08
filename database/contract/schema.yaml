@@ -12,9 +12,6 @@ tables:
   - name: kb_space
     lifecycle_status: active
     owner: knowledgebase-platform
-  - name: kb_collection
-    lifecycle_status: active
-    owner: knowledgebase-platform
   - name: kb_source
     lifecycle_status: active
     owner: knowledgebase-platform

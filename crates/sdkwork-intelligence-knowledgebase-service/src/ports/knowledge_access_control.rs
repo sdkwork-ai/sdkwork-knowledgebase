@@ -177,6 +177,12 @@ pub enum KnowledgeAccessControlError {
     InvalidRequest(String),
     #[error("knowledge access control denied: {0}")]
     Denied(String),
+    /// The addressed drive-side resource (for example a space's permission
+    /// anchor node or bound drive space) does not exist. Distinct from
+    /// `InvalidRequest` so callers can retire a definitively missing binding
+    /// instead of surfacing a permanent 5xx.
+    #[error("knowledge access control resource not found: {0}")]
+    NotFound(String),
     #[error("knowledge access control upstream error: {0}")]
     Upstream(String),
     #[error("knowledge access control internal error: {0}")]

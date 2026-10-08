@@ -1,9 +1,13 @@
 use axum::{
+    body::Bytes,
     extract::{rejection::JsonRejection, FromRequestParts, OriginalUri, Path, Query, State},
     http::{request::Parts, StatusCode},
-    response::Response,
+    response::{IntoResponse, Response},
     routing::{delete, get, patch, post, put},
     Json, Router,
+};
+use sdkwork_intelligence_knowledgebase_service::wechat::{
+    WechatCallbackReceiptRequest, WechatCallbackVerificationRequest,
 };
 use sdkwork_knowledgebase_contract::{
     context_binding::{
@@ -281,6 +285,10 @@ fn build_business_router(api: Arc<dyn KnowledgeAppApi>) -> Router {
             paths::WECHAT_ARTICLES_PREVIEW,
             post(preview_wechat_articles),
         )
+        .route(
+            paths::WECHAT_CALLBACK,
+            get(verify_wechat_callback).post(receive_wechat_callback),
+        )
         .route(paths::MARKET_LISTINGS, get(list_market_listings))
         .route(
             paths::MARKET_SUBSCRIPTIONS,
@@ -298,8 +306,10 @@ fn build_business_router(api: Arc<dyn KnowledgeAppApi>) -> Router {
         .with_state(AppState { api })
 }
 
+// Query parameter names follow the API_SPEC §13 lower_snake_case canonical form,
+// so no camelCase rename layer is applied: the field names are the wire names.
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 struct ListDocumentsQuery {
     space_id: u64,
     cursor: Option<String>,
@@ -490,7 +500,7 @@ async fn change_wiki_source_file_visibility(
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 struct RevokeSpaceMemberQuery {
     subject_type: KnowledgeSpaceMemberSubjectType,
     subject_id: String,
@@ -520,12 +530,12 @@ async fn grant_space_member(
     Json(request): Json<GrantKnowledgeSpaceMemberRequest>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
-    state
-        .api
-        .grant_space_member(context, space_id, request)
-        .await
-        .map_err(ApiProblem::from)?;
-    command_json()
+    command_json(
+        state
+            .api
+            .grant_space_member(context, space_id, request)
+            .await,
+    )
 }
 
 async fn revoke_space_member(
@@ -575,7 +585,7 @@ async fn list_wechat_official_accounts(
     context: RequiredAppContext,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
-    ok_json(state.api.list_wechat_official_accounts(context).await)
+    ok_list_json(state.api.list_wechat_official_accounts(context).await)
 }
 
 async fn replace_wechat_official_accounts(
@@ -599,7 +609,7 @@ async fn list_wechat_official_account_fan_tags(
     Path(account_id): Path<String>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
-    ok_json(
+    ok_list_json(
         state
             .api
             .list_official_account_fan_tags(context, account_id)
@@ -612,7 +622,7 @@ async fn list_wechat_applets(
     context: RequiredAppContext,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
-    ok_json(state.api.list_wechat_applets(context).await)
+    ok_list_json(state.api.list_wechat_applets(context).await)
 }
 
 async fn replace_wechat_applets(
@@ -651,6 +661,92 @@ async fn preview_wechat_articles(
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     ok_json(state.api.preview_wechat_articles(context, request).await)
+}
+
+// WeChat public-platform servers call the callback routes directly: they cannot
+// present SDKWork dual tokens, so there is no RequiredAppContext extractor here.
+// Authentication is the WeChat msg_signature scheme verified inside the api
+// implementation against the tenant's stored callback token; the `tenant` and
+// `account_id` query parameters scope the lookup before any credential check.
+#[derive(Debug, Deserialize)]
+struct WechatCallbackQuery {
+    // GET URL verification signs `signature`, encrypted POSTs sign `msg_signature`.
+    signature: Option<String>,
+    msg_signature: Option<String>,
+    timestamp: String,
+    nonce: String,
+    echostr: Option<String>,
+    tenant: u64,
+    account_id: String,
+}
+
+async fn verify_wechat_callback(
+    State(state): State<AppState>,
+    CheckedQuery(query): CheckedQuery<WechatCallbackQuery>,
+) -> Result<Response, ApiProblem> {
+    let signature = require_callback_signature(&query)?;
+    let echostr = query.echostr.ok_or_else(|| {
+        invalid_query_parameter("query parameter echostr is required")
+    })?;
+    let echo = state
+        .api
+        .verify_wechat_callback(WechatCallbackVerificationRequest {
+            tenant_id: query.tenant,
+            account_id: query.account_id,
+            signature,
+            timestamp: query.timestamp,
+            nonce: query.nonce,
+            echostr,
+        })
+        .await
+        .map_err(ApiProblem::from)?;
+    Ok(plain_text_response(echo))
+}
+
+async fn receive_wechat_callback(
+    State(state): State<AppState>,
+    CheckedQuery(query): CheckedQuery<WechatCallbackQuery>,
+    body: Bytes,
+) -> Result<Response, ApiProblem> {
+    let signature = require_callback_signature(&query)?;
+    let body = String::from_utf8(body.to_vec())
+        .map_err(|_| invalid_query_parameter("callback body must be UTF-8 XML"))?;
+    state
+        .api
+        .receive_wechat_callback(WechatCallbackReceiptRequest {
+            tenant_id: query.tenant,
+            account_id: query.account_id,
+            signature,
+            timestamp: query.timestamp,
+            nonce: query.nonce,
+            body,
+        })
+        .await
+        .map_err(ApiProblem::from)?;
+    // WeChat's ack convention: a plain-text "success" body tells the platform the
+    // delivery is received so it stops retrying; failures return problem+json.
+    Ok(plain_text_response("success".to_string()))
+}
+
+fn require_callback_signature(query: &WechatCallbackQuery) -> Result<String, ApiProblem> {
+    query
+        .signature
+        .clone()
+        .or_else(|| query.msg_signature.clone())
+        .ok_or_else(|| {
+            invalid_query_parameter("query parameter signature or msg_signature is required")
+        })
+}
+
+/// WeChat parses the raw response body, so callback successes bypass the
+/// SdkWorkApiResponse envelope entirely (declared as an external wire protocol
+/// in the route manifest and the app-api OpenAPI contract).
+fn plain_text_response(body: String) -> Response {
+    (
+        [(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        body,
+    )
+        .into_response()
 }
 
 async fn list_market_listings(
@@ -1133,7 +1229,7 @@ async fn list_agent_profile_bindings(
     Path(profile_id): Path<u64>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
-    ok_json(
+    ok_list_json(
         state
             .api
             .list_agent_profile_bindings(context, profile_id)
@@ -1387,13 +1483,17 @@ where
         .map_err(ApiProblem::from)
 }
 
-fn command_json() -> Result<Response, ApiProblem> {
-    Ok(
-        sdkwork_knowledgebase_observability::request_correlation::success_command_json_response(
-            StatusCode::OK,
-            sdkwork_utils_rust::SdkWorkCommandData::accepted(),
-        ),
-    )
+fn command_json(
+    result: ApiResult<sdkwork_utils_rust::SdkWorkCommandData>,
+) -> Result<Response, ApiProblem> {
+    result
+        .map(|value| {
+            sdkwork_knowledgebase_observability::request_correlation::success_command_json_response(
+                StatusCode::OK,
+                value,
+            )
+        })
+        .map_err(ApiProblem::from)
 }
 
 const FORBIDDEN_PAGINATION_QUERY_ALIASES: &[(&str, &str)] = &[
@@ -1564,7 +1664,7 @@ struct ListWikiSourceFilesQuery {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 struct ListBrowserQuery {
     view: Option<String>,
     parent_id: Option<String>,

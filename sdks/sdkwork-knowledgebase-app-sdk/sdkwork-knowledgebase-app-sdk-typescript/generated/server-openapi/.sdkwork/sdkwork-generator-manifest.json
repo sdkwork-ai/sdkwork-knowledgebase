@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/knowledge.ts",
-      "sha256": "5432d41052ca4df00482afb1ad28b1042350aea2faf1aeac50c9523cd8dbfe68"
+      "sha256": "82ad503b8ea233dc8a83a5cd91186cdc49f8110c8260a009c39516b06c6215c7"
     },
     {
       "path": "src/api/paths.ts",
@@ -144,7 +144,7 @@
     },
     {
       "path": "src/types/create-knowledge-document-request.ts",
-      "sha256": "2761e8f7b918b98bdca1615b8cd52f9370183e8497e68c80153adb0ffb7b542e"
+      "sha256": "9eb7703a052e8ec1726879546a07da166fed1d03fbb99730083c8a589bbe97ee"
     },
     {
       "path": "src/types/create-knowledge-document-version-request.ts",
@@ -248,11 +248,11 @@
     },
     {
       "path": "src/types/knowledge-agent-binding-request.ts",
-      "sha256": "327d9f1e62487d0558e83f3d9e91ec09c67e0088100d310b677fdfd8309a95e4"
+      "sha256": "6799ac9a159dcb2867ae7d4cdaab38e7474722aa6e19687acf8a91ba9471ac10"
     },
     {
       "path": "src/types/knowledge-agent-binding.ts",
-      "sha256": "7f5d47103552ebe77aefc88195a06cbdd3aadbbb16fbdd4803afa8f8a3026b6d"
+      "sha256": "75047202ae025fa8599e79f647d5e93d8f429203174de579b7c7b00b17b043fc"
     },
     {
       "path": "src/types/knowledge-agent-chat-citation.ts",
@@ -312,7 +312,7 @@
     },
     {
       "path": "src/types/knowledge-context-fragment.ts",
-      "sha256": "190463a03e525c64322836da3a295f834de23805c23f142967811009eb3be0a4"
+      "sha256": "55c494b9dc233b98936e49094a18984e5e94e09900050bd2ebe5cf4812566f38"
     },
     {
       "path": "src/types/knowledge-context-pack-request.ts",
@@ -356,7 +356,7 @@
     },
     {
       "path": "src/types/knowledge-document.ts",
-      "sha256": "87974db7ddda0e5a0501636d9e04c71fd1c02c53985699d4b2081c4331352af3"
+      "sha256": "a9bce88f97c3a1fda3ea6d9b0abba941ac4f697ca33e2cd743d2438c6ad26ebf"
     },
     {
       "path": "src/types/knowledge-drive-import-request.ts",
@@ -392,7 +392,7 @@
     },
     {
       "path": "src/types/knowledge-index-request.ts",
-      "sha256": "7403d3666b756ae3ccb6364f55ed8ca36819c9b946ce725e082ff565e3468a90"
+      "sha256": "33a989b985049065790d798aa1131a5a604c39680625d1ce2ea722bc58218312"
     },
     {
       "path": "src/types/knowledge-index.ts",
@@ -460,7 +460,7 @@
     },
     {
       "path": "src/types/knowledge-retrieval-binding.ts",
-      "sha256": "5562fc9c3bca001f36eda068570da7c778620a5f9bba1b1071d9d6a8ef4e0e20"
+      "sha256": "222115697cda2648365f1c8af451722b55533c823341acec9a4e711a12e0ac41"
     },
     {
       "path": "src/types/knowledge-retrieval-method.ts",

@@ -6,6 +6,9 @@ edition.workspace = true
 license.workspace = true
 
 
+[lib]
+name = "sdkwork_intelligence_knowledgebase_object_key_service"
+
 [lints]
 workspace = true
 [dependencies]

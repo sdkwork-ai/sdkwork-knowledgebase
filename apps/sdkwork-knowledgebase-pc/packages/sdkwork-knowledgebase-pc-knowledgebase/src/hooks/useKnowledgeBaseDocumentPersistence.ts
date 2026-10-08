@@ -34,6 +34,10 @@ export function useKnowledgeBaseDocumentPersistence({
   const baseVersionIdRef = useRef<Map<string, string | null>>(new Map());
   const timersByDocRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const saveInFlightRef = useRef<Map<string, Promise<void>>>(new Map());
+  // Documents whose latest save hit a conflict: the queued save stays pending
+  // (needing user action) and the conflict toast is surfaced only once per
+  // conflict instead of on every silent retry.
+  const conflictDocsRef = useRef<Set<string>>(new Set());
   const activeDocIdRef = useRef<string | null>(null);
 
   const flushDocumentSave = useCallback(async (docId: string) => {
@@ -59,19 +63,30 @@ export function useKnowledgeBaseDocumentPersistence({
         const result = await DocumentService.saveDocumentContent(docId, pending.content, {
           baseVersionId: pending.baseVersionId,
         });
+        conflictDocsRef.current.delete(docId);
         if (result.currentVersionId) {
           baseVersionIdRef.current.set(docId, result.currentVersionId);
         }
       } catch (error) {
-        // A conflict means another editor saved newer content; keep this save pending so
-        // the user's input is not silently lost, but do not auto-retry (the user must
-        // decide between reviewing the remote version or forcing an overwrite).
+        // A conflict means another editor saved newer content. Keep this save
+        // pending so the user's input is not silently lost, but never auto-retry:
+        // the user must decide between reviewing the remote version or forcing an
+        // overwrite. The conflict is toasted once (per conflict) and the document
+        // stays marked in `conflictDocsRef` until the user edits again.
         if (isDocumentConflict(error)) {
+          // Keep the content queued (needing user action) but do not re-arm a
+          // timer: the save only refires on an explicit flush or a new edit.
           pendingByDocRef.current.set(docId, pending);
-          throw error;
+          if (!conflictDocsRef.current.has(docId)) {
+            conflictDocsRef.current.add(docId);
+            toastKnowledgebaseError(error, t);
+          } else {
+            console.error('[useKnowledgeBaseDocumentPersistence] save conflict still unresolved for document', docId, error);
+          }
+          return;
         }
         toastKnowledgebaseError(error, t);
-        throw error;
+        console.error('[useKnowledgeBaseDocumentPersistence] document save failed', docId, error);
       }
     })();
 
@@ -86,6 +101,9 @@ export function useKnowledgeBaseDocumentPersistence({
   }, [t]);
 
   const scheduleDocumentSave = useCallback((docId: string, content: string) => {
+    // A new user edit re-arms the save attempt: clear the conflict mark so a
+    // fresh conflict can surface its toast again.
+    conflictDocsRef.current.delete(docId);
     pendingByDocRef.current.set(docId, {
       content,
       baseVersionId: baseVersionIdRef.current.get(docId) ?? null,

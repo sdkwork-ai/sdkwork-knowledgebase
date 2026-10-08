@@ -32,4 +32,6 @@ pub struct CreateKnowledgeOkfBundleFileRecord {
 pub enum KnowledgeOkfBundleFileStoreError {
     #[error("okf bundle file store internal error: {0}")]
     Internal(String),
+    #[error("okf bundle file not found: {0}")]
+    NotFound(u64),
 }

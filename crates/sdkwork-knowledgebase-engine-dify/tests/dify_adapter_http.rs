@@ -12,11 +12,6 @@ use sdkwork_knowledgebase_engine_dify::{
 use sdkwork_knowledgebase_test_support::provider_execution::provider_execution_context;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
-// Wiremock fixtures run on loopback; the provider SSRF protection fails closed unless
-// this explicit test-only allowance is set (never set it in a deployed environment).
-fn allow_test_loopback() {
-    std::env::set_var("SDKWORK_KNOWLEDGEBASE_PROVIDER_RUNTIME_ALLOW_LOOPBACK", "1");
-}
 
 async fn assert_dify_health(upstream_status: u16, expected: KnowledgeEngineHealthStatus) {
     let mock_server = MockServer::start().await;
@@ -29,6 +24,7 @@ async fn assert_dify_health(upstream_status: u16, expected: KnowledgeEngineHealt
     let engine = DifyKnowledgeEngine::with_config(DifyConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("health-key".to_string()),
+        allow_private_network: true,
         default_dataset_id: Some("health-dataset".to_string()),
     });
 
@@ -37,7 +33,6 @@ async fn assert_dify_health(upstream_status: u16, expected: KnowledgeEngineHealt
 
 #[tokio::test]
 async fn dify_health_maps_upstream_availability() {
-    allow_test_loopback();
     assert_dify_health(200, KnowledgeEngineHealthStatus::Available).await;
     assert_dify_health(503, KnowledgeEngineHealthStatus::Degraded).await;
 }
@@ -70,7 +65,6 @@ fn active_binding(remote_resource_id: &str) -> KnowledgeEngineProviderBinding {
 
 #[tokio::test]
 async fn dify_search_uses_binding_owned_remote_resource_id() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/datasets/binding-dataset/retrieve"))
@@ -90,6 +84,7 @@ async fn dify_search_uses_binding_owned_remote_resource_id() {
     let config = DifyConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
+        allow_private_network: true,
         default_dataset_id: Some("template-dataset".to_string()),
     };
     let engine = DifyKnowledgeEngine::with_config(config)

@@ -1,28 +1,42 @@
 [package]
 name = "sdkwork-knowledgebase-rpc-sdk-rust"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
+rust-version.workspace = true
 
 [workspace]
 
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 rust-version = "1.85"
 [workspace.lints.rust]
-# RUST_CODE_SPEC.md section 13 baseline.
-# Deny-tier lints (unsafe_code, panic, unwrap_used, expect_used, pedantic) are
-# promoted per crate together with their cleanup: enabling them fleet-wide
-# today floods or fails builds that have not paid that debt yet.
-unsafe_op_in_unsafe_fn = "warn"
+# Generated RPC-client baseline (RUST_CODE_SPEC section 13 recommended block,
+# narrowed to what generated code satisfies without local allows): the crate
+# contains no unsafe and no panic/unwrap/expect paths.
+unsafe_code = "forbid"
+unsafe_op_in_unsafe_fn = "deny"
 trivial_casts = "warn"
 trivial_numeric_casts = "warn"
+unused_qualifications = "warn"
 
 [workspace.lints.clippy]
-dbg_macro = "warn"
-todo = "warn"
-unimplemented = "warn"
-exit = "warn"
+all = "warn"
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+panic = "deny"
+unwrap_used = "deny"
+expect_used = "deny"
+exit = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+
+[lib]
+name = "sdkwork_knowledgebase_rpc_sdk_rust"
+
+[lints]
+workspace = true
 
 [dependencies]
 prost = "0.14"

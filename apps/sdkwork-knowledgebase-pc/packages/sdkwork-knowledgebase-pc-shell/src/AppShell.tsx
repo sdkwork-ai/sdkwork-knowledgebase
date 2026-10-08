@@ -10,6 +10,7 @@ import {
   type SearchNavigateToKbPayload
 } from '@sdkwork/knowledgebase-pc-search';
 import {
+  FeatureErrorBoundary,
   InAppBrowserHost,
   dispatchOpenInAppBrowser,
   setKbNavIntent,
@@ -171,6 +172,7 @@ function useAppShellNavigation() {
 
 export function AppShell() {
   const { t } = useTranslation('shell');
+  const { t: tErrors } = useTranslation('errors');
   const navigate = useNavigate();
   const runtime = useKnowledgebaseRuntime();
   const networkOnline = useNetworkAvailability();
@@ -434,12 +436,22 @@ export function AppShell() {
             onOpenWebLink={handleOpenWebLink}
           />
         ) : activeTab === 'notes' ? (
-          <NotesWorkspace />
+          <FeatureErrorBoundary
+            title={tErrors('feature.knowledge.title')}
+            description={tErrors('feature.knowledge.description')}
+          >
+            <NotesWorkspace />
+          </FeatureErrorBoundary>
         ) : (
-          <KnowledgeBaseApp
-            activeTab={activeTab}
-            onActiveTabChange={setActiveTab as (tab: string) => void}
-          />
+          <FeatureErrorBoundary
+            title={tErrors('feature.knowledge.title')}
+            description={tErrors('feature.knowledge.description')}
+          >
+            <KnowledgeBaseApp
+              activeTab={activeTab}
+              onActiveTabChange={setActiveTab as (tab: string) => void}
+            />
+          </FeatureErrorBoundary>
         )}
         </div>
       </div>

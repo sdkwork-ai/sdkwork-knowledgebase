@@ -11,15 +11,9 @@ use sdkwork_knowledgebase_test_support::provider_execution::{
 };
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
-// Wiremock fixtures run on loopback; the provider SSRF protection fails closed unless
-// this explicit test-only allowance is set (never set it in a deployed environment).
-fn allow_test_loopback() {
-    std::env::set_var("SDKWORK_KNOWLEDGEBASE_PROVIDER_RUNTIME_ALLOW_LOOPBACK", "1");
-}
 
 #[tokio::test]
 async fn haystack_search_uses_configured_remote_resource_id() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/retrieval_pipeline/run"))
@@ -42,6 +36,7 @@ async fn haystack_search_uses_configured_remote_resource_id() {
     let config = HaystackConnectorConfig {
         base_url: mock_server.uri(),
         api_key: None,
+        allow_private_network: true,
         default_pipeline: Some("retrieval_pipeline".to_string()),
         default_workspace: None,
         deployment_mode: HaystackDeploymentMode::Hayhooks,
@@ -69,7 +64,6 @@ async fn haystack_search_uses_configured_remote_resource_id() {
 
 #[tokio::test]
 async fn haystack_read_document_resolves_chunk_from_pipeline_run() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/retrieval_pipeline/run"))
@@ -91,6 +85,7 @@ async fn haystack_read_document_resolves_chunk_from_pipeline_run() {
     let config = HaystackConnectorConfig {
         base_url: mock_server.uri(),
         api_key: None,
+        allow_private_network: true,
         default_pipeline: Some("retrieval_pipeline".to_string()),
         default_workspace: None,
         deployment_mode: HaystackDeploymentMode::Hayhooks,
@@ -117,10 +112,10 @@ async fn haystack_read_document_resolves_chunk_from_pipeline_run() {
 
 #[tokio::test]
 async fn haystack_list_documents_is_explicitly_unsupported() {
-    allow_test_loopback();
     let config = HaystackConnectorConfig {
         base_url: "http://localhost:1416".to_string(),
         api_key: None,
+        allow_private_network: true,
         default_pipeline: Some("retrieval_pipeline".to_string()),
         default_workspace: Some("my_workspace".to_string()),
         deployment_mode: HaystackDeploymentMode::Hayhooks,
@@ -154,6 +149,7 @@ async fn assert_haystack_health(upstream_status: u16, expected: KnowledgeEngineH
     let engine = HaystackKnowledgeEngine::with_config(HaystackConnectorConfig {
         base_url: mock_server.uri(),
         api_key: None,
+        allow_private_network: true,
         default_pipeline: Some("health-pipeline".to_string()),
         default_workspace: None,
         deployment_mode: HaystackDeploymentMode::Hayhooks,
@@ -165,14 +161,12 @@ async fn assert_haystack_health(upstream_status: u16, expected: KnowledgeEngineH
 
 #[tokio::test]
 async fn haystack_health_maps_upstream_availability() {
-    allow_test_loopback();
     assert_haystack_health(200, KnowledgeEngineHealthStatus::Available).await;
     assert_haystack_health(503, KnowledgeEngineHealthStatus::Degraded).await;
 }
 
 #[tokio::test]
 async fn haystack_cloud_search_uses_configured_workspace_and_remote_resource() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path(
@@ -196,6 +190,7 @@ async fn haystack_cloud_search_uses_configured_workspace_and_remote_resource() {
     let config = HaystackConnectorConfig {
         base_url: mock_server.uri(),
         api_key: Some(zeroize::Zeroizing::new("cloud-key".to_string())),
+        allow_private_network: true,
         default_pipeline: Some("cloud_pipeline".to_string()),
         default_workspace: Some("ws-space-42".to_string()),
         deployment_mode: HaystackDeploymentMode::DeepsetCloud,

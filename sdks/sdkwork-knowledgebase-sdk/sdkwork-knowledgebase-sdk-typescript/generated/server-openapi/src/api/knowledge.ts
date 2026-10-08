@@ -1,5 +1,5 @@
 import { customApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { IngestionJob, KnowledgeBrowserListData, KnowledgeBrowserView, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeDocument, KnowledgeIngestRequest, KnowledgeRetrievalRequest, KnowledgeRetrievalResult, PageInfo } from '../types';
 
@@ -20,23 +20,21 @@ export class KnowledgeSpacesBrowserApi {
 
 
 /** List knowledge browser view */
-  async list(spaceId: string, params: KnowledgeSpacesBrowserListParams): Promise<KnowledgeBrowserListData> {
+  async list(spaceId: string, params: KnowledgeSpacesBrowserListParams, requestOptions?: ApiRequestOptions): Promise<KnowledgeBrowserListData> {
     const query = buildQueryString([
       { name: 'view', value: params.view, style: 'form', explode: true, allowReserved: false },
-      { name: 'parentId', value: params.parentId, style: 'form', explode: true, allowReserved: false },
+      { name: 'parent_id', value: params.parentId, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<KnowledgeBrowserListData>(appendQueryString(customApiPath(`/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/browser`), query));
+    return this.client.request<KnowledgeBrowserListData>(appendQueryString(customApiPath(`/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/browser`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
 export class KnowledgeSpacesApi {
-  private client: HttpClient;
   public readonly browser: KnowledgeSpacesBrowserApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.browser = new KnowledgeSpacesBrowserApi(client);
   }
 
@@ -57,18 +55,18 @@ export class KnowledgeDocumentsApi {
 
 
 /** List knowledge documents */
-  async list(params: KnowledgeDocumentsListParams): Promise<Record<string, unknown>> {
+  async list(params: KnowledgeDocumentsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: KnowledgeDocument[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
-      { name: 'spaceId', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
+      { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<Record<string, unknown>>(appendQueryString(customApiPath(`/documents`), query));
+    return this.client.request<{ items: KnowledgeDocument[]; pageInfo: PageInfo; }>(appendQueryString(customApiPath(`/documents`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Retrieve a knowledge document */
-  async retrieve(documentId: string): Promise<KnowledgeDocument> {
-    return this.client.get<KnowledgeDocument>(customApiPath(`/documents/${serializePathParameter(documentId, { name: 'documentId', style: 'simple', explode: false })}`));
+  async retrieve(documentId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeDocument> {
+    return this.client.request<KnowledgeDocument>(customApiPath(`/documents/${serializePathParameter(documentId, { name: 'documentId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -81,13 +79,13 @@ export class KnowledgeIngestsApi {
 
 
 /** Create an ingestion job */
-  async create(body: KnowledgeIngestRequest): Promise<IngestionJob> {
-    return this.client.post<IngestionJob>(customApiPath(`/ingests`), body, undefined, undefined, 'application/json');
+  async create(body: KnowledgeIngestRequest, requestOptions?: ApiRequestOptions): Promise<IngestionJob> {
+    return this.client.request<IngestionJob>(customApiPath(`/ingests`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve an ingestion job */
-  async retrieve(ingestId: string): Promise<IngestionJob> {
-    return this.client.get<IngestionJob>(customApiPath(`/ingests/${serializePathParameter(ingestId, { name: 'ingestId', style: 'simple', explode: false })}`));
+  async retrieve(ingestId: string, requestOptions?: ApiRequestOptions): Promise<IngestionJob> {
+    return this.client.request<IngestionJob>(customApiPath(`/ingests/${serializePathParameter(ingestId, { name: 'ingestId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -100,8 +98,8 @@ export class KnowledgeContextPacksApi {
 
 
 /** Create a knowledge context pack */
-  async create(body: KnowledgeContextPackRequest): Promise<KnowledgeContextPack> {
-    return this.client.post<KnowledgeContextPack>(customApiPath(`/context_packs`), body, undefined, undefined, 'application/json');
+  async create(body: KnowledgeContextPackRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeContextPack> {
+    return this.client.request<KnowledgeContextPack>(customApiPath(`/context_packs`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -114,18 +112,17 @@ export class KnowledgeRetrievalsApi {
 
 
 /** Create a knowledge retrieval */
-  async create(body: KnowledgeRetrievalRequest): Promise<KnowledgeRetrievalResult> {
-    return this.client.post<KnowledgeRetrievalResult>(customApiPath(`/retrievals`), body, undefined, undefined, 'application/json');
+  async create(body: KnowledgeRetrievalRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeRetrievalResult> {
+    return this.client.request<KnowledgeRetrievalResult>(customApiPath(`/retrievals`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve a knowledge retrieval result */
-  async retrieve(retrievalId: string): Promise<KnowledgeRetrievalResult> {
-    return this.client.get<KnowledgeRetrievalResult>(customApiPath(`/retrievals/${serializePathParameter(retrievalId, { name: 'retrievalId', style: 'simple', explode: false })}`));
+  async retrieve(retrievalId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeRetrievalResult> {
+    return this.client.request<KnowledgeRetrievalResult>(customApiPath(`/retrievals/${serializePathParameter(retrievalId, { name: 'retrievalId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class KnowledgeApi {
-  private client: HttpClient;
   public readonly retrievals: KnowledgeRetrievalsApi;
   public readonly contextPacks: KnowledgeContextPacksApi;
   public readonly ingests: KnowledgeIngestsApi;
@@ -133,7 +130,6 @@ export class KnowledgeApi {
   public readonly spaces: KnowledgeSpacesApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.retrievals = new KnowledgeRetrievalsApi(client);
     this.contextPacks = new KnowledgeContextPacksApi(client);
     this.ingests = new KnowledgeIngestsApi(client);

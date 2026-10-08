@@ -237,6 +237,10 @@ pub enum KnowledgeStorageError {
     InvalidRequest(String),
     #[error("knowledge storage integrity failed: {0}")]
     IntegrityFailed(String),
+    #[error("knowledge storage permission denied: {0}")]
+    PermissionDenied(String),
+    #[error("knowledge storage conflict: {0}")]
+    Conflict(String),
     #[error("knowledge storage upstream error: {0}")]
     Upstream(String),
     #[error("knowledge storage internal error: {0}")]

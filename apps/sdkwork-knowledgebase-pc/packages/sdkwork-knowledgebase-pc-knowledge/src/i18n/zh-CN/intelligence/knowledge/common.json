@@ -7,6 +7,8 @@
   "loading": "加载中...",
   "search": "搜索",
   "confirmDelete": "确定要删除选定的 {{count}} 项内容吗？此操作无法恢复。",
+  "clearSelection": "清除选择",
+  "selectItem": "选择条目",
   "processSelected": "处理选中项...",
   "selectedItems": "已选择 {{count}} 项",
   "version": "版本 1.0.0",

@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct KnowledgeOkfBundleFile {
-    pub id: i64,
+    pub id: String,
 
     #[serde(rename = "spaceId")]
-    pub space_id: i64,
+    pub space_id: String,
 
     #[serde(rename = "logicalPath")]
     pub logical_path: String,

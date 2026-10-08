@@ -80,20 +80,19 @@ impl PostgresKnowledgeIndexStore {
         let tenant_id = to_i64("tenant_id", request.tenant_id)?;
         let organization_id = to_i64("organization_id", self.organization_id)?;
         let space_id = to_i64("space_id", request.space_id)?;
-        let collection_id = to_i64("collection_id", request.collection_id.unwrap_or(0))?;
         let dimension = request.dimension.map(i64::from).unwrap_or_default();
         let now = now_rfc3339()?;
 
-        let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$14");
-        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$15");
+        let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$13");
+        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$14");
         let query = format!(
             r#"
             INSERT INTO kb_index (
-                id, uuid, tenant_id, organization_id, space_id, collection_id, index_kind,
+                id, uuid, tenant_id, organization_id, space_id, index_kind,
                 embedding_provider_id, embedding_model, dimension, metric,
                 schema_version, status, created_at, updated_at, version
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, {created_at_expr}, {updated_at_expr}, $16)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, {created_at_expr}, {updated_at_expr}, $15)
             RETURNING id, tenant_id, space_id, index_kind, status
             "#,
         );
@@ -103,7 +102,6 @@ impl PostgresKnowledgeIndexStore {
             .bind(tenant_id)
             .bind(organization_id)
             .bind(space_id)
-            .bind(collection_id)
             .bind(request.index_kind)
             .bind(request.embedding_provider_id)
             .bind(request.embedding_model)
@@ -222,15 +220,13 @@ impl PostgresKnowledgeIndexStore {
     pub async fn get_or_create_active_vector_index(
         &self,
         space_id: u64,
-        collection_id: u64,
     ) -> Result<KnowledgeIndex, KnowledgeIndexStoreError> {
         let tenant_id = to_i64("tenant_id", self.tenant_id)?;
         let organization_id = to_i64("organization_id", self.organization_id)?;
         let space_id = to_i64("space_id", space_id)?;
-        let collection_id = to_i64("collection_id", collection_id)?;
 
         if let Some(index) = self
-            .find_active_vector_index(tenant_id, organization_id, space_id, collection_id)
+            .find_active_vector_index(tenant_id, organization_id, space_id)
             .await?
         {
             return Ok(index);
@@ -242,15 +238,6 @@ impl PostgresKnowledgeIndexStore {
                 space_id: u64::try_from(space_id).map_err(|_| {
                     KnowledgeIndexStoreError::Internal("space_id out of u64 range".to_string())
                 })?,
-                collection_id: if collection_id == 0 {
-                    None
-                } else {
-                    Some(u64::try_from(collection_id).map_err(|_| {
-                        KnowledgeIndexStoreError::Internal(
-                            "collection_id out of u64 range".to_string(),
-                        )
-                    })?)
-                },
                 index_kind: "vector".to_string(),
                 embedding_provider_id: None,
                 embedding_model: None,
@@ -261,7 +248,7 @@ impl PostgresKnowledgeIndexStore {
         match create_result {
             Ok(index) => Ok(index),
             Err(create_error) => self
-                .find_active_vector_index(tenant_id, organization_id, space_id, collection_id)
+                .find_active_vector_index(tenant_id, organization_id, space_id)
                 .await?
                 .ok_or(create_error),
         }
@@ -272,7 +259,6 @@ impl PostgresKnowledgeIndexStore {
         tenant_id: i64,
         organization_id: i64,
         space_id: i64,
-        collection_id: i64,
     ) -> Result<Option<KnowledgeIndex>, KnowledgeIndexStoreError> {
         let row = sqlx::query(
             r#"
@@ -281,9 +267,8 @@ impl PostgresKnowledgeIndexStore {
             WHERE tenant_id = $1
               AND organization_id = $2
               AND space_id = $3
-              AND collection_id = $4
-              AND index_kind = $5
-              AND status = $6
+              AND index_kind = $4
+              AND status = $5
             ORDER BY id DESC
             LIMIT 1
             "#,
@@ -291,7 +276,6 @@ impl PostgresKnowledgeIndexStore {
         .bind(tenant_id)
         .bind(organization_id)
         .bind(space_id)
-        .bind(collection_id)
         .bind("vector")
         .bind(ACTIVE_STATUS)
         .fetch_optional(&self.pool)
@@ -315,15 +299,10 @@ impl KnowledgeIndexStore for PostgresKnowledgeIndexStore {
     async fn get_or_create_active_vector_index(
         &self,
         space_id: u64,
-        collection_id: u64,
     ) -> Result<KnowledgeIndex, PortKnowledgeIndexStoreError> {
-        PostgresKnowledgeIndexStore::get_or_create_active_vector_index(
-            self,
-            space_id,
-            collection_id,
-        )
-        .await
-        .map_err(map_index_store_port_error)
+        PostgresKnowledgeIndexStore::get_or_create_active_vector_index(self, space_id)
+            .await
+            .map_err(map_index_store_port_error)
     }
 }
 

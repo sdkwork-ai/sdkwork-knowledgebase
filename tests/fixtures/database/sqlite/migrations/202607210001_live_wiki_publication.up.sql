@@ -222,6 +222,10 @@ CREATE INDEX IF NOT EXISTS idx_kb_source_projection_public_lookup
         page_public_version, id
     ) WHERE status = 1 AND publication_state = 'PUBLISHED'
       AND visibility IN ('UNLISTED', 'PUBLIC');
+CREATE INDEX IF NOT EXISTS idx_kb_source_projection_previous_route
+    ON kb_source_file_projection (
+        tenant_id, organization_id, site_publication_id, previous_canonical_route
+    ) WHERE status = 1 AND previous_canonical_route IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS kb_source_file_rendition (
     id BIGINT NOT NULL PRIMARY KEY,

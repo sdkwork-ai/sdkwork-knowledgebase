@@ -250,7 +250,6 @@ API serialization: numeric IDs and counters are strings in JSON; timestamps are 
 | Table | Purpose |
 | --- | --- |
 | `kb_space` | Knowledge space; includes `okf_bundle_initialized`, `okf_log_sequence_counter`, `drive_space_id` |
-| `kb_collection` | Collection tree inside a space |
 | `kb_source` | Import source record |
 | `kb_drive_object_ref` | Stable reference to a drive object |
 | `kb_document` / `kb_document_version` | Document master data and immutable versions |

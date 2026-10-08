@@ -189,5 +189,8 @@
   "notesSaving": "保存中…",
   "notesEditorEmptyTitle": "未选择笔记",
   "notesEditorEmptyHintSelect": "从左侧列表选择一篇笔记,或新建一篇开始创作",
-  "notesEditorEmptyHintCreate": "点击右上角「新建笔记」开始你的第一篇笔记"
+  "notesEditorEmptyHintCreate": "点击右上角「新建笔记」开始你的第一篇笔记",
+  "notesDeleteConfirm": "确定要删除这篇笔记吗？此操作无法恢复。",
+  "deleteKbConfirm": "确定要删除知识库「{{title}}」吗？其中的所有文档都将被删除，此操作无法恢复。",
+  "folderSubtextItems": "{{count}}项 | {{date}}创建"
 }

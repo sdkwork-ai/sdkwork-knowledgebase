@@ -2,7 +2,7 @@ use crate::ports::knowledge_drive_storage::{
     HeadKnowledgeObjectRequest, KnowledgeDriveStorage, KnowledgeStorageError,
     PutKnowledgeObjectRequest,
 };
-use crate::wechat::secret_cipher::{decrypt_optional_secret, encrypt_optional_secret};
+use crate::wechat::secret_cipher::{decrypt_optional_secret, encrypt_optional_secret, ENCRYPTED_VALUE_PREFIX};
 use sdkwork_knowledgebase_contract::wechat::{
     KnowledgeWechatApplet, KnowledgeWechatOfficialAccount,
 };
@@ -12,6 +12,9 @@ use std::collections::HashSet;
 
 const CONFIG_LOGICAL_PATH: &str = "wechat/v1/config.json";
 const CONFIG_OBJECT_ROLE: &str = "wechat_config";
+const CALLBACK_RECEIPT_LOGICAL_PATH_PREFIX: &str = "wechat/v1/callback";
+const CALLBACK_RECEIPT_OBJECT_ROLE: &str = "wechat_callback_receipt";
+const MAX_WECHAT_CALLBACK_RECEIPT_BYTES: u64 = 128 * 1024;
 const MAX_WECHAT_CONFIG_BYTES: u64 = 1024 * 1024;
 const MAX_WECHAT_CONFIG_ENTRIES_PER_KIND: usize = 100;
 const MAX_WECHAT_DOMAIN_VALUES: usize = 50;
@@ -35,6 +38,12 @@ const WECHAT_ACCOUNT_TYPES: &[&str] = &["subscription", "service"];
 const WECHAT_ENCRYPT_MODES: &[&str] = &["plain", "compatible", "safe"];
 const WECHAT_MESSAGE_DATA_FORMATS: &[&str] = &["json", "xml"];
 
+/// Serializes the load-merge-save critical section for every tenant and config kind. One
+/// process-wide async lock is intentionally coarse: wechat config writes are rare tenant-admin
+/// operations, so per-tenant lock maps would add complexity for no real contention win, while
+/// two concurrent replacements without the lock would silently drop one side's entries.
+static CONFIG_WRITE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 struct TenantWechatConfig {
@@ -47,6 +56,22 @@ struct TenantWechatConfig {
 pub struct WechatConfigStore<'a> {
     drive: &'a dyn KnowledgeDriveStorage,
     tenant_space_uuid: String,
+}
+
+/// A verified WeChat callback delivery, persisted verbatim (the encrypted payload is
+/// stored, not the decrypted content) so later processing re-derives the plaintext
+/// under the tenant's own key material.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WechatCallbackReceiptArtifact {
+    pub account_id: String,
+    pub signature: String,
+    pub timestamp: String,
+    pub nonce: String,
+    pub encrypt: String,
+    pub msg_type: String,
+    pub from_user_name: String,
+    pub create_time: i64,
 }
 
 impl<'a> WechatConfigStore<'a> {
@@ -73,6 +98,7 @@ impl<'a> WechatConfigStore<'a> {
         accounts: Vec<KnowledgeWechatOfficialAccount>,
     ) -> Result<Vec<KnowledgeWechatOfficialAccount>, KnowledgeStorageError> {
         validate_official_accounts(&accounts)?;
+        let _config_write_guard = CONFIG_WRITE_LOCK.lock().await;
         let existing = self.load_config().await?;
         let mut config = existing;
         config.official_accounts =
@@ -95,6 +121,7 @@ impl<'a> WechatConfigStore<'a> {
         applets: Vec<KnowledgeWechatApplet>,
     ) -> Result<Vec<KnowledgeWechatApplet>, KnowledgeStorageError> {
         validate_applets(&applets)?;
+        let _config_write_guard = CONFIG_WRITE_LOCK.lock().await;
         let existing = self.load_config().await?;
         let mut config = existing;
         config.applets = merge_applet_secrets(applets, &config.applets);
@@ -111,6 +138,62 @@ impl<'a> WechatConfigStore<'a> {
             .official_accounts
             .into_iter()
             .find(|account| account.id == account_id))
+    }
+
+    /// Persists a verified callback's raw encrypted payload under the tenant's wechat
+    /// config space. The object key is content-derived (`timestamp` + encrypt digest),
+    /// so WeChat retransmissions overwrite the same artifact instead of accumulating.
+    pub async fn store_callback_receipt(
+        &self,
+        artifact: &WechatCallbackReceiptArtifact,
+    ) -> Result<String, KnowledgeStorageError> {
+        // The account id lands in the object key, so path separators in it would
+        // escape the callback prefix; ids are validated but never charset-restricted.
+        if artifact.account_id.contains('/')
+            || artifact.account_id.contains('\\')
+            || artifact.account_id == "."
+            || artifact.account_id == ".."
+        {
+            return Err(KnowledgeStorageError::InvalidRequest(
+                "official account id cannot be used in a callback artifact path".to_string(),
+            ));
+        }
+        if !artifact
+            .timestamp
+            .bytes()
+            .all(|byte| byte.is_ascii_digit())
+            || artifact.timestamp.is_empty()
+        {
+            return Err(KnowledgeStorageError::InvalidRequest(
+                "callback receipt timestamp must be epoch-seconds digits".to_string(),
+            ));
+        }
+        let body = serde_json::to_vec(artifact).map_err(|error| {
+            KnowledgeStorageError::Internal(format!("failed to encode wechat callback receipt: {error}"))
+        })?;
+        if body.len() as u64 > MAX_WECHAT_CALLBACK_RECEIPT_BYTES {
+            return Err(KnowledgeStorageError::InvalidRequest(format!(
+                "wechat callback receipt exceeds {MAX_WECHAT_CALLBACK_RECEIPT_BYTES} bytes"
+            )));
+        }
+        let digest = &sha256_hash(artifact.encrypt.as_bytes())[..16];
+        let logical_path = format!(
+            "{CALLBACK_RECEIPT_LOGICAL_PATH_PREFIX}/{}/{timestamp}-{digest}.json",
+            artifact.account_id,
+            timestamp = artifact.timestamp,
+        );
+        let checksum = format!("sha256:{}", sha256_hash(&body));
+        self.drive
+            .put_object(PutKnowledgeObjectRequest {
+                logical_path: logical_path.clone(),
+                object_role: CALLBACK_RECEIPT_OBJECT_ROLE.to_string(),
+                content_type: "application/json; charset=utf-8".to_string(),
+                body,
+                checksum_sha256_hex: Some(checksum),
+                space_uuid: Some(self.tenant_space_uuid.clone()),
+            })
+            .await?;
+        Ok(logical_path)
     }
 
     async fn load_config(&self) -> Result<TenantWechatConfig, KnowledgeStorageError> {
@@ -199,7 +282,7 @@ fn validate_official_accounts(
             "official account appId",
             MAX_WECHAT_APP_ID_CHARS,
         )?;
-        validate_optional_text(
+        validate_secret_text(
             account.app_secret.as_deref(),
             "official account appSecret",
             MAX_WECHAT_SECRET_CHARS,
@@ -209,12 +292,12 @@ fn validate_official_accounts(
             "official account serverUrl",
             MAX_WECHAT_SERVER_URL_CHARS,
         )?;
-        validate_optional_text(
+        validate_secret_text(
             account.token.as_deref(),
             "official account token",
             MAX_WECHAT_TOKEN_CHARS,
         )?;
-        validate_optional_text(
+        validate_secret_text(
             account.encoding_aes_key.as_deref(),
             "official account encodingAesKey",
             MAX_WECHAT_AES_KEY_CHARS,
@@ -280,7 +363,7 @@ fn validate_applets(applets: &[KnowledgeWechatApplet]) -> Result<(), KnowledgeSt
             "applet originalId",
             MAX_WECHAT_APPLET_ORIGINAL_ID_CHARS,
         )?;
-        validate_optional_text(
+        validate_secret_text(
             applet.app_secret.as_deref(),
             "applet appSecret",
             MAX_WECHAT_SECRET_CHARS,
@@ -318,12 +401,12 @@ fn validate_applets(applets: &[KnowledgeWechatApplet]) -> Result<(), KnowledgeSt
             "applet domainVerifyFileName",
             "applet domainVerifyFileContent",
         )?;
-        validate_optional_text(
+        validate_secret_text(
             applet.msg_token.as_deref(),
             "applet msgToken",
             MAX_WECHAT_TOKEN_CHARS,
         )?;
-        validate_optional_text(
+        validate_secret_text(
             applet.msg_encoding_aes_key.as_deref(),
             "applet msgEncodingAESKey",
             MAX_WECHAT_AES_KEY_CHARS,
@@ -366,6 +449,23 @@ fn validate_optional_text(
 ) -> Result<(), KnowledgeStorageError> {
     if let Some(value) = value {
         validate_text_length(value, field, max_chars)?;
+    }
+    Ok(())
+}
+
+/// Secrets must arrive as plaintext. A value already shaped like the store's own `kbenc:`
+/// envelope would be stored verbatim (the cipher passes prefixed values through) and later
+/// decrypt to garbage, permanently bricking the tenant config until manual repair.
+fn validate_secret_text(
+    value: Option<&str>,
+    field: &str,
+    max_chars: usize,
+) -> Result<(), KnowledgeStorageError> {
+    validate_optional_text(value, field, max_chars)?;
+    if value.is_some_and(|secret| secret.starts_with(ENCRYPTED_VALUE_PREFIX)) {
+        return Err(invalid_config(format!(
+            "{field} must be the plaintext secret, not an encrypted {ENCRYPTED_VALUE_PREFIX} envelope"
+        )));
     }
     Ok(())
 }
@@ -1048,11 +1148,40 @@ mod tests {
             .app_secret
             .as_deref()
             .unwrap()
-            .starts_with("kbenc:v1:"));
+            .starts_with("kbenc:v2:"));
         decrypt_config_secrets(&mut config).expect("decrypt config secrets");
         assert_eq!(
             config.official_accounts[0].app_secret.as_deref(),
             Some("secret")
         );
+    }
+
+    #[test]
+    fn config_validation_rejects_encrypted_envelope_values_as_secrets() {
+        for envelope in [
+            format!("kbenc:v1:{}", "A".repeat(32)),
+            "kbenc:v2:c2FsdA==:bm9uY2U=:Y2lwaGVydGV4dA==".to_string(),
+        ] {
+            let mut account = official_account("oa-envelope-secret");
+            account.app_secret = Some(envelope.clone());
+            assert!(matches!(
+                validate_official_accounts(&[account]),
+                Err(KnowledgeStorageError::InvalidRequest(_))
+            ));
+
+            let mut account_token = official_account("oa-envelope-token");
+            account_token.token = Some(envelope.clone());
+            assert!(matches!(
+                validate_official_accounts(&[account_token]),
+                Err(KnowledgeStorageError::InvalidRequest(_))
+            ));
+
+            let mut applet = applet("applet-envelope-secret");
+            applet.msg_token = Some(envelope);
+            assert!(matches!(
+                validate_applets(&[applet]),
+                Err(KnowledgeStorageError::InvalidRequest(_))
+            ));
+        }
     }
 }

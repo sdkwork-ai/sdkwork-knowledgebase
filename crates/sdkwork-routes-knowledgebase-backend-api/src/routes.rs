@@ -4,12 +4,16 @@ use axum::{
 };
 use std::sync::Arc;
 
-use crate::{handlers, health, paths, ports::KnowledgeBackendApi, KnowledgebaseReadinessCheck};
+use crate::{
+    auth::configured_runtime_organization_id, handlers, health, paths, ports::KnowledgeBackendApi,
+    KnowledgebaseReadinessCheck,
+};
 
 #[derive(Clone)]
 pub struct BackendState {
     pub(crate) api: Arc<dyn KnowledgeBackendApi>,
     pub(crate) runtime_tenant_id: u64,
+    pub(crate) runtime_organization_id: u64,
 }
 
 pub fn build_router_with_backend_api<A>(api: A, runtime_tenant_id: u64) -> Router
@@ -44,6 +48,9 @@ pub fn build_business_router_with_shared_backend_api(
     let state = BackendState {
         api,
         runtime_tenant_id,
+        // Resolved once at boot so the per-request auth path never reads the
+        // process environment.
+        runtime_organization_id: configured_runtime_organization_id(),
     };
     Router::new()
         .route(

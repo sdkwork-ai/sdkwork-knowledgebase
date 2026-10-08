@@ -1,5 +1,11 @@
 use sdkwork_utils_rust::{PageInfo, PageMode};
 use serde::{Deserialize, Serialize};
+use crate::serde_int64::{
+    deserialize_option_u64_from_string_or_number,
+    deserialize_u64_from_string_or_number,
+    serialize_option_u64_as_string,
+    serialize_u64_as_string,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -24,6 +30,10 @@ pub enum KnowledgeBrowserNodeType {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListKnowledgeBrowserRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub parent_id: Option<String>,
     pub view: KnowledgeBrowserView,
@@ -46,6 +56,10 @@ pub struct KnowledgeBrowserPage {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeBrowserListData {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub drive_space_id: String,
     pub parent_id: Option<String>,
@@ -88,16 +102,46 @@ pub struct KnowledgeBrowserNode {
     pub path: String,
     pub drive_space_id: Option<String>,
     pub drive_node_id: Option<String>,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub document_id: Option<u64>,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub document_version_id: Option<u64>,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub concept_id: Option<u64>,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub concept_revision_id: Option<u64>,
     pub mime_type: Option<String>,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub size_bytes: Option<u64>,
     pub ingest_state: Option<String>,
     pub parse_state: Option<String>,
     pub index_state: Option<String>,
     pub okf_state: Option<String>,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub children_count: Option<u64>,
     pub updated_at: String,
     pub permissions: KnowledgeBrowserNodePermissions,

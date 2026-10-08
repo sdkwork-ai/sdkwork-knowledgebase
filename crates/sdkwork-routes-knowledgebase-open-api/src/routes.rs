@@ -1,6 +1,6 @@
 use axum::{
-    extract::{OriginalUri, Path, Query, State},
-    http::StatusCode,
+    extract::{FromRequestParts, Path, Query, State},
+    http::{request::Parts, StatusCode},
     response::Response,
     routing::{get, post},
     Json, Router,
@@ -10,6 +10,7 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeIngestRequest, KnowledgeRetrievalRequest, ListKnowledgeBrowserRequest,
 };
 use sdkwork_routes_knowledgebase_backend_api::{health, KnowledgebaseReadinessCheck};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -133,11 +134,9 @@ async fn retrieve_ingest(
 async fn list_documents(
     State(state): State<OpenState>,
     context: RequiredOpenContext,
-    OriginalUri(uri): OriginalUri,
-    Query(query): Query<ListDocumentsQuery>,
+    CheckedQuery(query): CheckedQuery<ListDocumentsQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_context(context)?;
-    reject_forbidden_pagination_aliases(uri.query())?;
     ok_list_json(
         state
             .api
@@ -159,11 +158,9 @@ async fn list_browser(
     State(state): State<OpenState>,
     context: RequiredOpenContext,
     Path(space_id): Path<u64>,
-    OriginalUri(uri): OriginalUri,
-    Query(query): Query<ListBrowserQuery>,
+    CheckedQuery(query): CheckedQuery<ListBrowserQuery>,
 ) -> Result<Response, ApiProblem> {
     let context = require_context(context)?;
-    reject_forbidden_pagination_aliases(uri.query())?;
     let view = parse_view(query.view.as_deref())?;
     ok_browser_list_json(
         state
@@ -239,8 +236,9 @@ where
         .map_err(ApiProblem::from)
 }
 
+// Query parameter names follow the API_SPEC §13 lower_snake_case canonical form.
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 struct ListDocumentsQuery {
     space_id: u64,
     cursor: Option<String>,
@@ -249,13 +247,42 @@ struct ListDocumentsQuery {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 struct ListBrowserQuery {
     view: Option<String>,
     parent_id: Option<String>,
     cursor: Option<String>,
     #[serde(rename = "page_size")]
     page_size: Option<u32>,
+}
+
+/// Query extractor that rejects forbidden pagination aliases (PAGINATION_SPEC
+/// §3.1) BEFORE serde deserialization, and converts deserialization failures
+/// (including unknown parameters rejected by `deny_unknown_fields`) into the
+/// standard problem+json envelope instead of axum's plain-text 400, matching
+/// the app-api `CheckedQuery` error contract.
+struct CheckedQuery<T>(T);
+
+impl<S, T> FromRequestParts<S> for CheckedQuery<T>
+where
+    S: Send + Sync,
+    T: DeserializeOwned,
+{
+    type Rejection = ApiProblem;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        reject_forbidden_pagination_aliases(parts.uri.query())?;
+        let query = Query::<T>::from_request_parts(parts, state)
+            .await
+            .map_err(|rejection| {
+                ApiProblem::new(
+                    StatusCode::BAD_REQUEST,
+                    "invalid_parameter",
+                    rejection.to_string(),
+                )
+            })?;
+        Ok(Self(query.0))
+    }
 }
 
 fn parse_view(value: Option<&str>) -> Result<KnowledgeBrowserView, ApiProblem> {

@@ -22,7 +22,10 @@ use sdkwork_knowledgebase_provider_runtime::{ProviderExecutionContext, ProviderO
 use std::sync::Arc;
 
 pub use client::{chunk_id_from_content, OpenWebuiApiClient};
-pub use config::{OpenWebuiConnectorConfig, OPEN_WEBUI_BASE_URL_ENV, OPEN_WEBUI_KNOWLEDGE_ID_ENV};
+pub use config::{
+    OpenWebuiConnectorConfig, OPEN_WEBUI_ALLOW_PRIVATE_NETWORK_ENV, OPEN_WEBUI_BASE_URL_ENV,
+    OPEN_WEBUI_KNOWLEDGE_ID_ENV,
+};
 
 pub const OPEN_WEBUI_VENDOR_ID: &str = "open-webui";
 pub const OPEN_WEBUI_IMPLEMENTATION_ID: &str = "engine.knowledge.external.open-webui";
@@ -39,10 +42,21 @@ impl OpenWebuiKnowledgeEngine {
     }
 
     pub fn with_config(config: OpenWebuiConnectorConfig) -> Self {
-        let client = OpenWebuiApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match OpenWebuiApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    OPEN_WEBUI_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -105,7 +119,14 @@ impl KnowledgeEngine for OpenWebuiKnowledgeEngine {
             })?
             .into_secret();
         config.default_knowledge_id = Some(binding.remote_resource_id.clone());
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "Open WebUI base URL does not satisfy the Provider runtime target policy"
+                    .to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

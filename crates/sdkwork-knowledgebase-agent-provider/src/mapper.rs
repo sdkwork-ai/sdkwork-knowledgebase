@@ -91,10 +91,6 @@ pub(crate) fn hit_to_search_result(hit: KnowledgeContextFragment) -> KnowledgeSe
         );
     }
 
-    if let Some(collection_id) = hit.collection_id {
-        result = result.with_metadata("sdkwork.knowledge.collection_id", collection_id.to_string());
-    }
-
     if let Some(citation) = hit.citation {
         if let Some(source_uri) = citation.source_uri {
             result = result.with_source_uri(source_uri);
@@ -157,7 +153,6 @@ mod tests {
             document_id: 301,
             document_version_id: None,
             space_id: 7,
-            collection_id: None,
             title: "Hybrid Retrieval".to_string(),
             content: "chunk body".to_string(),
             score: Some(0.88),

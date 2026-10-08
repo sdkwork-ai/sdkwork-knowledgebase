@@ -7,6 +7,8 @@
   "loading": "Loading...",
   "search": "Search",
   "confirmDelete": "Are you sure you want to delete the selected {{count}} items? This cannot be undone.",
+  "clearSelection": "Clear selection",
+  "selectItem": "Select item",
   "processSelected": "Process selected items...",
   "selectedItems": "Selected {{count}} items",
   "version": "v1.0.0",

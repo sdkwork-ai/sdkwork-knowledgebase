@@ -679,11 +679,16 @@ fn map_drive_error(error: DriveObjectStoreError) -> KnowledgeStorageError {
         DriveObjectStoreErrorKind::IntegrityFailed => {
             KnowledgeStorageError::IntegrityFailed(error.message)
         }
-        DriveObjectStoreErrorKind::PermissionDenied
-        | DriveObjectStoreErrorKind::Timeout
+        DriveObjectStoreErrorKind::PermissionDenied => {
+            KnowledgeStorageError::PermissionDenied(error.message)
+        }
+        DriveObjectStoreErrorKind::Conflict => KnowledgeStorageError::Conflict(error.message),
+        // Timeout / RateLimited / Unavailable are transient provider states with
+        // no definitive Knowledge semantics; UpstreamError is already generic.
+        // They stay collapsed so callers retry them instead of misclassifying.
+        DriveObjectStoreErrorKind::Timeout
         | DriveObjectStoreErrorKind::Unavailable
         | DriveObjectStoreErrorKind::RateLimited
-        | DriveObjectStoreErrorKind::Conflict
         | DriveObjectStoreErrorKind::UpstreamError
         | DriveObjectStoreErrorKind::NotSupported => KnowledgeStorageError::Upstream(error.message),
         DriveObjectStoreErrorKind::Internal => KnowledgeStorageError::Internal(error.message),
@@ -932,11 +937,13 @@ fn synthetic_content_version_id(checksum_sha256_hex: &str) -> String {
 
 fn map_workspace_service_error(error: DriveServiceError) -> KnowledgeDriveWorkspaceError {
     match error {
-        DriveServiceError::Validation(message) | DriveServiceError::Conflict(message) => {
+        DriveServiceError::Validation(message) => {
             KnowledgeDriveWorkspaceError::InvalidRequest(message)
         }
-        DriveServiceError::NotFound(message) | DriveServiceError::PermissionDenied(message) => {
-            KnowledgeDriveWorkspaceError::Upstream(message)
+        DriveServiceError::Conflict(message) => KnowledgeDriveWorkspaceError::Conflict(message),
+        DriveServiceError::NotFound(message) => KnowledgeDriveWorkspaceError::NotFound(message),
+        DriveServiceError::PermissionDenied(message) => {
+            KnowledgeDriveWorkspaceError::PermissionDenied(message)
         }
         DriveServiceError::Internal(message) => KnowledgeDriveWorkspaceError::Internal(message),
     }
@@ -947,10 +954,14 @@ fn map_space_service_error(error: DriveServiceError) -> KnowledgeDriveSpaceProvi
         DriveServiceError::Validation(message) => {
             KnowledgeDriveSpaceProvisionerError::InvalidRequest(message)
         }
-        DriveServiceError::Conflict(message)
-        | DriveServiceError::NotFound(message)
-        | DriveServiceError::PermissionDenied(message) => {
-            KnowledgeDriveSpaceProvisionerError::Upstream(message)
+        DriveServiceError::Conflict(message) => {
+            KnowledgeDriveSpaceProvisionerError::Conflict(message)
+        }
+        DriveServiceError::NotFound(message) => {
+            KnowledgeDriveSpaceProvisionerError::NotFound(message)
+        }
+        DriveServiceError::PermissionDenied(message) => {
+            KnowledgeDriveSpaceProvisionerError::PermissionDenied(message)
         }
         DriveServiceError::Internal(message) => {
             KnowledgeDriveSpaceProvisionerError::Internal(message)
@@ -963,10 +974,10 @@ fn map_tree_service_error(error: DriveServiceError) -> KnowledgeDriveNodeTreeErr
         DriveServiceError::Validation(message) => {
             KnowledgeDriveNodeTreeError::InvalidRequest(message)
         }
-        DriveServiceError::Conflict(message)
-        | DriveServiceError::NotFound(message)
-        | DriveServiceError::PermissionDenied(message) => {
-            KnowledgeDriveNodeTreeError::Upstream(message)
+        DriveServiceError::Conflict(message) => KnowledgeDriveNodeTreeError::Conflict(message),
+        DriveServiceError::NotFound(message) => KnowledgeDriveNodeTreeError::NotFound(message),
+        DriveServiceError::PermissionDenied(message) => {
+            KnowledgeDriveNodeTreeError::PermissionDenied(message)
         }
         DriveServiceError::Internal(message) => KnowledgeDriveNodeTreeError::Internal(message),
     }

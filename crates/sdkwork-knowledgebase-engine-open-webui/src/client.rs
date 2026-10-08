@@ -6,7 +6,8 @@ use sdkwork_knowledgebase_contract::knowledge_engine::{
     KnowledgeEngineSearchHit, KnowledgeEngineSearchResult,
 };
 use sdkwork_knowledgebase_provider_runtime::{
-    ProviderExecutionContext, ProviderHttpRequest, ProviderOperation, ProviderRuntime,
+    encoded_path_segment, is_path_segment_id, optional_bearer_token, ProviderExecutionContext,
+    ProviderHttpRequest, ProviderOperation, ProviderRuntime,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -22,24 +23,45 @@ pub struct OpenWebuiApiClient {
 }
 
 impl OpenWebuiApiClient {
-    pub fn new(config: OpenWebuiConnectorConfig) -> Self {
-        let http = ProviderRuntime::for_base_url(&config.base_url)
-            .expect("Open WebUI base URL must satisfy Provider Runtime target policy");
-        Self { config, http }
+    pub fn new(config: OpenWebuiConnectorConfig) -> Result<Self, KnowledgeEngineError> {
+        let http = ProviderRuntime::for_base_url_with_private_targets(
+            &config.base_url,
+            config.allow_private_network,
+        )
+        .map_err(KnowledgeEngineError::from)?;
+        Ok(Self { config, http })
+    }
+
+    fn bearer_token(&self) -> Option<&str> {
+        optional_bearer_token(Some(self.config.api_key.as_str()))
     }
 
     fn health_context(&self) -> ProviderExecutionContext {
         ProviderExecutionContext::for_system_health(OPEN_WEBUI_IMPLEMENTATION_ID)
     }
 
+    /// Binding-controlled knowledge ids are spliced into URL paths, so they are
+    /// validated and percent-encoded at every interpolation point.
+    fn validated_knowledge_id(knowledge_id: &str) -> Result<&str, KnowledgeEngineError> {
+        if is_path_segment_id(knowledge_id) {
+            Ok(knowledge_id)
+        } else {
+            Err(KnowledgeEngineError::Validation(
+                "Open WebUI knowledge id must match [A-Za-z0-9._:-]{1,256}".to_string(),
+            ))
+        }
+    }
+
     pub async fn connector_health(&self, knowledge_id: &str) -> Result<(), KnowledgeEngineError> {
+        let knowledge_id = Self::validated_knowledge_id(knowledge_id)?;
         let url = format!(
-            "{}/api/v1/knowledge/{knowledge_id}",
-            self.config.base_url.trim_end_matches('/')
+            "{}/api/v1/knowledge/{}",
+            self.config.base_url.trim_end_matches('/'),
+            encoded_path_segment(knowledge_id),
         );
         let request = ProviderHttpRequest::new(ProviderOperation::Health, Method::GET, url)
             .map_err(KnowledgeEngineError::from)?
-            .bearer_auth(self.config.api_key.as_str())
+            .optional_bearer_auth(self.bearer_token())
             .map_err(KnowledgeEngineError::from)?
             .idempotent(true);
         self.http
@@ -63,7 +85,7 @@ impl OpenWebuiApiClient {
         );
         let request = ProviderHttpRequest::new(ProviderOperation::Search, Method::POST, url)
             .map_err(KnowledgeEngineError::from)?
-            .bearer_auth(self.config.api_key.as_str())
+            .optional_bearer_auth(self.bearer_token())
             .map_err(KnowledgeEngineError::from)?
             .json(&serde_json::json!({
                 "collection_names": [knowledge_id],

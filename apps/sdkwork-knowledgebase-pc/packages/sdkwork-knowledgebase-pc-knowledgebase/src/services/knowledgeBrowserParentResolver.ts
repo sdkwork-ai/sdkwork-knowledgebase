@@ -28,24 +28,19 @@ function normalizeKnowledgeMode(value: unknown): string {
   return typeof value === 'string' && value.trim() ? value.trim() : 'okf_bundle';
 }
 
-function parseOkfDocumentReference(reference: string): { conceptRowId: number } | null {
-  const match = /^okf:\d+:(\d+)$/.exec(reference.trim());
-  if (!match) {
+function parseOkfDocumentReference(reference: string): { conceptRowId: string } | null {
+  const match = /^okf:[0-9]+:([0-9]+)$/.exec(reference.trim());
+  if (!match || /^0+$/.test(match[1])) {
     return null;
   }
-  const conceptRowId = Number(match[1]);
-  if (!Number.isFinite(conceptRowId) || conceptRowId <= 0) {
-    return null;
-  }
-  return { conceptRowId };
+  // Ids stay canonical decimal text: `Number` would silently round ids past
+  // 2^53 even when the value is only used for validation.
+  return { conceptRowId: match[1] };
 }
 
 function isNumericDocumentReference(reference: string): boolean {
   const trimmed = reference.trim();
-  const numericDocumentId = Number(trimmed);
-  return Number.isFinite(numericDocumentId)
-    && numericDocumentId > 0
-    && String(numericDocumentId) === trimmed;
+  return /^[0-9]+$/.test(trimmed) && !/^0+$/.test(trimmed);
 }
 
 function looksLikeDriveNodeId(reference: string): boolean {
@@ -95,9 +90,9 @@ function throwParentFolderNotFound(parentReference: string): never {
   });
 }
 
-async function resolveDriveNodeIdFromNumericDocument(documentId: number): Promise<string | null> {
+async function resolveDriveNodeIdFromNumericDocument(documentId: string): Promise<string | null> {
   try {
-    const document = await requireSdkClient().knowledge.documents.retrieve(String(documentId));
+    const document = await requireSdkClient().knowledge.documents.retrieve(documentId);
     return trim(document.originalFileDriveNodeId ?? '') || null;
   } catch {
     return null;
@@ -140,7 +135,7 @@ async function resolveBrowserParentNode(
   }
 
   if (isNumericDocumentReference(trimmed)) {
-    const driveNodeId = await resolveDriveNodeIdFromNumericDocument(Number(trimmed));
+    const driveNodeId = await resolveDriveNodeIdFromNumericDocument(trimmed);
     if (driveNodeId) {
       const byDriveNodeId = loadedNodes.find(
         (candidate) => candidate.driveNodeId === driveNodeId || candidate.id === driveNodeId,
@@ -183,7 +178,7 @@ export async function resolveKnowledgeBrowserParentDriveNodeId(
   const trimmed = trim(parentReference ?? '');
 
   if (isNumericDocumentReference(trimmed)) {
-    const driveNodeId = await resolveDriveNodeIdFromNumericDocument(Number(trimmed));
+    const driveNodeId = await resolveDriveNodeIdFromNumericDocument(trimmed);
     if (!driveNodeId) {
       throwParentFolderNotFound(trimmed);
     }

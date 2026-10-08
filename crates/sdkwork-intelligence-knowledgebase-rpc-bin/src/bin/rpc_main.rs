@@ -8,7 +8,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     sdkwork_database_sqlx::enable_process_shared_database_pool();
     sdkwork_intelligence_knowledgebase_rpc_bin::run_group_knowledge_space_lifecycle_rpc_from_env()
         .await
-        .map_err(|error| Box::new(error) as Box<dyn std::error::Error + Send + Sync>)
+        .map_err(|error| Box::<dyn std::error::Error + Send + Sync>::from(error))
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -2,13 +2,10 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct KnowledgeDocument {
-    pub id: i64,
+    pub id: String,
 
     #[serde(rename = "spaceId")]
-    pub space_id: i64,
-
-    #[serde(rename = "collectionId")]
-    pub collection_id: i64,
+    pub space_id: String,
 
     #[serde(rename = "sourceId")]
     #[serde(default, skip_serializing_if = "Option::is_none")]

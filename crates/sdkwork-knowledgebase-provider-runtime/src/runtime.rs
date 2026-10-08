@@ -15,6 +15,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use tokio::sync::{OnceCell, Semaphore};
 
+use crate::target_security::PrivateTargetPolicy;
 use crate::telemetry::default_telemetry;
 use crate::{
     ProviderError, ProviderErrorCategory, ProviderOperation, ProviderRuntimeConfig,
@@ -362,12 +363,13 @@ struct CircuitState {
 
 #[derive(Clone)]
 pub struct ProviderRuntime {
-    /// Lazily built HTTP client whose target host is DNS-resolved, validated as public,
-    /// and pinned (every public resolved address, so a provider's DNS failover records
-    /// stay reachable), so a rebinding DNS record cannot redirect provider traffic into
-    /// an internal network after validation. Only successful builds are cached: a
-    /// transient DNS or construction failure retries on the next call instead of
-    /// poisoning the provider for the process lifetime.
+    /// Lazily built HTTP client whose target host is DNS-resolved, validated against
+    /// the configured private-target policy (public-only unless the deployment
+    /// explicitly opted into private-network targets), and pinned (every resolved
+    /// address, so a provider's DNS failover records stay reachable), so a rebinding
+    /// DNS record cannot redirect provider traffic after validation. Only successful
+    /// builds are cached: a transient DNS or construction failure retries on the next
+    /// call instead of poisoning the provider for the process lifetime.
     client: OnceCell<Client>,
     base_url: Url,
     config: ProviderRuntimeConfig,
@@ -379,6 +381,21 @@ pub struct ProviderRuntime {
 impl ProviderRuntime {
     pub fn for_base_url(base_url: &str) -> Result<Self, ProviderError> {
         Self::new(ProviderRuntimeConfig::for_base_url(base_url)?)
+    }
+
+    /// Builds a runtime for `base_url` with an explicit private-network target opt-in.
+    /// Fail-closed when `allow_private_network_targets` is `false`; when `true`, the
+    /// deployment declares the engine's private network segment explicitly trusted
+    /// (operator responsibility) and DNS socket pinning still applies.
+    pub fn for_base_url_with_private_targets(
+        base_url: &str,
+        allow_private_network_targets: bool,
+    ) -> Result<Self, ProviderError> {
+        let config = ProviderRuntimeConfig::for_base_url_with_private_targets(
+            base_url,
+            allow_private_network_targets,
+        )?;
+        Self::new(config)
     }
 
     pub fn new(config: ProviderRuntimeConfig) -> Result<Self, ProviderError> {
@@ -617,7 +634,23 @@ impl ProviderRuntime {
 
         if !status.is_success() {
             let preview_limit = self.config.max_error_preview_bytes.min(max_response_bytes);
-            let _bounded_diagnostic_body = collect_bounded(response, preview_limit).await;
+            // The bounded body is diagnostic-only: it is emitted as a redacted debug
+            // preview (control bytes collapsed, length-capped) and never copied into
+            // ProviderError.safe_message, so upstream response text cannot leak into
+            // API errors. Credential headers are marked sensitive by
+            // ProviderHttpRequest and are never part of the preview.
+            let diagnostic_body = collect_bounded(response, preview_limit)
+                .await
+                .unwrap_or_default();
+            if let Some(preview) = error_body_preview(&diagnostic_body) {
+                tracing::debug!(
+                    implementation_id = %context.implementation_id,
+                    operation = %request.operation,
+                    status = status.as_u16(),
+                    body_preview = %preview,
+                    "provider returned an error body"
+                );
+            }
             let (category, retryable) = classify_status(status);
             let detail = format!("provider returned HTTP {}", status.as_u16());
             return Err(self.error(
@@ -864,6 +897,32 @@ fn classify_status(status: StatusCode) -> (ProviderErrorCategory, bool) {
     }
 }
 
+/// Redacts and bounds an upstream error body for diagnostic logging: control
+/// bytes are collapsed so log parsers cannot split on embedded newlines, the
+/// preview is length-capped, and non-UTF-8 payloads degrade lossily.
+fn error_body_preview(body: &[u8]) -> Option<String> {
+    if body.is_empty() {
+        return None;
+    }
+    const MAX_PREVIEW_CHARS: usize = 512;
+    let text = String::from_utf8_lossy(body);
+    let mut preview: String = text
+        .chars()
+        .map(|character| {
+            if character.is_control() {
+                ' '
+            } else {
+                character
+            }
+        })
+        .take(MAX_PREVIEW_CHARS)
+        .collect();
+    if text.chars().count() > MAX_PREVIEW_CHARS {
+        preview.push('…');
+    }
+    Some(preview)
+}
+
 fn parse_retry_after(value: Option<&HeaderValue>) -> Option<Duration> {
     let value = value?.to_str().ok()?.trim();
     if let Ok(seconds) = value.parse::<u64>() {
@@ -874,16 +933,21 @@ fn parse_retry_after(value: Option<&HeaderValue>) -> Option<Duration> {
 }
 
 /// Builds the reqwest client for one provider origin with DNS validation and socket
-/// pinning: the origin hostname is resolved, every address is required to be public,
-/// and the validated socket is pinned on the client so a later DNS rebinding cannot
-/// redirect provider traffic into an internal network.
+/// pinning: the origin hostname is resolved, every address is required to satisfy the
+/// configured private-target policy (public-only by default; an explicitly opted-in
+/// private segment is trusted by operator decision), and the validated sockets are
+/// pinned on the client so a later DNS rebinding cannot redirect provider traffic
+/// elsewhere.
 async fn build_pinned_client(
     base_url: &Url,
     config: &ProviderRuntimeConfig,
 ) -> Result<Client, ProviderError> {
-    let sockets =
-        crate::target_security::resolve_public_socket_addrs(base_url, config.connect_timeout)
-            .await?;
+    let sockets = crate::target_security::resolve_pinned_socket_addrs(
+        base_url,
+        config.connect_timeout,
+        PrivateTargetPolicy::new(config.allow_private_network_targets),
+    )
+    .await?;
     let mut builder = Client::builder()
         .connect_timeout(config.connect_timeout)
         .timeout(config.request_timeout)

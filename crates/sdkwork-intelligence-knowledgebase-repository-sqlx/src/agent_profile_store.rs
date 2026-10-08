@@ -343,7 +343,6 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
                 tenant_id,
                 profile_id,
                 space_id,
-                collection_id,
                 {},
                 priority,
                 top_k,
@@ -380,18 +379,14 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
         let organization_id = to_i64("organization_id", self.organization_id)?;
         let profile_id = to_i64("profile_id", request.profile_id)?;
         let space_id = to_i64("space_id", request.space_id)?;
-        let collection_id = request
-            .collection_id
-            .map(|value| to_i64("collection_id", value))
-            .transpose()?;
         let source_filter = option_json(&request.source_filter)?;
         let document_filter = option_json(&request.document_filter)?;
         let now = utc_sql_timestamp_text().map_err(agent_internal_error)?;
 
-        let source_filter_expr = self.timestamp_dialect.sql_json_expr("$8");
-        let document_filter_expr = self.timestamp_dialect.sql_json_expr("$9");
-        let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$15");
-        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$16");
+        let source_filter_expr = self.timestamp_dialect.sql_json_expr("$7");
+        let document_filter_expr = self.timestamp_dialect.sql_json_expr("$8");
+        let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$14");
+        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$15");
         let returning_columns = binding_json_returning_columns();
         let row = sqlx::query(sqlx::AssertSqlSafe(format!(
             r#"
@@ -402,7 +397,6 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
                 organization_id,
                 profile_id,
                 space_id,
-                collection_id,
                 source_filter,
                 document_filter,
                 priority,
@@ -414,13 +408,12 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
                 updated_at,
                 version
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, {source_filter_expr}, {document_filter_expr}, $10, $11, $12, $13, $14, {created_at_expr}, {updated_at_expr}, $17)
+            VALUES ($1, $2, $3, $4, $5, $6, {source_filter_expr}, {document_filter_expr}, $9, $10, $11, $12, $13, {created_at_expr}, {updated_at_expr}, $16)
             RETURNING
                 id,
                 tenant_id,
                 profile_id,
                 space_id,
-                collection_id,
                 {},
                 priority,
                 top_k,
@@ -435,7 +428,6 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
         .bind(organization_id)
         .bind(profile_id)
         .bind(space_id)
-        .bind(collection_id)
         .bind(source_filter)
         .bind(document_filter)
         .bind(i64::from(request.priority))
@@ -471,38 +463,32 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
         let profile_id_i64 = to_i64("profile_id", profile_id)?;
         let binding_id_i64 = to_i64("binding_id", binding_id)?;
         let space_id = to_i64("space_id", request.space_id)?;
-        let collection_id = request
-            .collection_id
-            .map(|value| to_i64("collection_id", value))
-            .transpose()?;
         let source_filter = option_json(&request.source_filter)?;
         let document_filter = option_json(&request.document_filter)?;
         let now = utc_sql_timestamp_text().map_err(agent_internal_error)?;
 
-        let source_filter_expr = self.timestamp_dialect.sql_json_expr("$3");
-        let document_filter_expr = self.timestamp_dialect.sql_json_expr("$4");
-        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$9");
+        let source_filter_expr = self.timestamp_dialect.sql_json_expr("$2");
+        let document_filter_expr = self.timestamp_dialect.sql_json_expr("$3");
+        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$8");
         let returning_columns = binding_json_returning_columns();
         let row = sqlx::query(sqlx::AssertSqlSafe(format!(
             r#"
             UPDATE kb_agent_knowledge_binding
             SET space_id = $1,
-                collection_id = $2,
                 source_filter = {source_filter_expr},
                 document_filter = {document_filter_expr},
-                priority = $5,
-                top_k = $6,
-                min_score = $7,
-                enabled = $8,
+                priority = $4,
+                top_k = $5,
+                min_score = $6,
+                enabled = $7,
                 updated_at = {updated_at_expr},
                 version = version + 1
-            WHERE tenant_id = $10 AND organization_id = $11 AND profile_id = $12 AND id = $13 AND status = $14
+            WHERE tenant_id = $9 AND organization_id = $10 AND profile_id = $11 AND id = $12 AND status = $13
             RETURNING
                 id,
                 tenant_id,
                 profile_id,
                 space_id,
-                collection_id,
                 {},
                 priority,
                 top_k,
@@ -512,7 +498,6 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
             returning_columns,
         )))
         .bind(space_id)
-        .bind(collection_id)
         .bind(source_filter)
         .bind(document_filter)
         .bind(i64::from(request.priority))
@@ -687,7 +672,6 @@ fn binding_from_row(row: AnyRow) -> Result<KnowledgeAgentBinding, KnowledgeAgent
         profile_id: u64_from_row(&row, "profile_id")?,
         tenant_id: u64_from_row(&row, "tenant_id")?,
         space_id: u64_from_row(&row, "space_id")?,
-        collection_id: optional_u64_from_row(&row, "collection_id")?,
         source_filter: parse_optional_filter(
             row.try_get("source_filter").map_err(agent_sqlx_error)?,
         )?,

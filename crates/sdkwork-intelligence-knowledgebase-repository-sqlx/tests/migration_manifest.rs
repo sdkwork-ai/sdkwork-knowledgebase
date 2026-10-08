@@ -49,9 +49,8 @@ const WIKI_PROJECTION_STORE_SOURCE: &str = include_str!("../src/wiki_persistence
 const WIKI_PUBLICATION_STORE_SOURCE: &str = include_str!("../src/wiki_persistence/publication.rs");
 const WIKI_RENDITION_STORE_SOURCE: &str = include_str!("../src/wiki_persistence/rendition.rs");
 
-const REQUIRED_CORE_TABLES: [&str; 22] = [
+const REQUIRED_CORE_TABLES: [&str; 21] = [
     "kb_space",
-    "kb_collection",
     "kb_source",
     "kb_drive_object_ref",
     "kb_document",
@@ -74,10 +73,9 @@ const REQUIRED_CORE_TABLES: [&str; 22] = [
     "kb_local_mirror_package",
 ];
 
-const REQUIRED_CORE_INDEXES: [&str; 49] = [
+const REQUIRED_CORE_INDEXES: [&str; 48] = [
     "uk_kb_space_uuid",
     "uk_kb_space_drive_space",
-    "uk_kb_collection_uuid",
     "uk_kb_source_uuid",
     "uk_kb_source_identity",
     "uk_kb_drive_object_ref_uuid",
@@ -298,7 +296,6 @@ fn rag_migrations_define_retrieval_index_trace_and_agent_binding_columns() {
             "dimension",
             "metric",
             "CREATE TABLE IF NOT EXISTS kb_embedding",
-            "vector_ref",
             "embedding_hash",
             "CREATE TABLE IF NOT EXISTS kb_retrieval_profile",
             "strategy",
@@ -338,11 +335,10 @@ fn rag_migrations_define_retrieval_index_trace_and_agent_binding_columns() {
 }
 
 #[test]
-fn access_mode_migrations_add_profile_space_mode_and_vector_json() {
+fn access_mode_migrations_add_profile_and_space_knowledge_mode() {
     for migration in [POSTGRES_ACCESS_MODE_MIGRATION] {
         for snippet in [
             "knowledge_mode",
-            "vector_json",
             "idx_kb_agent_profile_knowledge_mode",
             "idx_kb_space_knowledge_mode",
         ] {

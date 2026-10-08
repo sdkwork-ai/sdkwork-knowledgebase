@@ -71,7 +71,6 @@ impl<'a> KnowledgeApiMarkdownIndexService<'a> {
                 ),
                 document: CreateKnowledgeDocumentRecord {
                     space_id,
-                    collection_id: 0,
                     source_id: None,
                     identity_scope: KnowledgeDocumentIdentityScope::SourceOnly,
                     original_file_drive_node_id: None,
@@ -169,7 +168,6 @@ pub fn split_markdown_chunks(
         let content_hash = format!("sha256:{}", sha256_hash(segment.as_bytes()));
         records.push(CreateKnowledgeChunkRecord {
             space_id,
-            collection_id: 0,
             document_id,
             document_version_id,
             chunk_index: (index + 1) as u32,

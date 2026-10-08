@@ -3,7 +3,6 @@ import type { KnowledgeFilter } from './knowledge-filter';
 export interface KnowledgeAgentBindingRequest {
   profileId: string;
   spaceId: string;
-  collectionId?: string | null;
   sourceFilter?: KnowledgeFilter[] | null;
   documentFilter?: KnowledgeFilter[] | null;
   priority: number;

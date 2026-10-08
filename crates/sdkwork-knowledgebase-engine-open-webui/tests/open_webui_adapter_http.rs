@@ -8,11 +8,6 @@ use sdkwork_knowledgebase_engine_open_webui::{
 use sdkwork_knowledgebase_test_support::provider_execution::provider_execution_context;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
-// Wiremock fixtures run on loopback; the provider SSRF protection fails closed unless
-// this explicit test-only allowance is set (never set it in a deployed environment).
-fn allow_test_loopback() {
-    std::env::set_var("SDKWORK_KNOWLEDGEBASE_PROVIDER_RUNTIME_ALLOW_LOOPBACK", "1");
-}
 
 async fn assert_open_webui_health(upstream_status: u16, expected: KnowledgeEngineHealthStatus) {
     let mock_server = MockServer::start().await;
@@ -25,6 +20,7 @@ async fn assert_open_webui_health(upstream_status: u16, expected: KnowledgeEngin
     let engine = OpenWebuiKnowledgeEngine::with_config(OpenWebuiConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("health-key".to_string()),
+        allow_private_network: true,
         default_knowledge_id: Some("health-knowledge".to_string()),
     });
 
@@ -33,14 +29,12 @@ async fn assert_open_webui_health(upstream_status: u16, expected: KnowledgeEngin
 
 #[tokio::test]
 async fn open_webui_health_maps_upstream_availability() {
-    allow_test_loopback();
     assert_open_webui_health(200, KnowledgeEngineHealthStatus::Available).await;
     assert_open_webui_health(503, KnowledgeEngineHealthStatus::Degraded).await;
 }
 
 #[tokio::test]
 async fn open_webui_search_uses_configured_remote_resource_id() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/api/v1/retrieval/query/collection"))
@@ -58,6 +52,7 @@ async fn open_webui_search_uses_configured_remote_resource_id() {
     let config = OpenWebuiConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
+        allow_private_network: true,
         default_knowledge_id: Some("kb-space-42".to_string()),
     };
     let engine = OpenWebuiKnowledgeEngine::with_config(config);
@@ -86,7 +81,6 @@ async fn open_webui_search_uses_configured_remote_resource_id() {
 
 #[tokio::test]
 async fn open_webui_read_document_resolves_chunk_from_query_collection() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/api/v1/retrieval/query/collection"))
@@ -104,6 +98,7 @@ async fn open_webui_read_document_resolves_chunk_from_query_collection() {
     let config = OpenWebuiConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
+        allow_private_network: true,
         default_knowledge_id: Some("kb-space-42".to_string()),
     };
     let engine = OpenWebuiKnowledgeEngine::with_config(config);

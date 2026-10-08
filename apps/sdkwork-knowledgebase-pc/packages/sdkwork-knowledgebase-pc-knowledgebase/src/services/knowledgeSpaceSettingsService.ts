@@ -2,6 +2,7 @@ import type { KnowledgeAccessLevel, KnowledgeSpaceContextBinding } from 'sdkwork
 import { isBlank } from '@sdkwork/utils';
 import {
   getKnowledgebaseAppSdkClient,
+  parseSdkProblemDetails,
   requireKnowledgebaseTenantId} from 'sdkwork-knowledgebase-pc-core';
 
 import type { KnowledgeBase } from './document';
@@ -100,6 +101,25 @@ export async function ensureSpaceAgentProfile(
   spaceId: string,
   options: EnsureSpaceAgentProfileOptions = {},
 ): Promise<string> {
+  // Serialize concurrent callers within this tab so two parallel ensures do
+  // not both see a cache miss and create duplicate profiles/bindings.
+  const inFlight = ensureSpaceAgentProfileInFlight.get(spaceId);
+  if (inFlight) {
+    return inFlight;
+  }
+  const promise = ensureSpaceAgentProfileUncached(spaceId, options).finally(() => {
+    ensureSpaceAgentProfileInFlight.delete(spaceId);
+  });
+  ensureSpaceAgentProfileInFlight.set(spaceId, promise);
+  return promise;
+}
+
+const ensureSpaceAgentProfileInFlight = new Map<string, Promise<string>>();
+
+async function ensureSpaceAgentProfileUncached(
+  spaceId: string,
+  options: EnsureSpaceAgentProfileOptions,
+): Promise<string> {
   const tenantId = requireKnowledgebaseTenantId();
   const persistCache = options.persistCache ?? true;
 
@@ -133,8 +153,14 @@ export async function ensureSpaceAgentProfile(
         });
       }
       return cached;
-    } catch {
-      // Stale cache entry; recreate profile.
+    } catch (error) {
+      // Only a definitive 404 (profile deleted server-side) may recreate the
+      // profile: treating transient failures (gateway restart, network blip,
+      // 5xx) as "stale cache" manufactured an unbounded stream of orphan
+      // profiles and bindings on every flaky request.
+      if (parseSdkProblemDetails(error)?.status !== 404) {
+        throw error;
+      }
     }
   }
 

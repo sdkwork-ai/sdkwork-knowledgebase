@@ -4,7 +4,6 @@ use thiserror::Error;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateKnowledgeChunkRecord {
     pub space_id: u64,
-    pub collection_id: u64,
     pub document_id: u64,
     pub document_version_id: u64,
     pub chunk_index: u32,

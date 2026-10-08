@@ -624,7 +624,7 @@ export class KnowledgeOkfConceptsApi {
 /** List OKF concepts */
   async list(params: KnowledgeOkfConceptsListParams, requestOptions?: ApiRequestOptions): Promise<OkfConceptSummaryList> {
     const query = buildQueryString([
-      { name: 'spaceId', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
+      { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
@@ -727,7 +727,7 @@ export class KnowledgeDocumentsApi {
 /** List knowledge documents */
   async list(params: KnowledgeDocumentsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: KnowledgeDocument[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
-      { name: 'spaceId', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
+      { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
@@ -837,8 +837,8 @@ export class KnowledgeSpacesMembersApi {
 /** Revoke knowledge space member access */
   async delete(spaceId: string, params: KnowledgeSpacesMembersDeleteParams, requestOptions?: ApiRequestOptions): Promise<void> {
     const query = buildQueryString([
-      { name: 'subjectType', value: params.subjectType, style: 'form', explode: true, allowReserved: false },
-      { name: 'subjectId', value: params.subjectId, style: 'form', explode: true, allowReserved: false },
+      { name: 'subject_type', value: params.subjectType, style: 'form', explode: true, allowReserved: false },
+      { name: 'subject_id', value: params.subjectId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<void>(appendQueryString(appApiPath(`/knowledge/spaces/${serializePathParameter(spaceId, { name: 'spaceId', style: 'simple', explode: false })}/members`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'DELETE' as any });
   }
@@ -891,7 +891,7 @@ export class KnowledgeSpacesBrowserApi {
   async list(spaceId: string, params: KnowledgeSpacesBrowserListParams, requestOptions?: ApiRequestOptions): Promise<KnowledgeBrowserListData> {
     const query = buildQueryString([
       { name: 'view', value: params.view, style: 'form', explode: true, allowReserved: false },
-      { name: 'parentId', value: params.parentId, style: 'form', explode: true, allowReserved: false },
+      { name: 'parent_id', value: params.parentId, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);

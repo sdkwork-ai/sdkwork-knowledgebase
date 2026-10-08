@@ -33,6 +33,12 @@ pub enum EnsureKnowledgeDriveNodeKind {
 pub enum KnowledgeDriveWorkspaceError {
     #[error("knowledge drive workspace invalid request: {0}")]
     InvalidRequest(String),
+    #[error("knowledge drive workspace not found: {0}")]
+    NotFound(String),
+    #[error("knowledge drive workspace conflict: {0}")]
+    Conflict(String),
+    #[error("knowledge drive workspace permission denied: {0}")]
+    PermissionDenied(String),
     #[error("knowledge drive workspace upstream error: {0}")]
     Upstream(String),
     #[error("knowledge drive workspace internal error: {0}")]

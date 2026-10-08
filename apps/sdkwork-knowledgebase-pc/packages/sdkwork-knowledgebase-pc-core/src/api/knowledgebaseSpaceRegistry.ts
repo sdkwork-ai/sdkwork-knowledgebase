@@ -1,4 +1,5 @@
 import type { SessionStore } from '../session/sessionStore';
+import { withCrossTabStorageUpdate } from './knowledgebaseCrossTabStorage';
 
 export type KnowledgebaseSpaceKbType = 'team' | 'personal' | 'public';
 
@@ -82,17 +83,25 @@ export function upsertRegisteredSpace(
   tenantId: string,
   entry: RegisteredKnowledgebaseSpace,
 ): RegisteredKnowledgebaseSpace[] {
-  const spaces = readRegisteredSpaces(tenantId);
-  const next = spaces.filter((space) => space.spaceId !== entry.spaceId);
-  next.push(entry);
-  writeRegisteredSpaces(tenantId, next);
-  return next;
+  return withCrossTabStorageUpdate(
+    registryStorageKey(tenantId),
+    () => readRegisteredSpaces(tenantId),
+    (spaces) => {
+      const next = spaces.filter((space) => space.spaceId !== entry.spaceId);
+      next.push(entry);
+      return next;
+    },
+    (next) => writeRegisteredSpaces(tenantId, next),
+  );
 }
 
 export function removeRegisteredSpace(tenantId: string, spaceId: string): RegisteredKnowledgebaseSpace[] {
-  const next = readRegisteredSpaces(tenantId).filter((space) => space.spaceId !== spaceId);
-  writeRegisteredSpaces(tenantId, next);
-  return next;
+  return withCrossTabStorageUpdate(
+    registryStorageKey(tenantId),
+    () => readRegisteredSpaces(tenantId),
+    (spaces) => spaces.filter((space) => space.spaceId !== spaceId),
+    (next) => writeRegisteredSpaces(tenantId, next),
+  );
 }
 
 export function updateRegisteredSpace(
@@ -107,9 +116,11 @@ export function updateRegisteredSpace(
     >
   >,
 ): RegisteredKnowledgebaseSpace[] {
-  const next = readRegisteredSpaces(tenantId).map((space) =>
-    space.spaceId === spaceId ? { ...space, ...patch } : space,
+  return withCrossTabStorageUpdate(
+    registryStorageKey(tenantId),
+    () => readRegisteredSpaces(tenantId),
+    (spaces) =>
+      spaces.map((space) => (space.spaceId === spaceId ? { ...space, ...patch } : space)),
+    (next) => writeRegisteredSpaces(tenantId, next),
   );
-  writeRegisteredSpaces(tenantId, next);
-  return next;
 }

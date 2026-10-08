@@ -1,3 +1,5 @@
+import { withCrossTabStorageUpdate } from './knowledgebaseCrossTabStorage';
+
 const RECENT_DOCS_KEY_PREFIX = 'sdkwork.knowledgebase.recent.v1';
 const MAX_RECENT_DOCUMENTS = 32;
 
@@ -39,15 +41,19 @@ export function touchRecentDocument(
     return [];
   }
 
-  const next = readRecentDocuments(tenantId).filter((item) => item.id !== entry.id);
-  next.unshift({
-    ...entry,
-    updatedAt: entry.updatedAt || new Date().toISOString(),
-  });
-
-  const trimmed = next.slice(0, MAX_RECENT_DOCUMENTS);
-  window.localStorage.setItem(recentStorageKey(tenantId), JSON.stringify(trimmed));
-  return trimmed;
+  return withCrossTabStorageUpdate(
+    recentStorageKey(tenantId),
+    () => readRecentDocuments(tenantId),
+    (current) => {
+      const next = current.filter((item) => item.id !== entry.id);
+      next.unshift({
+        ...entry,
+        updatedAt: entry.updatedAt || new Date().toISOString(),
+      });
+      return next.slice(0, MAX_RECENT_DOCUMENTS);
+    },
+    (next) => window.localStorage.setItem(recentStorageKey(tenantId), JSON.stringify(next)),
+  );
 }
 
 export function removeRecentDocument(tenantId: string, documentId: string): void {
@@ -55,6 +61,10 @@ export function removeRecentDocument(tenantId: string, documentId: string): void
     return;
   }
 
-  const next = readRecentDocuments(tenantId).filter((item) => item.id !== documentId);
-  window.localStorage.setItem(recentStorageKey(tenantId), JSON.stringify(next));
+  withCrossTabStorageUpdate(
+    recentStorageKey(tenantId),
+    () => readRecentDocuments(tenantId),
+    (current) => current.filter((item) => item.id !== documentId),
+    (next) => window.localStorage.setItem(recentStorageKey(tenantId), JSON.stringify(next)),
+  );
 }

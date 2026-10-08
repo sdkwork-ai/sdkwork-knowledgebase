@@ -32,7 +32,15 @@ fn app_route_manifest_declares_dual_token_auth_for_all_operations() {
                     entry.method, entry.path
                 )
             });
-        assert_eq!(matched.auth, RouteAuth::DualToken);
+        if entry.operation_id.starts_with("wechat.callback.") {
+            // The WeChat server-callback surface is the app-api's only public auth
+            // mode: WeChat's servers cannot hold SDKWork tokens, so the WeChat
+            // msg_signature over the tenant-stored callback token is the credential
+            // (see knowledge_wechat_callback_route in http_route_manifest.rs).
+            assert_eq!(matched.auth, RouteAuth::Public);
+        } else {
+            assert_eq!(matched.auth, RouteAuth::DualToken);
+        }
         assert_eq!(matched.operation_id, entry.operation_id);
     }
 }

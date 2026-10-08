@@ -4,6 +4,7 @@ export * from './api/knowledgebaseApiRegistry';
 export * from './api/knowledgebaseConnectivity';
 export * from './api/knowledgebaseDriveApiRegistry';
 export * from './api/knowledgebaseSpaceRegistry';
+export * from './api/knowledgebaseCrossTabStorage';
 export * from './api/knowledgebaseDocumentContentCache';
 export * from './api/knowledgebaseDocumentContentApi';
 export * from './api/knowledgebaseRecentDocuments';

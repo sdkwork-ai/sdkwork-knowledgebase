@@ -265,14 +265,17 @@ impl<'a> KnowledgeApiPayloadIngestService<'a> {
                 .await
             {
                 Ok(existing_payload) => {
+                    // The stored payload is the authoritative replay content: silently
+                    // falling back to the new request's markdown would answer an
+                    // idempotent replay with different content than what the original
+                    // job actually ingested.
                     let resolved_payload_markdown = self
                         .drive
                         .get_object_text_bounded(
                             &existing_payload,
                             crate::ingest::MAX_MARKDOWN_PAYLOAD_BYTES as u64,
                         )
-                        .await
-                        .unwrap_or_else(|_| payload_markdown.clone());
+                        .await?;
                     return Ok(ApiPayloadIngestResult {
                         payload_object_ref: existing_payload,
                         job,

@@ -9,10 +9,14 @@
     "protocol": "http",
     "packageName": "@sdkwork/knowledgebase-sdk"
   },
-  "changeFingerprint": "ddb8088e098201bd31b8994584f92507e78c7c1bb551f43b8de74903accebf40",
+  "changeFingerprint": "f8abdb6ec526066b24edc6f1c7f52d6a2f91471aa09876f321c1e7236fe06838",
   "changes": {
     "createdGeneratedFiles": [],
-    "updatedGeneratedFiles": [],
+    "updatedGeneratedFiles": [
+      "src/types/knowledge-context-fragment.ts",
+      "src/types/knowledge-document.ts",
+      "src/types/knowledge-retrieval-binding.ts"
+    ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
       "bin/publish.ps1",
@@ -49,17 +53,14 @@
       "src/types/knowledge-browser-node.ts",
       "src/types/knowledge-browser-view.ts",
       "src/types/knowledge-citation.ts",
-      "src/types/knowledge-context-fragment.ts",
       "src/types/knowledge-context-pack-request.ts",
       "src/types/knowledge-context-pack.ts",
       "src/types/knowledge-document-state.ts",
       "src/types/knowledge-document-version-state.ts",
       "src/types/knowledge-document-visibility.ts",
-      "src/types/knowledge-document.ts",
       "src/types/knowledge-filter.ts",
       "src/types/knowledge-ingest-request.ts",
       "src/types/knowledge-memory-context-fragment.ts",
-      "src/types/knowledge-retrieval-binding.ts",
       "src/types/knowledge-retrieval-method.ts",
       "src/types/knowledge-retrieval-request.ts",
       "src/types/knowledge-retrieval-result.ts",
@@ -84,26 +85,74 @@
   },
   "impact": {
     "schemaVersion": 1,
-    "areas": [],
-    "details": [],
-    "requiresVerification": false,
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+    "areas": [
+      "models"
+    ],
+    "details": [
+      {
+        "area": "models",
+        "paths": [
+          "src/types/knowledge-context-fragment.ts",
+          "src/types/knowledge-document.ts",
+          "src/types/knowledge-retrieval-binding.ts"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: models. Verification is required."
   },
   "verificationPlan": {
-    "shouldRun": false,
-    "runPhase": "skip",
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-    "steps": []
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-sdk\\sdkwork-knowledgebase-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
+      },
+      {
+        "id": "build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-sdk\\sdkwork-knowledgebase-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
+      }
+    ]
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "low",
-    "nextAction": "skip",
+    "riskLevel": "medium",
+    "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "No actionable changes were detected. No apply or verification step is required.",
+    "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "no-actionable-changes"
+      "verification-required"
     ]
   },
   "preservedLegacyFiles": false

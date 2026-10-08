@@ -6,7 +6,8 @@ use sdkwork_knowledgebase_contract::knowledge_engine::{
     KnowledgeEngineSearchHit, KnowledgeEngineSearchResult,
 };
 use sdkwork_knowledgebase_provider_runtime::{
-    ProviderExecutionContext, ProviderHttpRequest, ProviderOperation, ProviderRuntime,
+    encoded_path_segment, is_path_segment_id, optional_bearer_token, ProviderExecutionContext,
+    ProviderHttpRequest, ProviderOperation, ProviderRuntime,
 };
 use serde::Deserialize;
 
@@ -20,24 +21,45 @@ pub struct DifyApiClient {
 }
 
 impl DifyApiClient {
-    pub fn new(config: DifyConnectorConfig) -> Self {
-        let http = ProviderRuntime::for_base_url(&config.base_url)
-            .expect("Dify base URL must satisfy Provider Runtime target policy");
-        Self { config, http }
+    pub fn new(config: DifyConnectorConfig) -> Result<Self, KnowledgeEngineError> {
+        let http = ProviderRuntime::for_base_url_with_private_targets(
+            &config.base_url,
+            config.allow_private_network,
+        )
+        .map_err(KnowledgeEngineError::from)?;
+        Ok(Self { config, http })
+    }
+
+    fn bearer_token(&self) -> Option<&str> {
+        optional_bearer_token(Some(self.config.api_key.as_str()))
     }
 
     fn health_context(&self) -> ProviderExecutionContext {
         ProviderExecutionContext::for_system_health(DIFY_IMPLEMENTATION_ID)
     }
 
+    /// Binding-controlled ids are spliced into URL paths, so they are validated
+    /// and percent-encoded at every interpolation point.
+    fn validated_id<'a>(kind: &str, value: &'a str) -> Result<&'a str, KnowledgeEngineError> {
+        if is_path_segment_id(value) {
+            Ok(value)
+        } else {
+            Err(KnowledgeEngineError::Validation(format!(
+                "Dify {kind} must match [A-Za-z0-9._:-]{{1,256}}"
+            )))
+        }
+    }
+
     pub async fn connector_health(&self, dataset_id: &str) -> Result<(), KnowledgeEngineError> {
+        let dataset_id = Self::validated_id("dataset id", dataset_id)?;
         let url = format!(
-            "{}/datasets/{dataset_id}",
-            self.config.base_url.trim_end_matches('/')
+            "{}/datasets/{}",
+            self.config.base_url.trim_end_matches('/'),
+            encoded_path_segment(dataset_id),
         );
         let request = ProviderHttpRequest::new(ProviderOperation::Health, Method::GET, url)
             .map_err(KnowledgeEngineError::from)?
-            .bearer_auth(self.config.api_key.as_str())
+            .optional_bearer_auth(self.bearer_token())
             .map_err(KnowledgeEngineError::from)?
             .idempotent(true);
         self.http
@@ -55,13 +77,15 @@ impl DifyApiClient {
         query: &str,
         top_k: u32,
     ) -> Result<KnowledgeEngineSearchResult, KnowledgeEngineError> {
+        let dataset_id = Self::validated_id("dataset id", dataset_id)?;
         let url = format!(
-            "{}/datasets/{dataset_id}/retrieve",
-            self.config.base_url.trim_end_matches('/')
+            "{}/datasets/{}/retrieve",
+            self.config.base_url.trim_end_matches('/'),
+            encoded_path_segment(dataset_id),
         );
         let request = ProviderHttpRequest::new(ProviderOperation::Search, Method::POST, url)
             .map_err(KnowledgeEngineError::from)?
-            .bearer_auth(self.config.api_key.as_str())
+            .optional_bearer_auth(self.bearer_token())
             .map_err(KnowledgeEngineError::from)?
             .json(&serde_json::json!({
                 "query": query,
@@ -95,13 +119,19 @@ impl DifyApiClient {
         document_id: &str,
         segment_id: &str,
     ) -> Result<KnowledgeEngineDocument, KnowledgeEngineError> {
+        let dataset_id = Self::validated_id("dataset id", dataset_id)?;
+        let document_id = Self::validated_id("document id", document_id)?;
+        let segment_id = Self::validated_id("segment id", segment_id)?;
         let url = format!(
-            "{}/datasets/{dataset_id}/documents/{document_id}/segments/{segment_id}",
-            self.config.base_url.trim_end_matches('/')
+            "{}/datasets/{}/documents/{}/segments/{}",
+            self.config.base_url.trim_end_matches('/'),
+            encoded_path_segment(dataset_id),
+            encoded_path_segment(document_id),
+            encoded_path_segment(segment_id),
         );
         let request = ProviderHttpRequest::new(ProviderOperation::Read, Method::GET, url)
             .map_err(KnowledgeEngineError::from)?
-            .bearer_auth(self.config.api_key.as_str())
+            .optional_bearer_auth(self.bearer_token())
             .map_err(KnowledgeEngineError::from)?
             .idempotent(true);
         let response = self

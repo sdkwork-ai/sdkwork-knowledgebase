@@ -66,12 +66,6 @@ pub struct KnowledgeRetrievalBinding {
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]
     pub space_id: u64,
-    #[serde(
-        default,
-        serialize_with = "serialize_option_u64_as_string",
-        deserialize_with = "deserialize_option_u64_from_string_or_number"
-    )]
-    pub collection_id: Option<u64>,
     pub source_filter: Option<Vec<KnowledgeFilter>>,
     pub document_filter: Option<Vec<KnowledgeFilter>>,
     pub priority: i32,
@@ -175,12 +169,6 @@ pub struct KnowledgeContextFragment {
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]
     pub space_id: u64,
-    #[serde(
-        default,
-        serialize_with = "serialize_option_u64_as_string",
-        deserialize_with = "deserialize_option_u64_from_string_or_number"
-    )]
-    pub collection_id: Option<u64>,
     pub title: String,
     pub content: String,
     pub score: Option<f64>,
@@ -290,12 +278,6 @@ pub struct KnowledgeAgentBinding {
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]
     pub space_id: u64,
-    #[serde(
-        default,
-        serialize_with = "serialize_option_u64_as_string",
-        deserialize_with = "deserialize_option_u64_from_string_or_number"
-    )]
-    pub collection_id: Option<u64>,
     pub source_filter: Option<Vec<KnowledgeFilter>>,
     pub document_filter: Option<Vec<KnowledgeFilter>>,
     pub priority: i32,
@@ -329,12 +311,6 @@ pub struct KnowledgeAgentBindingRequest {
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]
     pub space_id: u64,
-    #[serde(
-        default,
-        serialize_with = "serialize_option_u64_as_string",
-        deserialize_with = "deserialize_option_u64_from_string_or_number"
-    )]
-    pub collection_id: Option<u64>,
     pub source_filter: Option<Vec<KnowledgeFilter>>,
     pub document_filter: Option<Vec<KnowledgeFilter>>,
     pub priority: i32,
@@ -426,12 +402,6 @@ pub struct KnowledgeIndexRequest {
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]
     pub space_id: u64,
-    #[serde(
-        default,
-        serialize_with = "serialize_option_u64_as_string",
-        deserialize_with = "deserialize_option_u64_from_string_or_number"
-    )]
-    pub collection_id: Option<u64>,
     pub index_kind: String,
     pub embedding_provider_id: Option<String>,
     pub embedding_model: Option<String>,

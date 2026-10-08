@@ -42,6 +42,7 @@ import { hydrateDocumentMediaUrl } from './knowledgeDriveMediaService';
 import {
   fetchKnowledgeDocumentContent,
   getKnowledgebaseTenantId,
+  isKnowledgebaseAppError,
   isKnowledgebaseDriveApiAvailable,
   KnowledgebaseErrorCodes,
   parseKnowledgeSpaceId,
@@ -54,6 +55,7 @@ import {
   requireKnowledgebaseAppSdkHttpClient,
   requireKnowledgebaseTenantId,
   requireRegisteredSpaceId,
+  parseSdkProblemDetails,
   throwKnowledgebaseError,
   touchRecentDocument,
   type KnowledgebaseSpaceKbType,
@@ -153,10 +155,12 @@ async function readOkfConceptMarkdown(spaceId: string, conceptRowId: string): Pr
     includeTrace: false,
     topK: 3,
   });
+  // Same document-ownership rule as readIndexedDocumentContent: never serve
+  // the top-ranked chunk of an unrelated document as this concept's body. The
+  // concept's own title/description is the safe fallback.
   const hit =
     result.hits.find((entry) => entry.title === concept.title)
-    ?? result.hits.find((entry) => entry.citation?.locator?.includes(concept.conceptId))
-    ?? result.hits[0];
+    ?? result.hits.find((entry) => entry.citation?.locator?.includes(concept.conceptId));
   if (hit?.content) {
     return hit.content;
   }
@@ -277,11 +281,17 @@ async function ensureDefaultSpace(tenantId: string): Promise<RegisteredKnowledge
   return entry;
 }
 
-export async function getKnowledgeBases(): Promise<{
+export interface KnowledgeBaseGroups {
   team: KnowledgeBase[];
   personal: KnowledgeBase[];
   public: KnowledgeBase[];
-}> {
+  /** Registry space ids skipped this round because their retrieve failed with a
+   *  transient (non-404) error. They stay registered but are missing from the
+   *  groups above, so callers can surface the degradation. */
+  unavailableSpaceIds: string[];
+}
+
+export async function getKnowledgeBases(): Promise<KnowledgeBaseGroups> {
   const ephemeralSpaceId = getEphemeralWorkspaceSpaceId();
   if (ephemeralSpaceId !== null) {
     const space = await requireSdkClient().knowledge.spaces.retrieve(ephemeralSpaceId);
@@ -294,6 +304,7 @@ export async function getKnowledgeBases(): Promise<{
       }],
       personal: [],
       public: [],
+      unavailableSpaceIds: [],
     };
   }
 
@@ -310,6 +321,7 @@ export async function getKnowledgeBases(): Promise<{
     personal: [],
     public: [],
   };
+  const unavailableSpaceIds: string[] = [];
 
   // Concurrent resolution keeps the sidebar's first paint independent of the registry
   // size; a serialized loop makes group latency grow linearly with each round trip.
@@ -324,12 +336,28 @@ export async function getKnowledgeBases(): Promise<{
     }
     if (result.status === 'fulfilled') {
       grouped[entry.kbType].push(buildKnowledgeBase(entry, result.value.name));
-    } else {
-      removeRegisteredSpace(tenantId, entry.spaceId);
+      return;
     }
+    // A failed retrieve is transient by default (gateway restart, network
+    // blip, 5xx): permanently deleting the registry reference turned every
+    // backend hiccup into silent knowledge-base loss after refresh. Only a
+    // definitive 404 (space deleted server-side) may remove the reference;
+    // everything else keeps the entry and simply skips this round.
+    const problem = parseSdkProblemDetails(result.reason);
+    if (problem?.status === 404) {
+      removeRegisteredSpace(tenantId, entry.spaceId);
+      return;
+    }
+    unavailableSpaceIds.push(entry.spaceId);
   });
 
-  return grouped;
+  if (unavailableSpaceIds.length > 0) {
+    console.warn(
+      `[KnowledgebaseDocumentApiBridge] ${unavailableSpaceIds.length} registered knowledge base(s) unavailable this round and hidden from the sidebar: ${unavailableSpaceIds.join(', ')}`,
+    );
+  }
+
+  return { ...grouped, unavailableSpaceIds };
 }
 
 export async function createKnowledgeBase(
@@ -502,10 +530,12 @@ async function readIndexedDocumentContent(
     includeTrace: false,
     topK: 8,
   });
+  // Only a hit that actually belongs to this document may be served: falling
+  // back to the top-ranked chunk of any document returned foreign content that
+  // was then cached as this document's body.
   const hit =
     result.hits.find((entry) => entry.documentId === documentId)
-    ?? result.hits.find((entry) => entry.title === title)
-    ?? result.hits[0];
+    ?? result.hits.find((entry) => entry.title === title);
   const content = hit?.content?.trim();
   return content ? content : null;
 }
@@ -749,9 +779,6 @@ export async function saveDocumentContent(
 ): Promise<SaveDocumentContentResult> {
   const persistBrowserState = shouldPersistBrowserWorkspaceState();
   const tenantId = persistBrowserState ? requireTenantId() : null;
-  if (tenantId !== null) {
-    writeLocalDocumentContent(tenantId, id, content);
-  }
 
   const okfRef = parseOkfDocumentId(id);
   if (okfRef) {
@@ -815,7 +842,10 @@ export async function saveDocumentContent(
       spaceId,
       title,
       payloadMarkdown: content,
-      idempotencyKey: `pc-save-${numericDocumentId}`.slice(0, 128),
+      // Every save attempt is a distinct operation: the ingest create-or-get
+      // deduplicates by key, so a deterministic per-document key made every
+      // later edit return the first job and silently drop the edit.
+      idempotencyKey: buildSaveDocumentIngestIdempotencyKey(numericDocumentId),
     });
     const finalJob = job.state === 'succeeded' ? job : await waitForIngestJob(job.id);
     if (finalJob.state !== 'succeeded') {
@@ -846,11 +876,23 @@ export async function saveDocumentContent(
       }
     }
   } catch (error) {
+    // Typed failures (conflict, ingest failure, validation, API unavailability)
+    // keep their canonical codes so `isDocumentConflictError` and the UI's
+    // merge prompt keep working; only unexpected errors become a generic
+    // OPERATION_FAILED.
+    if (isKnowledgebaseAppError(error)) {
+      throw error;
+    }
     const detail = error instanceof Error ? error.message : String(error);
     throwKnowledgebaseError(KnowledgebaseErrorCodes.OPERATION_FAILED, { cause: detail });
   }
 
   return { saved: true, currentVersionId };
+}
+
+function buildSaveDocumentIngestIdempotencyKey(numericDocumentId: string): string {
+  const randomSuffix = Math.random().toString(36).slice(2, 10);
+  return `pc-save-${numericDocumentId}-${Date.now()}-${randomSuffix}`.slice(0, 128);
 }
 
 async function resolveNumericDocumentId(id: string): Promise<string | null> {
@@ -1115,9 +1157,13 @@ export async function updateDocument(id: string, updates: Partial<DocumentMeta>)
     if (!isKnowledgebaseDriveApiAvailable()) {
       throwKnowledgebaseError(KnowledgebaseErrorCodes.API_UNAVAILABLE_DRIVE);
     }
+    // Pass the optional fields through untouched: normalizing a missing title
+    // or parent to '' made applyDriveBrowserNodeUpdates (whose guards are
+    // `!== undefined` checks) rename the node to an empty name and move it to
+    // the drive space root on every rename-only or pin-only update.
     await applyDriveBrowserNodeUpdates(String(browserMatch.spaceId), browserMatch.node, {
-      title: updates.title ?? '',
-      parentId: updates.parentId ?? '',
+      title: updates.title,
+      parentId: updates.parentId,
       isPinned: updates.isPinned,
     });
   }
@@ -1700,16 +1746,19 @@ export async function copyDocument(
 export async function deleteDocument(id: string): Promise<boolean> {
   const persistBrowserState = shouldPersistBrowserWorkspaceState();
   const tenantId = persistBrowserState ? requireTenantId() : null;
-  if (tenantId !== null) {
-    removeLocalDocumentContent(tenantId, id);
-    removeRecentDocument(tenantId, id);
-  }
 
   if (parseOkfDocumentId(id)) {
     const okfRef = parseOkfDocumentId(id)!;
     assertEphemeralWorkspaceSpaceId(String(okfRef.spaceId));
     const client = requireSdkClient();
     await client.knowledge.okf.concepts.delete(String(okfRef.conceptRowId));
+    // Local cleanup happens only after the remote delete confirmed: dropping
+    // recents/cache first made a failed delete leave the document invisible
+    // in the UI while it still exists server-side.
+    if (tenantId !== null) {
+      removeLocalDocumentContent(tenantId, id);
+      removeRecentDocument(tenantId, id);
+    }
     invalidateKnowledgeBrowserNodeCacheForSpaceIds(okfRef.spaceId);
     return true;
   }
@@ -1717,7 +1766,7 @@ export async function deleteDocument(id: string): Promise<boolean> {
   const browserMatch = await resolveBrowserNodeByDocumentId(id);
   const numericDocumentId = await resolveNumericDocumentId(id);
   let deleted = false;
-  let driveDeleteError: unknown;
+  const failures: string[] = [];
 
   if (browserMatch && isKnowledgebaseDriveApiAvailable()) {
     const isFolder =
@@ -1732,17 +1781,23 @@ export async function deleteDocument(id: string): Promise<boolean> {
         await deleteDriveBrowserNode(browserMatch.node);
         deleted = true;
       } catch (error) {
-        driveDeleteError = error;
+        const detail = error instanceof Error ? error.message : String(error);
+        failures.push(`drive node: ${detail}`);
       }
     }
   }
 
   if (numericDocumentId) {
     const client = requireSdkClient();
-    await client.knowledge.documents.delete(String(numericDocumentId));
-    deleted = true;
-  } else if (driveDeleteError) {
-    const detail = driveDeleteError instanceof Error ? driveDeleteError.message : String(driveDeleteError);
+    try {
+      await client.knowledge.documents.delete(String(numericDocumentId));
+      deleted = true;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      failures.push(`document record: ${detail}`);
+    }
+  } else if (failures.length > 0) {
+    const detail = failures.join('; ');
     throwKnowledgebaseError(KnowledgebaseErrorCodes.OPERATION_FAILED, { cause: detail });
   }
 
@@ -1750,6 +1805,19 @@ export async function deleteDocument(id: string): Promise<boolean> {
     throwKnowledgebaseError(KnowledgebaseErrorCodes.UNSUPPORTED_OPERATION);
   }
 
+  if (tenantId !== null) {
+    removeLocalDocumentContent(tenantId, id);
+    removeRecentDocument(tenantId, id);
+  }
   invalidateKnowledgeBrowserNodeCacheForSpaceIds(browserMatch?.spaceId);
+
+  if (failures.length > 0) {
+    // The primary record is gone but part of the deletion failed (for example
+    // the drive file node remains). Surface it instead of reporting a clean
+    // success that leaves orphaned state behind.
+    throwKnowledgebaseError(KnowledgebaseErrorCodes.OPERATION_FAILED, {
+      cause: `document deleted with partial failures: ${failures.join('; ')}`,
+    });
+  }
   return true;
 }

@@ -27,7 +27,7 @@ client.setAuthToken('your-auth-token');
 client.setAccessToken('your-access-token');
 
 // Use the SDK
-const result = await client.knowledge.group.launch.capability();
+const result = await client.knowledge.group.launch.list();
 ```
 
 ## Authentication
@@ -62,7 +62,7 @@ const client = new SdkworkKnowledgebaseBackendClient({
 
 ```typescript
 // Retrieve the group knowledgebase launch capability state for the runtime deployment
-const result = await client.knowledge.group.launch.capability();
+const result = await client.knowledge.group.launch.list();
 ```
 
 ## Error Handling
@@ -71,7 +71,7 @@ const result = await client.knowledge.group.launch.capability();
 import { SdkworkKnowledgebaseBackendClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/knowledgebase-backend-sdk';
 
 try {
-  const result = await client.knowledge.group.launch.capability();
+  const result = await client.knowledge.group.launch.list();
 } catch (error) {
   if (error instanceof AuthenticationError) {
     console.error('Authentication failed:', error.message);
@@ -92,7 +92,7 @@ This SDK includes cross-platform publish scripts in `bin/`:
 - `bin/publish.sh`
 - `bin/publish.ps1`
 
-TypeScript check and publish commands use pnpm to materialize workspace dependency versions in a temporary tarball. They reject local-only dependency protocols before npm publication and do not rewrite the source `package.json`.
+TypeScript check and publish commands materialize workspace dependency versions in a temporary tarball with pnpm. They reject local-only dependency protocols before npm publication and do not rewrite the source `package.json`.
 
 ### Check
 

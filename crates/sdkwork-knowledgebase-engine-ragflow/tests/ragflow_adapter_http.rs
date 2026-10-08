@@ -8,11 +8,6 @@ use sdkwork_knowledgebase_engine_ragflow::{
 use sdkwork_knowledgebase_test_support::provider_execution::provider_execution_context;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
-// Wiremock fixtures run on loopback; the provider SSRF protection fails closed unless
-// this explicit test-only allowance is set (never set it in a deployed environment).
-fn allow_test_loopback() {
-    std::env::set_var("SDKWORK_KNOWLEDGEBASE_PROVIDER_RUNTIME_ALLOW_LOOPBACK", "1");
-}
 
 async fn assert_ragflow_health(upstream_status: u16, expected: KnowledgeEngineHealthStatus) {
     let mock_server = MockServer::start().await;
@@ -28,6 +23,7 @@ async fn assert_ragflow_health(upstream_status: u16, expected: KnowledgeEngineHe
     let engine = RagflowKnowledgeEngine::with_config(RagflowConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("health-key".to_string()),
+        allow_private_network: true,
         default_dataset_id: Some("health-dataset".to_string()),
     });
 
@@ -36,14 +32,12 @@ async fn assert_ragflow_health(upstream_status: u16, expected: KnowledgeEngineHe
 
 #[tokio::test]
 async fn ragflow_health_maps_upstream_availability() {
-    allow_test_loopback();
     assert_ragflow_health(200, KnowledgeEngineHealthStatus::Available).await;
     assert_ragflow_health(503, KnowledgeEngineHealthStatus::Degraded).await;
 }
 
 #[tokio::test]
 async fn ragflow_search_uses_configured_remote_resource_id() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/api/v1/retrieval"))
@@ -65,6 +59,7 @@ async fn ragflow_search_uses_configured_remote_resource_id() {
     let config = RagflowConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
+        allow_private_network: true,
         default_dataset_id: Some("ds-space-42".to_string()),
     };
     let engine = RagflowKnowledgeEngine::with_config(config);

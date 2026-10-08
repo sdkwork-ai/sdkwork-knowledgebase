@@ -125,7 +125,6 @@ impl KnowledgebaseRetrievalClient for FakeKnowledgebaseClient {
                 document_id: 301,
                 document_version_id: Some(401),
                 space_id: 7,
-                collection_id: None,
                 title: "RAG Boundary".to_string(),
                 content: "Knowledge retrieval is separate from model generation.".to_string(),
                 score: Some(0.91),

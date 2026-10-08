@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct CreateKnowledgeSourceRequest {
     #[serde(rename = "spaceId")]
-    pub space_id: i64,
+    pub space_id: String,
 
     #[serde(rename = "sourceType")]
     pub source_type: String,

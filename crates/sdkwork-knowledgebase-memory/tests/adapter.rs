@@ -4,8 +4,9 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context:
 };
 use sdkwork_knowledgebase_memory::KnowledgebaseMemoryContextProviderAdapter;
 use sdkwork_memory_spi::{
-    AssembleMemoryContextCommand, MemoryContextAssemblerPort, MemoryContextPackDraft,
-    MemoryRetrieverPort, MemoryRetrieverResult, MemorySpiResult, RetrieveMemoryCandidatesCommand,
+    AssembleMemoryContextCommand, MAX_MEMORY_RETRIEVAL_CANDIDATES, MemoryContextAssemblerPort,
+    MemoryContextPackDraft, MemoryRetrieverPort, MemoryRetrieverResult, MemorySpiResult,
+    MemorySensitivityReadScope, RetrieveMemoryCandidatesCommand,
 };
 use std::sync::{Arc, Mutex};
 
@@ -36,6 +37,10 @@ async fn adapter_maps_memory_spi_context_into_knowledgebase_memory_fragments() {
         retriever.requests(),
         vec![RetrieveMemoryCandidatesCommand {
             query: "concise sdkwork examples".to_string(),
+            // The adapter's documented default: read Public-sensitivity memories
+            // until a caller-facing scope contract exists.
+            read_scope: MemorySensitivityReadScope::Public,
+            limit: MAX_MEMORY_RETRIEVAL_CANDIDATES,
         }]
     );
     assert_eq!(

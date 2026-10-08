@@ -35,25 +35,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_space_drive_space
     ON kb_space (tenant_id, drive_space_id)
     WHERE drive_space_id IS NOT NULL AND status = 1;
 
-CREATE TABLE IF NOT EXISTS kb_collection (
-    id BIGINT PRIMARY KEY,
-    uuid VARCHAR(64) NOT NULL,
-    tenant_id BIGINT NOT NULL,
-    space_id BIGINT NOT NULL,
-    parent_id BIGINT NOT NULL DEFAULT 0,
-    name VARCHAR(200) NOT NULL,
-    path VARCHAR(2048) NOT NULL,
-    level_no INTEGER NOT NULL,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
-    version BIGINT NOT NULL DEFAULT 0
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_collection_uuid
-    ON kb_collection (tenant_id, uuid);
-
 CREATE TABLE IF NOT EXISTS kb_source (
     id BIGINT PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
@@ -147,7 +128,6 @@ CREATE TABLE IF NOT EXISTS kb_document (
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
     space_id BIGINT NOT NULL,
-    collection_id BIGINT NOT NULL DEFAULT 0,
     source_id BIGINT,
     identity_scope VARCHAR(64) NOT NULL DEFAULT 'source_and_original_drive_node',
     original_file_drive_node_id VARCHAR(128),
@@ -175,7 +155,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_document_identity
     ON kb_document (
         tenant_id,
         space_id,
-        collection_id,
         identity_scope,
         COALESCE(source_id, 0),
         (
@@ -220,7 +199,6 @@ CREATE TABLE IF NOT EXISTS kb_chunk (
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
     space_id BIGINT NOT NULL,
-    collection_id BIGINT NOT NULL DEFAULT 0,
     document_id BIGINT NOT NULL,
     document_version_id BIGINT NOT NULL,
     chunk_index INTEGER NOT NULL,
@@ -232,7 +210,9 @@ CREATE TABLE IF NOT EXISTS kb_chunk (
     status INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    version BIGINT NOT NULL DEFAULT 0
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT ck_kb_chunk_content_text_size
+        CHECK (octet_length(content_text) <= 1048576)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_chunk_uuid
@@ -245,14 +225,13 @@ CREATE INDEX IF NOT EXISTS idx_kb_chunk_document_version
     ON kb_chunk (tenant_id, document_version_id, status, chunk_index);
 
 CREATE INDEX IF NOT EXISTS idx_kb_chunk_space_status
-    ON kb_chunk (tenant_id, space_id, collection_id, status);
+    ON kb_chunk (tenant_id, space_id, status);
 
 CREATE TABLE IF NOT EXISTS kb_index (
     id BIGINT PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
     space_id BIGINT NOT NULL,
-    collection_id BIGINT NOT NULL DEFAULT 0,
     index_kind VARCHAR(64) NOT NULL,
     embedding_provider_id VARCHAR(128),
     embedding_model VARCHAR(128),
@@ -270,7 +249,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_index_uuid
     ON kb_index (tenant_id, uuid);
 
 CREATE INDEX IF NOT EXISTS idx_kb_index_scope
-    ON kb_index (tenant_id, space_id, collection_id, index_kind, status);
+    ON kb_index (tenant_id, space_id, index_kind, status);
 
 CREATE TABLE IF NOT EXISTS kb_embedding (
     id BIGINT PRIMARY KEY,
@@ -279,7 +258,6 @@ CREATE TABLE IF NOT EXISTS kb_embedding (
     index_id BIGINT NOT NULL,
     chunk_id BIGINT NOT NULL,
     embedding_hash VARCHAR(128) NOT NULL,
-    vector_ref TEXT NOT NULL,
     dimension INTEGER NOT NULL,
     provider_id VARCHAR(128),
     model VARCHAR(128),
@@ -342,7 +320,11 @@ CREATE TABLE IF NOT EXISTS kb_retrieval_trace (
     status INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    version BIGINT NOT NULL DEFAULT 0
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT ck_kb_retrieval_trace_query_text_size
+        CHECK (query_text_redacted IS NULL OR octet_length(query_text_redacted) <= 8192),
+    CONSTRAINT ck_kb_retrieval_trace_request_payload_size
+        CHECK (request_payload IS NULL OR octet_length(request_payload::text) <= 65536)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_retrieval_trace_uuid
@@ -416,7 +398,6 @@ CREATE TABLE IF NOT EXISTS kb_agent_knowledge_binding (
     tenant_id BIGINT NOT NULL,
     profile_id BIGINT NOT NULL,
     space_id BIGINT NOT NULL,
-    collection_id BIGINT,
     source_filter JSONB,
     document_filter JSONB,
     priority INTEGER NOT NULL DEFAULT 0,
@@ -650,7 +631,7 @@ CREATE TABLE IF NOT EXISTS kb_space_context_binding (
     created_by VARCHAR(128) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    version INTEGER NOT NULL DEFAULT 0,
+    version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     FOREIGN KEY (space_id) REFERENCES kb_space(id)
 );
@@ -867,16 +848,13 @@ CREATE INDEX IF NOT EXISTS idx_kb_group_knowledge_space_membership_projection_le
        (tenant_id, organization_id, binding_id, projection_state, projection_lease_until);
 
 -- source: crates/sdkwork-intelligence-knowledgebase-repository-sqlx/migrations/postgres/V202606170001__knowledge_access_mode.sql
--- Knowledge access mode defaults and embedding vector storage for cloud-router RAG.
+-- Knowledge access mode defaults for cloud-router RAG.
 
 ALTER TABLE kb_agent_profile
     ADD COLUMN IF NOT EXISTS knowledge_mode VARCHAR(32) NOT NULL DEFAULT 'okf_bundle';
 
 ALTER TABLE kb_space
     ADD COLUMN IF NOT EXISTS knowledge_mode VARCHAR(32) NOT NULL DEFAULT 'okf_bundle';
-
-ALTER TABLE kb_embedding
-    ADD COLUMN IF NOT EXISTS vector_json TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_kb_agent_profile_knowledge_mode
     ON kb_agent_profile (tenant_id, knowledge_mode, status);
@@ -917,7 +895,9 @@ CREATE TABLE IF NOT EXISTS kb_outbox_event (
     status INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL,
     published_at TIMESTAMP,
-    version BIGINT NOT NULL DEFAULT 0
+    version BIGINT NOT NULL DEFAULT 0,
+    CONSTRAINT ck_kb_outbox_event_payload_size
+        CHECK (octet_length(payload::text) <= 65536)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_outbox_event_uuid
@@ -997,7 +977,7 @@ CREATE INDEX IF NOT EXISTS idx_kb_chunk_search_vector
     ON kb_chunk USING GIN (search_vector);
 
 -- source: crates/sdkwork-intelligence-knowledgebase-repository-sqlx/migrations/postgres/V202606220003__knowledgebase_outbox_claim.sql
-ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS claimed_at VARCHAR(64);
+ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ;
 
 -- source: crates/sdkwork-intelligence-knowledgebase-repository-sqlx/migrations/postgres/V202606230001__knowledgebase_performance_indexes.sql
 CREATE INDEX IF NOT EXISTS idx_kb_ingestion_job_tenant_state_status
@@ -1026,7 +1006,7 @@ CREATE TABLE IF NOT EXISTS kb_market_listing (
     icon VARCHAR(64),
     description TEXT,
     author VARCHAR(128),
-    tags_json TEXT NOT NULL DEFAULT '[]',
+    tags_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     provider VARCHAR(128),
     model_name VARCHAR(128),
     subscribers_count INTEGER NOT NULL DEFAULT 0,
@@ -1034,7 +1014,7 @@ CREATE TABLE IF NOT EXISTS kb_market_listing (
     status INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    version INTEGER NOT NULL DEFAULT 0,
+    version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     FOREIGN KEY (space_id) REFERENCES kb_space(id)
 );
@@ -1061,7 +1041,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_market_subscription_actor_listing
     ON kb_market_subscription (tenant_id, subscriber_actor_id, listing_id)
     WHERE status = 1;
 
--- folded migration: migrations/postgres/0005_knowledgebase_audit_event.up.sql
 -- source: crates/sdkwork-intelligence-knowledgebase-repository-sqlx/migrations/postgres/V202606250001__knowledgebase_audit_event.sql
 
 CREATE TABLE IF NOT EXISTS kb_audit_event (
@@ -1325,6 +1304,10 @@ CREATE INDEX IF NOT EXISTS idx_kb_source_projection_public_lookup
         page_public_version, id
     ) WHERE status = 1 AND publication_state = 'PUBLISHED'
       AND visibility IN ('UNLISTED', 'PUBLIC');
+CREATE INDEX IF NOT EXISTS idx_kb_source_projection_previous_route
+    ON kb_source_file_projection (
+        tenant_id, organization_id, site_publication_id, previous_canonical_route
+    ) WHERE status = 1 AND previous_canonical_route IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS kb_source_file_rendition (
     id BIGINT NOT NULL PRIMARY KEY,
@@ -1693,7 +1676,6 @@ CREATE INDEX IF NOT EXISTS idx_kb_provider_migration_operation_claimable
         tenant_id, organization_id, operation_state, lease_expires_at, updated_at, id
     );
 
--- folded migration: migrations/postgres/0007_knowledgebase_postgres_rls.up.sql
 -- Phase 2.1: Postgres RLS tenant isolation (ADR-2026-06-24-phase2-postgres-rls-multi-tenant)
 -- source: crates/sdkwork-intelligence-knowledgebase-repository-sqlx/migrations/postgres/V202606260001__knowledgebase_postgres_rls.sql
 
@@ -1706,7 +1688,6 @@ BEGIN
     FOR table_name IN
         SELECT unnest(ARRAY[
             'kb_space',
-            'kb_collection',
             'kb_source',
             'kb_drive_object_ref',
             'kb_document',
@@ -1765,7 +1746,6 @@ BEGIN
     END LOOP;
 END $$;
 
--- folded migration: migrations/postgres/202607150001_group_knowledge_space.up.sql
 -- sdkwork:migration
 -- id: 202607150001_group_knowledge_space
 -- engine: postgres
@@ -1860,7 +1840,6 @@ BEGIN
     END LOOP;
 END $$;
 
--- folded migration: migrations/postgres/202607160001_group_knowledgebase_tenant_scope.up.sql
 -- sdkwork:migration
 -- id: 202607160001_group_knowledgebase_tenant_scope
 -- engine: postgres
@@ -1910,7 +1889,6 @@ BEGIN
     END IF;
 END $$;
 
--- folded migration: migrations/postgres/202607160002_ingestion_job_lease.up.sql
 -- sdkwork:migration
 -- id: 202607160002_ingestion_job_lease
 -- engine: postgres
@@ -1940,7 +1918,6 @@ CREATE INDEX IF NOT EXISTS idx_kb_ingestion_job_claimable
         id
     );
 
--- folded migration: migrations/postgres/202607200001_knowledge_engine_provider_binding.up.sql
 -- sdkwork:migration
 -- id: 202607200001_knowledge_engine_provider_binding
 -- engine: postgres
@@ -2057,7 +2034,6 @@ BEGIN
     END LOOP;
 END $$;
 
--- folded migration: migrations/postgres/202607210001_live_wiki_publication.up.sql
 -- sdkwork:migration
 -- id: 202607210001_live_wiki_publication
 -- engine: postgres
@@ -2126,6 +2102,10 @@ CREATE INDEX IF NOT EXISTS idx_kb_source_projection_public_lookup
         page_public_version, id
     ) WHERE status = 1 AND publication_state = 'PUBLISHED'
       AND visibility IN ('UNLISTED', 'PUBLIC');
+CREATE INDEX IF NOT EXISTS idx_kb_source_projection_previous_route
+    ON kb_source_file_projection (
+        tenant_id, organization_id, site_publication_id, previous_canonical_route
+    ) WHERE status = 1 AND previous_canonical_route IS NOT NULL;
 
 
 
@@ -2212,7 +2192,6 @@ BEGIN
     END LOOP;
 END $$;
 
--- folded migration: migrations/postgres/202607310001_core_organization_isolation.up.sql
 -- sdkwork:migration
 -- id: 202607310001_core_organization_isolation
 -- engine: postgres
@@ -2235,7 +2214,6 @@ SET LOCAL statement_timeout = '5min';
 
 ALTER TABLE kb_space ALTER COLUMN organization_id DROP DEFAULT;
 
-ALTER TABLE kb_collection ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE kb_source ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE kb_drive_object_ref ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE kb_document ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
@@ -2264,9 +2242,6 @@ ALTER TABLE kb_market_listing ADD COLUMN IF NOT EXISTS organization_id BIGINT NO
 ALTER TABLE kb_market_subscription ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE kb_audit_event ADD COLUMN IF NOT EXISTS organization_id BIGINT NOT NULL DEFAULT 0;
 
-UPDATE kb_collection target SET organization_id = space.organization_id
-FROM kb_space space
-WHERE target.organization_id IS NULL AND target.tenant_id = space.tenant_id AND target.space_id = space.id;
 UPDATE kb_source target SET organization_id = space.organization_id
 FROM kb_space space
 WHERE target.organization_id IS NULL AND target.tenant_id = space.tenant_id AND target.space_id = space.id;
@@ -2411,7 +2386,7 @@ DECLARE
     missing_count bigint;
 BEGIN
     FOR table_name IN SELECT unnest(ARRAY[
-        'kb_collection', 'kb_source', 'kb_drive_object_ref', 'kb_document',
+        'kb_source', 'kb_drive_object_ref', 'kb_document',
         'kb_document_version', 'kb_chunk', 'kb_index', 'kb_embedding',
         'kb_retrieval_profile', 'kb_retrieval_trace', 'kb_retrieval_hit',
         'kb_agent_profile', 'kb_agent_knowledge_binding', 'kb_ingestion_job',
@@ -2479,7 +2454,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_drive_object_ref_locator ON kb_drive_obj
 );
 DROP INDEX IF EXISTS uk_kb_document_identity;
 CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_document_identity ON kb_document (
-    tenant_id, organization_id, space_id, collection_id, identity_scope,
+    tenant_id, organization_id, space_id, identity_scope,
     COALESCE(source_id, 0),
     (
         CASE
@@ -2499,7 +2474,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_embedding_index_chunk
     ON kb_embedding (tenant_id, organization_id, index_id, chunk_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_index_active_scope_kind
     ON kb_index (
-        tenant_id, organization_id, space_id, collection_id, index_kind
+        tenant_id, organization_id, space_id, index_kind
     )
     WHERE status = 1;
 DROP INDEX IF EXISTS uk_kb_ingestion_job_idempotency;
@@ -2519,6 +2494,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_okf_concept_revision_no
 DROP INDEX IF EXISTS uk_kb_okf_bundle_file_path;
 CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_okf_bundle_file_path
     ON kb_okf_bundle_file (tenant_id, organization_id, space_id, logical_path);
+CREATE INDEX IF NOT EXISTS idx_kb_okf_bundle_file_scope_id
+    ON kb_okf_bundle_file (tenant_id, organization_id, status, id);
 DROP INDEX IF EXISTS uk_kb_okf_log_entry_sequence;
 CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_okf_log_entry_sequence
     ON kb_okf_log_entry (tenant_id, organization_id, space_id, sequence_no);
@@ -2544,7 +2521,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_market_subscription_actor_listing
 CREATE INDEX IF NOT EXISTS idx_kb_source_scope_active
     ON kb_source (tenant_id, organization_id, status, id);
 CREATE INDEX IF NOT EXISTS idx_kb_chunk_scope_search
-    ON kb_chunk (tenant_id, organization_id, space_id, collection_id, status, id);
+    ON kb_chunk (tenant_id, organization_id, space_id, status, id);
 CREATE INDEX IF NOT EXISTS idx_kb_embedding_scope_chunk
     ON kb_embedding (tenant_id, organization_id, chunk_id, status);
 CREATE INDEX IF NOT EXISTS idx_kb_retrieval_trace_scope_id
@@ -2554,12 +2531,6 @@ CREATE INDEX IF NOT EXISTS idx_kb_retrieval_hit_scope_trace_rank
         tenant_id, organization_id, retrieval_trace_id, result_rank, id
     );
 
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_kb_collection_space_scope') THEN
-        ALTER TABLE kb_collection ADD CONSTRAINT fk_kb_collection_space_scope FOREIGN KEY (tenant_id, organization_id, space_id) REFERENCES kb_space(tenant_id, organization_id, id) NOT VALID;
-    END IF;
-END $$;
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_kb_source_space_scope') THEN
@@ -2687,7 +2658,6 @@ BEGIN
     END IF;
 END $$;
 
-ALTER TABLE kb_collection VALIDATE CONSTRAINT fk_kb_collection_space_scope;
 ALTER TABLE kb_source VALIDATE CONSTRAINT fk_kb_source_space_scope;
 ALTER TABLE kb_drive_object_ref VALIDATE CONSTRAINT fk_kb_drive_object_ref_space_scope;
 ALTER TABLE kb_document VALIDATE CONSTRAINT fk_kb_document_space_scope;
@@ -2715,7 +2685,7 @@ DECLARE
     table_name text;
 BEGIN
     FOR table_name IN SELECT unnest(ARRAY[
-        'kb_space', 'kb_collection', 'kb_source', 'kb_drive_object_ref', 'kb_document',
+        'kb_space', 'kb_source', 'kb_drive_object_ref', 'kb_document',
         'kb_document_version', 'kb_chunk', 'kb_index', 'kb_embedding',
         'kb_retrieval_profile', 'kb_retrieval_trace', 'kb_retrieval_hit',
         'kb_agent_profile', 'kb_agent_knowledge_binding', 'kb_ingestion_job',
@@ -2743,7 +2713,6 @@ BEGIN
     END LOOP;
 END $$;
 
--- folded migration: migrations/postgres/202607310002_outbox_claim_fencing.up.sql
 -- sdkwork:migration
 -- id: 202607310002_outbox_claim_fencing
 -- engine: postgres
@@ -2767,20 +2736,6 @@ SET LOCAL statement_timeout = '2min';
 ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS claim_owner VARCHAR(128);
 ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS claim_token VARCHAR(64);
 ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS dead_lettered_at TIMESTAMP;
-
--- Reset only stale in-flight claims (claimed longer than the five-minute stale
--- window). Claims still owned by an active worker are preserved so a
--- mid-delivery worker is never silently fenced into duplicate delivery.
--- `claimed_at` is stored as RFC3339 UTC text; the second-precision prefix is
--- compared against the cutoff formatted with the same layout.
-UPDATE kb_outbox_event
-SET status = 0, claimed_at = NULL, claim_owner = NULL, claim_token = NULL
-WHERE status = 3
-  AND claimed_at IS NOT NULL
-  AND LEFT(claimed_at, 19) < to_char(
-        CURRENT_TIMESTAMP - INTERVAL '5 minutes',
-        'YYYY-MM-DD"T"HH24:MI:SS'
-      );
 
 ALTER TABLE kb_outbox_event DROP CONSTRAINT IF EXISTS ck_kb_outbox_event_claim_pair;
 DO $$
@@ -2808,13 +2763,15 @@ BEGIN
 END $$;
 ALTER TABLE kb_outbox_event VALIDATE CONSTRAINT ck_kb_outbox_event_dead_letter;
 
+-- Serve the worker's pending/claim scan (scope + status + FIFO ordering).
+CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_pending
+    ON kb_outbox_event (tenant_id, organization_id, status, created_at, id);
 CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_claim
     ON kb_outbox_event (tenant_id, organization_id, status, claimed_at, id);
 CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_dead_letter
     ON kb_outbox_event (tenant_id, organization_id, dead_lettered_at, id)
     WHERE status = 4;
 
--- folded migration: migrations/postgres/202608040001_outbox_retry_backoff.up.sql
 -- sdkwork:migration
 -- id: 202608040001_outbox_retry_backoff
 -- engine: postgres
@@ -2843,7 +2800,6 @@ ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMP;
 CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_status_retry
     ON kb_outbox_event (tenant_id, organization_id, status, next_attempt_at);
 
--- folded migration: migrations/postgres/202608040002_audit_event_scope_actor_index.up.sql
 -- sdkwork:migration
 -- id: 202608040002_audit_event_scope_actor_index
 -- engine: postgres

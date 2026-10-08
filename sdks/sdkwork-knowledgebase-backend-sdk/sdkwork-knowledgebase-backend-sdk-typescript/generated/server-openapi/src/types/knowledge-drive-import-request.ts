@@ -1,5 +1,5 @@
 export interface KnowledgeDriveImportRequest {
-  spaceId: number;
+  spaceId: string;
   title: string;
   driveBucket: string;
   driveObjectKey: string;

@@ -1,4 +1,4 @@
 export interface OkfContextPackRequest {
-  spaceId: number;
+  spaceId: string;
   query?: string | null;
 }

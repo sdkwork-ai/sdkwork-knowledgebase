@@ -13,8 +13,8 @@
     "dompurify": "^3.4.11",
     "lucide-react": "^0.546.0",
     "marked": "^18.0.5",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "react-i18next": "^17.0.8",
     "sdkwork-knowledgebase-pc-core": "workspace:*"
   },

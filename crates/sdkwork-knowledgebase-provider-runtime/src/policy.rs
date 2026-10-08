@@ -112,6 +112,14 @@ fn target_error(message: &str) -> ProviderError {
 #[derive(Debug, Clone)]
 pub struct ProviderRuntimeConfig {
     pub target_policy: ProviderTargetPolicy,
+    /// Explicit per-runtime opt-in for provider targets on private network segments
+    /// (loopback, RFC1918, link-local). The default `false` fails closed: such
+    /// targets are rejected with the typed `InvalidTarget` error. Self-hosted engine
+    /// deployments set this to `true` — each engine config parses an explicit
+    /// `<ENGINE>_ALLOW_PRIVATE_NETWORK=1|true` flag — when the engine's production
+    /// placement is a trusted private network segment. Setting it is an operator
+    /// trust decision for that segment; DNS-resolution socket pinning still applies.
+    pub allow_private_network_targets: bool,
     pub allowed_origin: ProviderOrigin,
     pub connect_timeout: Duration,
     pub request_timeout: Duration,
@@ -127,16 +135,38 @@ pub struct ProviderRuntimeConfig {
 
 impl ProviderRuntimeConfig {
     pub fn for_base_url(base_url: &str) -> Result<Self, ProviderError> {
-        let target_policy = ProviderTargetPolicy::from_environment();
-        Self::for_base_url_with_policy(base_url, target_policy)
+        Self::for_base_url_with_private_targets(base_url, false)
     }
 
     pub fn for_base_url_with_policy(
         base_url: &str,
         target_policy: ProviderTargetPolicy,
     ) -> Result<Self, ProviderError> {
+        Self::for_base_url_with_target_options(base_url, target_policy, false)
+    }
+
+    /// Builds a config for `base_url` with the target policy resolved from the
+    /// environment and an explicit private-network opt-in. Fail-closed when the flag
+    /// is `false`.
+    pub fn for_base_url_with_private_targets(
+        base_url: &str,
+        allow_private_network_targets: bool,
+    ) -> Result<Self, ProviderError> {
+        Self::for_base_url_with_target_options(
+            base_url,
+            ProviderTargetPolicy::from_environment(),
+            allow_private_network_targets,
+        )
+    }
+
+    pub fn for_base_url_with_target_options(
+        base_url: &str,
+        target_policy: ProviderTargetPolicy,
+        allow_private_network_targets: bool,
+    ) -> Result<Self, ProviderError> {
         Ok(Self {
             target_policy,
+            allow_private_network_targets,
             allowed_origin: ProviderOrigin::parse(base_url, target_policy)?,
             connect_timeout: Duration::from_secs(5),
             request_timeout: Duration::from_secs(30),

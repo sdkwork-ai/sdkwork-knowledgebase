@@ -458,7 +458,7 @@ async fn load_document_by_id(
     let document_id = to_i64("document_id", document_id)?;
     let row = sqlx::query(
         r#"
-        SELECT id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+        SELECT id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                current_version_id, visibility, content_state, index_state
         FROM kb_document
         WHERE tenant_id = $1 AND organization_id = $2 AND id = $3 AND status = $4

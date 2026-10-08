@@ -1114,15 +1114,7 @@
                       ],
                       "properties": {
                         "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/OkfIndexDocument"
-                            }
-                          }
+                          "$ref": "#/components/schemas/SdkWorkCommandData"
                         }
                       }
                     }
@@ -1644,7 +1636,7 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-backend-api",
         "parameters": [
           {
-            "name": "spaceId",
+            "name": "space_id",
             "in": "query",
             "required": true,
             "schema": {
@@ -9128,8 +9120,10 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "uuid": {
             "type": "string"
@@ -9175,8 +9169,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "title": {
             "type": "string",
@@ -9207,12 +9203,16 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "sourceType": {
             "type": "string"
@@ -9253,8 +9253,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "title": {
             "type": "string",
@@ -9309,12 +9311,16 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "sourceType": {
             "$ref": "#/components/schemas/KnowledgeSourceType"
@@ -9362,7 +9368,6 @@
         "required": [
           "id",
           "spaceId",
-          "collectionId",
           "title",
           "visibility",
           "contentState",
@@ -9370,16 +9375,16 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
-          },
-          "collectionId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "sourceId": {
             "type": [
@@ -9440,20 +9445,28 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "documentId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "versionNo": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "originalObjectRefId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "checksumSha256Hex": {
             "type": [
@@ -9462,8 +9475,10 @@
             ]
           },
           "sizeBytes": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "mimeType": {
             "type": [
@@ -9519,12 +9534,16 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "logicalPath": {
             "type": "string"
@@ -9652,12 +9671,16 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "driveSpaceId": {
             "type": [
@@ -9705,8 +9728,10 @@
             ]
           },
           "sizeBytes": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "checksumSha256Hex": {
             "type": [
@@ -9789,8 +9814,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "sourceType": {
             "$ref": "#/components/schemas/KnowledgeSourceType"
@@ -9830,12 +9857,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
-          },
-          "collectionId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "sourceId": {
             "type": [
@@ -9870,12 +9895,16 @@
         ],
         "properties": {
           "documentId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "originalObjectRefId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "checksumSha256Hex": {
             "type": [
@@ -9884,8 +9913,10 @@
             ]
           },
           "sizeBytes": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "mimeType": {
             "type": [
@@ -9982,8 +10013,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "query": {
             "type": "string"
@@ -10030,8 +10063,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "profileVersion": {
             "type": "string"
@@ -10089,8 +10124,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "exportType": {
             "type": "string"
@@ -10111,8 +10148,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "sourceId": {
             "type": [
@@ -10130,8 +10169,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "query": {
             "type": [
@@ -10149,8 +10190,10 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "state": {
             "type": "string"
@@ -10165,8 +10208,10 @@
         ],
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "state": {
             "type": "string"
@@ -10230,8 +10275,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -10242,8 +10289,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "profile": {
             "type": [
@@ -10302,18 +10351,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "sourceFilter": {
             "anyOf": [
@@ -10474,8 +10511,10 @@
           "latencyMs": {
             "anyOf": [
               {
-                "type": "integer",
-                "format": "uint64"
+                "type": "string",
+                "format": "uint64",
+                "pattern": "^[0-9]+$",
+                "x-sdkwork-int64-string": true
               },
               {
                 "type": "null"
@@ -10598,18 +10637,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "title": {
             "type": "string"
@@ -10839,18 +10866,6 @@
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
           },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "sourceFilter": {
             "anyOf": [
               {
@@ -10926,18 +10941,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "sourceFilter": {
             "anyOf": [
@@ -11246,18 +11249,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "indexKind": {
             "type": "string"
@@ -11620,8 +11611,10 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "integer",
-            "format": "uint64"
+            "type": "string",
+            "format": "uint64",
+            "pattern": "^[0-9]+$",
+            "x-sdkwork-int64-string": true
           },
           "importType": {
             "type": "string"

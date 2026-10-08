@@ -313,17 +313,25 @@ fn html_to_markdown(html: &str, page_url: &str, title_hint: &str) -> String {
 }
 
 fn strip_tag_blocks(input: &str, tag: &str) -> String {
-    let mut output = input.to_string();
+    // The lowercase copy is computed once: re-lowercasing the whole buffer on
+    // every removed block made HTML with many <script>/<style> fragments
+    // quadratic in the fetched page size (up to 512 KiB per fetch).
     let open = format!("<{tag}");
     let close = format!("</{tag}>");
-    while let Some(start) = output.to_ascii_lowercase().find(&open) {
-        let Some(relative_end) = output[start..].to_ascii_lowercase().find(&close) else {
-            output.replace_range(start.., "");
+    let lowercase = input.to_ascii_lowercase();
+    let mut output = String::with_capacity(input.len());
+    let mut cursor = 0;
+    while let Some(relative_start) = lowercase[cursor..].find(open.as_str()) {
+        let block_start = cursor + relative_start;
+        output.push_str(&input[cursor..block_start]);
+        let Some(relative_end) = lowercase[block_start..].find(close.as_str()) else {
+            // Unclosed block: drop everything from the opening tag to the end.
+            cursor = input.len();
             break;
         };
-        let end = start + relative_end + close.len();
-        output.replace_range(start..end, "");
+        cursor = block_start + relative_end + close.len();
     }
+    output.push_str(&input[cursor..]);
     output
 }
 

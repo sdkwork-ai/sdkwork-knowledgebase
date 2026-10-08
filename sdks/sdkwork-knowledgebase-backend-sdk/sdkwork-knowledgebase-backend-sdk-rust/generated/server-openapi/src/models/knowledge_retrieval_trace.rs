@@ -9,7 +9,7 @@ pub struct KnowledgeRetrievalTrace {
 
     #[serde(rename = "latencyMs")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub latency_ms: Option<i64>,
+    pub latency_ms: Option<String>,
 
     #[serde(rename = "resultCount")]
     pub result_count: i64,

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct OkfBundleImportRequest {
     #[serde(rename = "spaceId")]
-    pub space_id: i64,
+    pub space_id: String,
 
     #[serde(rename = "importType")]
     pub import_type: String,

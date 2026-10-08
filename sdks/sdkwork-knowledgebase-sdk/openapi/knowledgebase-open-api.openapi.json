@@ -899,7 +899,7 @@
         ],
         "parameters": [
           {
-            "name": "spaceId",
+            "name": "space_id",
             "in": "query",
             "required": true,
             "schema": {
@@ -1302,7 +1302,7 @@
             "description": "Browser view selector. For OKF spaces, files lists original files under sources/raw; okf_bundle lists generated bundle files under okf; outputs lists generated output files under output."
           },
           {
-            "name": "parentId",
+            "name": "parent_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -1632,18 +1632,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "title": {
             "type": "string"
@@ -1993,18 +1981,6 @@
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
           },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "sourceFilter": {
             "anyOf": [
               {
@@ -2352,7 +2328,6 @@
         "required": [
           "id",
           "spaceId",
-          "collectionId",
           "title",
           "visibility",
           "contentState",
@@ -2366,12 +2341,6 @@
             "x-sdkwork-int64-string": true
           },
           "spaceId": {
-            "type": "string",
-            "format": "uint64",
-            "pattern": "^[0-9]+$",
-            "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
             "type": "string",
             "format": "uint64",
             "pattern": "^[0-9]+$",

@@ -4,15 +4,9 @@ use sdkwork_knowledgebase_engine_dify::{DifyConnectorConfig, DifyKnowledgeEngine
 use sdkwork_knowledgebase_test_support::provider_execution::provider_execution_context;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
-// Wiremock fixtures run on loopback; the provider SSRF protection fails closed unless
-// this explicit test-only allowance is set (never set it in a deployed environment).
-fn allow_test_loopback() {
-    std::env::set_var("SDKWORK_KNOWLEDGEBASE_PROVIDER_RUNTIME_ALLOW_LOOPBACK", "1");
-}
 
 #[tokio::test]
 async fn dify_read_document_fetches_segment_detail() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/datasets/ds-42/documents/doc-1/segments/seg-9"))
@@ -28,6 +22,7 @@ async fn dify_read_document_fetches_segment_detail() {
     let config = DifyConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
+        allow_private_network: true,
         default_dataset_id: Some("ds-42".to_string()),
     };
     let engine = DifyKnowledgeEngine::with_config(config);

@@ -21,7 +21,7 @@ use sdkwork_knowledgebase_provider_runtime::{ProviderExecutionContext, ProviderO
 use std::sync::Arc;
 
 pub use client::{decode_url_document_id, encode_url_document_id, OnyxApiClient};
-pub use config::{OnyxConnectorConfig, ONYX_BASE_URL_ENV};
+pub use config::{OnyxConnectorConfig, ONYX_ALLOW_PRIVATE_NETWORK_ENV, ONYX_BASE_URL_ENV};
 
 pub const ONYX_VENDOR_ID: &str = "onyx";
 pub const ONYX_IMPLEMENTATION_ID: &str = "engine.knowledge.external.onyx";
@@ -38,10 +38,21 @@ impl OnyxKnowledgeEngine {
     }
 
     pub fn with_config(config: OnyxConnectorConfig) -> Self {
-        let client = OnyxApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match OnyxApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    ONYX_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -92,7 +103,13 @@ impl KnowledgeEngine for OnyxKnowledgeEngine {
                 )
             })?
             .into_secret();
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "Onyx base URL does not satisfy the Provider runtime target policy".to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

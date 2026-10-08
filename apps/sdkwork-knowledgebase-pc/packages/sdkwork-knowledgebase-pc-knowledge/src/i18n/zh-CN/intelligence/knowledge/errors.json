@@ -52,6 +52,7 @@
   "operation.pdfFetchFailed": "PDF 文档加载失败。",
   "operation.mediaUrlUnresolved": "上传成功但暂时无法解析媒体地址，请从素材库重新插入。",
   "operation.failed": "操作失败，请重试。",
+  "operation.documentConflict": "该文档已在其他窗口被更新。你的修改已暂存，请查看最新版本或重新编辑后再保存。",
   "operation.unsupported": "所选条目不支持此操作。",
   "operation.speechNoResult": "语音转文字未返回任何文本。",
   "operation.imageUrlMissing": "图片生成未返回可用的图片地址。",

@@ -1,4 +1,8 @@
 use serde::{Deserialize, Serialize};
+use crate::serde_int64::{
+    deserialize_u64_from_string_or_number,
+    serialize_u64_as_string,
+};
 
 // ============================================================================
 // Tenant contract types
@@ -24,8 +28,16 @@ pub struct KnowledgeTenantStatus {
     /// Current lifecycle status (derived from IAM context)
     pub status: KnowledgeTenantStatusEnum,
     /// Number of knowledge spaces owned by this tenant
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_count: u64,
     /// Number of documents across all spaces
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub document_count: u64,
     /// ISO 8601 creation timestamp (first space created)
     pub created_at: Option<String>,
@@ -36,12 +48,28 @@ pub struct KnowledgeTenantStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeTenantQuotaStatus {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub max_documents: u64,
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub document_count: u64,
     pub max_concurrent_ingest_jobs: u32,
     pub inflight_ingest_jobs: u32,
     pub max_retrievals_per_minute: u32,
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub max_storage_bytes: u64,
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub storage_bytes_used: u64,
 }
 

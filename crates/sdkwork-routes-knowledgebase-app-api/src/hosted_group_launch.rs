@@ -79,8 +79,18 @@ impl KnowledgeGroupLaunchAppService for HostedGroupLaunchService {
         .map_err(map_group_launch_error)?;
 
         // Launch resolution is not itself content access. Re-run the normal group snapshot plus
-        // direct Drive check before returning the exact space target to the client.
-        require_space_access(&self.runtime, &context, target.space_id).await?;
+        // direct Drive check before returning the exact space target to the client. The ticket
+        // is already burned at this point, so a denial here is still terminal for this ticket:
+        // surface the 409 re-issue contract instead of the plain access-denied code.
+        require_space_access(&self.runtime, &context, target.space_id)
+            .await
+            .map_err(|_| {
+                map_group_launch_error(
+                    GroupKnowledgebaseLaunchResolverError::TicketConsumed(
+                        "post-launch space access re-check failed".to_string(),
+                    ),
+                )
+            })?;
         Ok(target)
     }
 }
@@ -133,19 +143,16 @@ fn map_group_launch_error(error: GroupKnowledgebaseLaunchResolverError) -> ApiEr
         GroupKnowledgebaseLaunchResolverError::InvalidRequest(detail) => {
             ApiError::invalid_request("invalid_group_launch_request", detail)
         }
-        GroupKnowledgebaseLaunchResolverError::Denied(_) => ApiError::new(
-            StatusCode::FORBIDDEN,
-            "group_launch_access_denied",
-            "group launch access is denied",
+        // The one-time ticket was consumed without completing the launch, so replaying it can
+        // never succeed: 409 tells the client to obtain a fresh ticket from IM and retry.
+        GroupKnowledgebaseLaunchResolverError::TicketConsumed(_) => ApiError::new(
+            StatusCode::CONFLICT,
+            "group_launch_ticket_consumed_retry_with_new_ticket",
+            "group launch ticket was consumed without completing the launch; request a new launch ticket and retry",
         ),
-        GroupKnowledgebaseLaunchResolverError::InvalidBinding(detail) => {
-            ApiError::internal("group_launch_binding_invalid", detail)
-        }
         GroupKnowledgebaseLaunchResolverError::Ticket(ticket_error) => {
             map_group_launch_ticket_error(ticket_error)
         }
-        GroupKnowledgebaseLaunchResolverError::Binding(error) => error.into(),
-        GroupKnowledgebaseLaunchResolverError::Authorization(error) => error.into(),
     }
 }
 

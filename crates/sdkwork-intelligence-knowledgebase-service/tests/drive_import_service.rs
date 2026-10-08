@@ -750,7 +750,6 @@ impl MemoryDocumentStore {
         let document = KnowledgeDocument {
             id: *next_id,
             space_id: record.space_id,
-            collection_id: record.collection_id,
             source_id: record.source_id,
             original_file_drive_node_id: record.original_file_drive_node_id,
             title: record.title,
@@ -772,7 +771,6 @@ impl MemoryDocumentStore {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct DocumentIdentityKey {
     space_id: u64,
-    collection_id: u64,
     identity_scope: KnowledgeDocumentIdentityScope,
     source_id: Option<u64>,
     original_file_drive_node_id: Option<String>,
@@ -781,7 +779,6 @@ struct DocumentIdentityKey {
 fn document_key(record: &CreateKnowledgeDocumentRecord) -> DocumentIdentityKey {
     DocumentIdentityKey {
         space_id: record.space_id,
-        collection_id: record.collection_id,
         identity_scope: record.identity_scope,
         source_id: record.source_id,
         original_file_drive_node_id: match record.identity_scope {

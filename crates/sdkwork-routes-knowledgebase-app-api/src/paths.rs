@@ -63,6 +63,7 @@ pub const WECHAT_OFFICIAL_ACCOUNT_FAN_TAGS: &str =
 pub const WECHAT_APPLETS: &str = "/app/v3/api/knowledge/wechat/applets";
 pub const WECHAT_ARTICLES_PUBLISH: &str = "/app/v3/api/knowledge/wechat/articles/publish";
 pub const WECHAT_ARTICLES_PREVIEW: &str = "/app/v3/api/knowledge/wechat/articles/preview";
+pub const WECHAT_CALLBACK: &str = "/app/v3/api/knowledge/wechat/callback";
 pub const MARKET_LISTINGS: &str = "/app/v3/api/knowledge/market/listings";
 pub const MARKET_SUBSCRIPTIONS: &str = "/app/v3/api/knowledge/market/subscriptions";
 pub const MARKET_SUBSCRIPTION: &str = "/app/v3/api/knowledge/market/subscriptions/{listing_id}";

@@ -209,6 +209,23 @@ pub fn cursor_page_data<T>(
     }
 }
 
+/// Build offset-mode `SdkWorkPageData` for a small fixed-domain list that is
+/// always returned whole: the entire collection fits in one page, so
+/// `hasMore` is false by construction.
+pub fn fixed_list_page_data<T>(items: Vec<T>) -> SdkWorkPageData<T> {
+    let total_items = items.len() as i64;
+    let page_size = total_items.max(1);
+    sdkwork_utils_rust::offset_list_page_data(
+        items,
+        total_items,
+        sdkwork_utils_rust::OffsetListPageParams {
+            page: 1,
+            page_size,
+            offset: 0,
+        },
+    )
+}
+
 /// Map a browser list window to standard cursor-mode list data with browser view context.
 pub fn browser_list_page_data(
     space_id: u64,

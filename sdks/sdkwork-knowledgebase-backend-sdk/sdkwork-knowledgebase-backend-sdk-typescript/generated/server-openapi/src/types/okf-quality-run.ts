@@ -1,4 +1,4 @@
 export interface OkfQualityRun {
-  id: number;
+  id: string;
   state: string;
 }

@@ -22,7 +22,10 @@ use sdkwork_knowledgebase_provider_runtime::{ProviderExecutionContext, ProviderO
 use std::sync::Arc;
 
 pub use client::{chunk_id_from_content, FlowiseApiClient};
-pub use config::{FlowiseConnectorConfig, FLOWISE_BASE_URL_ENV, FLOWISE_STORE_ID_ENV};
+pub use config::{
+    FlowiseConnectorConfig, FLOWISE_ALLOW_PRIVATE_NETWORK_ENV, FLOWISE_BASE_URL_ENV,
+    FLOWISE_STORE_ID_ENV,
+};
 
 pub const FLOWISE_VENDOR_ID: &str = "flowise";
 pub const FLOWISE_IMPLEMENTATION_ID: &str = "engine.knowledge.external.flowise";
@@ -39,10 +42,21 @@ impl FlowiseKnowledgeEngine {
     }
 
     pub fn with_config(config: FlowiseConnectorConfig) -> Self {
-        let client = FlowiseApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match FlowiseApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    FLOWISE_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -105,7 +119,13 @@ impl KnowledgeEngine for FlowiseKnowledgeEngine {
             })?
             .into_secret();
         config.default_store_id = Some(binding.remote_resource_id.clone());
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "Flowise base URL does not satisfy the Provider runtime target policy".to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

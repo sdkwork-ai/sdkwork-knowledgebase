@@ -23,7 +23,8 @@ use std::sync::Arc;
 
 pub use client::AnythingLlmApiClient;
 pub use config::{
-    AnythingLlmConnectorConfig, ANYTHINGLLM_BASE_URL_ENV, ANYTHINGLLM_WORKSPACE_SLUG_ENV,
+    AnythingLlmConnectorConfig, ANYTHINGLLM_ALLOW_PRIVATE_NETWORK_ENV, ANYTHINGLLM_BASE_URL_ENV,
+    ANYTHINGLLM_WORKSPACE_SLUG_ENV,
 };
 
 pub const ANYTHINGLLM_VENDOR_ID: &str = "anythingllm";
@@ -41,10 +42,21 @@ impl AnythingLlmKnowledgeEngine {
     }
 
     pub fn with_config(config: AnythingLlmConnectorConfig) -> Self {
-        let client = AnythingLlmApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match AnythingLlmApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    ANYTHINGLLM_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -107,7 +119,14 @@ impl KnowledgeEngine for AnythingLlmKnowledgeEngine {
             })?
             .into_secret();
         config.default_workspace_slug = Some(binding.remote_resource_id.clone());
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "AnythingLLM base URL does not satisfy the Provider runtime target policy"
+                    .to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

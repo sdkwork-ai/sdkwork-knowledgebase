@@ -1,23 +1,15 @@
-use crate::{
-    group_space_access::{
-        GroupKnowledgeSpaceAccessAuthorizer, GroupKnowledgeSpaceAccessAuthorizerError,
-    },
-    ports::{
-        group_launch_ticket_consumer::{
-            ConsumeGroupLaunchTicketCommand, GroupLaunchTicketCallerContext,
-            GroupLaunchTicketConsumer, GroupLaunchTicketConsumerError,
-        },
-        knowledge_access_control::KnowledgeAccessRole,
-        knowledge_group_space_binding_store::{
-            GroupKnowledgeSpaceScope, KnowledgeGroupSpaceBindingStore,
-            KnowledgeGroupSpaceBindingStoreError,
-        },
-    },
+use crate::ports::group_launch_ticket_consumer::{
+    ConsumeGroupLaunchTicketCommand, ConsumedGroupLaunchTicket, GroupLaunchTicketCallerContext,
+    GroupLaunchTicketConsumer, GroupLaunchTicketConsumerError,
+};
+use crate::ports::knowledge_group_space_binding_store::{
+    GroupKnowledgeSpaceScope, KnowledgeGroupSpaceBindingStore,
+    KnowledgeGroupSpaceBindingStoreError,
 };
 use sdkwork_knowledgebase_contract::group_space::{
     is_valid_group_knowledgebase_launch_ticket, ConsumeGroupKnowledgebaseLaunchTicketRequest,
-    GroupKnowledgeSpaceLifecycleState, GroupKnowledgeSpaceMemberRole,
-    GroupKnowledgebaseLaunchTarget,
+    GroupKnowledgeSpaceAclProjectionState, GroupKnowledgeSpaceLifecycleState,
+    GroupKnowledgeSpaceMemberRole, GroupKnowledgebaseLaunchTarget,
 };
 use sdkwork_utils_rust::is_blank;
 use thiserror::Error;
@@ -45,6 +37,8 @@ impl<'a> GroupKnowledgebaseLaunchResolver<'a> {
         caller: GroupLaunchTicketCallerContext,
         request: ConsumeGroupKnowledgebaseLaunchTicketRequest,
     ) -> Result<GroupKnowledgebaseLaunchTarget, GroupKnowledgebaseLaunchResolverError> {
+        // Pre-consumption validation keeps its own error codes: the remote ticket is untouched
+        // here, so a corrected request may still consume the very same ticket.
         if is_blank(Some(request.ticket.as_str())) {
             return Err(GroupKnowledgebaseLaunchResolverError::InvalidRequest(
                 "group launch ticket is required".to_string(),
@@ -63,17 +57,26 @@ impl<'a> GroupKnowledgebaseLaunchResolver<'a> {
             })
             .await?;
 
-        if consumed.tenant_id != caller.tenant_id
-            || consumed.organization_id != caller.organization_id
-            || consumed.principal_kind != caller.principal_kind
-            || consumed.actor_id != caller.actor_id
-        {
-            return Err(GroupKnowledgebaseLaunchResolverError::Denied(
-                "launch ticket identity does not match the authenticated session".to_string(),
-            ));
-        }
+        // Everything past this point runs after IM irreversibly burned the one-time ticket, so
+        // any failure is terminal for this ticket: it is surfaced as `TicketConsumed` so the
+        // route can tell the client to re-issue instead of inviting a doomed replay.
+        self.resolve_consumed_target(caller, consumed)
+            .await
+            .map_err(|error| {
+                GroupKnowledgebaseLaunchResolverError::TicketConsumed(error.to_string())
+            })
+    }
+
+    async fn resolve_consumed_target(
+        &self,
+        caller: GroupLaunchTicketCallerContext,
+        consumed: ConsumedGroupLaunchTicket,
+    ) -> Result<GroupKnowledgebaseLaunchTarget, ConsumedLaunchResolutionError> {
+        // Actor binding is not re-checked here: the ticket was issued to and consumed under
+        // IM's signed RPC caller context (mTLS plus signed metadata), which is the enforcement
+        // point for actor identity per the group-knowledgebase boundary contract.
         if consumed.membership_role == GroupKnowledgeSpaceMemberRole::Guest {
-            return Err(GroupKnowledgebaseLaunchResolverError::Denied(
+            return Err(ConsumedLaunchResolutionError::Denied(
                 "group guests cannot launch the group knowledgebase".to_string(),
             ));
         }
@@ -94,21 +97,28 @@ impl<'a> GroupKnowledgebaseLaunchResolver<'a> {
             || binding.membership_epoch != consumed.membership_epoch
             || binding.upstream_link_generation != consumed.upstream_link_generation
         {
-            return Err(GroupKnowledgebaseLaunchResolverError::Denied(
+            return Err(ConsumedLaunchResolutionError::Denied(
                 "group launch ticket no longer resolves to the current knowledgebase binding"
                     .to_string(),
             ));
         }
+        // These two fences mirror `GroupKnowledgeSpaceAccessAuthorizer::authorize`, applied to
+        // the binding already resolved above so the member snapshot below is loaded once.
+        if binding.acl_projection_state != GroupKnowledgeSpaceAclProjectionState::Active {
+            return Err(ConsumedLaunchResolutionError::Denied(
+                "group knowledge space is not active with a current ACL projection".to_string(),
+            ));
+        }
+        if self
+            .binding_store
+            .has_unsettled_group_membership_projection(scope, binding.id)
+            .await?
+        {
+            return Err(ConsumedLaunchResolutionError::Denied(
+                "group knowledge space membership ACL projection is not settled".to_string(),
+            ));
+        }
 
-        let authorizer = GroupKnowledgeSpaceAccessAuthorizer::new(self.binding_store);
-        authorizer
-            .authorize(
-                scope,
-                consumed.space_id,
-                &caller.actor_id,
-                KnowledgeAccessRole::Reader,
-            )
-            .await?;
         let members = self
             .binding_store
             .list_active_group_members(scope, binding.id)
@@ -118,7 +128,7 @@ impl<'a> GroupKnowledgebaseLaunchResolver<'a> {
             .find(|member| member.actor_id == caller.actor_id)
             .map(|member| member.role)
             .ok_or_else(|| {
-                GroupKnowledgebaseLaunchResolverError::Denied(
+                ConsumedLaunchResolutionError::Denied(
                     "authenticated actor is no longer in the group knowledgebase snapshot"
                         .to_string(),
                 )
@@ -126,7 +136,7 @@ impl<'a> GroupKnowledgebaseLaunchResolver<'a> {
         if current_role == GroupKnowledgeSpaceMemberRole::Guest
             || current_role != consumed.membership_role
         {
-            return Err(GroupKnowledgebaseLaunchResolverError::Denied(
+            return Err(ConsumedLaunchResolutionError::Denied(
                 "group launch ticket membership role is stale".to_string(),
             ));
         }
@@ -135,7 +145,7 @@ impl<'a> GroupKnowledgebaseLaunchResolver<'a> {
             conversation_id: binding.conversation_id,
             space_id: consumed.space_id,
             space_uuid: binding.space_uuid.ok_or_else(|| {
-                GroupKnowledgebaseLaunchResolverError::InvalidBinding(
+                ConsumedLaunchResolutionError::InvalidBinding(
                     "active group binding has no space UUID".to_string(),
                 )
             })?,
@@ -149,14 +159,21 @@ impl<'a> GroupKnowledgebaseLaunchResolver<'a> {
 pub enum GroupKnowledgebaseLaunchResolverError {
     #[error("group launch request is invalid: {0}")]
     InvalidRequest(String),
+    /// A post-consumption failure. The one-time ticket is burned and this exact ticket can
+    /// never succeed again; clients must request a fresh launch ticket from IM and retry.
+    #[error("group launch ticket was consumed but the launch failed and a new ticket is required: {0}")]
+    TicketConsumed(String),
+    #[error(transparent)]
+    Ticket(#[from] GroupLaunchTicketConsumerError),
+}
+
+/// Classification of failures that happen after the remote ticket was consumed.
+#[derive(Debug, Error)]
+enum ConsumedLaunchResolutionError {
     #[error("group launch ticket is denied: {0}")]
     Denied(String),
     #[error("group launch binding is invalid: {0}")]
     InvalidBinding(String),
     #[error(transparent)]
-    Ticket(#[from] GroupLaunchTicketConsumerError),
-    #[error(transparent)]
     Binding(#[from] KnowledgeGroupSpaceBindingStoreError),
-    #[error(transparent)]
-    Authorization(#[from] GroupKnowledgeSpaceAccessAuthorizerError),
 }

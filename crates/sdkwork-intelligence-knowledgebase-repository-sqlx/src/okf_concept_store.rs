@@ -117,7 +117,7 @@ impl PostgresKnowledgeOkfConceptStore {
         .await
         .map_err(sqlx_error)?
         .ok_or_else(|| {
-            KnowledgeOkfConceptStoreError::Internal(format!(
+            KnowledgeOkfConceptStoreError::NotFound(format!(
                 "missing okf concept: {concept_row_id}"
             ))
         })?;
@@ -282,7 +282,7 @@ impl PostgresKnowledgeOkfConceptStore {
             .await
             .map_err(sqlx_error)?
             .ok_or_else(|| {
-                KnowledgeOkfConceptStoreError::Internal(format!(
+                KnowledgeOkfConceptStoreError::NotFound(format!(
                     "missing okf concept: {concept_row_id}"
                 ))
             })?;
@@ -782,7 +782,7 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
             .await
             .map_err(sqlx_error)?
             .ok_or_else(|| {
-                KnowledgeOkfConceptStoreError::Internal(format!(
+                KnowledgeOkfConceptStoreError::NotFound(format!(
                     "missing okf concept: {concept_row_id}"
                 ))
             })?;

@@ -1,4 +1,4 @@
 export interface OkfCandidateResult {
-  id: number;
+  id: string;
   state: string;
 }

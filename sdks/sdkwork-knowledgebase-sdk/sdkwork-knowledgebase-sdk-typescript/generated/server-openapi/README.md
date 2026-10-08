@@ -26,7 +26,7 @@ client.setApiKey('your-api-key');
 
 // Use the SDK
 const params = {
-  spaceId: 'spaceId',
+  space_id: 'space_id',
   cursor: 'cursor',
   page_size: 3,
 };
@@ -71,7 +71,7 @@ const client = new SdkworkKnowledgebaseOpenClient({
 ```typescript
 // List knowledge documents
 const params = {
-  spaceId: 'spaceId',
+  space_id: 'space_id',
   cursor: 'cursor',
   page_size: 3,
 };
@@ -85,7 +85,7 @@ import { SdkworkKnowledgebaseOpenClient, NetworkError, TimeoutError, Authenticat
 
 try {
   const params = {
-    spaceId: 'spaceId',
+    space_id: 'space_id',
     cursor: 'cursor',
     page_size: 3,
   };
@@ -109,6 +109,8 @@ This SDK includes cross-platform publish scripts in `bin/`:
 - `bin/publish-core.mjs`
 - `bin/publish.sh`
 - `bin/publish.ps1`
+
+TypeScript check and publish commands materialize workspace dependency versions in a temporary tarball with pnpm. They reject local-only dependency protocols before npm publication and do not rewrite the source `package.json`.
 
 ### Check
 

@@ -1,8 +1,10 @@
 //! Test-only request-context fixtures.
 //!
-//! This module is only compiled in debug builds (`#[cfg(debug_assertions)]`).
-//! Production/runtime assembly must authenticate through `sdkwork-iam` and
-//! `sdkwork-iam-web-adapter` instead of injecting context with these helpers.
+//! This module is compiled only when the crate's `dev-auth` cargo feature is
+//! enabled (`#[cfg(feature = "dev-auth")]`); release builds must not enable
+//! that feature. Production/runtime assembly must authenticate through
+//! `sdkwork-iam` and `sdkwork-iam-web-adapter` instead of injecting context
+//! with these helpers.
 
 use axum::{
     extract::Request,

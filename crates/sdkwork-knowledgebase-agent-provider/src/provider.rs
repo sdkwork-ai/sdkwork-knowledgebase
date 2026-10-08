@@ -94,9 +94,6 @@ where
                 .and_then(|value| value.parse::<u64>().ok()),
             bindings: vec![sdkwork_knowledgebase_contract::KnowledgeRetrievalBinding {
                 space_id: parse_namespace_space_id(request.namespace.as_deref())?,
-                collection_id: request
-                    .metadata_value("sdkwork.knowledge.collection_id")
-                    .and_then(|value| value.parse::<u64>().ok()),
                 source_filter: None,
                 document_filter: None,
                 priority: 0,

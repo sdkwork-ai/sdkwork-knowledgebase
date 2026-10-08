@@ -12,7 +12,7 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_ingestion_job_s
     ClaimIngestionJobsRequest, ClaimedIngestionJob, CompleteRunningIngestionRecord,
     CompletedIngestionResult, CreateIngestionJobRecord, CreateOrGetIngestionJobResult,
     DriveImportJobLinkage, IngestionJobLifecycle, IngestionJobStore, IngestionJobStoreError,
-    KNOWLEDGE_UPLOAD_SESSION_TTL, MAX_INGESTION_JOB_LEASE,
+    KNOWLEDGE_UNLEASED_API_JOB_QUOTA_TTL, KNOWLEDGE_UPLOAD_SESSION_TTL, MAX_INGESTION_JOB_LEASE,
     STALE_UPLOAD_SESSION_RECOVERY_BATCH_SIZE,
 };
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_outbox_store::AppendOutboxEventRecord;
@@ -638,40 +638,37 @@ impl PostgresKnowledgeDocumentStore {
         let tenant_id = document_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = document_to_i64("organization_id", self.organization_id)?;
         let space_id = document_to_i64("space_id", record.space_id)?;
-        let collection_id = document_to_i64("collection_id", record.collection_id)?;
         let source_id = record
             .source_id
             .map(|value| document_to_i64("source_id", value))
             .transpose()?;
         let row = sqlx::query(
             r#"
-            SELECT id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+            SELECT id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                    current_version_id, visibility, content_state, index_state
             FROM kb_document
             WHERE tenant_id = $1
               AND organization_id = $2
               AND space_id = $3
-              AND collection_id = $4
-              AND identity_scope = $5
+              AND identity_scope = $4
               AND (
-                  ($6 = 'source_only' AND source_id = $7)
+                  ($5 = 'source_only' AND source_id = $6)
                   OR (
-                      $8 = 'source_and_original_drive_node'
+                      $7 = 'source_and_original_drive_node'
                       AND (
-                          ($9 IS NULL AND source_id IS NULL)
-                          OR ($10 IS NOT NULL AND source_id = $11)
+                          ($8 IS NULL AND source_id IS NULL)
+                          OR ($9 IS NOT NULL AND source_id = $10)
                       )
-                      AND COALESCE(original_file_drive_node_id, '') = COALESCE($12, '')
+                      AND COALESCE(original_file_drive_node_id, '') = COALESCE($11, '')
                   )
               )
-              AND status = $13
+              AND status = $12
             LIMIT 1
             "#,
         )
         .bind(tenant_id)
         .bind(organization_id)
         .bind(space_id)
-        .bind(collection_id)
         .bind(record.identity_scope.as_str())
         .bind(record.identity_scope.as_str())
         .bind(source_id)
@@ -697,7 +694,7 @@ impl PostgresKnowledgeDocumentStore {
         let limit = i64::from(limit.clamp(1, 200));
         let rows = sqlx::query(
             r#"
-            SELECT id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+            SELECT id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                    current_version_id, visibility, content_state, index_state
             FROM kb_document
             WHERE tenant_id = $1 AND organization_id = $2 AND status = $3
@@ -745,7 +742,7 @@ impl PostgresKnowledgeDocumentStore {
         let rows = if let Some(after_id) = cursor_id {
             sqlx::query(
                 r#"
-                SELECT id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+                SELECT id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                        current_version_id, visibility, content_state, index_state
                 FROM kb_document
                 WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3 AND status = $4 AND id > $5
@@ -765,7 +762,7 @@ impl PostgresKnowledgeDocumentStore {
         } else {
             sqlx::query(
                 r#"
-                SELECT id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+                SELECT id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                        current_version_id, visibility, content_state, index_state
                 FROM kb_document
                 WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3 AND status = $4
@@ -806,7 +803,7 @@ impl PostgresKnowledgeDocumentStore {
         let document_id = document_to_i64("document_id", document_id)?;
         let row = sqlx::query(
             r#"
-            SELECT id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+            SELECT id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                    current_version_id, visibility, content_state, index_state
             FROM kb_document
             WHERE tenant_id = $1 AND organization_id = $2 AND id = $3 AND status = $4
@@ -860,7 +857,7 @@ impl PostgresKnowledgeDocumentStore {
                 updated_at = {updated_at_expr},
                 version = version + 1
             WHERE tenant_id = $6 AND organization_id = $7 AND id = $8 AND status = $9
-            RETURNING id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+            RETURNING id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                       current_version_id, visibility, content_state, index_state
             "#,
         );
@@ -950,7 +947,6 @@ impl PostgresKnowledgeDocumentStore {
             RETURNING
                 id,
                 space_id,
-                collection_id,
                 source_id,
                 identity_scope,
                 original_file_drive_node_id,
@@ -1017,15 +1013,14 @@ impl PostgresKnowledgeDocumentStore {
         let tenant_id = document_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = document_to_i64("organization_id", self.organization_id)?;
         let space_id = document_to_i64("space_id", record.space_id)?;
-        let collection_id = document_to_i64("collection_id", record.collection_id)?;
         let source_id = record
             .source_id
             .map(|value| document_to_i64("source_id", value))
             .transpose()?;
         let generated_id = next_i64_id(&self.id_generator).map_err(document_id_error)?;
         let now = document_now()?;
-        let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$17");
-        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$18");
+        let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$16");
+        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$17");
         let query = format!(
             r#"
             INSERT INTO kb_document (
@@ -1034,7 +1029,6 @@ impl PostgresKnowledgeDocumentStore {
                 tenant_id,
                 organization_id,
                 space_id,
-                collection_id,
                 source_id,
                 identity_scope,
                 original_file_drive_node_id,
@@ -1049,12 +1043,11 @@ impl PostgresKnowledgeDocumentStore {
                 updated_at,
                 version
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, {created_at_expr}, {updated_at_expr}, $19)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, {created_at_expr}, {updated_at_expr}, $18)
             {conflict_clause}
             RETURNING
                 id,
                 space_id,
-                collection_id,
                 source_id,
                 original_file_drive_node_id,
                 title,
@@ -1073,7 +1066,6 @@ impl PostgresKnowledgeDocumentStore {
             .bind(tenant_id)
             .bind(organization_id)
             .bind(space_id)
-            .bind(collection_id)
             .bind(source_id)
             .bind(record.identity_scope.as_str())
             .bind(record.original_file_drive_node_id.clone())
@@ -1678,10 +1670,14 @@ impl PostgresIngestionJobStore {
 
         let tenant_id = job_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = job_to_i64("organization_id", self.organization_id)?;
-        let mut transaction =
-            begin_tenant_quota_transaction(&self.pool, tenant_id, organization_id)
-                .await
-                .map_err(job_sqlx_error)?;
+        // No tenant advisory lock here: this path writes only kb_ingestion_job
+        // (guarded by the state/claim CAS fence in the UPDATE below) and
+        // appends kb_outbox_event. Neither table feeds the quota counters —
+        // those triggers live on kb_document and kb_drive_object_ref and row-lock
+        // the kb_tenant_quota_usage row inside their own transactions — and a
+        // Running->Succeeded transition only frees ingest capacity, so writers
+        // that do check quotas cannot be raced past a limit by this path.
+        let mut transaction = self.pool.begin().await.map_err(job_sqlx_error)?;
         let job_id_i64 = job_to_i64("job_id", job_id)?;
 
         let current_row = sqlx::query(
@@ -1743,9 +1739,14 @@ impl PostgresIngestionJobStore {
             .bind(job_id_i64)
             .bind(ACTIVE_STATUS)
             .bind(ingestion_state_code(IngestionJobState::Running))
-            .fetch_one(&mut *transaction)
+            .fetch_optional(&mut *transaction)
             .await
-            .map_err(|error| job_fetch_error(job_id_i64, error))?;
+            .map_err(job_sqlx_error)?
+            .ok_or_else(|| {
+                IngestionJobStoreError::Conflict(
+                    "ingestion job state changed concurrently before completion".to_string(),
+                )
+            })?;
 
         let outbox_id = next_i64_id(&self.id_generator)
             .map_err(|error| IngestionJobStoreError::Internal(error.to_string()))?;
@@ -1804,6 +1805,12 @@ impl PostgresIngestionJobStore {
 
         let tenant_id = job_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = job_to_i64("organization_id", self.organization_id)?;
+        // The tenant advisory lock stays even though no quota check runs here:
+        // the bulk chunk replace below (DELETE + batched INSERT on kb_chunk) has
+        // no row fence or unique key of its own, and this lock is the only
+        // serialization between two completions replacing chunks for the same
+        // document version. Quota counter row locks (kb_document /
+        // kb_drive_object_ref triggers) do not cover kb_chunk writes.
         let mut transaction =
             begin_tenant_quota_transaction(&self.pool, tenant_id, organization_id)
                 .await
@@ -2048,9 +2055,14 @@ impl IngestionJobStore for PostgresIngestionJobStore {
             .bind(job_id)
             .bind(ACTIVE_STATUS)
             .bind(ingestion_state_code(expected_state))
-            .fetch_one(&self.pool)
+            .fetch_optional(&self.pool)
             .await
-            .map_err(|error| job_fetch_error(job_id, error))?;
+            .map_err(job_sqlx_error)?
+            .ok_or_else(|| {
+                IngestionJobStoreError::Conflict(
+                    "ingestion job state changed concurrently".to_string(),
+                )
+            })?;
 
         job_from_row(&row)
     }
@@ -2063,18 +2075,23 @@ impl IngestionJobStore for PostgresIngestionJobStore {
         let tenant_id = job_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = job_to_i64("organization_id", self.organization_id)?;
         let job_id = job_to_i64("job_id", job_id)?;
+        // The metadata JSON blob is read-merged-written, so the SELECT must hold
+        // a row lock until the UPDATE commits; otherwise a concurrent linkage
+        // write is silently lost by the last-writer merge.
+        let mut transaction = self.pool.begin().await.map_err(job_sqlx_error)?;
         let row = sqlx::query(
             r#"
             SELECT CAST(metadata AS TEXT) AS metadata
             FROM kb_ingestion_job
             WHERE tenant_id = $1 AND organization_id = $2 AND id = $3 AND status = $4
+            FOR UPDATE
             "#,
         )
         .bind(tenant_id)
         .bind(organization_id)
         .bind(job_id)
         .bind(ACTIVE_STATUS)
-        .fetch_optional(&self.pool)
+        .fetch_optional(&mut *transaction)
         .await
         .map_err(job_sqlx_error)?;
         let Some(row) = row else {
@@ -2092,20 +2109,18 @@ impl IngestionJobStore for PostgresIngestionJobStore {
             WHERE tenant_id = $3 AND organization_id = $4 AND id = $5 AND status = $6
             "#,
         );
-        let updated = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
+        sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
             .bind(metadata)
             .bind(now)
             .bind(tenant_id)
             .bind(organization_id)
             .bind(job_id)
             .bind(ACTIVE_STATUS)
-            .execute(&self.pool)
+            .execute(&mut *transaction)
             .await
             .map_err(job_sqlx_error)?;
 
-        if updated.rows_affected() == 0 {
-            return Err(IngestionJobStoreError::NotFound(job_id as u64));
-        }
+        transaction.commit().await.map_err(job_sqlx_error)?;
         Ok(())
     }
 
@@ -2597,7 +2612,18 @@ impl PostgresIngestionJobStore {
             })?
             .format(&Rfc3339)
             .map_err(|error| IngestionJobStoreError::Internal(error.to_string()))?;
+        let stale_unleased_before = OffsetDateTime::now_utc()
+            .checked_sub(KNOWLEDGE_UNLEASED_API_JOB_QUOTA_TTL)
+            .ok_or_else(|| {
+                IngestionJobStoreError::Internal(
+                    "unleased api job quota cutoff is outside the supported timestamp range"
+                        .to_string(),
+                )
+            })?
+            .format(&Rfc3339)
+            .map_err(|error| IngestionJobStoreError::Internal(error.to_string()))?;
         let expired_before_expr = self.timestamp_dialect.sql_timestamp_expr("$7");
+        let stale_unleased_expr = self.timestamp_dialect.sql_timestamp_expr("$9");
         let query = format!(
             r#"
             SELECT COUNT(*)
@@ -2610,6 +2636,11 @@ impl PostgresIngestionJobStore {
                   job_type = $6
                   AND created_at <= {expired_before_expr}
               )
+              AND NOT (
+                  claim_token IS NULL
+                  AND job_type = $8
+                  AND created_at <= {stale_unleased_expr}
+              )
             "#,
         );
         let count: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(query.as_str()))
@@ -2620,6 +2651,8 @@ impl PostgresIngestionJobStore {
             .bind(ingestion_state_code(IngestionJobState::Running))
             .bind("upload_session")
             .bind(expired_before)
+            .bind("api")
+            .bind(stale_unleased_before)
             .fetch_one(connection)
             .await
             .map_err(job_sqlx_error)?;
@@ -2646,7 +2679,18 @@ impl PostgresIngestionJobStore {
         let expired_before = expired_before
             .format(&Rfc3339)
             .map_err(|error| IngestionJobStoreError::Internal(error.to_string()))?;
+        let stale_unleased_before = OffsetDateTime::now_utc()
+            .checked_sub(KNOWLEDGE_UNLEASED_API_JOB_QUOTA_TTL)
+            .ok_or_else(|| {
+                IngestionJobStoreError::Internal(
+                    "unleased api job quota cutoff is outside the supported timestamp range"
+                        .to_string(),
+                )
+            })?
+            .format(&Rfc3339)
+            .map_err(|error| IngestionJobStoreError::Internal(error.to_string()))?;
         let expired_before_expr = self.timestamp_dialect.sql_timestamp_expr("$7");
+        let stale_unleased_expr = self.timestamp_dialect.sql_timestamp_expr("$9");
         let query = format!(
             r#"
             SELECT COUNT(*)
@@ -2659,6 +2703,11 @@ impl PostgresIngestionJobStore {
                   job_type = $6
                   AND created_at <= {expired_before_expr}
               )
+              AND NOT (
+                  claim_token IS NULL
+                  AND job_type = $8
+                  AND created_at <= {stale_unleased_expr}
+              )
             "#,
         );
         let row: (i64,) = sqlx::query_as(sqlx::AssertSqlSafe(query.as_str()))
@@ -2669,6 +2718,8 @@ impl PostgresIngestionJobStore {
             .bind(ingestion_state_code(IngestionJobState::Running))
             .bind("upload_session")
             .bind(expired_before)
+            .bind("api")
+            .bind(stale_unleased_before)
             .fetch_one(&self.pool)
             .await
             .map_err(|error| IngestionJobStoreError::Internal(error.to_string()))?;
@@ -2961,10 +3012,6 @@ fn document_from_row(row: &AnyRow) -> Result<KnowledgeDocument, KnowledgeDocumen
         space_id: document_from_i64(
             "space_id",
             row.try_get("space_id").map_err(document_sqlx_error)?,
-        )?,
-        collection_id: document_from_i64(
-            "collection_id",
-            row.try_get("collection_id").map_err(document_sqlx_error)?,
         )?,
         source_id: row
             .try_get::<Option<i64>, _>("source_id")

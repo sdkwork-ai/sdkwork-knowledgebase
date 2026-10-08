@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Plus, Box, ChevronDown, ChevronRight } from 'lucide-react';
+import type { ErrorTranslateFn } from 'sdkwork-knowledgebase-pc-core';
 import { KnowledgeBase, DocumentService } from './services/document';
 import { useTranslation } from 'react-i18next';
 import { RenameModal } from './RenameModal';
 import { KnowledgeBaseItem } from './KnowledgeBaseItem';
+import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
 
 interface KnowledgeBaseListProps {
   kbs: { team: KnowledgeBase[], personal: KnowledgeBase[], public: KnowledgeBase[] };
@@ -97,9 +99,20 @@ export function KnowledgeBaseList({ kbs, loadingKbs, activeKb, onSelectKb, onCre
   const [limitTeam, setLimitTeam] = useState(5);
   const [limitPersonal, setLimitPersonal] = useState(5);
   const [limitPublic, setLimitPublic] = useState(5);
+  const deleteKbInFlightRef = useRef(false);
 
+  // Whole-KB delete: confirm explicitly, guard against double-fire while the
+  // request is in flight, and surface failures through the shared error toast.
   const handleDeleteKb = (kb: KnowledgeBase) => {
-    DocumentService.deleteKnowledgeBase(kb.id).then(() => onUpdateKbs && onUpdateKbs());
+    if (deleteKbInFlightRef.current) return;
+    if (!window.confirm(t('deleteKbConfirm', { title: kb.title }))) return;
+    deleteKbInFlightRef.current = true;
+    DocumentService.deleteKnowledgeBase(kb.id)
+      .then(() => onUpdateKbs && onUpdateKbs())
+      .catch((error) => toastKnowledgebaseError(error, t as unknown as ErrorTranslateFn))
+      .finally(() => {
+        deleteKbInFlightRef.current = false;
+      });
   };
 
   const publicKbs = kbs.public || [];

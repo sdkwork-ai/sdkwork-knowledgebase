@@ -18,9 +18,10 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult,
     KnowledgeOkfBundleFile, KnowledgeOkfConceptRevision, KnowledgeRetrievalRequest,
     KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceMember,
-    KnowledgeSpaceMemberSubjectType, KnowledgeWechatAppletList,
+    KnowledgeSpaceMemberSubjectType, KnowledgeWechatApplet, KnowledgeWechatAppletList,
     KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest,
-    KnowledgeWechatFanTagList, KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult,
+    KnowledgeWechatFanTag, KnowledgeWechatFanTagList, KnowledgeWechatOfficialAccount,
+    KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult,
     KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest,
     KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest,
     KnowledgeWikiSourceFile, KnowledgeWikiSourceFileCommandResult,
@@ -31,7 +32,10 @@ use sdkwork_knowledgebase_contract::{
     OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, PublishKnowledgeWikiSourceFileRequest,
     UpdateKnowledgeSpaceRequest,
 };
-use sdkwork_utils_rust::SdkWorkPageData;
+use sdkwork_utils_rust::{SdkWorkCommandData, SdkWorkPageData};
+use sdkwork_intelligence_knowledgebase_service::wechat::{
+    WechatCallbackReceipt, WechatCallbackReceiptRequest, WechatCallbackVerificationRequest,
+};
 
 use crate::{ApiError, ApiResult};
 
@@ -86,7 +90,7 @@ pub trait KnowledgeSpaceAppService: Send + Sync + 'static {
         context: KnowledgeAppRequestContext,
         space_id: u64,
         request: GrantKnowledgeSpaceMemberRequest,
-    ) -> ApiResult<()>;
+    ) -> ApiResult<SdkWorkCommandData>;
 
     async fn revoke_space_member(
         &self,
@@ -230,6 +234,24 @@ pub trait KnowledgeWechatAppService: Send + Sync + 'static {
         context: KnowledgeAppRequestContext,
         request: KnowledgeWechatArticlesPreviewRequest,
     ) -> ApiResult<KnowledgeWechatOperationResult>;
+
+    /// WeChat server URL verification (GET). WeChat's servers call this without any
+    /// SDKWork credential, so there is no request context: the request carries the
+    /// tenant/account scope and authenticates through the WeChat msg_signature scheme.
+    async fn verify_wechat_callback(
+        &self,
+        _request: WechatCallbackVerificationRequest,
+    ) -> ApiResult<String> {
+        Err(ApiError::unsupported_operation("wechat.callback.verify"))
+    }
+
+    /// WeChat encrypted message receipt (POST); acks only signature-verified payloads.
+    async fn receive_wechat_callback(
+        &self,
+        _request: WechatCallbackReceiptRequest,
+    ) -> ApiResult<WechatCallbackReceipt> {
+        Err(ApiError::unsupported_operation("wechat.callback.receive"))
+    }
 }
 
 #[async_trait]
@@ -251,7 +273,7 @@ pub trait KnowledgeCommerceAppService: Send + Sync + 'static {
         &self,
         context: KnowledgeAppRequestContext,
         listing_id: u64,
-    ) -> ApiResult<KnowledgeMarketSubscriptionResult>;
+    ) -> ApiResult<()>;
 
     async fn create_media_task(
         &self,
@@ -686,7 +708,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _context: KnowledgeAppRequestContext,
         _space_id: u64,
         _request: GrantKnowledgeSpaceMemberRequest,
-    ) -> ApiResult<()> {
+    ) -> ApiResult<SdkWorkCommandData> {
         Err(ApiError::unsupported_operation("spaces.members.create"))
     }
 
@@ -1016,7 +1038,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         &self,
         _context: KnowledgeAppRequestContext,
         _profile_id: u64,
-    ) -> ApiResult<KnowledgeAgentBindingList> {
+    ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
         Err(ApiError::unsupported_operation(
             "agentProfiles.bindings.list",
         ))
@@ -1128,7 +1150,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
     async fn list_wechat_official_accounts(
         &self,
         _context: KnowledgeAppRequestContext,
-    ) -> ApiResult<KnowledgeWechatOfficialAccountList> {
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWechatOfficialAccount>> {
         Err(ApiError::unsupported_operation(
             "wechat.officialAccounts.list",
         ))
@@ -1148,7 +1170,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         &self,
         _context: KnowledgeAppRequestContext,
         _account_id: String,
-    ) -> ApiResult<KnowledgeWechatFanTagList> {
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWechatFanTag>> {
         Err(ApiError::unsupported_operation(
             "wechat.officialAccounts.fanTags.list",
         ))
@@ -1157,7 +1179,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
     async fn list_wechat_applets(
         &self,
         _context: KnowledgeAppRequestContext,
-    ) -> ApiResult<KnowledgeWechatAppletList> {
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWechatApplet>> {
         Err(ApiError::unsupported_operation("wechat.applets.list"))
     }
 
@@ -1185,6 +1207,23 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         Err(ApiError::unsupported_operation("wechat.articles.preview"))
     }
 
+    /// WeChat server URL verification (GET). No request context: WeChat's servers
+    /// call this route without SDKWork credentials (see the route manifest).
+    async fn verify_wechat_callback(
+        &self,
+        _request: WechatCallbackVerificationRequest,
+    ) -> ApiResult<String> {
+        Err(ApiError::unsupported_operation("wechat.callback.verify"))
+    }
+
+    /// WeChat encrypted message receipt (POST).
+    async fn receive_wechat_callback(
+        &self,
+        _request: WechatCallbackReceiptRequest,
+    ) -> ApiResult<WechatCallbackReceipt> {
+        Err(ApiError::unsupported_operation("wechat.callback.receive"))
+    }
+
     async fn list_market_listings(
         &self,
         _context: KnowledgeAppRequestContext,
@@ -1208,7 +1247,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         &self,
         _context: KnowledgeAppRequestContext,
         _listing_id: u64,
-    ) -> ApiResult<KnowledgeMarketSubscriptionResult> {
+    ) -> ApiResult<()> {
         Err(ApiError::unsupported_operation(
             "market.subscriptions.delete",
         ))

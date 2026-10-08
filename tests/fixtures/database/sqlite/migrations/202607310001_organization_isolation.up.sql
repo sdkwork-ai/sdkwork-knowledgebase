@@ -14,7 +14,6 @@
 -- Organization ownership columns (SQLite `ALTER TABLE ADD COLUMN` supports a constant
 -- `NOT NULL DEFAULT`, matching the PostgreSQL `SET NOT NULL` end state on a fixture that
 -- is created fresh and therefore has no rows to backfill).
-ALTER TABLE kb_collection ADD COLUMN organization_id INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE kb_source ADD COLUMN organization_id INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE kb_drive_object_ref ADD COLUMN organization_id INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE kb_document ADD COLUMN organization_id INTEGER NOT NULL DEFAULT 0;
@@ -51,7 +50,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_space_scope_id
 CREATE INDEX IF NOT EXISTS idx_kb_source_scope_active
     ON kb_source (tenant_id, organization_id, space_id, status, id);
 CREATE INDEX IF NOT EXISTS idx_kb_chunk_scope_search
-    ON kb_chunk (tenant_id, organization_id, space_id, collection_id, status, id);
+    ON kb_chunk (tenant_id, organization_id, space_id, status, id);
 CREATE INDEX IF NOT EXISTS idx_kb_embedding_scope_chunk
     ON kb_embedding (tenant_id, organization_id, chunk_id, status, id);
 CREATE INDEX IF NOT EXISTS idx_kb_retrieval_trace_scope_id
@@ -61,3 +60,5 @@ CREATE INDEX IF NOT EXISTS idx_kb_retrieval_hit_scope_trace_rank
 CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_index_active_scope_kind
     ON kb_index (tenant_id, organization_id, space_id, index_kind)
     WHERE status = 1;
+CREATE INDEX IF NOT EXISTS idx_kb_okf_bundle_file_scope_id
+    ON kb_okf_bundle_file (tenant_id, organization_id, status, id);

@@ -350,7 +350,6 @@ async fn retrieval_can_reconstruct_persisted_trace_and_hits() {
             document_id: 100,
             document_version_id: Some(1100),
             space_id: 7,
-            collection_id: None,
             title: "Support Playbook".to_string(),
             content: "Escalate enterprise renewal issues.".to_string(),
             score: Some(0.94),
@@ -583,7 +582,6 @@ fn binding(
 ) -> KnowledgeRetrievalBinding {
     KnowledgeRetrievalBinding {
         space_id,
-        collection_id: None,
         source_filter: None,
         document_filter: None,
         priority,
@@ -606,7 +604,6 @@ fn hit(
         document_id,
         document_version_id: Some(document_id + 1000),
         space_id,
-        collection_id: None,
         title: title.to_string(),
         content: content.to_string(),
         score,

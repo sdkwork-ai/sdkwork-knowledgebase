@@ -1,4 +1,4 @@
 export interface OkfQueryRequest {
-  spaceId: number;
+  spaceId: string;
   query: string;
 }

@@ -62,3 +62,24 @@ impl From<ProviderError> for KnowledgeEngineError {
         })
     }
 }
+
+/// Builds a `KnowledgeEngineError::Provider` failure carrying no engine-supplied
+/// detail: raw upstream error text stays in `tracing` logs and never reaches the
+/// typed failure surface consumed by API error mapping.
+pub fn engine_provider_error(
+    operation: ProviderOperation,
+    implementation_id: &str,
+    category: ProviderErrorCategory,
+    safe_message: &str,
+) -> KnowledgeEngineError {
+    KnowledgeEngineError::Provider(KnowledgeEngineProviderFailure {
+        category,
+        operation,
+        implementation_id: implementation_id.to_string(),
+        binding_id: None,
+        status_code: None,
+        retryable: false,
+        retry_after_ms: None,
+        safe_message: safe_message.to_string(),
+    })
+}

@@ -1,4 +1,4 @@
 export interface OkfQualityRunRequest {
-  spaceId: number;
+  spaceId: string;
   profile?: string | null;
 }

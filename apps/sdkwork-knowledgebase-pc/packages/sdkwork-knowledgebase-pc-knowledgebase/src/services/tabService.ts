@@ -1,3 +1,5 @@
+import { withCrossTabStorageUpdate } from 'sdkwork-knowledgebase-pc-core';
+
 import { DocumentMeta } from './document';
 
 interface TabCacheEntry {
@@ -55,6 +57,36 @@ export class TabCacheService {
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
   }
 
+  /**
+   * Runs one read→mutate→write cycle against a fresh snapshot taken immediately
+   * before the write, then publishes the storage key so other tabs reload it.
+   * Mutations that leave the cache content unchanged skip the write so no-op
+   * paths keep storage traffic quiet.
+   */
+  private static updateCache(
+    mutate: (cache: Record<string, TabCacheEntry>) => Record<string, TabCacheEntry>,
+  ): void {
+    // Snapshot the JSON at read time: the mutate closures revise the cache in
+    // place, so a reference held until the write would compare the mutated
+    // object against itself and always look unchanged.
+    let originalJson: string | null = null;
+    withCrossTabStorageUpdate(
+      this.STORAGE_KEY,
+      () => {
+        const cache = this.loadCache();
+        originalJson = JSON.stringify(cache);
+        return cache;
+      },
+      (cache) => mutate(cache),
+      (next) => {
+        if (originalJson !== null && JSON.stringify(next) === originalJson) {
+          return;
+        }
+        this.saveCache(next);
+      },
+    );
+  }
+
   private static trimKbWindow(cache: TabCacheEntry): void {
     if (cache.docs.length <= this.MAX_TABS_PER_KB) {
       return;
@@ -74,11 +106,13 @@ export class TabCacheService {
 
   // Handle a new kb structure gracefully.
   public static initKb(kbId: string): void {
-    const cache = this.loadCache();
-    if (!cache[kbId]) {
+    this.updateCache((cache) => {
+      if (cache[kbId]) {
+        return cache;
+      }
       cache[kbId] = { docs: [], activeId: null };
-      this.saveCache(cache);
-    }
+      return cache;
+    });
   }
 
   public static getOpenDocs(kbId: string): DocumentMeta[] {
@@ -92,108 +126,145 @@ export class TabCacheService {
   }
 
   public static saveOpenDocs(kbId: string, docs: DocumentMeta[]): void {
-    const cache = this.loadCache();
-    if (!cache[kbId]) cache[kbId] = { docs: [], activeId: null };
-    cache[kbId].docs = docs;
-    this.trimKbWindow(cache[kbId]);
-    this.saveCache(cache);
+    this.updateCache((cache) => {
+      const entry = cache[kbId] ?? { docs: [], activeId: null };
+      entry.docs = docs;
+      this.trimKbWindow(entry);
+      cache[kbId] = entry;
+      return cache;
+    });
   }
 
   public static saveActiveDocId(kbId: string, activeId: string | null): void {
-    const cache = this.loadCache();
-    if (!cache[kbId]) cache[kbId] = { docs: [], activeId: null };
-    cache[kbId].activeId = activeId;
-    this.saveCache(cache);
+    this.updateCache((cache) => {
+      const entry = cache[kbId] ?? { docs: [], activeId: null };
+      entry.activeId = activeId;
+      cache[kbId] = entry;
+      return cache;
+    });
   }
 
   public static openDoc(kbId: string, doc: DocumentMeta): void {
-    const cache = this.loadCache();
-    if (!cache[kbId]) cache[kbId] = { docs: [], activeId: null };
-    
-    // Add to open tabs if not a folder and not already present
-    if (doc.type !== 'folder') {
-      if (!cache[kbId].docs.some(d => d.id === doc.id)) {
-        cache[kbId].docs.push(doc);
-      }
-    }
-    this.trimKbWindow(cache[kbId]);
+    this.updateCache((cache) => {
+      const entry = cache[kbId] ?? { docs: [], activeId: null };
 
-    cache[kbId].activeId = doc.id;
-    this.saveCache(cache);
+      // Add to open tabs if not a folder and not already present
+      if (doc.type !== 'folder' && !entry.docs.some((d) => d.id === doc.id)) {
+        entry.docs.push(doc);
+      }
+      this.trimKbWindow(entry);
+
+      entry.activeId = doc.id;
+      cache[kbId] = entry;
+      return cache;
+    });
   }
 
   public static closeDoc(kbId: string, docId: string): { remainingDocs: DocumentMeta[], nextActiveId: string | null } {
-    const cache = this.loadCache();
-    if (!cache[kbId]) return { remainingDocs: [], nextActiveId: null };
+    let result: { remainingDocs: DocumentMeta[], nextActiveId: string | null } = {
+      remainingDocs: [],
+      nextActiveId: null,
+    };
 
-    const index = cache[kbId].docs.findIndex(d => d.id === docId);
-    if (index === -1) return { remainingDocs: cache[kbId].docs, nextActiveId: cache[kbId].activeId };
-
-    const remainingDocs = cache[kbId].docs.filter(d => d.id !== docId);
-    let nextActiveId = cache[kbId].activeId;
-
-    if (cache[kbId].activeId === docId) {
-      if (remainingDocs.length > 0) {
-        const newIndex = Math.min(index, remainingDocs.length - 1);
-        nextActiveId = remainingDocs[newIndex].id;
-      } else {
-        nextActiveId = null;
+    this.updateCache((cache) => {
+      const entry = cache[kbId];
+      if (!entry) {
+        return cache;
       }
-    }
 
-    cache[kbId].docs = remainingDocs;
-    cache[kbId].activeId = nextActiveId;
-    this.saveCache(cache);
+      const index = entry.docs.findIndex((d) => d.id === docId);
+      if (index === -1) {
+        result = { remainingDocs: entry.docs, nextActiveId: entry.activeId };
+        return cache;
+      }
 
-    return { remainingDocs, nextActiveId };
+      const remainingDocs = entry.docs.filter((d) => d.id !== docId);
+      let nextActiveId = entry.activeId;
+
+      if (entry.activeId === docId) {
+        if (remainingDocs.length > 0) {
+          const newIndex = Math.min(index, remainingDocs.length - 1);
+          nextActiveId = remainingDocs[newIndex].id;
+        } else {
+          nextActiveId = null;
+        }
+      }
+
+      entry.docs = remainingDocs;
+      entry.activeId = nextActiveId;
+      result = { remainingDocs, nextActiveId };
+      return cache;
+    });
+
+    return result;
   }
 
   public static closeOthers(kbId: string, docId: string): { remainingDocs: DocumentMeta[] } {
-    const cache = this.loadCache();
-    if (!cache[kbId]) return { remainingDocs: [] };
+    let result: { remainingDocs: DocumentMeta[] } = { remainingDocs: [] };
 
-    const docToKeep = cache[kbId].docs.find(d => d.id === docId);
-    const remainingDocs = docToKeep ? [docToKeep] : [];
-    
-    cache[kbId].docs = remainingDocs;
-    if (docToKeep) {
-      cache[kbId].activeId = docId;
-    } else {
-      cache[kbId].activeId = null;
-    }
-    
-    this.saveCache(cache);
-    return { remainingDocs };
+    this.updateCache((cache) => {
+      const entry = cache[kbId];
+      if (!entry) {
+        return cache;
+      }
+
+      const docToKeep = entry.docs.find((d) => d.id === docId);
+      const remainingDocs = docToKeep ? [docToKeep] : [];
+
+      entry.docs = remainingDocs;
+      entry.activeId = docToKeep ? docId : null;
+      result = { remainingDocs };
+      return cache;
+    });
+
+    return result;
   }
 
   public static closeAll(kbId: string): void {
-    const cache = this.loadCache();
-    if (!cache[kbId]) return;
-    cache[kbId].docs = [];
-    cache[kbId].activeId = null;
-    this.saveCache(cache);
+    this.updateCache((cache) => {
+      const entry = cache[kbId];
+      if (!entry) {
+        return cache;
+      }
+      entry.docs = [];
+      entry.activeId = null;
+      return cache;
+    });
   }
 
   public static closeToRight(kbId: string, docId: string): { remainingDocs: DocumentMeta[], nextActiveId: string | null } {
-    const cache = this.loadCache();
-    if (!cache[kbId]) return { remainingDocs: [], nextActiveId: null };
+    let result: { remainingDocs: DocumentMeta[], nextActiveId: string | null } = {
+      remainingDocs: [],
+      nextActiveId: null,
+    };
 
-    const index = cache[kbId].docs.findIndex(d => d.id === docId);
-    if (index === -1) return { remainingDocs: cache[kbId].docs, nextActiveId: cache[kbId].activeId };
+    this.updateCache((cache) => {
+      const entry = cache[kbId];
+      if (!entry) {
+        return cache;
+      }
 
-    const remainingDocs = cache[kbId].docs.slice(0, index + 1);
-    let nextActiveId = cache[kbId].activeId;
+      const index = entry.docs.findIndex((d) => d.id === docId);
+      if (index === -1) {
+        result = { remainingDocs: entry.docs, nextActiveId: entry.activeId };
+        return cache;
+      }
 
-    // Check if the currently active doc was removed
-    if (nextActiveId && !remainingDocs.some(d => d.id === nextActiveId)) {
+      const remainingDocs = entry.docs.slice(0, index + 1);
+      let nextActiveId = entry.activeId;
+
+      // Check if the currently active doc was removed
+      if (nextActiveId && !remainingDocs.some((d) => d.id === nextActiveId)) {
         nextActiveId = docId;
-    }
+      }
 
-    cache[kbId].docs = remainingDocs;
-    cache[kbId].activeId = nextActiveId;
-    this.saveCache(cache);
+      entry.docs = remainingDocs;
+      entry.activeId = nextActiveId;
+      result = { remainingDocs, nextActiveId };
+      return cache;
+    });
 
-    return { remainingDocs, nextActiveId };
+    return result;
   }
 }
 

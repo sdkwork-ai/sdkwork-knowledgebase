@@ -6,7 +6,8 @@ use sdkwork_knowledgebase_contract::knowledge_engine::{
     KnowledgeEngineSearchHit, KnowledgeEngineSearchResult,
 };
 use sdkwork_knowledgebase_provider_runtime::{
-    ProviderExecutionContext, ProviderHttpRequest, ProviderOperation, ProviderRuntime,
+    encoded_path_segment, is_path_segment_id, ProviderExecutionContext, ProviderHttpRequest,
+    ProviderOperation, ProviderRuntime,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -21,23 +22,44 @@ pub struct ChromaApiClient {
 }
 
 impl ChromaApiClient {
-    pub fn new(config: ChromaConnectorConfig) -> Self {
-        let http = ProviderRuntime::for_base_url(&config.base_url)
-            .expect("Chroma base URL must satisfy Provider Runtime target policy");
-        Self { config, http }
+    pub fn new(config: ChromaConnectorConfig) -> Result<Self, KnowledgeEngineError> {
+        let http = ProviderRuntime::for_base_url_with_private_targets(
+            &config.base_url,
+            config.allow_private_network,
+        )
+        .map_err(KnowledgeEngineError::from)?;
+        Ok(Self { config, http })
     }
 
     fn health_context(&self) -> ProviderExecutionContext {
         ProviderExecutionContext::for_system_health(CHROMA_IMPLEMENTATION_ID)
     }
 
-    fn collection_path(&self, collection_id: &str, suffix: &str) -> String {
-        format!(
-            "{}/api/v2/tenants/{}/databases/{}/collections/{collection_id}{suffix}",
+    fn collection_path(
+        &self,
+        collection_id: &str,
+        suffix: &str,
+    ) -> Result<String, KnowledgeEngineError> {
+        // Tenant, database, and collection ids are spliced into the URL path, so
+        // they are validated and percent-encoded at every interpolation point.
+        for (kind, value) in [
+            ("tenant", self.config.tenant.as_str()),
+            ("database", self.config.database.as_str()),
+            ("collection id", collection_id),
+        ] {
+            if !is_path_segment_id(value) {
+                return Err(KnowledgeEngineError::Validation(format!(
+                    "Chroma {kind} must match [A-Za-z0-9._:-]{{1,256}}"
+                )));
+            }
+        }
+        Ok(format!(
+            "{}/api/v2/tenants/{}/databases/{}/collections/{}{suffix}",
             self.config.base_url.trim_end_matches('/'),
-            self.config.tenant,
-            self.config.database,
-        )
+            encoded_path_segment(&self.config.tenant),
+            encoded_path_segment(&self.config.database),
+            encoded_path_segment(collection_id),
+        ))
     }
 
     pub async fn connector_health(&self) -> Result<(), KnowledgeEngineError> {
@@ -65,7 +87,7 @@ impl ChromaApiClient {
         query: &str,
         top_k: u32,
     ) -> Result<KnowledgeEngineSearchResult, KnowledgeEngineError> {
-        let url = format!("{}/query", self.collection_path(collection_id, ""));
+        let url = format!("{}/query", self.collection_path(collection_id, "")?);
         let request = ProviderHttpRequest::new(ProviderOperation::Search, Method::POST, url)
             .map_err(KnowledgeEngineError::from)?
             .optional_bearer_auth(self.config.api_key.as_ref().map(|value| value.as_str()))
@@ -97,7 +119,7 @@ impl ChromaApiClient {
         collection_id: &str,
         record_id: &str,
     ) -> Result<KnowledgeEngineDocument, KnowledgeEngineError> {
-        let url = format!("{}/get", self.collection_path(collection_id, ""));
+        let url = format!("{}/get", self.collection_path(collection_id, "")?);
         let request = ProviderHttpRequest::new(ProviderOperation::Read, Method::POST, url)
             .map_err(KnowledgeEngineError::from)?
             .optional_bearer_auth(self.config.api_key.as_ref().map(|value| value.as_str()))
@@ -146,7 +168,7 @@ impl ChromaApiClient {
         context: &ProviderExecutionContext,
         collection_id: &str,
     ) -> Result<ChromaCollection, KnowledgeEngineError> {
-        let url = self.collection_path(collection_id, "");
+        let url = self.collection_path(collection_id, "")?;
         let request = ProviderHttpRequest::new(ProviderOperation::Read, Method::GET, url)
             .map_err(KnowledgeEngineError::from)?
             .optional_bearer_auth(self.config.api_key.as_ref().map(|value| value.as_str()))

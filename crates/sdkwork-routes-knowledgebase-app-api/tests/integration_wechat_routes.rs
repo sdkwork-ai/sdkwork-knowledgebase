@@ -1,11 +1,12 @@
 use async_trait::async_trait;
 use axum::body::Body;
 use axum::http::{header, Method, Request, StatusCode};
-use sdkwork_intelligence_knowledgebase_service::wechat::KnowledgeWechatService;
+use sdkwork_intelligence_knowledgebase_service::wechat::{KnowledgeWechatService, WechatApiClient};
 use sdkwork_knowledgebase_contract::wechat::{
-    KnowledgeWechatAppletList, KnowledgeWechatArticlesPublishRequest,
-    KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult,
-    KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest,
+    KnowledgeWechatApplet, KnowledgeWechatAppletList, KnowledgeWechatArticlesPublishRequest,
+    KnowledgeWechatOfficialAccount, KnowledgeWechatOfficialAccountList,
+    KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest,
+    KnowledgeWechatReplaceOfficialAccountsRequest,
 };
 use sdkwork_knowledgebase_test_support::fake_drive::FakeKnowledgeDriveStorage;
 use sdkwork_routes_knowledgebase_app_api::{
@@ -13,7 +14,7 @@ use sdkwork_routes_knowledgebase_app_api::{
     KnowledgeAppRequestContext,
 };
 use serde_json::json;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 use tower::util::ServiceExt;
 
 const TEST_TENANT_ID: u64 = 1;
@@ -71,8 +72,9 @@ async fn integration_wechat_official_accounts_replace_redacts_secrets_on_list() 
         .unwrap();
     assert_eq!(list_response.status(), StatusCode::OK);
     let list_body = response_body_json(list_response).await;
-    assert_eq!(list_body["accounts"].as_array().map(Vec::len), Some(1));
-    assert!(list_body["accounts"][0]["appSecret"].is_null());
+    assert_eq!(list_body["items"].as_array().map(Vec::len), Some(1));
+    assert_eq!(list_body["pageInfo"]["hasMore"], json!(false));
+    assert!(list_body["items"][0]["appSecret"].is_null());
 }
 
 #[tokio::test]
@@ -188,8 +190,8 @@ async fn integration_wechat_config_rejects_invalid_input_without_overwrite() {
         .unwrap();
     assert_eq!(list_response.status(), StatusCode::OK);
     let list_body = response_body_json(list_response).await;
-    assert_eq!(list_body["accounts"].as_array().map(Vec::len), Some(1));
-    assert_eq!(list_body["accounts"][0]["id"], "stable-account");
+    assert_eq!(list_body["items"].as_array().map(Vec::len), Some(1));
+    assert_eq!(list_body["items"][0]["id"], "stable-account");
 }
 
 #[tokio::test]
@@ -250,11 +252,13 @@ async fn integration_wechat_publish_rejects_missing_managed_cover_before_upstrea
 #[derive(Default)]
 struct TestWechatApi {
     drive: FakeKnowledgeDriveStorage,
+    /// Shared client, matching the production wiring so the token cache survives per call.
+    api_client: Arc<WechatApiClient>,
 }
 
 impl TestWechatApi {
     fn service(&self) -> KnowledgeWechatService<'_> {
-        KnowledgeWechatService::new(&self.drive, "tenant-1")
+        KnowledgeWechatService::new(&self.drive, "tenant-1", Arc::clone(&self.api_client))
     }
 }
 
@@ -263,13 +267,15 @@ impl KnowledgeAppApi for TestWechatApi {
     async fn list_wechat_official_accounts(
         &self,
         _context: KnowledgeAppRequestContext,
-    ) -> ApiResult<KnowledgeWechatOfficialAccountList> {
+    ) -> ApiResult<sdkwork_utils_rust::SdkWorkPageData<KnowledgeWechatOfficialAccount>> {
         let accounts = self
             .service()
             .list_official_accounts()
             .await
             .map_err(ApiError::from)?;
-        Ok(KnowledgeWechatOfficialAccountList { accounts })
+        Ok(sdkwork_routes_knowledgebase_app_api::pagination::fixed_list_page_data(
+            accounts,
+        ))
     }
 
     async fn replace_wechat_official_accounts(
@@ -288,13 +294,15 @@ impl KnowledgeAppApi for TestWechatApi {
     async fn list_wechat_applets(
         &self,
         _context: KnowledgeAppRequestContext,
-    ) -> ApiResult<KnowledgeWechatAppletList> {
+    ) -> ApiResult<sdkwork_utils_rust::SdkWorkPageData<KnowledgeWechatApplet>> {
         let applets = self
             .service()
             .list_applets()
             .await
             .map_err(ApiError::from)?;
-        Ok(KnowledgeWechatAppletList { applets })
+        Ok(sdkwork_routes_knowledgebase_app_api::pagination::fixed_list_page_data(
+            applets,
+        ))
     }
 
     async fn replace_wechat_applets(

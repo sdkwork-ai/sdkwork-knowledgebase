@@ -169,7 +169,6 @@ impl<'a> KnowledgeAgentService<'a> {
 fn binding_to_retrieval_binding(binding: &KnowledgeAgentBinding) -> KnowledgeRetrievalBinding {
     KnowledgeRetrievalBinding {
         space_id: binding.space_id,
-        collection_id: binding.collection_id,
         source_filter: binding.source_filter.clone(),
         document_filter: binding.document_filter.clone(),
         priority: binding.priority,

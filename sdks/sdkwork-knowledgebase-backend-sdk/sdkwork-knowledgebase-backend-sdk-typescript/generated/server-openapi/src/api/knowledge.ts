@@ -430,7 +430,7 @@ export class KnowledgeOkfCandidatesApi {
 /** List OKF candidates */
   async list(params: KnowledgeOkfCandidatesListParams, requestOptions?: ApiRequestOptions): Promise<{ items: OkfCandidateResult[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
-      { name: 'spaceId', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
+      { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
@@ -589,8 +589,8 @@ export class KnowledgeIndexesApi {
   }
 
 /** Rebuild a knowledge index */
-  async rebuild(indexId: string, body: OkfBundleIndexRebuildRequest, requestOptions?: ApiRequestOptions): Promise<OkfIndexDocument> {
-    return this.client.request<OkfIndexDocument>(backendApiPath(`/knowledge/indexes/${serializePathParameter(indexId, { name: 'indexId', style: 'simple', explode: false })}/rebuild`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  async rebuild(indexId: string, body: OkfBundleIndexRebuildRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/indexes/${serializePathParameter(indexId, { name: 'indexId', style: 'simple', explode: false })}/rebuild`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 }
 
@@ -603,7 +603,7 @@ export class KnowledgeGroupLaunchApi {
 
 
 /** Retrieve the group knowledgebase launch capability state for the runtime deployment */
-  async capability(requestOptions?: ApiRequestOptions): Promise<GroupKnowledgebaseLaunchCapability> {
+  async list(requestOptions?: ApiRequestOptions): Promise<GroupKnowledgebaseLaunchCapability> {
     return this.client.request<GroupKnowledgebaseLaunchCapability>(backendApiPath(`/knowledge/group_launch_capability`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }

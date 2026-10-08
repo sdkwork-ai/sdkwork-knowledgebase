@@ -18,7 +18,7 @@ Initial API surface for the SDKWork Knowledgebase App API.
 - `DELETE /app/v3/api/knowledge/spaces/{spaceId}/members` — `spaces.members.delete`
 
 **Documents**
-- `GET /app/v3/api/knowledge/documents?spaceId={spaceId}` — `documents.list`
+- `GET /app/v3/api/knowledge/documents?space_id={space_id}` — `documents.list`
 - `POST /app/v3/api/knowledge/documents` — `documents.create`
 - `GET /app/v3/api/knowledge/documents/{documentId}` — `documents.retrieve`
 - `PATCH /app/v3/api/knowledge/documents/{documentId}` — `documents.update`
@@ -35,14 +35,14 @@ Initial API surface for the SDKWork Knowledgebase App API.
 - `POST /app/v3/api/knowledge/git_syncs` — `gitSyncs.create`
 
 **OKF (Open Knowledge Format)**
-- `GET /app/v3/api/knowledge/okf/concepts?spaceId={spaceId}` — `okf.concepts.list`
+- `GET /app/v3/api/knowledge/okf/concepts?space_id={space_id}` — `okf.concepts.list`
 - `PUT /app/v3/api/knowledge/okf/concepts/upsert` — `okf.concepts.update`
 - `GET /app/v3/api/knowledge/okf/concepts/{conceptId}` — `okf.concepts.retrieve`
 - `DELETE /app/v3/api/knowledge/okf/concepts/{conceptId}` — `okf.concepts.delete`
 - `GET /app/v3/api/knowledge/okf/concepts/{conceptId}/revisions` — `okf.concepts.revisions.list`
-- `GET /app/v3/api/knowledge/okf/index?spaceId={spaceId}` — `okf.bundle.index.list`
-- `GET /app/v3/api/knowledge/okf/log?spaceId={spaceId}` — `okf.bundle.log.list`
-- `GET /app/v3/api/knowledge/okf/profile?spaceId={spaceId}` — `okf.bundle.profile.list`
+- `GET /app/v3/api/knowledge/okf/index` — `okf.bundle.index.list`
+- `GET /app/v3/api/knowledge/okf/log` — `okf.bundle.log.list`
+- `GET /app/v3/api/knowledge/okf/profile` — `okf.bundle.profile.list`
 - `POST /app/v3/api/knowledge/okf/queries` — `okf.queries.create`
 - `POST /app/v3/api/knowledge/okf/queries/{queryId}/file_answer` — `okf.queries.fileAnswer`
 - `POST /app/v3/api/knowledge/okf/context_packs` — `okf.contextPacks.create`
@@ -117,13 +117,40 @@ Tenant status endpoint for multi-tenant architecture.
 - `GET /backend/v3/api/knowledge/tenants/current` — `tenants.current.list`
   - Retrieves the caller's own tenant knowledgebase status.
   - **Security**: Tenant identity is derived from the authenticated principal's
-    access token claims (`WebRequestPrincipal.tenant_id()`). No `tenant_id`
-    is accepted in the request body or path parameter.
-  - Response: `{ "tenant_name": string?, "status": "ACTIVE"|"SUSPENDED"|"ARCHIVED", "space_count": u64, "document_count": u64, "created_at": string? }`
+    access token claims (`WebRequestPrincipal.tenant_id()`); the handler fails
+    closed with `tenant_id_mismatch` when the principal tenant differs from the
+    runtime tenant. No `tenant_id` is accepted in the request body or path
+    parameter.
+  - Response (SDKWork envelope): `data.item` shaped
+    `{ "tenantName": string?, "status": "ACTIVE"|"SUSPENDED"|"ARCHIVED", "spaceCount": "<int64 as string>", "documentCount": "<int64 as string>", "createdAt": string? }`
 
 **Note**: Tenant creation and management is handled by the IAM layer.
 Knowledgebase only reports tenant-level statistics derived from the authenticated
 principal's token claims.
+
+### Pre-release contract alignment (2026-10)
+
+Corrections applied before first launch; no consumer migration is required.
+
+- **Query parameters are lower_snake_case** (API_SPEC §13): `space_id`,
+  `parent_id`, `subject_type`, `subject_id` replace the earlier camelCase
+  spellings on `documents.list`, `okf.concepts.list`,
+  `spaces/{spaceId}/browser` (`parent_id`), `spaces.members.delete`, and the
+  backend `okf.candidates.list`.
+- **Int64 wire contract** (API_SPEC §13.6): every snowflake/BIGINT id and byte
+  size is serialized as a canonical decimal string (`x-sdkwork-int64-string`),
+  in all three surfaces, for both responses and request bodies.
+- **Command envelope** (API_SPEC §15.4): backend lifecycle commands
+  (`okf.candidates.approve/reject`, `okf.concepts.publish`,
+  `okf.index.rebuild`, `indexes.rebuild`) return `data.accepted`
+  (`SdkWorkCommandData`) instead of `data.item`.
+- **Small fixed lists** (`wechat` official accounts/applets/fan tags,
+  `agents.bindings.list`) return the list envelope (`data.items` +
+  `data.pageInfo`, `hasMore: false`) instead of bare arrays.
+- **Removed the dead `collection` concept**: `collectionId` no longer appears
+  on any document, chunk, index, or retrieval binding schema; the
+  `kb_collection` table and its ghost columns were dropped from the baseline
+  schema before first launch.
 
 ## Open API (`/knowledge/v3/api`)
 

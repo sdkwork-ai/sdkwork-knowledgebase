@@ -12,7 +12,7 @@ fn ingest_request_serializes_markdown_payload_without_storage_locator_leaks() {
 
     let json = serde_json::to_value(request).unwrap();
 
-    assert_eq!(json["spaceId"], 7);
+    assert_eq!(json["spaceId"], "7");
     assert_eq!(
         json["payloadMarkdown"],
         "# API Note\n\nImportant source text."
@@ -50,7 +50,7 @@ fn drive_import_request_uses_opaque_drive_ids_without_storage_locator_leaks() {
 
     let json = serde_json::to_value(request).unwrap();
 
-    assert_eq!(json["spaceId"], 7);
+    assert_eq!(json["spaceId"], "7");
     assert_eq!(json["driveSpaceId"], "drv-kb-001");
     assert_eq!(json["driveNodeId"], "node-report");
     assert_eq!(json["idempotencyKey"], "drive-quarterly-report");

@@ -1,4 +1,8 @@
 use serde::{Deserialize, Serialize};
+use crate::serde_int64::{
+    deserialize_u64_from_string_or_number,
+    serialize_u64_as_string,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,5 +39,9 @@ pub struct AnonymizeKnowledgeAuditSubjectRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnonymizeKnowledgeAuditSubjectResult {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub anonymized_count: u64,
 }

@@ -7,6 +7,9 @@ license.workspace = true
 description = "Flowise external knowledge engine adapter (adapter tier) for SDKWork Knowledgebase SPI"
 
 
+[lib]
+name = "sdkwork_knowledgebase_engine_flowise"
+
 [lints]
 workspace = true
 [dependencies]
@@ -18,6 +21,7 @@ sha2.workspace = true
 sdkwork-intelligence-knowledgebase-service.workspace = true
 sdkwork-knowledgebase-contract.workspace = true
 sdkwork-knowledgebase-provider-runtime.workspace = true
+tracing = "0.1"
 zeroize.workspace = true
 
 [dev-dependencies]

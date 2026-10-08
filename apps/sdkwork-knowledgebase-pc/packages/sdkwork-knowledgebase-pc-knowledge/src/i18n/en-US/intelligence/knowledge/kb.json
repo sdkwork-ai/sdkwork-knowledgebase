@@ -189,5 +189,8 @@
   "notesSaving": "Saving…",
   "notesEditorEmptyTitle": "No note selected",
   "notesEditorEmptyHintSelect": "Pick a note from the list, or create a new one",
-  "notesEditorEmptyHintCreate": "Click \"New Note\" in the top right to start your first note"
+  "notesEditorEmptyHintCreate": "Click \"New Note\" in the top right to start your first note",
+  "notesDeleteConfirm": "Delete this note? This cannot be undone.",
+  "deleteKbConfirm": "Delete knowledge base \"{{title}}\"? All of its documents will be removed. This cannot be undone.",
+  "folderSubtextItems": "{{count}} items | Created {{date}}"
 }

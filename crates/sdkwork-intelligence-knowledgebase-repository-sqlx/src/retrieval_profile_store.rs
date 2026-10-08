@@ -17,6 +17,8 @@ const INITIAL_VERSION: i64 = 0;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum KnowledgeRetrievalProfileStoreError {
+    #[error("missing retrieval profile: {0}")]
+    NotFound(String),
     #[error("knowledge retrieval profile store internal error: {0}")]
     Internal(String),
 }
@@ -138,7 +140,7 @@ impl PostgresKnowledgeRetrievalProfileStore {
         .await
         .map_err(sqlx_error)?
         .ok_or_else(|| {
-            KnowledgeRetrievalProfileStoreError::Internal(format!(
+            KnowledgeRetrievalProfileStoreError::NotFound(format!(
                 "missing retrieval profile: {profile_id}"
             ))
         })?;

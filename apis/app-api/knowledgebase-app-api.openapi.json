@@ -1569,7 +1569,7 @@
         ],
         "parameters": [
           {
-            "name": "spaceId",
+            "name": "space_id",
             "in": "query",
             "required": true,
             "schema": {
@@ -3171,7 +3171,7 @@
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
         "parameters": [
           {
-            "name": "spaceId",
+            "name": "space_id",
             "in": "query",
             "required": true,
             "schema": {
@@ -4780,7 +4780,7 @@
             "description": "Browser view selector. For OKF spaces, files lists original files under sources/raw; okf_bundle lists generated bundle files under okf; outputs lists generated output files under output."
           },
           {
-            "name": "parentId",
+            "name": "parent_id",
             "in": "query",
             "required": false,
             "schema": {
@@ -8049,7 +8049,7 @@
             }
           },
           {
-            "name": "subjectType",
+            "name": "subject_type",
             "in": "query",
             "required": true,
             "schema": {
@@ -8057,7 +8057,7 @@
             }
           },
           {
-            "name": "subjectId",
+            "name": "subject_id",
             "in": "query",
             "required": true,
             "schema": {
@@ -10554,6 +10554,21 @@
                 }
               }
             }
+          },
+          "501": {
+            "description": "Operation not implemented: WeChat publish pipeline is not available in this release",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-owner": "sdkwork-knowledgebase",
@@ -10722,6 +10737,21 @@
                 }
               }
             }
+          },
+          "501": {
+            "description": "Operation not implemented: WeChat publish pipeline is not available in this release",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-owner": "sdkwork-knowledgebase",
@@ -10745,6 +10775,285 @@
         "x-sdkwork-permission": "knowledge.wechat.manage",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization"
+      }
+    },
+    "/app/v3/api/knowledge/wechat/callback": {
+      "get": {
+        "operationId": "wechat.callback.verify",
+        "tags": [
+          "knowledge"
+        ],
+        "summary": "Verify a WeChat server callback URL",
+        "security": [],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "description": "Runtime tenant the callback is addressed to",
+            "schema": {
+              "type": "string",
+              "format": "uint64",
+              "pattern": "^[0-9]+$",
+              "x-sdkwork-int64-string": true
+            }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": true,
+            "description": "Configured WeChat official account id",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "signature",
+            "in": "query",
+            "required": false,
+            "description": "WeChat callback signature (or msg_signature) over the sorted token, timestamp, nonce, and echostr",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "msg_signature",
+            "in": "query",
+            "required": false,
+            "description": "WeChat encrypted-message signature; accepted as an alias of signature",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": true,
+            "description": "WeChat callback timestamp in epoch seconds, bounded to a five minute replay window",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            }
+          },
+          {
+            "name": "nonce",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "echostr",
+            "in": "query",
+            "required": true,
+            "description": "Encrypted echo string; the decrypted value must be returned as the raw response body",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Decrypted WeChat echo string returned verbatim as the raw response body (WeChat wire, no response envelope)",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "x-sdkwork-owner": "sdkwork-knowledgebase",
+        "x-sdkwork-api-authority": "sdkwork-knowledgebase-app-api",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
+        "x-sdkwork-auth-mode": "public",
+        "x-sdkwork-rate-limit-tier": "auth-critical",
+        "description": "Verifies a WeChat official-account server callback URL. WeChat's servers call this operation without SDKWork credentials: the WeChat msg_signature scheme over the tenant-stored callback token authenticates the caller, and the decrypted echo receive id must match the configured account appid. Mirrors the WeChat public-platform server-callback wire, so the success body is the raw echo string instead of the SdkWorkApiResponse envelope.",
+        "x-sdkwork-wire-protocol": "external",
+        "x-sdkwork-external-protocol-id": "wechat-mp-server-callback",
+        "x-sdkwork-tenant-scope": "tenant"
+      },
+      "post": {
+        "operationId": "wechat.callback.receive",
+        "tags": [
+          "knowledge"
+        ],
+        "summary": "Receive a WeChat encrypted server callback message",
+        "security": [],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "description": "Runtime tenant the callback is addressed to",
+            "schema": {
+              "type": "string",
+              "format": "uint64",
+              "pattern": "^[0-9]+$",
+              "x-sdkwork-int64-string": true
+            }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": true,
+            "description": "Configured WeChat official account id",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "signature",
+            "in": "query",
+            "required": false,
+            "description": "WeChat callback signature (or msg_signature) over the sorted token, timestamp, nonce, and encrypted payload",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "msg_signature",
+            "in": "query",
+            "required": false,
+            "description": "WeChat encrypted-message signature; accepted as an alias of signature",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": true,
+            "description": "WeChat callback timestamp in epoch seconds, bounded to a five minute replay window",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            }
+          },
+          {
+            "name": "nonce",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/xml": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verified message received; the raw response body is the literal string success (WeChat wire, no response envelope)",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "success"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "x-sdkwork-owner": "sdkwork-knowledgebase",
+        "x-sdkwork-api-authority": "sdkwork-knowledgebase-app-api",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
+        "x-sdkwork-auth-mode": "public",
+        "x-sdkwork-rate-limit-tier": "auth-critical",
+        "description": "Receives an encrypted WeChat official-account server callback: verifies msg_signature over the encrypted payload, decrypts with the stored EncodingAESKey, checks the five minute replay window and the bounded replay seen-set, persists the raw encrypted payload as a tenant Drive artifact, and acks with the plain-text body success. Unverified payloads return problem responses so WeChat retries. Mirrors the WeChat public-platform server-callback wire.",
+        "x-sdkwork-wire-protocol": "external",
+        "x-sdkwork-external-protocol-id": "wechat-mp-server-callback",
+        "x-sdkwork-tenant-scope": "tenant"
       }
     },
     "/app/v3/api/knowledge/git_syncs": {
@@ -13331,7 +13640,6 @@
         "required": [
           "id",
           "spaceId",
-          "collectionId",
           "title",
           "visibility",
           "contentState",
@@ -13345,12 +13653,6 @@
             "x-sdkwork-int64-string": true
           },
           "spaceId": {
-            "type": "string",
-            "format": "uint64",
-            "pattern": "^[0-9]+$",
-            "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
             "type": "string",
             "format": "uint64",
             "pattern": "^[0-9]+$",
@@ -13830,12 +14132,6 @@
         ],
         "properties": {
           "spaceId": {
-            "type": "string",
-            "format": "uint64",
-            "pattern": "^[0-9]+$",
-            "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
             "type": "string",
             "format": "uint64",
             "pattern": "^[0-9]+$",
@@ -14688,18 +14984,6 @@
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
           },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "sourceFilter": {
             "anyOf": [
               {
@@ -14985,18 +15269,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "title": {
             "type": "string"
@@ -15446,18 +15718,6 @@
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
           },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "sourceFilter": {
             "anyOf": [
               {
@@ -15533,18 +15793,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "sourceFilter": {
             "anyOf": [
@@ -15845,18 +16093,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "x-sdkwork-int64-string": true
-          },
-          "collectionId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "indexKind": {
             "type": "string"

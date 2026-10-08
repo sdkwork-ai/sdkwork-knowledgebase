@@ -7,6 +7,7 @@ use sdkwork_knowledgebase_contract::wechat::{
     KnowledgeWechatOfficialAccount, KnowledgeWechatOperationResult,
 };
 use sdkwork_utils_rust::is_blank;
+use std::sync::Arc;
 use thiserror::Error;
 
 const MAX_WECHAT_PUBLISH_ACCOUNTS: usize = 20;
@@ -16,14 +17,20 @@ const MAX_WECHAT_ARTICLE_CONTENT_BYTES: usize = 2 * 1024 * 1024;
 
 pub struct KnowledgeWechatService<'a> {
     config_store: WechatConfigStore<'a>,
-    api_client: WechatApiClient,
+    api_client: Arc<WechatApiClient>,
 }
 
 impl<'a> KnowledgeWechatService<'a> {
-    pub fn new(drive: &'a dyn KnowledgeDriveStorage, tenant_id: &str) -> Self {
+    /// Callers must inject a long-lived shared client: the api client owns the 7,000 s access
+    /// token cache, so a per-request instance would re-fetch a token for every operation.
+    pub fn new(
+        drive: &'a dyn KnowledgeDriveStorage,
+        tenant_id: &str,
+        api_client: Arc<WechatApiClient>,
+    ) -> Self {
         Self {
             config_store: WechatConfigStore::new(drive, tenant_id),
-            api_client: WechatApiClient::new(),
+            api_client,
         }
     }
 

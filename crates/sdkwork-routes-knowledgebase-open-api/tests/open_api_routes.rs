@@ -223,7 +223,7 @@ async fn open_browser_route_preserves_query_parameters() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/knowledge/v3/api/spaces/7/browser?view=okf_bundle&page_size=25&parentId=node-okf&cursor=c1")
+                .uri("/knowledge/v3/api/spaces/7/browser?view=okf_bundle&page_size=25&parent_id=node-okf&cursor=c1")
                 .extension(open_context())
                 .body(Body::empty())
                 .unwrap(),
@@ -284,7 +284,7 @@ async fn open_router_exposes_document_and_ingest_read_routes() {
         .clone()
         .oneshot(
             Request::builder()
-                .uri("/knowledge/v3/api/documents?spaceId=7")
+                .uri("/knowledge/v3/api/documents?space_id=7")
                 .extension(open_context())
                 .body(Body::empty())
                 .unwrap(),
@@ -327,7 +327,7 @@ async fn open_router_exposes_document_and_ingest_read_routes() {
     assert_eq!(ingest_response.status(), StatusCode::OK);
     assert_eq!(
         response_json(ingest_response).await["data"]["item"]["id"],
-        51
+        "51"
     );
 }
 
@@ -631,7 +631,6 @@ fn context_fragment() -> KnowledgeContextFragment {
         document_id: 101,
         document_version_id: Some(201),
         space_id: 7,
-        collection_id: None,
         title: "Support Playbook".to_string(),
         content: "enterprise renewal support answer".to_string(),
         score: Some(0.91),
@@ -646,7 +645,6 @@ fn document(document_id: u64) -> KnowledgeDocument {
     KnowledgeDocument {
         id: document_id,
         space_id: 7,
-        collection_id: 0,
         source_id: Some(31),
         original_file_drive_node_id: Some("node-index".to_string()),
         title: "Support Playbook".to_string(),

@@ -5,6 +5,7 @@ use sdkwork_intelligence_knowledgebase_service::{
     ports::{
         knowledge_drive_storage::{KnowledgeDriveStorage, PutKnowledgeObjectRequest},
         knowledge_ingestion_job_store::{CreateIngestionJobRecord, IngestionJobStore},
+        knowledge_okf_bundle_file_store::KnowledgeOkfBundleFileStoreError,
         knowledge_okf_candidate_store::KnowledgeOkfCandidateStore,
         knowledge_okf_concept_store::{AppendKnowledgeOkfLogEntryRecord, KnowledgeOkfConceptStore},
         knowledge_source_store::{CreateKnowledgeSourceRecord, KnowledgeSourceStore},
@@ -56,6 +57,13 @@ use crate::{
     runtime::KnowledgebaseRuntime,
 };
 use std::sync::Arc;
+
+/// Wall-clock budget for inline OKF background jobs (compile/lint/eval). The
+/// workflow runs synchronously inside the HTTP request (no async enqueue), so
+/// this budget bounds how long the request may stay open before the job is
+/// marked failed and the caller receives an error.
+const KNOWLEDGE_OKF_BACKGROUND_JOB_BUDGET: std::time::Duration =
+    std::time::Duration::from_secs(300);
 
 #[derive(Clone)]
 pub(crate) struct HostedBackendApi {
@@ -184,15 +192,29 @@ impl HostedBackendApi {
             .mark_running(job.id)
             .await
             .map_err(|error| map_internal(error.to_string()))?;
-        match run().await {
-            Ok(()) => ingestion
+        match tokio::time::timeout(KNOWLEDGE_OKF_BACKGROUND_JOB_BUDGET, run()).await {
+            Ok(Ok(())) => ingestion
                 .mark_succeeded(job.id)
                 .await
                 .map_err(|error| map_internal(error.to_string())),
-            Err(detail) => ingestion
+            Ok(Err(detail)) => ingestion
                 .mark_failed(job.id, detail)
                 .await
                 .map_err(|error| map_internal(error.to_string())),
+            // A budget overrun must not leave the job row stuck in the running
+            // state: mark it failed first, then surface the same operation-failed
+            // error the handlers already use.
+            Err(_elapsed) => {
+                let detail = format!(
+                    "background job {source_type} exceeded its \
+                     {KNOWLEDGE_OKF_BACKGROUND_JOB_BUDGET:?} budget"
+                );
+                ingestion
+                    .mark_failed(job.id, detail.clone())
+                    .await
+                    .map_err(|error| map_internal(error.to_string()))?;
+                Err(map_internal(detail))
+            }
         }
     }
 }
@@ -461,10 +483,47 @@ impl KnowledgeBackendApi for HostedBackendApi {
 
     async fn update_okf_profile(
         &self,
-        _profile_id: u64,
+        profile_id: u64,
         request: KnowledgeOkfProfileRequest,
     ) -> BackendApiResult<KnowledgeOkfBundleFile> {
-        self.create_okf_profile(request).await
+        if request.space_id == 0 {
+            return Err(BackendApiError::new(
+                axum::http::StatusCode::BAD_REQUEST,
+                "invalid_okf_profile_request",
+                "space_id is required",
+            ));
+        }
+        // The PATCH must operate on the addressed profile: load it and verify it
+        // belongs to the request's space before regenerating. Unconditionally
+        // forwarding to create ignored `profileId`, so PATCH /profile/A mutated
+        // (or created) whatever profile the body's space_id pointed at.
+        let addressed = self
+            .runtime
+            .okf_bundle_file_store()
+            .get_file_entry_by_id(profile_id)
+            .await
+            .map_err(|error| match error {
+                KnowledgeOkfBundleFileStoreError::NotFound(_) => BackendApiError::new(
+                    axum::http::StatusCode::NOT_FOUND,
+                    "okf_profile_not_found",
+                    "okf profile was not found",
+                ),
+                other => BackendApiError::new(
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    "okf_bundle_file_lookup_failed",
+                    other.to_string(),
+                ),
+            })?;
+        if addressed.space_id != request.space_id {
+            return Err(BackendApiError::new(
+                axum::http::StatusCode::CONFLICT,
+                "okf_profile_space_mismatch",
+                "profileId does not belong to the requested space",
+            ));
+        }
+        persist_okf_profile(&self.runtime, request.space_id)
+            .await
+            .map_err(map_api_error)
     }
 
     async fn rebuild_okf_index(
@@ -896,17 +955,15 @@ impl KnowledgeBackendApi for HostedBackendApi {
             .retrieval_profile_store()
             .get_profile(profile_id)
             .await
-            .map_err(|error| {
-                let detail = error.to_string();
-                if detail.contains("missing retrieval profile") {
-                    BackendApiError::new(
-                        axum::http::StatusCode::NOT_FOUND,
-                        "retrieval_profile_not_found",
-                        detail,
-                    )
-                } else {
-                    map_internal(detail)
-                }
+            .map_err(|error| match error {
+                sdkwork_intelligence_knowledgebase_repository_sqlx::KnowledgeRetrievalProfileStoreError::NotFound(
+                    detail,
+                ) => BackendApiError::new(
+                    axum::http::StatusCode::NOT_FOUND,
+                    "retrieval_profile_not_found",
+                    detail,
+                ),
+                other => map_internal(other.to_string()),
             })
     }
 
@@ -1430,7 +1487,20 @@ impl KnowledgeBackendApi for HostedBackendApi {
         ))
     }
 
-    async fn retrieve_current_tenant(&self) -> BackendApiResult<KnowledgeTenantStatus> {
+    async fn retrieve_current_tenant(
+        &self,
+        context: &KnowledgeBackendRequestContext,
+    ) -> BackendApiResult<KnowledgeTenantStatus> {
+        // The summary store is bound to the runtime tenant at construction, so
+        // the authenticated tenant must match it; fail closed on mismatch
+        // rather than serving another tenant's counts.
+        if context.tenant_id != self.runtime.tenant_id() {
+            return Err(BackendApiError::new(
+                axum::http::StatusCode::FORBIDDEN,
+                "tenant_id_mismatch",
+                "authenticated tenant does not match configured runtime tenant",
+            ));
+        }
         let summary = self
             .runtime
             .space_store()
@@ -1703,33 +1773,35 @@ fn map_api_error(error: crate::ApiError) -> BackendApiError {
 fn map_okf_concept(
     error: sdkwork_intelligence_knowledgebase_service::ports::knowledge_okf_concept_store::KnowledgeOkfConceptStoreError,
 ) -> BackendApiError {
-    let detail = error.to_string();
-    if detail.contains("missing okf concept") {
-        BackendApiError::new(
+    use sdkwork_intelligence_knowledgebase_service::ports::knowledge_okf_concept_store::KnowledgeOkfConceptStoreError;
+    match error {
+        KnowledgeOkfConceptStoreError::NotFound(detail) => BackendApiError::new(
             axum::http::StatusCode::NOT_FOUND,
             "okf_concept_not_found",
             detail,
-        )
-    } else {
-        map_internal(detail)
+        ),
+        other => map_internal(other.to_string()),
     }
 }
 
 fn map_retrieval(
     error: sdkwork_intelligence_knowledgebase_service::retrieval::KnowledgeRetrievalServiceError,
 ) -> BackendApiError {
+    use sdkwork_intelligence_knowledgebase_service::ports::knowledge_retrieval_trace_store::KnowledgeRetrievalTraceStoreError;
     match error {
         sdkwork_intelligence_knowledgebase_service::retrieval::KnowledgeRetrievalServiceError::InvalidRequest(detail) => {
             BackendApiError::new(axum::http::StatusCode::BAD_REQUEST, "invalid_retrieval_request", detail)
         }
-        sdkwork_intelligence_knowledgebase_service::retrieval::KnowledgeRetrievalServiceError::TraceStore(error) => {
-            let detail = error.to_string();
-            if detail.contains("not found") {
-                BackendApiError::new(axum::http::StatusCode::NOT_FOUND, "retrieval_trace_not_found", detail)
-            } else {
-                map_internal(detail)
-            }
-        }
+        sdkwork_intelligence_knowledgebase_service::retrieval::KnowledgeRetrievalServiceError::TraceStore(
+            KnowledgeRetrievalTraceStoreError::NotFound(trace_id),
+        ) => BackendApiError::new(
+            axum::http::StatusCode::NOT_FOUND,
+            "retrieval_trace_not_found",
+            format!("knowledge retrieval trace not found: {trace_id}"),
+        ),
+        sdkwork_intelligence_knowledgebase_service::retrieval::KnowledgeRetrievalServiceError::TraceStore(
+            KnowledgeRetrievalTraceStoreError::Internal(detail),
+        ) => map_internal(detail),
         other => map_internal(other.to_string()),
     }
 }

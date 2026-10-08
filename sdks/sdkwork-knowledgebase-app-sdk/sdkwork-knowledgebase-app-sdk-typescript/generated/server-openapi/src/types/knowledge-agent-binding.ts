@@ -5,7 +5,6 @@ export interface KnowledgeAgentBinding {
   profileId: string;
   tenantId: string;
   spaceId: string;
-  collectionId?: string | null;
   sourceFilter?: KnowledgeFilter[] | null;
   documentFilter?: KnowledgeFilter[] | null;
   priority: number;

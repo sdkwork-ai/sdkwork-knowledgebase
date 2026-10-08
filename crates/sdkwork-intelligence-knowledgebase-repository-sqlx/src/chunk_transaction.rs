@@ -17,7 +17,6 @@ struct PreparedChunkRow {
     id: i64,
     uuid: String,
     space_id: i64,
-    collection_id: i64,
     document_id: i64,
     chunk_index: i64,
     content_text: String,
@@ -43,6 +42,27 @@ pub(crate) async fn replace_version_chunks_in_transaction(
     let organization_id_i64 = chunk_to_i64("organization_id", context.organization_id)?;
     let version_id = chunk_to_i64("document_version_id", context.document_version_id)?;
     let now = chunk_now()?;
+
+    // Embeddings are derived data owned by their chunks: removing them here (same
+    // transaction) keeps re-replacing an existing version's chunks from aborting on
+    // the RESTRICT FK from kb_embedding, and leaves no ghost vectors pointing at
+    // deleted chunk ids. Retrieval hits stay immutable on purpose — a version with
+    // recorded hits still fails the chunk delete loudly instead of rewriting history.
+    sqlx::query(
+        r#"
+        DELETE FROM kb_embedding
+        WHERE tenant_id = $1 AND organization_id = $2 AND chunk_id IN (
+            SELECT id FROM kb_chunk
+            WHERE tenant_id = $1 AND organization_id = $2 AND document_version_id = $3
+        )
+        "#,
+    )
+    .bind(tenant_id_i64)
+    .bind(organization_id_i64)
+    .bind(version_id)
+    .execute(&mut **transaction)
+    .await
+    .map_err(chunk_internal_error)?;
 
     sqlx::query(
         r#"
@@ -73,7 +93,6 @@ pub(crate) async fn replace_version_chunks_in_transaction(
             id: next_i64_id(context.id_generator).map_err(chunk_id_error)?,
             uuid: Uuid::new_v4().to_string(),
             space_id: chunk_to_i64("space_id", record.space_id)?,
-            collection_id: chunk_to_i64("collection_id", record.collection_id)?,
             document_id: chunk_to_i64("document_id", record.document_id)?,
             chunk_index: i64::from(record.chunk_index),
             content_text: record.content_text.clone(),
@@ -112,14 +131,14 @@ async fn bulk_insert_kb_chunks_postgres(
     // Postgres backend forwards verbatim; Postgres then parses `?` as the
     // jsonb key-exists operator and the INSERT dies with a syntax error.
     // Every other store in this crate hand-writes `$N` placeholders — do the
-    // same here (VALUES tuples of 18 expressions each).
-    const VALUES_PER_ROW: usize = 18;
+    // same here (VALUES tuples of 17 expressions each).
+    const VALUES_PER_ROW: usize = 17;
     let _ = timestamp_dialect;
     let mut sql = String::with_capacity(512 + batch.len() * 220);
     sql.push_str(
         r#"
         INSERT INTO kb_chunk (
-            id, uuid, tenant_id, organization_id, space_id, collection_id, document_id,
+            id, uuid, tenant_id, organization_id, space_id, document_id,
             document_version_id, chunk_index, content_text, content_hash,
             token_count, locator, status, created_at, updated_at, version,
             search_vector
@@ -136,31 +155,30 @@ async fn bulk_insert_kb_chunks_postgres(
         sql.push_str(&placeholder(1)); // id
         sql.push_str(&format!(", {}, {}", placeholder(2), placeholder(3))); // uuid, tenant_id
         sql.push_str(&format!(
-            ", {}, {}, {}, {}, {}, {}, {}, {}, {}",
+            ", {}, {}, {}, {}, {}, {}, {}, {}",
             placeholder(4),  // organization_id
             placeholder(5),  // space_id
-            placeholder(6),  // collection_id
-            placeholder(7),  // document_id
-            placeholder(8),  // document_version_id
-            placeholder(9),  // chunk_index
-            placeholder(10), // content_text
-            placeholder(11), // content_hash
-            placeholder(12), // token_count
+            placeholder(6),  // document_id
+            placeholder(7),  // document_version_id
+            placeholder(8),  // chunk_index
+            placeholder(9),  // content_text
+            placeholder(10), // content_hash
+            placeholder(11), // token_count
         ));
         sql.push_str(&format!(
             ", to_jsonb({}), {}",
-            placeholder(13), // locator (jsonb column; text encoded as a JSON string scalar)
-            placeholder(14), // status
+            placeholder(12), // locator (jsonb column; text encoded as a JSON string scalar)
+            placeholder(13), // status
         ));
         sql.push_str(&format!(
             ", CAST({} AS TIMESTAMP), CAST({} AS TIMESTAMP), {}",
+            placeholder(14),
             placeholder(15),
-            placeholder(16),
-            placeholder(17), // version
+            placeholder(16), // version
         ));
         sql.push_str(&format!(
             ", to_tsvector('simple', {})",
-            placeholder(18), // search_vector source text
+            placeholder(17), // search_vector source text
         ));
         sql.push(')');
     }
@@ -173,7 +191,6 @@ async fn bulk_insert_kb_chunks_postgres(
             .bind(tenant_id)
             .bind(organization_id)
             .bind(chunk.space_id)
-            .bind(chunk.collection_id)
             .bind(chunk.document_id)
             .bind(version_id)
             .bind(chunk.chunk_index)

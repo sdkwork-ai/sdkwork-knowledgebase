@@ -1,6 +1,6 @@
 export interface KnowledgeDriveObjectRef {
-  id: number;
-  spaceId: number;
+  id: string;
+  spaceId: string;
   driveSpaceId?: string | null;
   driveNodeId?: string | null;
   logicalPath?: string | null;
@@ -10,7 +10,7 @@ export interface KnowledgeDriveObjectRef {
   driveObjectVersion?: string | null;
   driveEtag?: string | null;
   contentType?: string | null;
-  sizeBytes: number;
+  sizeBytes: string;
   checksumSha256Hex?: string | null;
   objectRole: string;
   accessMode: string;

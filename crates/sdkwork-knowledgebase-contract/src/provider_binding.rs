@@ -4,8 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::knowledge_engine::{KnowledgeEngineCapability, KnowledgeEngineProviderErrorCategory};
 use crate::serde_int64::{
-    deserialize_option_u64_from_string_or_number, deserialize_u64_from_string_or_number,
-    serialize_option_u64_as_string, serialize_u64_as_string,
+    deserialize_option_u64_from_string_or_number,
+    deserialize_u64_from_string_or_number,
+    serialize_option_u64_as_string,
+    serialize_u64_as_string,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -144,6 +146,11 @@ pub struct UpdateKnowledgeEngineProviderBindingRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListKnowledgeEngineProviderBindingsRequest {
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub space_id: Option<u64>,
     pub lifecycle_state: Option<KnowledgeEngineProviderBindingState>,
     pub cursor: Option<String>,

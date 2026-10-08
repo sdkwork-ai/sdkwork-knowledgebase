@@ -1,8 +1,11 @@
 //! Haystack connector configuration from runtime environment.
 
+use sdkwork_knowledgebase_provider_runtime::env_flag;
 use zeroize::Zeroizing;
 
 pub const HAYSTACK_BASE_URL_ENV: &str = "SDKWORK_KNOWLEDGEBASE_HAYSTACK_BASE_URL";
+pub const HAYSTACK_ALLOW_PRIVATE_NETWORK_ENV: &str =
+    "SDKWORK_KNOWLEDGEBASE_HAYSTACK_ALLOW_PRIVATE_NETWORK";
 pub const HAYSTACK_PIPELINE_ENV: &str = "SDKWORK_KNOWLEDGEBASE_HAYSTACK_PIPELINE";
 pub const HAYSTACK_WORKSPACE_ENV: &str = "SDKWORK_KNOWLEDGEBASE_HAYSTACK_WORKSPACE";
 pub const HAYSTACK_DEPLOYMENT_MODE_ENV: &str = "SDKWORK_KNOWLEDGEBASE_HAYSTACK_DEPLOYMENT_MODE";
@@ -32,6 +35,11 @@ pub struct HaystackConnectorConfig {
     pub default_workspace: Option<String>,
     pub deployment_mode: HaystackDeploymentMode,
     pub query_field: String,
+    /// Fail-closed opt-in for self-hosted engine targets on a private network
+    /// segment (loopback, RFC1918): set `HAYSTACK_ALLOW_PRIVATE_NETWORK=1|true`
+    /// when the deployment explicitly trusts the private segment the engine
+    /// runs on (operator responsibility). DNS socket pinning still applies.
+    pub allow_private_network: bool,
 }
 
 impl HaystackConnectorConfig {
@@ -62,6 +70,8 @@ impl HaystackConnectorConfig {
             .filter(|value| !value.is_empty())
             .unwrap_or_else(|| "query".to_string());
 
+        let allow_private_network = env_flag(HAYSTACK_ALLOW_PRIVATE_NETWORK_ENV);
+
         Some(Self {
             base_url,
             api_key,
@@ -69,6 +79,7 @@ impl HaystackConnectorConfig {
             default_workspace,
             deployment_mode,
             query_field,
+            allow_private_network,
         })
     }
 }

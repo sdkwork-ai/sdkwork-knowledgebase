@@ -141,6 +141,19 @@ export function TiptapEditor({
   const videoInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<any>(null);
+  // Demo-fallback media is inserted through blob URLs; track them so they can
+  // be revoked when this editor instance unmounts (document switch).
+  const createdBlobUrlsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const blobUrls = createdBlobUrlsRef.current;
+    return () => {
+      for (const url of blobUrls) {
+        URL.revokeObjectURL(url);
+      }
+      blobUrls.clear();
+    };
+  }, []);
 
   const uploadEditorMedia = async (
     file: File,
@@ -187,7 +200,9 @@ export function TiptapEditor({
       return null;
     }
 
-    return { src: URL.createObjectURL(file) };
+    const blobUrl = URL.createObjectURL(file);
+    createdBlobUrlsRef.current.add(blobUrl);
+    return { src: blobUrl };
   };
 
   const uploadImage = async (file: File): Promise<EditorMediaRef | null> =>
@@ -351,7 +366,7 @@ export function TiptapEditor({
         }
 
         return {
-          title: title || '无标题',
+          title: title || t('untitledNote'),
           mode,
           isSourceMode,
           isSplitMode,
@@ -553,7 +568,7 @@ export function TiptapEditor({
                 'data-miniprogram-title': data.displayType === 'card' ? data.cardTitle : data.textContent,
                 'data-miniprogram-imageurl': data.imageUrl,
                 'data-miniprogram-path': data.link,
-                'data-miniprogram-nickname': '小程序'
+                'data-miniprogram-nickname': t('miniprogram')
               }
             });
             if (data.displayType === 'card' || data.displayType === 'image') {

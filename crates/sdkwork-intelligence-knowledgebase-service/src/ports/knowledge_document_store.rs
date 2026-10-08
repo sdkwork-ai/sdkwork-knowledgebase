@@ -53,7 +53,6 @@ pub trait KnowledgeDocumentStore: Send + Sync {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateKnowledgeDocumentRecord {
     pub space_id: u64,
-    pub collection_id: u64,
     pub source_id: Option<u64>,
     pub identity_scope: KnowledgeDocumentIdentityScope,
     pub original_file_drive_node_id: Option<String>,

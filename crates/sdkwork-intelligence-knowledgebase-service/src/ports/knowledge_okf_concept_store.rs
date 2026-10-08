@@ -164,6 +164,8 @@ pub struct KnowledgeOkfConceptProjection {
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum KnowledgeOkfConceptStoreError {
+    #[error("missing okf concept: {0}")]
+    NotFound(String),
     #[error("okf concept store internal error: {0}")]
     Internal(String),
 }

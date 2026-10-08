@@ -3,7 +3,11 @@ import {
   KnowledgebaseErrorCodes,
   type HostAdapter,
 } from 'sdkwork-knowledgebase-pc-core';
-import { loadPdfSourceFallback } from './pdfDocumentSource';
+import {
+  loadPdfSourceFallback,
+  normalizePdfUrl,
+  resolveInitialPdfSource,
+} from './pdfDocumentSource';
 
 function createHostAdapter(overrides: Partial<HostAdapter> = {}): HostAdapter {
   return {
@@ -64,5 +68,50 @@ describe('loadPdfSourceFallback', () => {
       49,
     ]);
     expect(host.fetchBinaryResource).toHaveBeenCalledWith('https://example.com/guide.pdf');
+  });
+});
+
+describe('normalizePdfUrl', () => {
+  it('keeps direct http, blob, and data URLs untouched', () => {
+    expect(normalizePdfUrl('https://example.com/guide.pdf')).toBe('https://example.com/guide.pdf');
+    expect(normalizePdfUrl('blob:https://app.local/1f2e')).toBe('blob:https://app.local/1f2e');
+    expect(
+      normalizePdfUrl('data:application/pdf;base64,JVBERi0x'),
+    ).toBe('data:application/pdf;base64,JVBERi0x');
+  });
+
+  it('resolves relative and protocol-relative paths against the app origin', () => {
+    expect(normalizePdfUrl('docs/guide.pdf')).toBe('http://localhost/docs/guide.pdf');
+    expect(normalizePdfUrl('//cdn.example.com/guide.pdf')).toBe('https://cdn.example.com/guide.pdf');
+  });
+
+  it('rejects javascript-style schemes instead of returning them as absolute URLs', () => {
+    try {
+      normalizePdfUrl('javascript:alert(1)');
+      expect.unreachable('normalizePdfUrl must reject javascript: URLs');
+    } catch (error) {
+      expect((error as { code?: string }).code).toBe(KnowledgebaseErrorCodes.URL_INVALID_SCHEME);
+    }
+    try {
+      normalizePdfUrl('vbscript:msgbox(1)');
+      expect.unreachable('normalizePdfUrl must reject vbscript: URLs');
+    } catch (error) {
+      expect((error as { code?: string }).code).toBe(KnowledgebaseErrorCodes.URL_INVALID_SCHEME);
+    }
+  });
+});
+
+describe('resolveInitialPdfSource', () => {
+  it('returns null instead of throwing for rejected schemes so the viewer degrades gracefully', () => {
+    expect(resolveInitialPdfSource('javascript:alert(1)')).toBeNull();
+    expect(resolveInitialPdfSource('file:///etc/passwd.pdf')).toBeNull();
+    expect(resolveInitialPdfSource(undefined)).toBeNull();
+  });
+
+  it('resolves safe URLs into a url source', () => {
+    expect(resolveInitialPdfSource('https://example.com/guide.pdf')).toEqual({
+      kind: 'url',
+      url: 'https://example.com/guide.pdf',
+    });
   });
 });

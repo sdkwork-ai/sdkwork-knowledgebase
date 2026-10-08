@@ -11,6 +11,7 @@ fn registry_rejects_duplicate_implementation_ids_without_replacing_engine() {
         Arc::new(DifyKnowledgeEngine::with_config(DifyConnectorConfig {
             base_url: "http://127.0.0.1:1".to_string(),
             api_key: Default::default(),
+            allow_private_network: false,
             default_dataset_id: None,
         }));
     let implementation_id = engine.descriptor().implementation_id;

@@ -23,7 +23,7 @@ fn drive_object_ref_contract_serializes_public_identity_without_storage_locators
 
     let json = serde_json::to_value(object_ref).unwrap();
 
-    assert_eq!(json["spaceId"], 7);
+    assert_eq!(json["spaceId"], "7");
     assert_eq!(json["driveSpaceId"], "drv-kb-001");
     assert_eq!(json["driveNodeId"], "node-001");
     assert_eq!(json["logicalPath"], "raw/documents/report.md");

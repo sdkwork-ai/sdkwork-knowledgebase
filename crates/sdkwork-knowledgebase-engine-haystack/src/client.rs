@@ -6,7 +6,8 @@ use sdkwork_knowledgebase_contract::knowledge_engine::{
     KnowledgeEngineSearchHit, KnowledgeEngineSearchResult,
 };
 use sdkwork_knowledgebase_provider_runtime::{
-    ProviderExecutionContext, ProviderHttpRequest, ProviderOperation, ProviderRuntime,
+    encoded_path_segment, is_path_segment_id, ProviderExecutionContext, ProviderHttpRequest,
+    ProviderOperation, ProviderRuntime,
 };
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -30,14 +31,30 @@ struct HaystackDocumentRecord {
 }
 
 impl HaystackApiClient {
-    pub fn new(config: HaystackConnectorConfig) -> Self {
-        let http = ProviderRuntime::for_base_url(&config.base_url)
-            .expect("Haystack base URL must satisfy Provider Runtime target policy");
-        Self { config, http }
+    pub fn new(config: HaystackConnectorConfig) -> Result<Self, KnowledgeEngineError> {
+        let http = ProviderRuntime::for_base_url_with_private_targets(
+            &config.base_url,
+            config.allow_private_network,
+        )
+        .map_err(KnowledgeEngineError::from)?;
+        Ok(Self { config, http })
     }
 
     fn health_context(&self) -> ProviderExecutionContext {
         ProviderExecutionContext::for_system_health(HAYSTACK_IMPLEMENTATION_ID)
+    }
+
+    /// Binding-controlled workspace and pipeline names are spliced into URL
+    /// paths, so they are validated and percent-encoded at every interpolation
+    /// point.
+    fn validated_id<'a>(kind: &str, value: &'a str) -> Result<&'a str, KnowledgeEngineError> {
+        if is_path_segment_id(value) {
+            Ok(value)
+        } else {
+            Err(KnowledgeEngineError::Validation(format!(
+                "Haystack {kind} must match [A-Za-z0-9._:-]{{1,256}}"
+            )))
+        }
     }
 
     pub async fn connector_health(
@@ -55,9 +72,13 @@ impl HaystackApiClient {
                         "Haystack cloud health requires workspace name".to_string(),
                     )
                 })?;
+                let workspace = Self::validated_id("workspace name", workspace)?;
+                let pipeline = Self::validated_id("pipeline name", pipeline)?;
                 format!(
-                    "{}/api/v1/workspaces/{workspace}/pipelines/{pipeline}",
-                    self.config.base_url.trim_end_matches('/')
+                    "{}/api/v1/workspaces/{}/pipelines/{}",
+                    self.config.base_url.trim_end_matches('/'),
+                    encoded_path_segment(workspace),
+                    encoded_path_segment(pipeline),
                 )
             }
         };
@@ -158,9 +179,11 @@ impl HaystackApiClient {
         pipeline: &str,
         query: &str,
     ) -> Result<Value, KnowledgeEngineError> {
+        let pipeline = Self::validated_id("pipeline name", pipeline)?;
         let url = format!(
-            "{}/{pipeline}/run",
-            self.config.base_url.trim_end_matches('/')
+            "{}/{}/run",
+            self.config.base_url.trim_end_matches('/'),
+            encoded_path_segment(pipeline),
         );
         let mut body = json!({});
         body[self.config.query_field.clone()] = Value::String(query.to_string());
@@ -193,9 +216,13 @@ impl HaystackApiClient {
                 "Haystack cloud search requires workspace name".to_string(),
             )
         })?;
+        let workspace = Self::validated_id("workspace name", workspace)?;
+        let pipeline = Self::validated_id("pipeline name", pipeline)?;
         let url = format!(
-            "{}/api/v1/workspaces/{workspace}/pipelines/{pipeline}/search",
-            self.config.base_url.trim_end_matches('/')
+            "{}/api/v1/workspaces/{}/pipelines/{}/search",
+            self.config.base_url.trim_end_matches('/'),
+            encoded_path_segment(workspace),
+            encoded_path_segment(pipeline),
         );
         let request = ProviderHttpRequest::new(ProviderOperation::Search, Method::POST, url)
             .map_err(KnowledgeEngineError::from)?

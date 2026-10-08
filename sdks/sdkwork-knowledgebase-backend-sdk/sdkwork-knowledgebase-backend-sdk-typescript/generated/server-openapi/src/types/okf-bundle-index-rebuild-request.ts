@@ -1,3 +1,3 @@
 export interface OkfBundleIndexRebuildRequest {
-  spaceId: number;
+  spaceId: string;
 }

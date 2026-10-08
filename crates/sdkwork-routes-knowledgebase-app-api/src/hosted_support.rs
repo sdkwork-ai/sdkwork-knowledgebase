@@ -92,7 +92,7 @@ pub(crate) async fn build_okf_context_pack_from_engine(
     let search = runtime
         .search_knowledge_engine_for_space(execution_context, space_id, &query, 32)
         .await
-        .map_err(|error| ApiError::internal("okf_engine_search_failed", error))?;
+        .map_err(ApiError::from)?;
 
     let mut fragments = Vec::new();
     let mut estimated_tokens = 0_u32;
@@ -107,7 +107,7 @@ pub(crate) async fn build_okf_context_pack_from_engine(
                 &hit.document.document_id,
             )
             .await
-            .map_err(|error| ApiError::internal("okf_engine_read_failed", error))?;
+            .map_err(ApiError::from)?;
         let token_count = document.content.split_whitespace().count().max(1) as u32;
         if estimated_tokens.saturating_add(token_count) > context_budget_tokens {
             truncated = true;
@@ -120,7 +120,6 @@ pub(crate) async fn build_okf_context_pack_from_engine(
             document_id,
             document_version_id: None,
             space_id,
-            collection_id: None,
             title: hit.document.title.clone(),
             content: document.content,
             score: hit.score,
@@ -227,7 +226,10 @@ fn okf_bundle_workflow_deps(
         link_store: Some(runtime.okf_concept_link_store()),
         bundle_file_store: Some(runtime.okf_bundle_file_store()),
         drive_workspace: Some(runtime.drive_workspace()),
-        engine: Some(runtime.knowledge_engines() as &dyn OkfBundleWorkflowEngine),
+        engine: Some({
+            let workflow_engine: &dyn OkfBundleWorkflowEngine = runtime.knowledge_engines();
+            workflow_engine
+        }),
     }
 }
 

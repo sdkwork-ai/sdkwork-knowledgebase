@@ -23,9 +23,9 @@ use std::sync::Arc;
 
 pub use client::{chunk_id_from_content, HaystackApiClient};
 pub use config::{
-    HaystackConnectorConfig, HaystackDeploymentMode, HAYSTACK_BASE_URL_ENV,
-    HAYSTACK_DEPLOYMENT_MODE_ENV, HAYSTACK_PIPELINE_ENV, HAYSTACK_QUERY_FIELD_ENV,
-    HAYSTACK_WORKSPACE_ENV,
+    HaystackConnectorConfig, HaystackDeploymentMode, HAYSTACK_ALLOW_PRIVATE_NETWORK_ENV,
+    HAYSTACK_BASE_URL_ENV, HAYSTACK_DEPLOYMENT_MODE_ENV, HAYSTACK_PIPELINE_ENV,
+    HAYSTACK_QUERY_FIELD_ENV, HAYSTACK_WORKSPACE_ENV,
 };
 
 pub const HAYSTACK_VENDOR_ID: &str = "haystack";
@@ -43,10 +43,21 @@ impl HaystackKnowledgeEngine {
     }
 
     pub fn with_config(config: HaystackConnectorConfig) -> Self {
-        let client = HaystackApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match HaystackApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    HAYSTACK_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -109,7 +120,13 @@ impl KnowledgeEngine for HaystackKnowledgeEngine {
             .ok_or_else(|| KnowledgeEngineError::Unsupported(self.unconfigured_message()))?;
         config.api_key = credential.map(KnowledgeEngineProviderCredential::into_secret);
         config.default_pipeline = Some(binding.remote_resource_id.clone());
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "Haystack base URL does not satisfy the Provider runtime target policy".to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

@@ -376,7 +376,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
-        let row = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
+        let row = match sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
             .bind(&drive_space_id)
             .bind(&now)
             .bind(tenant_id)
@@ -386,8 +386,20 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             .bind(PROVISIONING_STATUS)
             .fetch_one(&mut *transaction)
             .await
-            .map_err(|error| space_fetch_error(space_id, error))?;
-        let space = space_from_row(&row)?;
+        {
+            Ok(row) => row,
+            Err(error) => {
+                let _ = transaction.rollback().await;
+                return Err(space_fetch_error(space_id, error));
+            }
+        };
+        let space = match space_from_row(&row) {
+            Ok(space) => space,
+            Err(error) => {
+                let _ = transaction.rollback().await;
+                return Err(error);
+            }
+        };
 
         let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$9");
         let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$9");
@@ -402,7 +414,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             ON CONFLICT (tenant_id, space_id) DO NOTHING
             "#,
         );
-        sqlx::query(sqlx::AssertSqlSafe(publication_query.as_str()))
+        if let Err(error) = sqlx::query(sqlx::AssertSqlSafe(publication_query.as_str()))
             .bind(publication_id)
             .bind(publication_uuid)
             .bind(tenant_id)
@@ -414,22 +426,39 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             .bind(&now)
             .execute(&mut *transaction)
             .await
-            .map_err(space_sqlx_error)?;
+        {
+            let _ = transaction.rollback().await;
+            return Err(space_sqlx_error(error));
+        }
 
-        let existing_drive_space: String = sqlx::query_scalar(
-            r#"
+        let existing_drive_space: Option<String> =
+            match sqlx::query_scalar(
+                r#"
             SELECT drive_space_uuid
             FROM kb_site_publication
             WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3 AND status = 1
             "#,
-        )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(space_id_i64)
-        .fetch_one(&mut *transaction)
-        .await
-        .map_err(space_sqlx_error)?;
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(space_id_i64)
+            .fetch_optional(&mut *transaction)
+            .await
+            {
+                Ok(row) => row,
+                Err(error) => {
+                    let _ = transaction.rollback().await;
+                    return Err(space_sqlx_error(error));
+                }
+            };
+        let Some(existing_drive_space) = existing_drive_space else {
+            let _ = transaction.rollback().await;
+            return Err(KnowledgeSpaceStoreError::Conflict(format!(
+                "knowledge space {space_id} has no active Wiki publication after binding"
+            )));
+        };
         if existing_drive_space != drive_space_id {
+            let _ = transaction.rollback().await;
             return Err(KnowledgeSpaceStoreError::Conflict(format!(
                 "knowledge space {space_id} already owns a Wiki publication for another Drive Space"
             )));
@@ -550,32 +579,38 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
         space_id: u64,
         record: UpdateKnowledgeSpaceRecord,
     ) -> Result<KnowledgeSpace, KnowledgeSpaceStoreError> {
-        let current = self.get_space(space_id).await?;
-        let name = record.name.unwrap_or(current.name);
-        if is_blank(Some(name.as_str())) {
+        if record
+            .name
+            .as_ref()
+            .is_some_and(|name| is_blank(Some(name.as_str())))
+        {
             return Err(KnowledgeSpaceStoreError::Conflict(
                 "name must not be blank".to_string(),
             ));
         }
-        let description = record.description.or(current.description);
 
         let tenant_id = space_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = space_to_i64("organization_id", self.organization_id)?;
         let space_id_i64 = space_to_i64("space_id", space_id)?;
         let now = utc_sql_timestamp_text().map_err(KnowledgeSpaceStoreError::Internal)?;
 
+        // Field-level defaults are resolved inside the UPDATE (COALESCE) instead of a
+        // read-modify-write: two concurrent partial updates previously both read the same
+        // baseline and the later full-row write resurrected the field the earlier writer
+        // had just replaced.
         let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$3");
         let query = format!(
             r#"
             UPDATE kb_space
-            SET name = $1, description = $2, updated_at = {updated_at_expr}, version = version + 1
+            SET name = COALESCE($1, name), description = COALESCE($2, description),
+                updated_at = {updated_at_expr}, version = version + 1
             WHERE tenant_id = $4 AND organization_id = $5 AND id = $6 AND status = $7
             RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
         let row = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
-            .bind(name)
-            .bind(description)
+            .bind(record.name)
+            .bind(record.description)
             .bind(now)
             .bind(tenant_id)
             .bind(organization_id)
@@ -1117,11 +1152,7 @@ impl PostgresKnowledgeOkfBundleFileStore {
         .fetch_optional(&self.pool)
         .await
         .map_err(okf_bundle_file_sqlx_error)?
-        .ok_or_else(|| {
-            KnowledgeOkfBundleFileStoreError::Internal(format!(
-                "missing okf bundle file: {entry_id}"
-            ))
-        })?;
+        .ok_or(KnowledgeOkfBundleFileStoreError::NotFound(entry_id as u64))?;
 
         okf_bundle_file_from_row(&row)
     }

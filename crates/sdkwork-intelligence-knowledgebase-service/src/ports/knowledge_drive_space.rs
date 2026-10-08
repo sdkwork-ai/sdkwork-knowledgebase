@@ -43,6 +43,12 @@ pub struct DeleteKnowledgeDriveSpaceRequest {
 pub enum KnowledgeDriveSpaceProvisionerError {
     #[error("knowledge drive space invalid request: {0}")]
     InvalidRequest(String),
+    #[error("knowledge drive space not found: {0}")]
+    NotFound(String),
+    #[error("knowledge drive space conflict: {0}")]
+    Conflict(String),
+    #[error("knowledge drive space permission denied: {0}")]
+    PermissionDenied(String),
     #[error("knowledge drive space upstream error: {0}")]
     Upstream(String),
     #[error("knowledge drive space internal error: {0}")]

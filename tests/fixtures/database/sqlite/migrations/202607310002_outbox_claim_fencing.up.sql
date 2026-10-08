@@ -26,6 +26,8 @@ WHERE status = 3
 
 -- The PostgreSQL claim-pair and dead-letter CHECK constraints cannot be added through
 -- SQLite `ALTER TABLE`; the store layer enforces the same invariants transactionally.
+CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_pending
+    ON kb_outbox_event (tenant_id, organization_id, status, created_at, id);
 CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_claim
     ON kb_outbox_event (tenant_id, organization_id, status, claimed_at, id);
 CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_dead_letter

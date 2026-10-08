@@ -6,6 +6,9 @@ edition.workspace = true
 license.workspace = true
 
 
+[lib]
+name = "sdkwork_knowledgebase_drive"
+
 [lints]
 workspace = true
 [dependencies]
@@ -21,6 +24,7 @@ sdkwork-knowledgebase-database-host.workspace = true
 sdkwork-intelligence-knowledgebase-service.workspace = true
 sdkwork-intelligence-knowledgebase-object-key-service.workspace = true
 sdkwork-utils-rust.workspace = true
+tracing = "0.1"
 uuid.workspace = true
 time.workspace = true
 url = "2"

@@ -52,6 +52,7 @@
   "operation.pdfFetchFailed": "Failed to load the PDF document.",
   "operation.mediaUrlUnresolved": "Upload succeeded but the media URL is not available yet. Re-insert from the asset library.",
   "operation.failed": "The operation failed. Please try again.",
+  "operation.documentConflict": "This document was updated in another window. Your changes are kept as pending; review the latest version or edit again to retry saving.",
   "operation.unsupported": "This operation is not supported for the selected item.",
   "operation.speechNoResult": "Speech-to-text did not return any text.",
   "operation.imageUrlMissing": "Image generation did not return a usable image URL.",

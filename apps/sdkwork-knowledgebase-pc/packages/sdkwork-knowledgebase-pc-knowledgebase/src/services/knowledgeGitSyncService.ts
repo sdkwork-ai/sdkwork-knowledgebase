@@ -35,7 +35,12 @@ function buildSyncIdempotencyKey(
   branch: string,
   commitMessage: string,
 ): string {
-  const raw = `git-sync-${spaceId}-${repoUrl.trim()}-${branch}-${commitMessage.trim()}`;
+  // Every sync attempt is a distinct operation: a key derived only from
+  // space/repo/branch/message made the ingest create-or-get deduplicate a
+  // second sync with the same commit message into the first job and silently
+  // drop its changes.
+  const randomSuffix = Math.random().toString(36).slice(2, 10);
+  const raw = `git-sync-${spaceId}-${repoUrl.trim()}-${branch}-${commitMessage.trim()}-${Date.now()}-${randomSuffix}`;
   return raw.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 128);
 }
 

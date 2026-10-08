@@ -1,8 +1,8 @@
 import type { OkfBundleFileKind } from './okf-bundle-file-kind';
 
 export interface KnowledgeOkfBundleFile {
-  id: number;
-  spaceId: number;
+  id: string;
+  spaceId: string;
   logicalPath: string;
   entryType: OkfBundleFileKind;
   artifactRole: string;

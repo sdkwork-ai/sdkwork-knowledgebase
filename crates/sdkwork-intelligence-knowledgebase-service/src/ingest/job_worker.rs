@@ -232,8 +232,6 @@ fn build_drive_import_result(
 
             space_id: job.space_id,
 
-            collection_id: 0,
-
             source_id: Some(linkage.source_id),
 
             original_file_drive_node_id: linkage.original_object_ref.drive_node_id.clone(),

@@ -10,7 +10,6 @@
   ],
   "organizationOwnedTables": [
     "kb_space",
-    "kb_collection",
     "kb_source",
     "kb_drive_object_ref",
     "kb_document",

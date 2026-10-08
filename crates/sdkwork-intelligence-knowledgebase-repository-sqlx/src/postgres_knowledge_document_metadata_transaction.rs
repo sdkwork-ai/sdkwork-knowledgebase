@@ -198,25 +198,24 @@ pub(crate) async fn create_or_get_document_in_transaction(
     let tenant_id = to_i64("tenant_id", tenant_id)?;
     let organization_id = to_i64("organization_id", organization_id)?;
     let space_id = to_i64("space_id", record.space_id)?;
-    let collection_id = to_i64("collection_id", record.collection_id)?;
     let source_id = record
         .source_id
         .map(|value| to_i64("source_id", value))
         .transpose()?;
     let id = next_i64_id(id_generator).map_err(id_gen_error)?;
     let now = now_rfc3339()?;
-    let created_at_expr = timestamp_dialect.sql_timestamp_expr("$17");
-    let updated_at_expr = timestamp_dialect.sql_timestamp_expr("$18");
+    let created_at_expr = timestamp_dialect.sql_timestamp_expr("$16");
+    let updated_at_expr = timestamp_dialect.sql_timestamp_expr("$17");
     let query = format!(
         r#"
         INSERT INTO kb_document (
-            id, uuid, tenant_id, organization_id, space_id, collection_id, source_id, identity_scope,
+            id, uuid, tenant_id, organization_id, space_id, source_id, identity_scope,
             original_file_drive_node_id, title, mime_type, language, visibility, content_state,
             index_state, status, created_at, updated_at, version
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, {created_at_expr}, {updated_at_expr}, $19)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, {created_at_expr}, {updated_at_expr}, $18)
         ON CONFLICT DO NOTHING
-        RETURNING id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+        RETURNING id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                   current_version_id, visibility, content_state, index_state
         "#,
     );
@@ -226,7 +225,6 @@ pub(crate) async fn create_or_get_document_in_transaction(
         .bind(tenant_id)
         .bind(organization_id)
         .bind(space_id)
-        .bind(collection_id)
         .bind(source_id)
         .bind(record.identity_scope.as_str())
         .bind(&record.original_file_drive_node_id)
@@ -249,33 +247,31 @@ pub(crate) async fn create_or_get_document_in_transaction(
     } else {
         let row = sqlx::query(
             r#"
-            SELECT id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+            SELECT id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                    current_version_id, visibility, content_state, index_state
             FROM kb_document
             WHERE tenant_id = $1
               AND organization_id = $2
               AND space_id = $3
-              AND collection_id = $4
-              AND identity_scope = $5
+              AND identity_scope = $4
               AND (
-                  ($6 = 'source_only' AND source_id = $7)
+                  ($5 = 'source_only' AND source_id = $6)
                   OR (
-                      $8 = 'source_and_original_drive_node'
+                      $7 = 'source_and_original_drive_node'
                       AND (
-                          ($9 IS NULL AND source_id IS NULL)
-                          OR ($10 IS NOT NULL AND source_id = $11)
+                          ($8 IS NULL AND source_id IS NULL)
+                          OR ($9 IS NOT NULL AND source_id = $10)
                       )
-                      AND COALESCE(original_file_drive_node_id, '') = COALESCE($12, '')
+                      AND COALESCE(original_file_drive_node_id, '') = COALESCE($11, '')
                   )
               )
-              AND status = $13
+              AND status = $12
             LIMIT 1
             "#,
         )
         .bind(tenant_id)
         .bind(organization_id)
         .bind(space_id)
-        .bind(collection_id)
         .bind(record.identity_scope.as_str())
         .bind(record.identity_scope.as_str())
         .bind(source_id)
@@ -325,7 +321,7 @@ async fn enrich_document_drive_node_binding_in_transaction(
         UPDATE kb_document
         SET original_file_drive_node_id = $1, updated_at = {updated_at_expr}, version = version + 1
         WHERE tenant_id = $3 AND organization_id = $4 AND id = $5 AND status = $6
-        RETURNING id, space_id, collection_id, source_id, original_file_drive_node_id, title, mime_type, language,
+        RETURNING id, space_id, source_id, original_file_drive_node_id, title, mime_type, language,
                   current_version_id, visibility, content_state, index_state
         "#,
     );
@@ -596,10 +592,6 @@ pub(crate) fn document_from_row(
     Ok(KnowledgeDocument {
         id: from_i64("id", row.try_get("id").map_err(sqlx_error)?)?,
         space_id: from_i64("space_id", row.try_get("space_id").map_err(sqlx_error)?)?,
-        collection_id: from_i64(
-            "collection_id",
-            row.try_get("collection_id").map_err(sqlx_error)?,
-        )?,
         source_id: row
             .try_get::<Option<i64>, _>("source_id")
             .map_err(sqlx_error)?

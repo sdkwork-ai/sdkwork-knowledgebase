@@ -17,12 +17,6 @@ pub struct CreateKnowledgeDocumentRequest {
         serialize_with = "serialize_option_u64_as_string",
         deserialize_with = "deserialize_option_u64_from_string_or_number"
     )]
-    pub collection_id: Option<u64>,
-    #[serde(
-        default,
-        serialize_with = "serialize_option_u64_as_string",
-        deserialize_with = "deserialize_option_u64_from_string_or_number"
-    )]
     pub source_id: Option<u64>,
     pub title: String,
     pub mime_type: Option<String>,
@@ -90,11 +84,6 @@ pub struct KnowledgeDocument {
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]
     pub space_id: u64,
-    #[serde(
-        serialize_with = "serialize_u64_as_string",
-        deserialize_with = "deserialize_u64_from_string_or_number"
-    )]
-    pub collection_id: u64,
     #[serde(
         default,
         serialize_with = "serialize_option_u64_as_string",

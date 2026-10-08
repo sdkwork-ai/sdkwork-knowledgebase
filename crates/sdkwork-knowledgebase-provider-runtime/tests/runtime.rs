@@ -16,14 +16,15 @@ use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, Request, Respond, ResponseTemplate};
 
 fn test_config(server: &MockServer) -> ProviderRuntimeConfig {
-    // Wiremock fixtures run on loopback; the provider SSRF protection fails closed unless
-    // this explicit test-only allowance is set. Never set it in a deployed environment.
-    std::env::set_var("SDKWORK_KNOWLEDGEBASE_PROVIDER_RUNTIME_ALLOW_LOOPBACK", "1");
+    // Wiremock fixtures run on loopback; the provider SSRF protection fails closed
+    // unless the runtime config explicitly opts into private-network targets. This is
+    // the same flag a self-hosted engine deployment sets in production.
     let mut config = ProviderRuntimeConfig::for_base_url_with_policy(
         &server.uri(),
         ProviderTargetPolicy::Development,
     )
     .expect("test runtime config");
+    config.allow_private_network_targets = true;
     config.connect_timeout = Duration::from_millis(100);
     config.request_timeout = Duration::from_secs(1);
     config.retry_base_delay = Duration::from_millis(1);
@@ -71,6 +72,30 @@ fn get_request(server: &MockServer, operation: ProviderOperation) -> ProviderHtt
     ProviderHttpRequest::new(operation, Method::GET, format!("{}/resource", server.uri()))
         .expect("request")
         .idempotent(true)
+}
+
+#[tokio::test]
+async fn runtime_fails_closed_on_loopback_without_private_target_opt_in() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/resource"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&server)
+        .await;
+    // The loopback wiremock target must fail closed with the typed InvalidTarget
+    // error unless the runtime config opts into private-network targets.
+    let mut config = test_config(&server);
+    config.allow_private_network_targets = false;
+    let runtime = ProviderRuntime::new(config).expect("runtime");
+
+    let error = runtime
+        .execute(&context(), get_request(&server, ProviderOperation::Health))
+        .await
+        .expect_err("loopback target must fail closed");
+
+    assert_eq!(error.category, ProviderErrorCategory::InvalidTarget);
+    assert_eq!(server.received_requests().await.expect("requests").len(), 0);
 }
 
 #[tokio::test]

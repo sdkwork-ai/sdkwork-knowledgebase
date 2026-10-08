@@ -7,6 +7,9 @@ license.workspace = true
 description = "Tenant-context-aware secret adapter for SDKWork Knowledgebase Provider bindings"
 
 
+[lib]
+name = "sdkwork_knowledgebase_provider_secret_adapter"
+
 [lints]
 workspace = true
 [dependencies]

@@ -6,6 +6,9 @@ edition.workspace = true
 license.workspace = true
 
 
+[lib]
+name = "sdkwork_routes_knowledgebase_app_api"
+
 [lints]
 workspace = true
 [dependencies]
@@ -44,7 +47,7 @@ sdkwork-agent-kernel.workspace = true
 sdkwork-knowledgebase-observability.workspace = true
 sdkwork-knowledgebase-provider-secret-adapter.workspace = true
 sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "postgres", "any"] }
-tokio = { workspace = true, features = ["macros", "rt-multi-thread", "net", "fs"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "net", "fs", "time"] }
 tracing = "0.1"
 time.workspace = true
 uuid.workspace = true
@@ -68,3 +71,8 @@ sdkwork-knowledgebase-worker.workspace = true
 sdkwork-knowledgebase-contract.workspace = true
 sdkwork-drive-contract.workspace = true
 sdkwork-knowledgebase-test-support.workspace = true
+# WeChat callback tests construct encrypted blobs with the same cipher versions the
+# service crate uses for its real implementation.
+aes = "0.8"
+base64 = "0.22"
+cbc = "0.1"

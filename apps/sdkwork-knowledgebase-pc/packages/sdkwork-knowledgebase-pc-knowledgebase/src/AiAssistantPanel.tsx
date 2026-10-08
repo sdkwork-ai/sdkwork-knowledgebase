@@ -335,8 +335,9 @@ export function AiAssistantPanel({
             <div key={ref.id} className="flex items-center text-xs bg-indigo-50 dark:bg-[var(--color-kb-editor)] border border-indigo-200/50 dark:border-[var(--color-kb-accent)]/30 text-indigo-600 dark:text-[var(--color-kb-accent)] px-2 py-1 rounded-md shadow-sm">
               <File size={12} className="mr-1.5 opacity-80" />
               <span className="truncate max-w-[100px] font-bold">{ref.title}</span>
-              <button 
-                onClick={() => toggleReference(ref)} 
+              <button
+                onClick={() => toggleReference(ref)}
+                aria-label={t('delete', { ns: 'common' })}
                 className="ml-1.5 p-0.5 hover:bg-indigo-200/50 dark:hover:bg-[var(--color-kb-accent)]/10 rounded-full transition-colors opacity-70 hover:opacity-100"
               >
                 <X size={12} />
@@ -351,7 +352,7 @@ export function AiAssistantPanel({
         <div className="absolute bottom-[75px] left-4 right-4 bg-white dark:bg-[var(--color-kb-editor)] border border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] shadow-2xl rounded-xl z-50 flex flex-col max-h-[240px] animate-in fade-in slide-in-from-bottom-2 overflow-hidden backdrop-blur-md">
           <div className="px-3.5 py-2.5 border-b border-zinc-100 dark:border-[var(--color-kb-panel-border)] text-xs font-bold text-zinc-500 dark:text-[var(--color-kb-text-muted)] flex justify-between items-center bg-[#fafafa]/50 dark:bg-transparent">
             <span>{t('referToFiles', { ns: 'mcp' }) || '引入文档上下文'}</span>
-            <button onClick={() => setIsDocSelectorOpen(false)} className="hover:bg-black/5 dark:hover:bg-[var(--color-kb-panel-hover)] rounded p-1 transition-colors">
+            <button onClick={() => setIsDocSelectorOpen(false)} aria-label={t('close', { ns: 'kb' })} className="hover:bg-black/5 dark:hover:bg-[var(--color-kb-panel-hover)] rounded p-1 transition-colors">
               <X size={14} />
             </button>
           </div>

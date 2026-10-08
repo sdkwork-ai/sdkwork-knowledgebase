@@ -61,7 +61,7 @@ fn app_openapi_uses_collection_schemas_for_okf_list_operations() {
     assert_cursor_list_parameters(
         &spec,
         "okf.concepts.list",
-        &["spaceId", "cursor", "page_size"],
+        &["space_id", "cursor", "page_size"],
     );
     assert_named_list_response_envelope(
         &spec,
@@ -248,7 +248,7 @@ fn app_openapi_exposes_browser_list_data_context_contract() {
         .as_array()
         .unwrap()
         .iter()
-        .find(|parameter| parameter["name"] == "parentId")
+        .find(|parameter| parameter["name"] == "parent_id")
         .expect("browser parentId query parameter");
     assert!(
         parent_parameter["description"]
@@ -716,7 +716,7 @@ fn request_body(operation_id: &str) -> &'static str {
             r##"{"spaceId":7,"title":"API Note","payloadMarkdown":"# API Note","idempotencyKey":"api-note"}"##
         }
         "documents.create" | "documents.update" => {
-            r#"{"spaceId":7,"collectionId":0,"title":"Document","mimeType":"text/markdown"}"#
+            r#"{"spaceId":7,"title":"Document","mimeType":"text/markdown"}"#
         }
         "documents.versions.create" => {
             r#"{"documentId":13,"originalObjectRefId":23,"sizeBytes":128,"mimeType":"text/markdown"}"#

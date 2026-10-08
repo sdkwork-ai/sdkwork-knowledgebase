@@ -23,8 +23,8 @@ use std::sync::Arc;
 
 pub use client::QdrantApiClient;
 pub use config::{
-    QdrantConnectorConfig, QDRANT_BASE_URL_ENV, QDRANT_COLLECTION_NAME_ENV, QDRANT_QUERY_MODEL_ENV,
-    QDRANT_USING_VECTOR_ENV,
+    QdrantConnectorConfig, QDRANT_ALLOW_PRIVATE_NETWORK_ENV, QDRANT_BASE_URL_ENV,
+    QDRANT_COLLECTION_NAME_ENV, QDRANT_QUERY_MODEL_ENV, QDRANT_USING_VECTOR_ENV,
 };
 
 pub const QDRANT_VENDOR_ID: &str = "qdrant";
@@ -42,10 +42,21 @@ impl QdrantKnowledgeEngine {
     }
 
     pub fn with_config(config: QdrantConnectorConfig) -> Self {
-        let client = QdrantApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match QdrantApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    QDRANT_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -102,7 +113,13 @@ impl KnowledgeEngine for QdrantKnowledgeEngine {
             .ok_or_else(|| KnowledgeEngineError::Unsupported(self.unconfigured_message()))?;
         config.api_key = credential.map(KnowledgeEngineProviderCredential::into_secret);
         config.default_collection_name = Some(binding.remote_resource_id.clone());
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "Qdrant base URL does not satisfy the Provider runtime target policy".to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

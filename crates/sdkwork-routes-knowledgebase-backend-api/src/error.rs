@@ -38,9 +38,10 @@ impl BackendApiError {
 
     pub fn sanitized_internal(code: impl Into<String>, internal_detail: impl Into<String>) -> Self {
         let code_value = code.into();
-        eprintln!(
-            "[knowledgebase-backend-api] internal error code={code_value}: {}",
-            internal_detail.into()
+        tracing::error!(
+            code = %code_value,
+            error = %internal_detail.into(),
+            "internal error"
         );
         Self::new(
             StatusCode::INTERNAL_SERVER_ERROR,

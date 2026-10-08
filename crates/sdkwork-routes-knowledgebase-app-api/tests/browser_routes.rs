@@ -32,7 +32,7 @@ async fn app_router_exposes_browser_route_with_query_parameters() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/app/v3/api/knowledge/spaces/7/browser?view=okf_bundle&page_size=25&parentId=node-okf&cursor=c1")
+                .uri("/app/v3/api/knowledge/spaces/7/browser?view=okf_bundle&page_size=25&parent_id=node-okf&cursor=c1")
                 .extension(app_request_context())
                 .body(Body::empty())
                 .unwrap(),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Share2, Pin, Sparkles, Music, Video, FileText, Code, Image as ImageIcon } from 'lucide-react';
 import { Tabs } from './components/Tabs';
 import { DocumentMeta, KnowledgeBase, FolderNode } from './services/document';
@@ -34,6 +34,8 @@ export interface EditorPanelProps {
   onCloseAll?: () => void;
   onTitleChange?: (docId: string, title: string) => void;
   docContent: string;
+  /** True while the active document's content request is in flight. */
+  isDocLoading?: boolean;
   loadingDocs: boolean;
   isAIOpen: boolean;
   onToggleAI: () => void;
@@ -79,6 +81,7 @@ export function EditorPanel({
   onCloseAll,
   onTitleChange,
   docContent,
+  isDocLoading = false,
   loadingDocs,
   isAIOpen,
   onToggleAI,
@@ -102,6 +105,36 @@ export function EditorPanel({
   const [activeEditor, setActiveEditor] = useState<any>(null);
   const [transcribingDocs, setTranscribingDocs] = useState<Record<string, boolean>>({});
   const pdfViewDoc = useHydratedViewerDocument(activeDoc?.type === 'pdf' ? activeDoc : null);
+
+  // Latest values for the stable transcription callbacks below: identity never
+  // changes, so the media player's transcription effect cannot re-fire (and
+  // duplicate speechToText calls) on every parent render.
+  const activeDocRef = useRef(activeDoc);
+  activeDocRef.current = activeDoc;
+  const onContentChangeRef = useRef(onContentChange);
+  onContentChangeRef.current = onContentChange;
+  const transcribingDocIdRef = useRef<string | null>(null);
+
+  const handleTranscribeStart = useCallback(() => {
+    const docId = activeDocRef.current?.id ?? null;
+    transcribingDocIdRef.current = docId;
+    if (docId) {
+      setTranscribingDocs(prev => ({ ...prev, [docId]: true }));
+    }
+  }, []);
+
+  const handleTranscribeComplete = useCallback((text: string) => {
+    const docId = transcribingDocIdRef.current;
+    transcribingDocIdRef.current = null;
+    if (docId) {
+      setTranscribingDocs(prev => ({ ...prev, [docId]: false }));
+    }
+    // Deliver only when the transcription's document is still the active one;
+    // a stale transcript must never land in the newly-active document.
+    if (docId && text && activeDocRef.current?.id === docId) {
+      onContentChangeRef.current(text);
+    }
+  }, []);
 
   const insertHtmlToEditor = (html: string) => {
     if (activeEditor && !activeEditor.isDestroyed && typeof activeEditor.chain === 'function') {
@@ -274,7 +307,7 @@ export function EditorPanel({
             {activeDoc?.type === 'richtext' && (
               <div className="w-full h-full flex-col flex-1 min-h-0">
                 <div className="w-full flex-1 flex flex-col min-h-0">
-                  {docContent === 'Loading...' ? (
+                  {isDocLoading ? (
                     <div className="animate-pulse flex space-x-4 p-8">
                       <div className="flex-1 space-y-6 py-1">
                         <div className="h-4 bg-[var(--color-kb-panel-border)] rounded w-3/4"></div>
@@ -285,10 +318,10 @@ export function EditorPanel({
                       </div>
                     </div>
                   ) : (
-                    <TiptapEditor 
-                      key={activeDoc.id} 
-                      initialContent={docContent} 
-                      mode="richtext" 
+                    <TiptapEditor
+                      key={activeDoc.id}
+                      initialContent={docContent}
+                      mode="richtext"
                       onChange={onContentChange}
                       docTitle={activeDoc.title}
                       onTitleChange={(newTitle) => onTitleChange?.(activeDoc.id, newTitle)}
@@ -317,7 +350,7 @@ export function EditorPanel({
             {activeDoc?.type === 'markdown' && (
               <div className="w-full h-full flex flex-col p-0 flex-1 min-h-0">
                 <div className="w-full flex-1 flex flex-col min-h-0">
-                  {docContent === 'Loading...' ? (
+                  {isDocLoading ? (
                     <div className="animate-pulse flex space-x-4 p-6">
                       <div className="flex-1 space-y-6 py-1">
                         <div className="h-4 bg-[var(--color-kb-panel-border)] rounded w-3/4"></div>
@@ -329,10 +362,10 @@ export function EditorPanel({
                     </div>
                   ) : (
                     <div className="w-full h-full flex-1 flex flex-col min-h-0">
-                      <TiptapEditor 
-                        key={activeDoc.id} 
-                        initialContent={docContent} 
-                        mode="markdown" 
+                      <TiptapEditor
+                        key={activeDoc.id}
+                        initialContent={docContent}
+                        mode="markdown"
                         onChange={onContentChange}
                         docTitle={activeDoc.title}
                         onTitleChange={(newTitle) => onTitleChange?.(activeDoc.id, newTitle)}
@@ -360,10 +393,11 @@ export function EditorPanel({
             )}
 
             {activeDoc?.type === 'code' && (
-              <CodeEditorPanel 
+              <CodeEditorPanel
                 key={activeDoc.id}
-                activeDoc={activeDoc} 
-                docContent={docContent} 
+                activeDoc={activeDoc}
+                docContent={docContent}
+                isDocLoading={isDocLoading}
                 onContentChange={onContentChange}
               />
             )}
@@ -385,13 +419,8 @@ export function EditorPanel({
                     onContentChange(content);
                   }}
                   isTranscribing={!!transcribingDocs[activeDoc.id]}
-                  onTranscribeStart={() => {
-                    setTranscribingDocs(prev => ({ ...prev, [activeDoc.id]: true }));
-                  }}
-                  onTranscribeComplete={(text) => {
-                    onContentChange(text);
-                    setTranscribingDocs(prev => ({ ...prev, [activeDoc.id]: false }));
-                  }}
+                  onTranscribeStart={handleTranscribeStart}
+                  onTranscribeComplete={handleTranscribeComplete}
                   onTitleChange={(newTitle) => {
                     if (onTitleChange) {
                       onTitleChange(activeDoc.id, newTitle);
@@ -446,12 +475,17 @@ export function EditorPanel({
         title={t('selectMaterialToInsert', { ns: 'editor' })}
         kbId={activeKb?.id}
         onSelect={(item) => {
+          // Escape `&` and `"` so titles/URLs cannot break out of the attribute
+          // or inject entities into the inserted media markup.
+          const escapeHtmlAttr = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+          const safeUrl = escapeHtmlAttr(item.url);
+          const safeTitle = escapeHtmlAttr(item.title);
           if (item.type === 'image') {
-            insertHtmlToEditor(`<p><img src="${item.url}" alt="${item.title}" style="border-radius: 12px; max-width: 100%; margin: 16px 0; border: 1px solid var(--color-kb-panel-border);" /></p>`);
+            insertHtmlToEditor(`<p><img src="${safeUrl}" alt="${safeTitle}" style="border-radius: 12px; max-width: 100%; margin: 16px 0; border: 1px solid var(--color-kb-panel-border);" /></p>`);
           } else if (item.type === 'video') {
-            insertHtmlToEditor(`<video src="${item.url}" controls></video>`);
+            insertHtmlToEditor(`<video src="${safeUrl}" controls></video>`);
           } else if (item.type === 'audio') {
-            insertHtmlToEditor(`<audio src="${item.url}" controls></audio>`);
+            insertHtmlToEditor(`<audio src="${safeUrl}" controls></audio>`);
           }
           setAssetLibraryOpen(false);
         }}

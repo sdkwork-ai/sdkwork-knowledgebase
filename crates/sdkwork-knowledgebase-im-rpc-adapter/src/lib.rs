@@ -20,7 +20,7 @@ use sdkwork_knowledgebase_contract::{
         GroupKnowledgeSpaceLifecycleState, GroupKnowledgeSpaceMemberRole,
         GroupKnowledgeSpacePrincipalKind,
     },
-    parse_canonical_positive_signed_i64,
+    parse_canonical_nonnegative_signed_i64, parse_canonical_positive_signed_i64,
 };
 use sdkwork_rpc_client::{
     connect_grpc_channel_with_config, GrpcChannelConfig, RpcServiceCredentialProvider,
@@ -278,8 +278,13 @@ fn consumed_ticket_from_response(
         &response.knowledgebase_binding_id,
     )?;
     let space_id = parse_response_u64("space_id", &response.space_id)?;
-    let membership_epoch = parse_response_u64("membership_epoch", &response.membership_epoch)?;
-    let upstream_link_generation = parse_response_u64(
+    // Epochs and link generations are nonnegative fences (0 is a valid initial value), unlike
+    // resource ids, which must stay positive.
+    let membership_epoch = parse_response_nonnegative_u64(
+        "membership_epoch",
+        &response.membership_epoch,
+    )?;
+    let upstream_link_generation = parse_response_nonnegative_u64(
         "upstream_link_generation",
         &response.upstream_link_generation,
     )?;
@@ -311,6 +316,17 @@ fn consumed_ticket_from_response(
 
 fn parse_response_u64(field: &str, value: &str) -> Result<u64, GroupLaunchTicketConsumerError> {
     parse_canonical_positive_signed_i64(value).map_err(|_| {
+        GroupLaunchTicketConsumerError::Upstream(format!(
+            "IM ticket consumer returned a noncanonical {field}"
+        ))
+    })
+}
+
+fn parse_response_nonnegative_u64(
+    field: &str,
+    value: &str,
+) -> Result<u64, GroupLaunchTicketConsumerError> {
+    parse_canonical_nonnegative_signed_i64(value).map_err(|_| {
         GroupLaunchTicketConsumerError::Upstream(format!(
             "IM ticket consumer returned a noncanonical {field}"
         ))
@@ -485,5 +501,57 @@ mod tests {
             parse_response_u64("space_id", "9223372036854775807").expect("signed max"),
             i64::MAX as u64
         );
+    }
+
+    #[test]
+    fn ticket_response_epochs_are_nonnegative_and_accept_zero() {
+        assert_eq!(
+            parse_response_nonnegative_u64("membership_epoch", "0").expect("initial epoch"),
+            0
+        );
+        assert_eq!(
+            parse_response_nonnegative_u64("upstream_link_generation", "0")
+                .expect("initial link generation"),
+            0
+        );
+        assert_eq!(
+            parse_response_nonnegative_u64("membership_epoch", "9223372036854775807")
+                .expect("signed max"),
+            i64::MAX as u64
+        );
+        for invalid in [
+            "01",
+            "+0",
+            " 0",
+            "0 ",
+            "-0",
+            "not-a-number",
+            "9223372036854775808",
+        ] {
+            assert!(
+                parse_response_nonnegative_u64("membership_epoch", invalid).is_err(),
+                "{invalid:?} must not be accepted from IM"
+            );
+        }
+    }
+
+    #[test]
+    fn consumed_ticket_from_response_accepts_zero_epoch_and_generation() {
+        let response = ConsumeGroupKnowledgebaseLaunchTicketResponse {
+            conversation_id: "conversation-1".to_string(),
+            space_id: "123".to_string(),
+            space_uuid: "space-uuid".to_string(),
+            lifecycle_state: "active".to_string(),
+            membership_role: "member".to_string(),
+            membership_epoch: "0".to_string(),
+            upstream_link_generation: "0".to_string(),
+            expires_at: "2026-07-13T00:00:00Z".to_string(),
+            knowledgebase_binding_id: "122".to_string(),
+            knowledgebase_binding_uuid: "binding-uuid".to_string(),
+            metadata: None,
+        };
+        let consumed = consumed_ticket_from_response(caller(), response).expect("response");
+        assert_eq!(consumed.membership_epoch, 0);
+        assert_eq!(consumed.upstream_link_generation, 0);
     }
 }

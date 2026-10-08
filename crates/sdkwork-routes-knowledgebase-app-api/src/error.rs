@@ -16,6 +16,7 @@ use sdkwork_intelligence_knowledgebase_service::{
     okf::OkfConceptServiceError,
     ports::{
         knowledge_agent_profile_store::KnowledgeAgentProfileStoreError,
+        knowledge_access_control::KnowledgeAccessControlError,
         knowledge_context_binding_store::KnowledgeContextBindingStoreError,
         knowledge_document_store::KnowledgeDocumentStoreError,
         knowledge_ingestion_job_store::IngestionJobStoreError,
@@ -28,6 +29,7 @@ use sdkwork_intelligence_knowledgebase_service::{
     retrieval::KnowledgeRetrievalServiceError,
     space::KnowledgeSpaceServiceError,
     wechat::KnowledgeWechatServiceError,
+    wechat::WechatCallbackError,
 };
 use sdkwork_intelligence_knowledgebase_service::{
     group_space_access::GroupKnowledgeSpaceAccessAuthorizerError,
@@ -61,9 +63,10 @@ impl ApiError {
 
     pub fn sanitized_internal(code: impl Into<String>, internal_detail: impl Into<String>) -> Self {
         let code_value = code.into();
-        eprintln!(
-            "[knowledgebase-app-api] internal error code={code_value}: {}",
-            internal_detail.into()
+        tracing::error!(
+            code = %code_value,
+            error = %internal_detail.into(),
+            "internal error"
         );
         Self::new(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -74,9 +77,10 @@ impl ApiError {
 
     fn gateway_timeout(code: impl Into<String>, internal_detail: impl Into<String>) -> Self {
         let code_value = code.into();
-        eprintln!(
-            "[knowledgebase-app-api] gateway timeout code={code_value}: {}",
-            internal_detail.into()
+        tracing::error!(
+            code = %code_value,
+            error = %internal_detail.into(),
+            "gateway timeout"
         );
         Self::new(
             StatusCode::GATEWAY_TIMEOUT,
@@ -87,9 +91,10 @@ impl ApiError {
 
     fn service_unavailable(code: impl Into<String>, internal_detail: impl Into<String>) -> Self {
         let code_value = code.into();
-        eprintln!(
-            "[knowledgebase-app-api] service unavailable code={code_value}: {}",
-            internal_detail.into()
+        tracing::error!(
+            code = %code_value,
+            error = %internal_detail.into(),
+            "service unavailable"
         );
         Self::new(
             StatusCode::SERVICE_UNAVAILABLE,
@@ -100,9 +105,10 @@ impl ApiError {
 
     fn bad_gateway(code: impl Into<String>, internal_detail: impl Into<String>) -> Self {
         let code_value = code.into();
-        eprintln!(
-            "[knowledgebase-app-api] bad gateway code={code_value}: {}",
-            internal_detail.into()
+        tracing::error!(
+            code = %code_value,
+            error = %internal_detail.into(),
+            "bad gateway"
         );
         Self::new(StatusCode::BAD_GATEWAY, code_value, INTERNAL_CLIENT_DETAIL)
     }
@@ -331,9 +337,16 @@ impl From<KnowledgeSpaceServiceError> for ApiError {
                 "knowledge_space_drive_provisioning_failed",
                 error.to_string(),
             ),
-            KnowledgeSpaceServiceError::AccessControl(error) => {
-                Self::internal("knowledge_space_access_control_failed", error.to_string())
-            }
+            KnowledgeSpaceServiceError::AccessControl(error) => match error {
+                KnowledgeAccessControlError::NotFound(message) => Self::not_found(
+                    "knowledge_space_drive_anchor_missing",
+                    message,
+                ),
+                other => Self::internal(
+                    "knowledge_space_access_control_failed",
+                    other.to_string(),
+                ),
+            },
             KnowledgeSpaceServiceError::InitializationCleanup { original, .. }
             | KnowledgeSpaceServiceError::DriveSpaceCleanup { original, .. } => {
                 Self::internal("knowledge_space_initialization_failed", original)
@@ -428,6 +441,31 @@ impl From<KnowledgeWechatServiceError> for ApiError {
             KnowledgeWechatServiceError::Api(error) => {
                 Self::internal("wechat_upstream_failed", error.to_string())
             }
+        }
+    }
+}
+
+impl From<WechatCallbackError> for ApiError {
+    fn from(error: WechatCallbackError) -> Self {
+        match error {
+            WechatCallbackError::InvalidRequest(detail) => {
+                // Detail strings are validation messages only; they never include
+                // credential material or decrypted payload content.
+                Self::invalid_request("invalid_wechat_callback", detail)
+            }
+            // A failed signature or receive-id check is an authentication failure for
+            // an unauthenticated external caller; WeChat retries non-2xx deliveries.
+            WechatCallbackError::VerificationFailed => Self::unauthorized(
+                "wechat_callback_verification_failed",
+                "wechat callback signature verification failed",
+            ),
+            WechatCallbackError::NotConfigured(detail) => {
+                Self::invalid_request("wechat_callback_not_configured", detail)
+            }
+            WechatCallbackError::Crypto(error) => {
+                Self::invalid_request("invalid_wechat_callback_payload", error.to_string())
+            }
+            WechatCallbackError::Storage(error) => error.into(),
         }
     }
 }
@@ -544,9 +582,16 @@ impl From<KnowledgeBrowserServiceError> for ApiError {
             KnowledgeBrowserServiceError::ProjectionStore(error) => {
                 Self::internal("knowledge_browser_projection_failed", error.to_string())
             }
-            KnowledgeBrowserServiceError::AccessControl(error) => {
-                Self::internal("knowledge_browser_access_control_failed", error.to_string())
-            }
+            KnowledgeBrowserServiceError::AccessControl(error) => match error {
+                KnowledgeAccessControlError::NotFound(message) => Self::not_found(
+                    "knowledge_browser_drive_anchor_missing",
+                    message,
+                ),
+                other => Self::internal(
+                    "knowledge_browser_access_control_failed",
+                    other.to_string(),
+                ),
+            },
         }
     }
 }
@@ -597,6 +642,12 @@ impl From<KnowledgeStorageError> for ApiError {
             }
             KnowledgeStorageError::IntegrityFailed(detail) => {
                 Self::internal("knowledge_storage_integrity_failed", detail)
+            }
+            KnowledgeStorageError::PermissionDenied(detail) => {
+                Self::forbidden("knowledge_storage_permission_denied", detail)
+            }
+            KnowledgeStorageError::Conflict(detail) => {
+                Self::conflict("knowledge_storage_conflict", detail)
             }
             KnowledgeStorageError::Upstream(detail) => {
                 Self::internal("knowledge_storage_upstream_failed", detail)

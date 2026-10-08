@@ -58,7 +58,12 @@ pub(super) async fn apply_projection_mutation(
     }
 
     let (projection, public_change) = match mutation {
-        WikiDriveProjectionMutation::None => unreachable!(),
+        WikiDriveProjectionMutation::None => {
+            return Err(WikiPersistenceError::Internal(
+                "WikiDriveProjectionMutation::None reached the wiki projection write path"
+                    .to_string(),
+            ));
+        }
         WikiDriveProjectionMutation::Upsert(metadata) => {
             validate_metadata(metadata)?;
             upsert_version(

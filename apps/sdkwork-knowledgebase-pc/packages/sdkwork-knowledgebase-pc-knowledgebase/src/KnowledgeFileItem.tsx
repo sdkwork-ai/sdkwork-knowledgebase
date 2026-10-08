@@ -1,10 +1,12 @@
 import { createRuntimeConfig } from 'sdkwork-knowledgebase-pc-core';
 import React from 'react';
 import { MoreHorizontal, Folder, Image as ImageIcon, Pin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from './components/ui/dropdown-menu';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent } from './components/ui/context-menu';
 import { NodeDropdownItems, NodeContextItems } from './NodeMenuContent';
 import { DocumentMeta, DocumentService } from './services/document';
+import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
 import type { ReactKeyedComponentProps } from '@sdkwork/sdkwork-knowledgebase-pc-commons/reactKeyedProps';
 
 export interface KnowledgeFileItemProps extends ReactKeyedComponentProps {
@@ -67,6 +69,26 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
   
   const [renameValue, setRenameValue] = React.useState(item.title);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const deleteInFlightRef = React.useRef(false);
+  const { i18n } = useTranslation();
+
+  // Destructive delete from the row dropdown/context menu: confirm, guard
+  // against double-fire, and surface failures through the shared error toast.
+  const handleDeleteItem = (e?: { preventDefault?: () => void; stopPropagation: () => void }) => {
+    if (e && e.preventDefault) e.preventDefault();
+    e?.stopPropagation();
+    if (deleteInFlightRef.current) return;
+    if (!window.confirm(t('confirmDelete', { count: 1, ns: 'common' }))) return;
+    deleteInFlightRef.current = true;
+    DocumentService.deleteDocument(item.id)
+      .then(() => {
+        if (onUpdateDocs) onUpdateDocs();
+      })
+      .catch((error) => toastKnowledgebaseError(error, t))
+      .finally(() => {
+        deleteInFlightRef.current = false;
+      });
+  };
 
   React.useEffect(() => {
     if (isRenaming) {
@@ -199,15 +221,15 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
   };
 
   const getSubtext = () => {
-    const formattedDate = new Date(item.updatedAt || Date.now()).toLocaleDateString('zh-CN', {
+    const formattedDate = new Intl.DateTimeFormat(i18n.language || 'zh-CN', {
       year: '2-digit',
       month: 'numeric',
       day: 'numeric'
-    });
-    
+    }).format(new Date(item.updatedAt || Date.now()));
+
     if (item.type === 'folder') {
       const itemsCount = item.children?.length ?? 0;
-      return `${itemsCount}项 | ${formattedDate}创建`;
+      return t('folderSubtextItems', { count: itemsCount, date: formattedDate });
     }
 
     const title = (item.title || '').toLowerCase();
@@ -292,8 +314,11 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
     <div className="box-border w-full min-w-0 px-0" id={!isFolder ? `kb-file-item-${item.id}` : undefined}>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div 
-            className={`flex items-center py-2.5 px-4 w-full min-w-0 relative cursor-pointer group/node transition-all duration-200 border-b border-[var(--color-kb-panel-border)]/50 ${
+          <div
+            role="button"
+            tabIndex={0}
+            aria-current={isActive ? 'true' : undefined}
+            className={`flex items-center py-2.5 px-4 w-full min-w-0 relative cursor-pointer group/node transition-all duration-200 border-b border-[var(--color-kb-panel-border)]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-kb-accent)] ${
               isLocateHighlight
                 ? 'kb-file-item--highlight bg-[var(--color-kb-panel-active)] text-[var(--color-kb-text-heading)]'
                 : isActive && !isSelected
@@ -311,6 +336,18 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
                 setCurrentFolderId(item.id);
               } else {
                 onSelectDoc(item as DocumentMeta);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (selectedDocIds.size > 0) {
+                  onToggleDocSelection(e as unknown as React.MouseEvent, item.id);
+                } else if (isFolder) {
+                  setCurrentFolderId(item.id);
+                } else {
+                  onSelectDoc(item as DocumentMeta);
+                }
               }
             }}
           >
@@ -347,7 +384,7 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
               <div className="absolute right-4 flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="hidden group-hover/node:flex data-[state=open]:flex items-center justify-center p-1 rounded-lg hover:bg-[var(--color-kb-panel-border)]/80 text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)] transition-all shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button aria-label={t('more', { ns: 'editor' })} className="hidden group-hover/node:flex data-[state=open]:flex items-center justify-center p-1 rounded-lg hover:bg-[var(--color-kb-panel-border)]/80 text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)] transition-all shrink-0" onClick={(e) => e.stopPropagation()}>
                       <MoreHorizontal size={14} />
                     </button>
                   </DropdownMenuTrigger>
@@ -377,7 +414,7 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
                         }, 150);
                       }}
                       onRename={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); setRenameItem(item); }}
-                      onDelete={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); DocumentService.deleteDocument(item.id).then(() => onUpdateDocs && onUpdateDocs()); }}
+                      onDelete={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); handleDeleteItem(); }}
                       onMoveTo={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); onMoveItem?.(item); }}
                       onCopyTo={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); onCopyItem?.(item); }}
                       onPin={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new CustomEvent('kb-action', { detail: { action: 'pin', item } })); }}
@@ -391,11 +428,22 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
                 </DropdownMenu>
 
                 {/* Nice right Checkbox shown on hover / check */}
-                <div 
-                  className={`transition-all duration-200 shrink-0 ${isSelected ? 'flex' : 'hidden group-hover/node:flex'}`}
+                <div
+                  role="checkbox"
+                  aria-checked={isSelected}
+                  tabIndex={0}
+                  aria-label={t('selectItem', { ns: 'common' })}
+                  className={`transition-all duration-200 shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-kb-accent)] rounded ${isSelected ? 'flex' : 'hidden group-hover/node:flex focus-visible:flex'}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleDocSelection(e, item.id);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onToggleDocSelection(e as unknown as React.MouseEvent, item.id);
+                    }
                   }}
                 >
                   {isSelected ? (
@@ -438,7 +486,7 @@ export const KnowledgeFileItem = React.memo(function KnowledgeFileItem({
                  }, 150);
                }}
                onRename={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); setRenameItem(item); }}
-               onDelete={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); DocumentService.deleteDocument(item.id).then(() => onUpdateDocs && onUpdateDocs()); }}
+               onDelete={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); handleDeleteItem(); }}
                onMoveTo={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); onMoveItem?.(item); }}
                onCopyTo={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); onCopyItem?.(item); }}
                onPin={(e) => { if (e && e.preventDefault) e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new CustomEvent('kb-action', { detail: { action: 'pin', item } })); }}

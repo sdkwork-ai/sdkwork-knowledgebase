@@ -156,7 +156,6 @@ impl<'a> KnowledgeDriveImportService<'a> {
                 },
                 document: CreateKnowledgeDocumentRecord {
                     space_id: request.space_id,
-                    collection_id: 0,
                     source_id: None,
                     identity_scope: KnowledgeDocumentIdentityScope::SourceOnly,
                     original_file_drive_node_id: Some(drive_node_id),

@@ -2,6 +2,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::enums::{OkfBundleFileKind, OkfCandidateType, OkfLogEventType};
+use crate::serde_int64::{
+    deserialize_option_u64_from_string_or_number,
+    deserialize_u64_from_string_or_number,
+    serialize_option_u64_as_string,
+    serialize_u64_as_string,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -72,6 +78,10 @@ pub struct OkfConceptSummaryList {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListOkfConceptsQuery {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub cursor: Option<String>,
     #[serde(rename = "page_size")]
@@ -100,6 +110,10 @@ pub struct OkfProfileDocument {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfQueryRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub query: String,
 }
@@ -114,6 +128,10 @@ pub struct OkfQueryResult {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfFileAnswerRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub title: String,
     pub answer_markdown: String,
@@ -122,6 +140,10 @@ pub struct OkfFileAnswerRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfContextPackRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub query: Option<String>,
 }
@@ -129,13 +151,26 @@ pub struct OkfContextPackRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfCompileJobRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub source_id: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfCandidateResult {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub id: u64,
     pub state: String,
 }
@@ -149,6 +184,11 @@ pub struct OkfCandidateResultList {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfCandidateReviewRequest {
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub reviewer_id: Option<u64>,
     pub note: Option<String>,
 }
@@ -156,6 +196,11 @@ pub struct OkfCandidateReviewRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfConceptPublishRequest {
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub publisher_id: Option<u64>,
     pub note: Option<String>,
 }
@@ -163,6 +208,10 @@ pub struct OkfConceptPublishRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeOkfProfileRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub profile_version: String,
 }
@@ -170,12 +219,20 @@ pub struct KnowledgeOkfProfileRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfIndexRebuildRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfBundleExportRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub export_type: String,
     #[serde(default)]
@@ -187,6 +244,10 @@ pub struct OkfBundleExportRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfBundleImportRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub import_type: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -203,6 +264,10 @@ pub struct OkfBundleImportResult {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfQualityRunRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub profile: Option<String>,
 }
@@ -210,6 +275,10 @@ pub struct OkfQualityRunRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfQualityRun {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub id: u64,
     pub state: String,
 }
@@ -277,7 +346,15 @@ impl OkfRevisionReviewState {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeOkfConcept {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub id: u64,
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub concept_id: String,
     pub title: String,
@@ -287,6 +364,11 @@ pub struct KnowledgeOkfConcept {
     pub description: String,
     pub source_count: u32,
     pub tags: Vec<String>,
+    #[serde(
+        default,
+        serialize_with = "serialize_option_u64_as_string",
+        deserialize_with = "deserialize_option_u64_from_string_or_number"
+    )]
     pub current_revision_id: Option<u64>,
     pub publish_state: OkfConceptPublishState,
     pub updated_at: String,
@@ -295,9 +377,25 @@ pub struct KnowledgeOkfConcept {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeOkfConceptRevision {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub id: u64,
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub concept_row_id: u64,
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub revision_no: u64,
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub markdown_object_ref_id: u64,
     pub content_hash: String,
     pub review_state: OkfRevisionReviewState,
@@ -322,6 +420,10 @@ pub struct KnowledgeOkfConceptPublication {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PublishKnowledgeOkfConceptRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub concept_id: String,
     pub title: String,
@@ -342,6 +444,10 @@ pub struct PublishKnowledgeOkfConceptRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OkfConceptUpsertRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub concept_id: String,
     pub markdown: String,

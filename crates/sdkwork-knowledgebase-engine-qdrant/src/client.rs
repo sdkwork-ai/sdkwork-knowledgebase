@@ -6,7 +6,8 @@ use sdkwork_knowledgebase_contract::knowledge_engine::{
     KnowledgeEngineSearchHit, KnowledgeEngineSearchResult,
 };
 use sdkwork_knowledgebase_provider_runtime::{
-    ProviderExecutionContext, ProviderHttpRequest, ProviderOperation, ProviderRuntime,
+    encoded_path_segment, is_path_segment_id, ProviderExecutionContext, ProviderHttpRequest,
+    ProviderOperation, ProviderRuntime,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -21,10 +22,13 @@ pub struct QdrantApiClient {
 }
 
 impl QdrantApiClient {
-    pub fn new(config: QdrantConnectorConfig) -> Self {
-        let http = ProviderRuntime::for_base_url(&config.base_url)
-            .expect("Qdrant base URL must satisfy Provider Runtime target policy");
-        Self { config, http }
+    pub fn new(config: QdrantConnectorConfig) -> Result<Self, KnowledgeEngineError> {
+        let http = ProviderRuntime::for_base_url_with_private_targets(
+            &config.base_url,
+            config.allow_private_network,
+        )
+        .map_err(KnowledgeEngineError::from)?;
+        Ok(Self { config, http })
     }
 
     fn health_context(&self) -> ProviderExecutionContext {
@@ -43,18 +47,30 @@ impl QdrantApiClient {
         }
     }
 
-    fn collection_url(&self, collection_name: &str, suffix: &str) -> String {
-        format!(
-            "{}/collections/{collection_name}{suffix}",
+    /// Binding-controlled collection names are spliced into the URL path, so
+    /// they are validated and percent-encoded at every interpolation point.
+    fn collection_url(
+        &self,
+        collection_name: &str,
+        suffix: &str,
+    ) -> Result<String, KnowledgeEngineError> {
+        if !is_path_segment_id(collection_name) {
+            return Err(KnowledgeEngineError::Validation(
+                "Qdrant collection name must match [A-Za-z0-9._:-]{1,256}".to_string(),
+            ));
+        }
+        Ok(format!(
+            "{}/collections/{}{suffix}",
             self.config.base_url.trim_end_matches('/'),
-        )
+            encoded_path_segment(collection_name),
+        ))
     }
 
     pub async fn connector_health(
         &self,
         collection_name: &str,
     ) -> Result<(), KnowledgeEngineError> {
-        let url = self.collection_url(collection_name, "");
+        let url = self.collection_url(collection_name, "")?;
         let request = self
             .authed(
                 ProviderHttpRequest::new(ProviderOperation::Health, Method::GET, url)
@@ -94,7 +110,7 @@ impl QdrantApiClient {
             body["using"] = Value::String(using_vector.to_string());
         }
 
-        let url = self.collection_url(collection_name, "/points/query");
+        let url = self.collection_url(collection_name, "/points/query")?;
         let request = self
             .authed(
                 ProviderHttpRequest::new(ProviderOperation::Search, Method::POST, url)
@@ -128,7 +144,7 @@ impl QdrantApiClient {
         point_id: &str,
     ) -> Result<KnowledgeEngineDocument, KnowledgeEngineError> {
         let parsed_id = parse_point_id(point_id);
-        let url = self.collection_url(collection_name, "/points");
+        let url = self.collection_url(collection_name, "/points")?;
         let request = self
             .authed(
                 ProviderHttpRequest::new(ProviderOperation::Read, Method::POST, url)
@@ -177,7 +193,7 @@ impl QdrantApiClient {
         context: &ProviderExecutionContext,
         collection_name: &str,
     ) -> Result<QdrantCollectionInfo, KnowledgeEngineError> {
-        let url = self.collection_url(collection_name, "");
+        let url = self.collection_url(collection_name, "")?;
         let request = self
             .authed(
                 ProviderHttpRequest::new(ProviderOperation::Read, Method::GET, url)

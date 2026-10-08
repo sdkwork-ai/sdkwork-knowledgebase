@@ -975,8 +975,8 @@ void (useRef<HTMLInputElement>(null));
                     }
                   </span>
                   <span className="text-[10px] text-[var(--color-kb-text-muted)] mt-0.5 leading-none">
-                    {selectedOfficialAccounts.length > 1 
-                      ? `已选 ${selectedOfficialAccounts.length} ${t('oaCountSuffix')}` 
+                    {selectedOfficialAccounts.length > 1
+                      ? t('selectedOaCount', { count: selectedOfficialAccounts.length })
                       : t('selectedOneOA')
                     }
                   </span>
@@ -1548,7 +1548,7 @@ void (useRef<HTMLInputElement>(null));
                     'data-miniprogram-title': data.displayType === 'card' ? data.cardTitle : data.textContent,
                     'data-miniprogram-imageurl': data.imageUrl,
                     'data-miniprogram-path': data.link,
-                    'data-miniprogram-nickname': '小程序'
+                    'data-miniprogram-nickname': t('miniprogram')
                   }
                 });
                 if (data.displayType === 'card' || data.displayType === 'image') {

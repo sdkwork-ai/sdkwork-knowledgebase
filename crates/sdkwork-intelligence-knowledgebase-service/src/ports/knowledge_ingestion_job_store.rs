@@ -12,6 +12,14 @@ pub const KNOWLEDGE_UPLOAD_SESSION_TTL: Duration = Duration::hours(24);
 pub const STALE_UPLOAD_SESSION_RECOVERY_BATCH_SIZE: u32 = 100;
 pub const DEFAULT_INGESTION_JOB_LEASE: Duration = Duration::minutes(5);
 pub const MAX_INGESTION_JOB_LEASE: Duration = Duration::hours(1);
+/// Age after which a never-leased (`claim_token IS NULL`) `api` job in a
+/// non-terminal state stops counting against the tenant ingest-concurrency
+/// quota. `api` jobs run synchronously inside the caller's request without a
+/// claim lease, so a worker crash between `mark_running` and completion leaves
+/// them `Running` forever; without this horizon every such zombie would
+/// permanently consume quota. The job row itself is left untouched so the
+/// idempotency key keeps answering with the original job.
+pub const KNOWLEDGE_UNLEASED_API_JOB_QUOTA_TTL: Duration = Duration::hours(1);
 
 #[async_trait]
 pub trait IngestionJobStore: Send + Sync {

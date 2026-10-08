@@ -13,17 +13,58 @@ import { TiptapEditor } from './TiptapEditor';
 const TITLE_SAVE_DEBOUNCE_MS = 800;
 const CONTENT_SAVE_DEBOUNCE_MS = 1200;
 
-function useDebouncedCallback<A extends unknown[]>(callback: (...args: A) => void, delayMs: number) {
+/**
+ * Debounced callback with explicit flush support: pending invocations are
+ * flushed on unmount (and on demand via the returned `flush`, used by the
+ * `beforeunload` guard) so a debounced save is never silently dropped —
+ * mirroring `useKnowledgeBaseDocumentPersistence`.
+ */
+function useDebouncedCallback<A extends unknown[]>(callback: (...args: A) => void, delayMs: number): [(...args: A) => void, () => void] {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
-  useEffect(() => () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
+  const pendingArgsRef = useRef<A | null>(null);
+
+  const invokePending = useCallback(() => {
+    const args = pendingArgsRef.current;
+    if (args === null) {
+      return;
+    }
+    pendingArgsRef.current = null;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    callbackRef.current(...args);
   }, []);
-  return useCallback((...args: A) => {
+
+  useEffect(() => () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    const args = pendingArgsRef.current;
+    if (args !== null) {
+      pendingArgsRef.current = null;
+      callbackRef.current(...args);
+    }
+  }, [invokePending]);
+
+  const flush = useCallback(() => {
+    invokePending();
+  }, [invokePending]);
+
+  const schedule = useCallback((...args: A) => {
+    pendingArgsRef.current = args;
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => callbackRef.current(...args), delayMs);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      pendingArgsRef.current = null;
+      callbackRef.current(...args);
+    }, delayMs);
   }, [delayMs]);
+
+  return [schedule, flush];
 }
 
 interface NoteEditorState {
@@ -105,15 +146,22 @@ export function NotesWorkspace() {
     }
   }, [kbResolved, kbId, refreshNotes]);
 
-  // Load the selected note into the shared editor.
+  // Latest notes snapshot for reads that must not re-trigger the editor reload
+  // effect: list refetches would otherwise clobber in-progress edits mid-typing.
+  const notesRef = useRef<KnowledgeNoteSummary[]>([]);
+  notesRef.current = notes;
+
+  // Load the selected note into the shared editor. Depends only on `activeId`:
+  // the title is read from the latest notes snapshot via ref, so list refetches
+  // never revert in-progress edits.
   useEffect(() => {
     let cancelled = false;
     if (!activeId) {
       setEditor(null);
       return;
     }
+    const title = notesRef.current.find((note) => note.id === activeId)?.title ?? '';
     (async () => {
-      const title = notes.find((note) => note.id === activeId)?.title ?? '';
       try {
         const content = await getDocumentContent(activeId);
         if (cancelled) return;
@@ -128,9 +176,9 @@ export function NotesWorkspace() {
     return () => {
       cancelled = true;
     };
-  }, [activeId, notes, t]);
+  }, [activeId, t]);
 
-  const persistTitle = useDebouncedCallback(async (id: string, title: string) => {
+  const [persistTitle, flushTitle] = useDebouncedCallback(async (id: string, title: string) => {
     try {
       setSaving(true);
       // No `kbId`: the bridge treats a kbId that differs from the document's
@@ -145,7 +193,7 @@ export function NotesWorkspace() {
     }
   }, TITLE_SAVE_DEBOUNCE_MS);
 
-  const persistContent = useDebouncedCallback(async (id: string, content: string) => {
+  const [persistContent, flushContent] = useDebouncedCallback(async (id: string, content: string) => {
     try {
       setSaving(true);
       await DocumentService.saveDocumentContent(id, content);
@@ -155,6 +203,19 @@ export function NotesWorkspace() {
       setSaving(false);
     }
   }, CONTENT_SAVE_DEBOUNCE_MS);
+
+  // Flush debounced saves when the tab is closing so in-progress edits are not
+  // lost (fire-and-forget: the browser may not wait for these requests).
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      flushTitle();
+      flushContent();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [flushTitle, flushContent]);
 
   const handleTitleChange = useCallback((value: string) => {
     setEditor((prev) => (prev ? { ...prev, title: value } : prev));
@@ -182,7 +243,12 @@ export function NotesWorkspace() {
     }
   };
 
+  const notesDeleteInFlightRef = useRef<Set<string>>(new Set());
+
   const handleDeleteNote = async (id: string) => {
+    if (notesDeleteInFlightRef.current.has(id)) return;
+    if (!window.confirm(t('notesDeleteConfirm'))) return;
+    notesDeleteInFlightRef.current.add(id);
     try {
       await DocumentService.deleteDocument(id);
       if (activeId === id) setActiveId(null);
@@ -190,6 +256,8 @@ export function NotesWorkspace() {
       toast.success(t('notesDeleted'));
     } catch (error) {
       toastKnowledgebaseError(error, t as unknown as ErrorTranslateFn);
+    } finally {
+      notesDeleteInFlightRef.current.delete(id);
     }
   };
 
@@ -255,8 +323,17 @@ export function NotesWorkspace() {
                 return (
                   <div
                     key={note.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-current={isActive ? 'true' : undefined}
                     onClick={() => setActiveId(note.id)}
-                    className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 transition-colors ${isActive ? 'bg-[var(--color-kb-panel-active)]' : 'hover:bg-[var(--color-kb-panel-hover)]'}`}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setActiveId(note.id);
+                      }
+                    }}
+                    className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer mb-0.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-kb-accent)] ${isActive ? 'bg-[var(--color-kb-panel-active)]' : 'hover:bg-[var(--color-kb-panel-hover)]'}`}
                     data-testid="knowledgebase-pc-notes-item"
                   >
                     <span
@@ -266,11 +343,12 @@ export function NotesWorkspace() {
                     </span>
                     <button
                       type="button"
+                      aria-label={t('notesDelete')}
                       onClick={(event) => {
                         event.stopPropagation();
                         void handleDeleteNote(note.id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-[var(--color-kb-text-muted)] hover:text-rose-400 transition-all"
+                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 rounded text-[var(--color-kb-text-muted)] hover:text-rose-400 focus-visible:text-rose-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-kb-accent)] transition-all"
                       title={t('notesDelete')}
                       data-testid="knowledgebase-pc-notes-delete"
                     >

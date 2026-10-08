@@ -8,7 +8,11 @@ import {
 
 import type { DocumentMeta } from './document';
 import { resolveKnowledgeBrowserParentDriveNodeId } from './knowledgeBrowserParentResolver';
-import { readDriveNode } from './knowledgeDriveSdkResponse';
+import { normalizeDriveNodePage, readDriveNode } from './knowledgeDriveSdkResponse';
+
+// Upper bound for the folder-existence lookup page scan; beyond it we fall
+// through to create and let a genuine conflict surface naturally.
+const FOLDER_LOOKUP_SCAN_PAGES = 20;
 
 function resolveDriveNodeId(node: KnowledgeBrowserNode): string | null {
   return node.driveNodeId?.trim() || node.id?.trim() || null;
@@ -44,12 +48,19 @@ export async function createKnowledgeDriveFolder(input: {
 export async function applyDriveBrowserNodeUpdates(
   kbId: string,
   node: KnowledgeBrowserNode,
-  updates: Pick<DocumentMeta, 'title' | 'parentId' | 'isPinned'>,
+  updates: Partial<Pick<DocumentMeta, 'title' | 'parentId' | 'isPinned'>>,
 ): Promise<void> {
   const driveNodeId = requireDriveNodeId(resolveDriveNodeId(node));
   const drive = requireDriveApiClient();
 
-  if (updates.title !== undefined && updates.title.trim() !== node.name) {
+  // An empty title is "no rename", never a rename to an empty name: the drive
+  // update endpoint rejects empty node names, and callers may pass the field
+  // through from partial update objects.
+  if (
+    updates.title !== undefined
+    && updates.title.trim() !== ''
+    && updates.title.trim() !== node.name
+  ) {
     await drive.drive.nodes.update(driveNodeId, {
       nodeName: updates.title.trim()});
   }
@@ -81,6 +92,34 @@ export async function deleteDriveBrowserNode(node: KnowledgeBrowserNode): Promis
   await requireDriveApiClient().drive.nodes.delete(driveNodeId);
 }
 
+async function findDriveFolderChildByName(
+  driveSpaceId: string,
+  parentNodeId: string | undefined,
+  folderName: string,
+): Promise<string | null> {
+  const drive = requireDriveApiClient();
+  let cursor: string | null = null;
+  let scannedPages = 0;
+  do {
+    scannedPages += 1;
+    if (scannedPages > FOLDER_LOOKUP_SCAN_PAGES) {
+      return null;
+    }
+    const page = normalizeDriveNodePage(await drive.drive.nodes.list(driveSpaceId, {
+      parentNodeId: parentNodeId ?? undefined,
+      pageSize: '100',
+      cursor: cursor ?? undefined,
+    }));
+    for (const node of page.items) {
+      if (node.nodeType === 'folder' && node.nodeName === folderName && node.id) {
+        return node.id;
+      }
+    }
+    cursor = page.hasMore ? page.nextCursor : null;
+  } while (cursor);
+  return null;
+}
+
 export async function ensureDriveFolderPath(
   driveSpaceId: string,
   rootParentNodeId: string | null | undefined,
@@ -105,6 +144,16 @@ export async function ensureDriveFolderPath(
     const cached = folderCache.get(pathAccumulator);
     if (cached) {
       currentParent = cached;
+      continue;
+    }
+
+    // Look up the existing folder before creating: create-only traversal made
+    // every retry after a partially failed upload fail with 409 conflicts, and
+    // concurrent batches duplicate whole folder trees.
+    const existing = await findDriveFolderChildByName(driveSpaceId, currentParent, folderName);
+    if (existing) {
+      folderCache.set(pathAccumulator, existing);
+      currentParent = existing;
       continue;
     }
 

@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct KnowledgeDriveObjectRef {
-    pub id: i64,
+    pub id: String,
 
     #[serde(rename = "spaceId")]
-    pub space_id: i64,
+    pub space_id: String,
 
     #[serde(rename = "driveSpaceId")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -41,7 +41,7 @@ pub struct KnowledgeDriveObjectRef {
     pub content_type: Option<String>,
 
     #[serde(rename = "sizeBytes")]
-    pub size_bytes: i64,
+    pub size_bytes: String,
 
     #[serde(rename = "checksumSha256Hex")]
     #[serde(default, skip_serializing_if = "Option::is_none")]

@@ -78,4 +78,16 @@ describe('WeChat interaction fail-closed UI', () => {
       /triggerScanSimulation|mobileCovers|scanStatus|scannedCover/,
     );
   });
+
+  it('never swallows a failed desktop secure credential write', () => {
+    const credentialStoreSource = readSource('./wechatCredentialStore.ts');
+
+    expect(credentialStoreSource).toContain("'write_secure_session_value'");
+    // A silenced write failure would let saveOfficialAccounts fall back to the
+    // plaintext form secret and persist it server-side; the write must stay
+    // fail-closed (typed rejection, no `.catch(() => undefined)`).
+    expect(credentialStoreSource).not.toMatch(
+      /write_secure_session_value[\s\S]{0,400}\.catch\(\s*\(\s*\)\s*=>\s*undefined\s*\)/,
+    );
+  });
 });

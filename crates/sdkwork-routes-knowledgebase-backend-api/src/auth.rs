@@ -50,7 +50,7 @@ pub fn require_backend_context(
 ) -> Result<KnowledgeBackendRequestContext, BackendApiProblem> {
     let context = context.0;
     ensure_runtime_tenant(state, &context)?;
-    ensure_runtime_organization(&context)?;
+    ensure_runtime_organization(state, &context)?;
     ensure_knowledge_admin_permission(&context)?;
     Ok(context)
 }
@@ -79,9 +79,10 @@ pub fn ensure_runtime_tenant(
 }
 
 pub fn ensure_runtime_organization(
+    state: &BackendState,
     context: &KnowledgeBackendRequestContext,
 ) -> Result<(), BackendApiProblem> {
-    let runtime_org = configured_runtime_organization_id();
+    let runtime_org = state.runtime_organization_id;
     let context_org = context.organization_id.unwrap_or(0);
     // Tenant-level (personal) sessions (organization_id absent/zero) are the default
     // first-party context and MUST NOT be rejected for lacking organization login
@@ -110,7 +111,10 @@ fn ensure_knowledge_admin_permission(
     ))
 }
 
-fn configured_runtime_organization_id() -> u64 {
+/// Resolves the configured runtime organization id from the environment.
+/// Called once at router-state construction; the auth path reads the cached
+/// value from [`BackendState`] instead of touching the environment per request.
+pub(crate) fn configured_runtime_organization_id() -> u64 {
     std::env::var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID")
         .ok()
         .and_then(|value| value.parse().ok())

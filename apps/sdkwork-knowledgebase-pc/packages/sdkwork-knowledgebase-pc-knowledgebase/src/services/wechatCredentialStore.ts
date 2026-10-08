@@ -3,6 +3,10 @@ import {
   invokeDesktopCommand,
   isTauriDesktopRuntime,
 } from 'sdkwork-knowledgebase-pc-core/host';
+import {
+  KnowledgebaseErrorCodes,
+  throwKnowledgebaseError,
+} from 'sdkwork-knowledgebase-pc-core';
 
 const WECHAT_CREDENTIAL_NAMESPACE = 'sdkwork.knowledgebase.pc.wechat.credentials.v1';
 
@@ -41,12 +45,25 @@ async function writeSecureValue(key: string, value: string | undefined): Promise
     return;
   }
   if (isBlank(value)) {
+    // Removing a blank credential is best-effort hygiene: a failed removal
+    // keeps the previous value in secure storage instead of leaking it.
     await invokeDesktopCommand('remove_secure_session_value', { request: { key } }).catch(() => undefined);
     return;
   }
-  await invokeDesktopCommand('write_secure_session_value', {
-    request: { key, value: (value ?? '').trim() },
-  }).catch(() => undefined);
+  // Fail closed: a rejected secure write must abort the save. Silently
+  // continuing would let the save flow re-hydrate the plaintext form value and
+  // persist the secret on the server, discarding the desktop secure-store
+  // guarantee.
+  try {
+    await invokeDesktopCommand('write_secure_session_value', {
+      request: { key, value: (value ?? '').trim() },
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throwKnowledgebaseError(KnowledgebaseErrorCodes.OPERATION_FAILED, {
+      cause: `desktop secure storage rejected credential write (${key}): ${detail}`,
+    });
+  }
 }
 
 export async function hydrateOfficialAccountSecrets<T extends { id: string; appSecret: string; token?: string; encodingAesKey?: string }>(

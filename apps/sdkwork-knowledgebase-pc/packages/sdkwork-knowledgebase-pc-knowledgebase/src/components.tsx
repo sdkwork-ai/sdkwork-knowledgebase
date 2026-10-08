@@ -95,6 +95,7 @@ export function KnowledgeBaseApp({
   const [kbs, setKbs] = useState<{ team: KnowledgeBase[], personal: KnowledgeBase[], public: KnowledgeBase[] }>({ team: [], personal: [], public: [] });
   const [docs, setDocs] = useState<(FolderNode | DocumentMeta)[]>([]);
   const [docContent, setDocContent] = useState<string>('');
+  const [isDocLoading, setIsDocLoading] = useState<boolean>(false);
   const [loadingKbs, setLoadingKbs] = useState<boolean>(true);
   const [loadingDocs, setLoadingDocs] = useState<boolean>(false);
   const [isAIOpen, setIsAIOpen] = useLocalStorage<boolean>(
@@ -131,12 +132,23 @@ export function KnowledgeBaseApp({
   const docRequestSeqRef = useRef(0);
   const kbRequestSeqRef = useRef(0);
   const kbRetryTimerRef = useRef<number | null>(null);
+  const deleteSelectionInFlightRef = useRef(false);
   const [docsWidth, setDocsWidth] = useLocalStorage<number>(
     'app-docs-width',
     340,
     { enabled: persistWorkspaceState },
   );
   const [isDraggingDocs, setIsDraggingDocs] = useState<boolean>(false);
+
+  // Live drag widths: updated per mousemove as plain state (pure updaters,
+  // StrictMode-safe) and committed to the persisted localStorage-backed width
+  // only once the drag ends — never a localStorage write per mousemove.
+  const [liveAiWidth, setLiveAiWidth] = useState<number | null>(null);
+  const [liveKbsWidth, setLiveKbsWidth] = useState<number | null>(null);
+  const [liveDocsWidth, setLiveDocsWidth] = useState<number | null>(null);
+  const aiWidthLive = liveAiWidth ?? aiWidth;
+  const kbsWidthLive = liveKbsWidth ?? kbsWidth;
+  const docsWidthLive = liveDocsWidth ?? docsWidth;
   
   const [isCreateKbModalOpen, setIsCreateKbModalOpen] = useState<boolean>(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState<boolean>(false);
@@ -173,16 +185,19 @@ export function KnowledgeBaseApp({
   }, [tabCache]);
 
   useEffect(() => {
+    if (!isDraggingAi && !isDraggingKbs && !isDraggingDocs) {
+      return;
+    }
     const handleMouseMove = (e: MouseEvent) => {
       if (isDraggingAi) {
-        const newWidth = document.body.clientWidth - e.clientX;
-        if (newWidth > 200 && newWidth < 800) setAiWidth(newWidth);
+        const newWidth = Math.round(document.body.clientWidth - e.clientX);
+        if (newWidth > 200 && newWidth < 800) setLiveAiWidth(newWidth);
       } else if (isDraggingKbs) {
-        const kWidth = e.clientX - 64; // Adjust for GlobalNav
-        if (kWidth > 150 && kWidth < 500) setKbsWidth(kWidth);
+        const kWidth = Math.round(e.clientX - 64); // Adjust for GlobalNav
+        if (kWidth > 150 && kWidth < 500) setLiveKbsWidth(kWidth);
       } else if (isDraggingDocs) {
-        const dWidth = e.clientX - 64 - kbsWidth; // Adjust for GlobalNav + Kbs width
-        if (dWidth > 200 && dWidth < 600) setDocsWidth(dWidth);
+        const dWidth = Math.round(e.clientX - 64 - kbsWidthLive); // Adjust for GlobalNav + Kbs width
+        if (dWidth > 200 && dWidth < 600) setLiveDocsWidth(dWidth);
       }
     };
     const handleMouseUp = () => {
@@ -191,20 +206,38 @@ export function KnowledgeBaseApp({
       setIsDraggingDocs(false);
     };
 
-    if (isDraggingAi || isDraggingKbs || isDraggingDocs) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    } else {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     };
-  }, [isDraggingAi, isDraggingKbs, isDraggingDocs, kbsWidth]);
+  }, [isDraggingAi, isDraggingKbs, isDraggingDocs, kbsWidthLive]);
+
+  // Persist drag results once the drag ends: the localStorage-backed width
+  // states are written here (rounded, once per drag) instead of inside the
+  // mousemove updater.
+  useEffect(() => {
+    if (isDraggingAi || isDraggingKbs || isDraggingDocs) {
+      return;
+    }
+    if (liveAiWidth !== null) {
+      setAiWidth(liveAiWidth);
+      setLiveAiWidth(null);
+    }
+    if (liveKbsWidth !== null) {
+      setKbsWidth(liveKbsWidth);
+      setLiveKbsWidth(null);
+    }
+    if (liveDocsWidth !== null) {
+      setDocsWidth(liveDocsWidth);
+      setLiveDocsWidth(null);
+    }
+  }, [isDraggingAi, isDraggingKbs, isDraggingDocs, liveAiWidth, liveKbsWidth, liveDocsWidth, setAiWidth, setKbsWidth, setDocsWidth]);
 
   useEffect(() => {
     let cancelled = false;
@@ -301,23 +334,27 @@ export function KnowledgeBaseApp({
 
     if (doc.type === 'richtext' || doc.type === 'code' || doc.type === 'markdown') {
       const seq = ++docRequestSeqRef.current;
-      setDocContent('Loading...');
+      setIsDocLoading(true);
+      setDocContent('');
       try {
         const content = await DocumentService.getDocumentContent(doc.id);
         if (seq !== docRequestSeqRef.current) {
           return;
         }
         setDocContent(content);
+        setIsDocLoading(false);
       } catch (error) {
         if (seq !== docRequestSeqRef.current) {
           return;
         }
         toastKnowledgebaseError(error, t);
         setDocContent('');
+        setIsDocLoading(false);
       }
     } else {
       docRequestSeqRef.current += 1;
       setDocContent('');
+      setIsDocLoading(false);
     }
   }, [activeKb, tabCache, t]);
 
@@ -334,7 +371,10 @@ export function KnowledgeBaseApp({
     setOpenDocs(cachedDocs);
     setActiveDoc(null);
     setDocContent('');
-    
+    // Any in-flight document load for the previous space is now stale.
+    docRequestSeqRef.current += 1;
+    setIsDocLoading(false);
+
     setLoadingDocs(true);
     const kbSeq = ++kbRequestSeqRef.current;
     DocumentService.getDocuments(kb.id).then(data => {
@@ -343,7 +383,7 @@ export function KnowledgeBaseApp({
       }
       setDocs(data);
       setLoadingDocs(false);
-      
+
       const flatDocs: DocumentMeta[] = [];
       const flatten = (nodes: any[]) => {
         nodes.forEach(n => {
@@ -382,6 +422,12 @@ export function KnowledgeBaseApp({
           }, 150);
         }
       }
+    }).catch(error => {
+      if (kbSeq !== kbRequestSeqRef.current) {
+        return;
+      }
+      setLoadingDocs(false);
+      toastKnowledgebaseError(error, t);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fixedKnowledgeBaseId, handleSelectDoc, persistWorkspaceState, setActiveKb, setActiveDoc, setOpenDocs, tabCache]);
@@ -455,42 +501,6 @@ export function KnowledgeBaseApp({
     // 3. Persist
     await DocumentService.updateDocument(docId, { title: newTitle });
   }, []);
-
-  // Sync tabs with extant documents list (automatically closing deleted tabs)
-  useEffect(() => {
-    if (!docs || docs.length === 0) {
-      if (!loadingDocs) {
-        setOpenDocs([]);
-        setActiveDoc(null);
-        setDocContent('');
-      }
-      return;
-    }
-
-    const flatIds = new Set<string>();
-    const traverse = (items: any[]) => {
-      items.forEach(item => {
-        flatIds.add(item.id);
-        if (item.type === 'folder' && item.children) {
-          traverse(item.children);
-        }
-      });
-    };
-    traverse(docs);
-
-    setOpenDocs(prev => {
-      const filtered = prev.filter(d => flatIds.has(d.id));
-      if (filtered.length !== prev.length) {
-        return filtered;
-      }
-      return prev;
-    });
-
-    if (activeDoc && !flatIds.has(activeDoc.id)) {
-      setActiveDoc(null);
-      setDocContent('');
-    }
-  }, [docs, loadingDocs]);
 
   const handleCreateKb = async (gitUrl?: string, gitBranch?: string) => {
     if (isBlank(newKbTitle)) return;
@@ -652,9 +662,9 @@ export function KnowledgeBaseApp({
   return (
     <div className="flex-1 flex overflow-hidden">
       {!isEphemeralFixedWorkspace && activeTab !== 'market' && (
-        <KnowledgeBaseList 
-          kbs={kbs} loadingKbs={loadingKbs} activeKb={activeKb} 
-          width={kbsWidth} isDragging={isDraggingKbs} onMouseDownDrag={() => setIsDraggingKbs(true)}
+        <KnowledgeBaseList
+          kbs={kbs} loadingKbs={loadingKbs} activeKb={activeKb}
+          width={kbsWidthLive} isDragging={isDraggingKbs} onMouseDownDrag={() => setIsDraggingKbs(true)}
           onSelectKb={handleSelectKb} 
           onCreateKbSelect={(type) => { setNewKbType(type); setIsCreateKbModalOpen(true); }} 
           onOpenSettings={(kb) => {
@@ -688,43 +698,55 @@ export function KnowledgeBaseApp({
                   setActiveKb(stillExists);
                 }
               }
+            }).catch(error => {
+              toastKnowledgebaseError(error, t);
             });
           }}
         />
       )}
 
       {!isEphemeralFixedWorkspace && activeTab === 'market' ? (
-        <KnowledgeBaseMarketView 
+        <KnowledgeBaseMarketView
           onSubscribedChange={() => {
             DocumentService.getKnowledgeBases().then(data => {
               setKbs(data);
+            }).catch(error => {
+              toastKnowledgebaseError(error, t);
             });
           }}
         />
       ) : (
         <>
-          <KnowledgeFileList 
-            activeKb={activeKb} docs={docs} loadingDocs={loadingDocs} activeDoc={activeDoc} 
-            width={docsWidth} isDragging={isDraggingDocs} onMouseDownDrag={() => setIsDraggingDocs(true)}
+          <KnowledgeFileList
+            activeKb={activeKb} docs={docs} loadingDocs={loadingDocs} activeDoc={activeDoc}
+            width={docsWidthLive} isDragging={isDraggingDocs} onMouseDownDrag={() => setIsDraggingDocs(true)}
             selectedDocIds={selectedDocIds} onSelectDoc={handleSelectDoc} 
             onToggleDocSelection={toggleDocSelection} 
             onClearSelection={() => setSelectedDocIds(new Set())} 
             onDeleteSelection={async () => {
+              if (deleteSelectionInFlightRef.current) return;
               if (confirm(t('confirmDelete', { count: selectedDocIds.size, ns: 'common' }))) {
-                for (const id of selectedDocIds) {
-                  await DocumentService.deleteDocument(id);
+                deleteSelectionInFlightRef.current = true;
+                try {
+                  for (const id of selectedDocIds) {
+                    await DocumentService.deleteDocument(id);
+                  }
+                  if (activeKb) {
+                     setLoadingDocs(true);
+                     const updatedDocs = await DocumentService.getDocuments(activeKb.id);
+                     setDocs(updatedDocs);
+                     setLoadingDocs(false);
+                  }
+                  if (activeDoc && selectedDocIds.has(activeDoc.id)) {
+                     setActiveDoc(null);
+                     setDocContent('');
+                  }
+                  setSelectedDocIds(new Set());
+                } catch (error) {
+                  toastKnowledgebaseError(error, t);
+                } finally {
+                  deleteSelectionInFlightRef.current = false;
                 }
-                if (activeKb) {
-                   setLoadingDocs(true);
-                   const updatedDocs = await DocumentService.getDocuments(activeKb.id);
-                   setDocs(updatedDocs);
-                   setLoadingDocs(false);
-                }
-                if (activeDoc && selectedDocIds.has(activeDoc.id)) {
-                   setActiveDoc(null);
-                   setDocContent('');
-                }
-                setSelectedDocIds(new Set());
               }
             }}
             onMenuCreate={handleMenuCreate}
@@ -758,11 +780,12 @@ export function KnowledgeBaseApp({
             onCloseToRight={handleCloseToRight}
             onCloseAll={handleCloseAll}
             onTitleChange={handleTitleChange}
-            docContent={docContent} 
-            loadingDocs={loadingDocs} 
-            isAIOpen={isAIOpen} 
-            onToggleAI={() => setIsAIOpen(!isAIOpen)} 
-            onContentChange={handleContentChange} 
+            docContent={docContent}
+            isDocLoading={isDocLoading}
+            loadingDocs={loadingDocs}
+            isAIOpen={isAIOpen}
+            onToggleAI={() => setIsAIOpen(!isAIOpen)}
+            onContentChange={handleContentChange}
             onUpdateDocs={() => {
               if (activeKb) {
                 const refreshSeq = ++kbRequestSeqRef.current;
@@ -806,7 +829,7 @@ export function KnowledgeBaseApp({
               setIsPublishModalOpen(true);
             }}
             docs={docs}
-            aiWidth={aiWidth}
+            aiWidth={aiWidthLive}
             isDraggingAi={isDraggingAi}
             onMouseDownDragAi={() => setIsDraggingAi(true)}
             workspaceMode={effectiveWorkspaceMode}
@@ -873,6 +896,8 @@ export function KnowledgeBaseApp({
                   setActiveDoc(null);
                 }
               }
+            }).catch(error => {
+              toastKnowledgebaseError(error, t);
             });
           }}
         />
@@ -892,6 +917,9 @@ export function KnowledgeBaseApp({
               DocumentService.getDocuments(activeKb.id).then(data => {
                 setDocs(data);
                 setLoadingDocs(false);
+              }).catch(error => {
+                setLoadingDocs(false);
+                toastKnowledgebaseError(error, t);
               });
             }
           }}

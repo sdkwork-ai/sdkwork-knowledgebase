@@ -15,7 +15,6 @@ fn retrieval_request_supports_multi_space_hybrid_rag() {
         bindings: vec![
             KnowledgeRetrievalBinding {
                 space_id: 7,
-                collection_id: None,
                 source_filter: Some(vec![KnowledgeFilter {
                     key: "sourceType".to_string(),
                     value: "drive".to_string(),
@@ -27,7 +26,6 @@ fn retrieval_request_supports_multi_space_hybrid_rag() {
             },
             KnowledgeRetrievalBinding {
                 space_id: 11,
-                collection_id: Some(13),
                 source_filter: None,
                 document_filter: Some(vec![KnowledgeFilter {
                     key: "language".to_string(),
@@ -80,7 +78,6 @@ fn retrieval_result_preserves_citation_and_trace_identity() {
             document_id: 301,
             document_version_id: Some(401),
             space_id: 7,
-            collection_id: Some(9),
             title: "Knowledge Provider SPI".to_string(),
             content: "Knowledge retrieval stays separate from model generation.".to_string(),
             score: Some(0.91),
@@ -117,7 +114,6 @@ fn context_pack_is_a_bounded_prompt_input_not_a_model_answer() {
         retrieval_profile_id: Some(31),
         bindings: vec![KnowledgeRetrievalBinding {
             space_id: 7,
-            collection_id: None,
             source_filter: None,
             document_filter: None,
             priority: 10,
@@ -138,7 +134,6 @@ fn context_pack_is_a_bounded_prompt_input_not_a_model_answer() {
             document_id: 301,
             document_version_id: None,
             space_id: 7,
-            collection_id: None,
             title: "Agent Memory".to_string(),
             content: "Memory and knowledge are separate agent inputs.".to_string(),
             score: Some(0.88),
@@ -203,7 +198,6 @@ fn knowledge_agent_profile_selects_model_provider_and_multiple_knowledge_binding
                 profile_id: 41,
                 tenant_id: 100001,
                 space_id: 7,
-                collection_id: None,
                 source_filter: None,
                 document_filter: None,
                 priority: 10,
@@ -216,7 +210,6 @@ fn knowledge_agent_profile_selects_model_provider_and_multiple_knowledge_binding
                 profile_id: 41,
                 tenant_id: 100001,
                 space_id: 11,
-                collection_id: Some(13),
                 source_filter: None,
                 document_filter: None,
                 priority: 20,

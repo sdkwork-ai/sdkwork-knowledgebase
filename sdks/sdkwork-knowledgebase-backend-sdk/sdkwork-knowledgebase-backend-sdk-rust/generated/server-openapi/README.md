@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     client.set_auth_token("your-auth-token");
 client.set_access_token("your-access-token");
 
-    let result = client.knowledge().group_launch_capability().await?;
+    let result = client.knowledge().group_launch_list().await?;
     println!("{result:?}");
     Ok(())
 }
@@ -51,7 +51,7 @@ client.set_header("X-Custom-Header", "value");
 
 ```rust
 // Retrieve the group knowledgebase launch capability state for the runtime deployment
-let result = client.knowledge().group_launch_capability().await?;
+let result = client.knowledge().group_launch_list().await?;
 println!("{result:?}");
 ```
 
@@ -64,7 +64,7 @@ use sdkwork_knowledgebase_backend_sdk_generated_rust::{SdkworkBackendClient, Sdk
 let client = SdkworkBackendClient::new(SdkworkConfig::new("/backend/v3/api"))?;
 
 let outcome: Result<(), _> = async {
-    client.knowledge().group_launch_capability().await?;
+    client.knowledge().group_launch_list().await?;
     Ok(())
 }.await;
 

@@ -89,6 +89,8 @@ pub enum KnowledgeDrivePermissionError {
     Conflict(String),
     #[error("drive permission not found: {0}")]
     NotFound(String),
+    #[error("drive permission denied: {0}")]
+    PermissionDenied(String),
     #[error("drive permission upstream error: {0}")]
     Upstream(String),
     #[error("drive permission internal error: {0}")]

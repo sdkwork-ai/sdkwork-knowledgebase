@@ -1,8 +1,16 @@
 use serde::{Deserialize, Serialize};
+use crate::serde_int64::{
+    deserialize_u64_from_string_or_number,
+    serialize_u64_as_string,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateKnowledgeSourceRequest {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub source_type: KnowledgeSourceType,
     pub provider: Option<String>,
@@ -22,7 +30,15 @@ pub struct KnowledgeSourceList {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeSource {
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub id: u64,
+    #[serde(
+        serialize_with = "serialize_u64_as_string",
+        deserialize_with = "deserialize_u64_from_string_or_number"
+    )]
     pub space_id: u64,
     pub source_type: KnowledgeSourceType,
     pub provider: Option<String>,

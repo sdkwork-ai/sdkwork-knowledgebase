@@ -6,27 +6,30 @@ use sdkwork_knowledgebase_contract::{
     },
     CreateKnowledgeDocumentRequest, CreateKnowledgeDocumentVersionRequest,
     CreateKnowledgeSpaceRequest, GrantKnowledgeSpaceMemberRequest, IngestionJob,
-    KnowledgeAgentBinding, KnowledgeAgentBindingList, KnowledgeAgentBindingRequest,
-    KnowledgeAgentChatRequest, KnowledgeAgentChatResponse, KnowledgeAgentProfile,
-    KnowledgeAgentProfileRequest, KnowledgeBrowserListData, KnowledgeContextPack,
-    KnowledgeContextPackRequest, KnowledgeDocument, KnowledgeDocumentContent,
-    KnowledgeDocumentVersion, KnowledgeDriveImportRequest, KnowledgeDriveImportResult,
-    KnowledgeGitImportRequest, KnowledgeGitImportResult, KnowledgeGitSyncRequest,
-    KnowledgeGitSyncResult, KnowledgeIngestRequest, KnowledgeMarketCatalogItem,
-    KnowledgeMarketSubscriptionRequest, KnowledgeMarketSubscriptionResult,
-    KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult, KnowledgeOkfBundleFile,
-    KnowledgeOkfConceptRevision, KnowledgeRetrievalRequest, KnowledgeRetrievalResult,
-    KnowledgeSpace, KnowledgeSpaceMember, KnowledgeSpaceMemberSubjectType,
-    KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest,
-    KnowledgeWechatArticlesPublishRequest, KnowledgeWechatFanTagList,
-    KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult,
-    KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest,
+    KnowledgeAgentBinding, KnowledgeAgentBindingRequest, KnowledgeAgentChatRequest,
+    KnowledgeAgentChatResponse, KnowledgeAgentProfile, KnowledgeAgentProfileRequest,
+    KnowledgeBrowserListData, KnowledgeContextPack, KnowledgeContextPackRequest,
+    KnowledgeDocument, KnowledgeDocumentContent, KnowledgeDocumentVersion,
+    KnowledgeDriveImportRequest, KnowledgeDriveImportResult, KnowledgeGitImportRequest,
+    KnowledgeGitImportResult, KnowledgeGitSyncRequest, KnowledgeGitSyncResult,
+    KnowledgeIngestRequest, KnowledgeMarketCatalogItem, KnowledgeMarketSubscriptionRequest,
+    KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult,
+    KnowledgeOkfBundleFile, KnowledgeOkfConceptRevision, KnowledgeRetrievalRequest,
+    KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceMember,
+    KnowledgeSpaceMemberSubjectType, KnowledgeWechatApplet, KnowledgeWechatAppletList,
+    KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest,
+    KnowledgeWechatFanTag, KnowledgeWechatOfficialAccount, KnowledgeWechatOfficialAccountList,
+    KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest,
+    KnowledgeWechatReplaceOfficialAccountsRequest,
     ListKnowledgeBrowserRequest, OkfBundleExportRequest, OkfBundleImportRequest,
     OkfBundleImportResult, OkfConceptSummary, OkfConceptUpsertRequest, OkfContextPackRequest,
     OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun,
     OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, UpdateKnowledgeSpaceRequest,
 };
-use sdkwork_utils_rust::SdkWorkPageData;
+use sdkwork_intelligence_knowledgebase_service::wechat::{
+    WechatCallbackReceipt, WechatCallbackReceiptRequest, WechatCallbackVerificationRequest,
+};
+use sdkwork_utils_rust::{SdkWorkCommandData, SdkWorkPageData};
 use std::sync::Arc;
 
 use crate::{
@@ -148,8 +151,9 @@ impl KnowledgeAppApi for AgentOnlyAppApi {
         &self,
         context: KnowledgeAppRequestContext,
         profile_id: u64,
-    ) -> ApiResult<KnowledgeAgentBindingList> {
-        self.agent.list_bindings(context, profile_id).await
+    ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
+        let bindings = self.agent.list_bindings(context, profile_id).await?;
+        Ok(crate::pagination::fixed_list_page_data(bindings.items))
     }
 
     async fn create_agent_profile_binding(
@@ -290,8 +294,9 @@ impl KnowledgeAppApi for AgentAndRetrievalAppApi {
         &self,
         context: KnowledgeAppRequestContext,
         profile_id: u64,
-    ) -> ApiResult<KnowledgeAgentBindingList> {
-        self.agent.list_bindings(context, profile_id).await
+    ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
+        let bindings = self.agent.list_bindings(context, profile_id).await?;
+        Ok(crate::pagination::fixed_list_page_data(bindings.items))
     }
 
     async fn create_agent_profile_binding(
@@ -523,7 +528,7 @@ impl KnowledgeAppApi for FullAppApi {
         context: KnowledgeAppRequestContext,
         space_id: u64,
         request: GrantKnowledgeSpaceMemberRequest,
-    ) -> ApiResult<()> {
+    ) -> ApiResult<SdkWorkCommandData> {
         self.space
             .grant_space_member(context, space_id, request)
             .await
@@ -878,8 +883,9 @@ impl KnowledgeAppApi for FullAppApi {
         &self,
         context: KnowledgeAppRequestContext,
         profile_id: u64,
-    ) -> ApiResult<KnowledgeAgentBindingList> {
-        self.agent.list_bindings(context, profile_id).await
+    ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
+        let bindings = self.agent.list_bindings(context, profile_id).await?;
+        Ok(crate::pagination::fixed_list_page_data(bindings.items))
     }
 
     async fn create_agent_profile_binding(
@@ -1000,8 +1006,9 @@ impl KnowledgeAppApi for FullAppApi {
     async fn list_wechat_official_accounts(
         &self,
         context: KnowledgeAppRequestContext,
-    ) -> ApiResult<KnowledgeWechatOfficialAccountList> {
-        self.wechat.list_official_accounts(context).await
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWechatOfficialAccount>> {
+        let accounts = self.wechat.list_official_accounts(context).await?;
+        Ok(crate::pagination::fixed_list_page_data(accounts.accounts))
     }
 
     async fn replace_wechat_official_accounts(
@@ -1018,17 +1025,20 @@ impl KnowledgeAppApi for FullAppApi {
         &self,
         context: KnowledgeAppRequestContext,
         account_id: String,
-    ) -> ApiResult<KnowledgeWechatFanTagList> {
-        self.wechat
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWechatFanTag>> {
+        let fan_tags = self
+            .wechat
             .list_official_account_fan_tags(context, account_id)
-            .await
+            .await?;
+        Ok(crate::pagination::fixed_list_page_data(fan_tags.tags))
     }
 
     async fn list_wechat_applets(
         &self,
         context: KnowledgeAppRequestContext,
-    ) -> ApiResult<KnowledgeWechatAppletList> {
-        self.wechat.list_applets(context).await
+    ) -> ApiResult<SdkWorkPageData<KnowledgeWechatApplet>> {
+        let applets = self.wechat.list_applets(context).await?;
+        Ok(crate::pagination::fixed_list_page_data(applets.applets))
     }
 
     async fn replace_wechat_applets(
@@ -1053,6 +1063,20 @@ impl KnowledgeAppApi for FullAppApi {
         request: KnowledgeWechatArticlesPreviewRequest,
     ) -> ApiResult<KnowledgeWechatOperationResult> {
         self.wechat.preview_articles(context, request).await
+    }
+
+    async fn verify_wechat_callback(
+        &self,
+        request: WechatCallbackVerificationRequest,
+    ) -> ApiResult<String> {
+        self.wechat.verify_wechat_callback(request).await
+    }
+
+    async fn receive_wechat_callback(
+        &self,
+        request: WechatCallbackReceiptRequest,
+    ) -> ApiResult<WechatCallbackReceipt> {
+        self.wechat.receive_wechat_callback(request).await
     }
 
     async fn list_market_listings(
@@ -1080,7 +1104,7 @@ impl KnowledgeAppApi for FullAppApi {
         &self,
         context: KnowledgeAppRequestContext,
         listing_id: u64,
-    ) -> ApiResult<KnowledgeMarketSubscriptionResult> {
+    ) -> ApiResult<()> {
         self.commerce
             .delete_market_subscription(context, listing_id)
             .await

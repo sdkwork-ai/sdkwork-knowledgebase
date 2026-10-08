@@ -45,8 +45,6 @@ struct PreparedEmbeddingUpsert {
     index_id: i64,
     chunk_id: i64,
     embedding_hash: String,
-    vector_ref: String,
-    vector_json: String,
     pgvector_literal: String,
     dimension: i64,
     provider_id: String,
@@ -153,7 +151,9 @@ impl PostgresKnowledgeEmbeddingStore {
         // Content hash over model + serialized vector so consumers can detect
         // re-embedding changes (model swap or vector update). The historical
         // `sha256:chunk:{id}:index:{id}` value was identity-derived and never
-        // changed with content, breaking change detection.
+        // changed with content, breaking change detection. The serialized
+        // vector is used only for this hash: the pgvector `embedding_vector`
+        // column is the single authoritative vector storage.
         let embedding_hash = embedding_content_hash(&model, vector_json.as_bytes());
 
         Ok(PreparedEmbeddingUpsert {
@@ -164,8 +164,6 @@ impl PostgresKnowledgeEmbeddingStore {
             index_id,
             chunk_id,
             embedding_hash,
-            vector_ref: format!("inline://vector_json/{chunk_id}"),
-            vector_json,
             pgvector_literal: format_pgvector_literal(&request.vector),
             dimension,
             provider_id,
@@ -257,7 +255,7 @@ async fn bulk_upsert_embeddings_postgres(
     let mut builder = QueryBuilder::new(
         r#"
         INSERT INTO kb_embedding (
-            id, uuid, tenant_id, organization_id, index_id, chunk_id, embedding_hash, vector_ref, vector_json,
+            id, uuid, tenant_id, organization_id, index_id, chunk_id, embedding_hash,
             embedding_vector, dimension, provider_id, model, metadata, status, created_at, updated_at, version
         )
         "#,
@@ -269,9 +267,7 @@ async fn bulk_upsert_embeddings_postgres(
             .push_bind(item.organization_id)
             .push_bind(item.index_id)
             .push_bind(item.chunk_id)
-            .push_bind(item.embedding_hash.as_str())
-            .push_bind(item.vector_ref.as_str())
-            .push_bind(item.vector_json.as_str());
+            .push_bind(item.embedding_hash.as_str());
         row.push("CAST(");
         row.push_bind_unseparated(item.pgvector_literal.as_str());
         row.push_unseparated(" AS vector)");
@@ -288,8 +284,6 @@ async fn bulk_upsert_embeddings_postgres(
         r#"
         ON CONFLICT (tenant_id, organization_id, index_id, chunk_id) DO UPDATE SET
             embedding_hash = excluded.embedding_hash,
-            vector_ref = excluded.vector_ref,
-            vector_json = excluded.vector_json,
             embedding_vector = excluded.embedding_vector,
             dimension = excluded.dimension,
             provider_id = excluded.provider_id,

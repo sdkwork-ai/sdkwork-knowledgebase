@@ -508,9 +508,14 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
 
     /// Retrieves the caller's own tenant knowledgebase status.
     ///
-    /// **Security**: The tenant is identified by the authenticated principal's token claims.
-    /// Returns space count, document count, and status for the current tenant.
-    async fn retrieve_current_tenant(&self) -> BackendApiResult<KnowledgeTenantStatus> {
+    /// **Security**: The summary is scoped to the authenticated principal's
+    /// tenant id carried in the request context; implementations must fail
+    /// closed when that tenant does not match the tenant the summary store
+    /// is bound to.
+    async fn retrieve_current_tenant(
+        &self,
+        _context: &KnowledgeBackendRequestContext,
+    ) -> BackendApiResult<KnowledgeTenantStatus> {
         Err(BackendApiError::unsupported_operation("tenants.current"))
     }
 

@@ -127,6 +127,16 @@ pub const ROUTES: &[RouteManifestEntry] = &[
         operation_id: "wechat.articles.preview",
     },
     RouteManifestEntry {
+        method: "GET",
+        path: "/app/v3/api/knowledge/wechat/callback",
+        operation_id: "wechat.callback.verify",
+    },
+    RouteManifestEntry {
+        method: "POST",
+        path: "/app/v3/api/knowledge/wechat/callback",
+        operation_id: "wechat.callback.receive",
+    },
+    RouteManifestEntry {
         method: "POST",
         path: "/app/v3/api/knowledge/ingests",
         operation_id: "ingests.create",

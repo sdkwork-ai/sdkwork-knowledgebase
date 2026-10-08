@@ -929,13 +929,13 @@ impl KnowledgebaseRuntime {
         let retrieval_backend: SharedKnowledgeRetrievalBackend =
             resolve_cloud_router_client_from_env()
                 .ok()
-                .map(|client| {
+                .map(|client| -> SharedKnowledgeRetrievalBackend {
                     Arc::new(
                         sdkwork_intelligence_knowledgebase_service::embedding_retrieval_backend::CloudRouterEmbeddingRetrievalBackend::new(
                             base_retrieval.clone(),
                             CloudRouterEmbeddingClient::new(Arc::new(client)),
                         ),
-                    ) as SharedKnowledgeRetrievalBackend
+                    )
                 })
                 .unwrap_or(base_retrieval);
 
@@ -1253,28 +1253,28 @@ impl KnowledgebaseRuntime {
             .as_ref()
             .is_some_and(|lease| !lease.is_healthy())
         {
-            return Err(Box::new(std::io::Error::other(
+            return Err(Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(
                 "snowflake node lease is unhealthy",
             )));
         }
         knowledgebase_health_check(&self.pool)
             .await
-            .map_err(|error| Box::new(error) as Box<dyn std::error::Error + Send + Sync>)?;
+            .map_err(|error| Box::<dyn std::error::Error + Send + Sync>::from(error))?;
         knowledgebase_drive_health_check(&self.drive_pool)
             .await
-            .map_err(|error| Box::new(error) as Box<dyn std::error::Error + Send + Sync>)?;
+            .map_err(|error| Box::<dyn std::error::Error + Send + Sync>::from(error))?;
         let object_store_readiness = tokio::time::timeout(
             std::time::Duration::from_secs(5),
             self.drive_storage.readiness_check(),
         )
         .await
         .map_err(|_| {
-            Box::new(std::io::Error::other(
+            Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(
                 "knowledge storage readiness check timed out",
-            )) as Box<dyn std::error::Error + Send + Sync>
+            ))
         })?;
         object_store_readiness
-            .map_err(|error| Box::new(error) as Box<dyn std::error::Error + Send + Sync>)?;
+            .map_err(|error| Box::<dyn std::error::Error + Send + Sync>::from(error))?;
         Ok(())
     }
 
@@ -1578,12 +1578,14 @@ impl KnowledgebaseRuntime {
     pub async fn resolve_knowledge_engine_implementation_id_for_space(
         &self,
         space_id: u64,
-    ) -> Result<String, String> {
+    ) -> Result<
+        String,
+        sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineError,
+    > {
         self.knowledge_engine_space_resolver()
             .resolve_for_space(space_id, None)
             .await
             .map(|engine| engine.descriptor().implementation_id)
-            .map_err(|error| error.to_string())
     }
 
     pub async fn read_knowledge_engine_document_for_space(
@@ -1591,18 +1593,21 @@ impl KnowledgebaseRuntime {
         context: &sdkwork_knowledgebase_contract::provider_binding::KnowledgeEngineExecutionContext,
         space_id: u64,
         document_id: &str,
-    ) -> Result<sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineDocument, String>
-    {
+    ) -> Result<
+        sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineDocument,
+        sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineError,
+    > {
         use sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineReadRequest;
 
         let mut context = context.clone();
         context.space_id = space_id;
         context.binding_id = None;
 
+        // The typed KnowledgeEngineError is propagated so ApiError classification
+        // (Timeout -> 504, Unavailable -> 503, ...) applies at the call site.
         self.knowledge_engine_space_resolver()
             .resolve_for_space(space_id, None)
-            .await
-            .map_err(|error| error.to_string())?
+            .await?
             .read_document(
                 &context,
                 KnowledgeEngineReadRequest {
@@ -1612,7 +1617,6 @@ impl KnowledgebaseRuntime {
                 },
             )
             .await
-            .map_err(|error| error.to_string())
     }
 
     pub(crate) fn okf_bundle_engine_for_space(
@@ -1647,7 +1651,7 @@ impl KnowledgebaseRuntime {
         let implementation_id = self
             .resolve_knowledge_engine_implementation_id_for_space(space_id)
             .await
-            .map_err(|detail| crate::ApiError::internal("okf_engine_resolve_failed", detail))?;
+            .map_err(crate::ApiError::from)?;
         self.okf_bundle_engine_for_space(space_id, &implementation_id)
     }
 
@@ -1698,18 +1702,21 @@ impl KnowledgebaseRuntime {
         space_id: u64,
         query: &str,
         top_k: u32,
-    ) -> Result<sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineSearchResult, String>
-    {
+    ) -> Result<
+        sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineSearchResult,
+        sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineError,
+    > {
         use sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineSearchRequest;
 
         let mut context = context.clone();
         context.space_id = space_id;
         context.binding_id = None;
 
+        // The typed KnowledgeEngineError is propagated so ApiError classification
+        // (Timeout -> 504, Unavailable -> 503, ...) applies at the call site.
         self.knowledge_engine_space_resolver()
             .resolve_for_space(space_id, None)
-            .await
-            .map_err(|error| error.to_string())?
+            .await?
             .search(
                 &context,
                 KnowledgeEngineSearchRequest {
@@ -1720,7 +1727,6 @@ impl KnowledgebaseRuntime {
                 },
             )
             .await
-            .map_err(|error| error.to_string())
     }
 
     pub(crate) fn object_ref_store(&self) -> &PostgresKnowledgeDriveObjectRefStore {
@@ -1803,7 +1809,7 @@ impl KnowledgebaseRuntime {
         };
         let index = match self
             .index_store()
-            .get_or_create_active_vector_index(space_id, 0)
+            .get_or_create_active_vector_index(space_id)
             .await
         {
             Ok(index) => index,
@@ -2700,8 +2706,9 @@ impl crate::KnowledgeAppApi for AgentAndRetrievalHostedApi {
         &self,
         context: KnowledgeAppRequestContext,
         profile_id: u64,
-    ) -> ApiResult<KnowledgeAgentBindingList> {
-        self.agent.list_bindings(context, profile_id).await
+    ) -> ApiResult<sdkwork_utils_rust::SdkWorkPageData<KnowledgeAgentBinding>> {
+        let bindings = self.agent.list_bindings(context, profile_id).await?;
+        Ok(crate::pagination::fixed_list_page_data(bindings.items))
     }
 
     async fn create_agent_profile_binding(

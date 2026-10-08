@@ -3,9 +3,8 @@ import type { KnowledgeDocumentVersionState } from './knowledge-document-version
 import type { KnowledgeDocumentVisibility } from './knowledge-document-visibility';
 
 export interface KnowledgeDocument {
-  id: number;
-  spaceId: number;
-  collectionId: number;
+  id: string;
+  spaceId: string;
   sourceId?: number | null;
   originalFileDriveNodeId?: string | null;
   title: string;

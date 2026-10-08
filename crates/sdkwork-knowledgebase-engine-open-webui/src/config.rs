@@ -1,8 +1,11 @@
 //! Open WebUI connector configuration from runtime environment.
 
+use sdkwork_knowledgebase_provider_runtime::env_flag;
 use zeroize::Zeroizing;
 
 pub const OPEN_WEBUI_BASE_URL_ENV: &str = "SDKWORK_KNOWLEDGEBASE_OPEN_WEBUI_BASE_URL";
+pub const OPEN_WEBUI_ALLOW_PRIVATE_NETWORK_ENV: &str =
+    "SDKWORK_KNOWLEDGEBASE_OPEN_WEBUI_ALLOW_PRIVATE_NETWORK";
 pub const OPEN_WEBUI_KNOWLEDGE_ID_ENV: &str = "SDKWORK_KNOWLEDGEBASE_OPEN_WEBUI_KNOWLEDGE_ID";
 
 #[derive(Clone, PartialEq, Eq)]
@@ -10,6 +13,11 @@ pub struct OpenWebuiConnectorConfig {
     pub base_url: String,
     pub api_key: Zeroizing<String>,
     pub default_knowledge_id: Option<String>,
+    /// Fail-closed opt-in for self-hosted engine targets on a private network
+    /// segment (loopback, RFC1918): set `OPEN_WEBUI_ALLOW_PRIVATE_NETWORK=1|true`
+    /// when the deployment explicitly trusts the private segment the engine
+    /// runs on (operator responsibility). DNS socket pinning still applies.
+    pub allow_private_network: bool,
 }
 
 impl OpenWebuiConnectorConfig {
@@ -23,10 +31,13 @@ impl OpenWebuiConnectorConfig {
             .ok()
             .filter(|value| !value.is_empty());
 
+        let allow_private_network = env_flag(OPEN_WEBUI_ALLOW_PRIVATE_NETWORK_ENV);
+
         Some(Self {
             base_url,
             api_key,
             default_knowledge_id,
+            allow_private_network,
         })
     }
 }

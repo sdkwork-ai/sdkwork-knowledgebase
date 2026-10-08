@@ -32,7 +32,7 @@ fn map_drive_error(error: DriveServiceError) -> KnowledgeDrivePermissionError {
         DriveServiceError::Conflict(message) => KnowledgeDrivePermissionError::Conflict(message),
         DriveServiceError::NotFound(message) => KnowledgeDrivePermissionError::NotFound(message),
         DriveServiceError::PermissionDenied(message) => {
-            KnowledgeDrivePermissionError::Upstream(message)
+            KnowledgeDrivePermissionError::PermissionDenied(message)
         }
         DriveServiceError::Internal(message) => KnowledgeDrivePermissionError::Internal(message),
     }

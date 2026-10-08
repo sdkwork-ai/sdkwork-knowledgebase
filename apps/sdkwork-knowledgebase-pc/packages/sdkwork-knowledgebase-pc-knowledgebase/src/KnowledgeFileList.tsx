@@ -317,10 +317,10 @@ export function KnowledgeFileList({
                     if (docsToPublish.length > 0) {
                       onPublishDocs(docsToPublish);
                     }
-                    }} className="hover:text-[var(--color-kb-accent)] transition-colors"><FileUp size={14}/></button>
+                    }} className="hover:text-[var(--color-kb-accent)] transition-colors" aria-label={t('publish', { ns: 'editor' })} title={t('publish', { ns: 'editor' })}><FileUp size={14}/></button>
                   )}
-                  <button onClick={onDeleteSelection} className="hover:text-red-500 transition-colors" title={t('delete', { ns: 'common' })}><Trash2 size={14}/></button>
-                  <button onClick={onClearSelection} className="hover:text-[var(--color-kb-text-muted)] transition-colors"><X size={14}/></button>
+                  <button onClick={onDeleteSelection} className="hover:text-red-500 transition-colors" aria-label={t('delete', { ns: 'common' })} title={t('delete', { ns: 'common' })}><Trash2 size={14}/></button>
+                  <button onClick={onClearSelection} className="hover:text-[var(--color-kb-text-muted)] transition-colors" aria-label={t('clearSelection', { ns: 'common' })} title={t('clearSelection', { ns: 'common' })}><X size={14}/></button>
                </div>
             </div>
          )}

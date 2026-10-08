@@ -2,7 +2,6 @@ import type { KnowledgeDocumentVisibility } from './knowledge-document-visibilit
 
 export interface CreateKnowledgeDocumentRequest {
   spaceId: string;
-  collectionId?: string;
   sourceId?: string | null;
   title: string;
   mimeType?: string | null;

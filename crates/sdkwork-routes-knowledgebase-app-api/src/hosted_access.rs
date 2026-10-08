@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_access_control::{
-    KnowledgeAccessControl, KnowledgeAccessRole, KnowledgeSpaceMember as ServiceSpaceMember,
-    KnowledgeSubjectType,
+    KnowledgeAccessControl, KnowledgeAccessControlError, KnowledgeAccessRole,
+    KnowledgeSpaceMember as ServiceSpaceMember, KnowledgeSubjectType,
 };
 use sdkwork_intelligence_knowledgebase_service::{
     group_space_access::GroupKnowledgeSpaceAccessAuthorizer,
@@ -193,12 +193,24 @@ pub(crate) async fn require_space_access_with_role(
                 required_role,
             })
             .await
-            .map_err(|_| {
-                ApiError::new(
-                    StatusCode::SERVICE_UNAVAILABLE,
-                    "group_knowledge_space_access_check_unavailable",
-                    "group knowledge space access is temporarily unavailable",
-                )
+            .map_err(|error| {
+                // A definitively missing drive-side anchor is a 404 so clients can
+                // retire the dead space reference; anything else stays fail-closed 503.
+                if matches!(
+                    error,
+                    KnowledgeAccessControlError::NotFound(_)
+                ) {
+                    ApiError::not_found(
+                        "group_knowledge_space_anchor_missing",
+                        error.to_string(),
+                    )
+                } else {
+                    ApiError::new(
+                        StatusCode::SERVICE_UNAVAILABLE,
+                        "group_knowledge_space_access_check_unavailable",
+                        "group knowledge space access is temporarily unavailable",
+                    )
+                }
             })?;
         if !drive_grant.allowed {
             return Err(ApiError::new(
@@ -574,7 +586,7 @@ pub(crate) async fn grant_space_member_with_context(
     context: &KnowledgeAppRequestContext,
     space_id: u64,
     request: GrantKnowledgeSpaceMemberRequest,
-) -> ApiResult<()> {
+) -> ApiResult<sdkwork_utils_rust::SdkWorkCommandData> {
     ensure_runtime_tenant(runtime, context)?;
     if is_group_managed_space(
         runtime,
@@ -600,13 +612,14 @@ pub(crate) async fn grant_space_member_with_context(
     let okf_initializer = OkfBundleInitializerService::new(runtime.drive_storage())
         .with_registry(&file_registry)
         .with_drive_workspace(runtime.drive_workspace());
+    let role = parse_member_role(request.role);
     space_service(runtime, &okf_initializer)
         .grant_space_member(
             space_id,
             &context.tenant_id.to_string(),
             parse_member_subject_type(request.subject_type),
             request.subject_id.trim(),
-            parse_member_role(request.role),
+            role,
             &actor_id,
         )
         .await
@@ -620,7 +633,11 @@ pub(crate) async fn grant_space_member_with_context(
     )
     .await
     .map_err(ApiError::from)?;
-    Ok(())
+    Ok(sdkwork_utils_rust::SdkWorkCommandData {
+        accepted: true,
+        resource_id: Some(space_id.to_string()),
+        status: Some(member_role_label(request.role).to_string()),
+    })
 }
 
 pub(crate) async fn revoke_space_member_with_context(
@@ -701,7 +718,6 @@ pub(crate) async fn require_enabled_agent_bindings_space_access_with_role(
         .filter(|binding| binding.enabled)
         .map(|binding| KnowledgeRetrievalBinding {
             space_id: binding.space_id,
-            collection_id: binding.collection_id,
             source_filter: binding.source_filter.clone(),
             document_filter: binding.document_filter.clone(),
             priority: binding.priority,

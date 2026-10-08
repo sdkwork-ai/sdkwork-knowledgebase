@@ -6,7 +6,6 @@ export interface KnowledgeContextFragment {
   documentId: string;
   documentVersionId?: string | null;
   spaceId: string;
-  collectionId?: string | null;
   title: string;
   content: string;
   score?: number | null;

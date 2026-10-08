@@ -90,7 +90,8 @@ async fn fetch_catalog_rows(
     sqlx::query(
         r#"
         SELECT
-            l.id, l.title, l.icon, l.description, l.author, l.tags_json,
+            l.id, l.title, l.icon, l.description, l.author,
+            CAST(l.tags_json AS TEXT) AS tags_json,
             l.provider, l.model_name, l.subscribers_count, l.documents_count,
             CASE
                 WHEN $3 IS NULL THEN 0

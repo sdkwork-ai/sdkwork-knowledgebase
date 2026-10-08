@@ -22,7 +22,10 @@ use sdkwork_knowledgebase_provider_runtime::{ProviderExecutionContext, ProviderO
 use std::sync::Arc;
 
 pub use client::RagflowApiClient;
-pub use config::{RagflowConnectorConfig, RAGFLOW_BASE_URL_ENV, RAGFLOW_DATASET_ID_ENV};
+pub use config::{
+    RagflowConnectorConfig, RAGFLOW_ALLOW_PRIVATE_NETWORK_ENV, RAGFLOW_BASE_URL_ENV,
+    RAGFLOW_DATASET_ID_ENV,
+};
 
 pub const RAGFLOW_VENDOR_ID: &str = "ragflow";
 pub const RAGFLOW_IMPLEMENTATION_ID: &str = "engine.knowledge.external.ragflow";
@@ -39,10 +42,21 @@ impl RagflowKnowledgeEngine {
     }
 
     pub fn with_config(config: RagflowConnectorConfig) -> Self {
-        let client = RagflowApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match RagflowApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    RAGFLOW_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -105,7 +119,13 @@ impl KnowledgeEngine for RagflowKnowledgeEngine {
             })?
             .into_secret();
         config.default_dataset_id = Some(binding.remote_resource_id.clone());
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "RAGFlow base URL does not satisfy the Provider runtime target policy".to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

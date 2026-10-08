@@ -340,7 +340,6 @@ impl KnowledgeRetrievalBackend for MockRetrievalBackend {
             document_id: 42,
             document_version_id: Some(1),
             space_id: request.binding.space_id,
-            collection_id: None,
             title: "Sample Doc".to_string(),
             content: "sample content".to_string(),
             score: 0.9,
@@ -428,6 +427,7 @@ async fn runtime_registers_explicit_ragflow_adapter() {
             RagflowConnectorConfig {
                 base_url: "http://127.0.0.1:1".to_string(),
                 api_key: Default::default(),
+                allow_private_network: false,
                 default_dataset_id: None,
             },
         ))],
@@ -468,6 +468,7 @@ async fn runtime_registers_explicit_dify_adapter() {
             DifyConnectorConfig {
                 base_url: "http://127.0.0.1:1".to_string(),
                 api_key: Default::default(),
+                allow_private_network: false,
                 default_dataset_id: None,
             },
         ))],
@@ -639,7 +640,6 @@ async fn rag_native_engine_lists_documents_from_store() {
     let document = KnowledgeDocument {
         id: 42,
         space_id: 7,
-        collection_id: 1,
         source_id: None,
         original_file_drive_node_id: Some("drive-node-42".to_string()),
         title: "Sample Doc".to_string(),

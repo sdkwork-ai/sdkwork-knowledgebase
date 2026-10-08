@@ -59,11 +59,6 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
         let tenant_id = backend_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = backend_to_i64("organization_id", self.organization_id)?;
         let space_id = backend_to_i64("space_id", request.binding.space_id)?;
-        let collection_id = request
-            .binding
-            .collection_id
-            .map(|value| backend_to_i64("collection_id", value))
-            .transpose()?;
         let top_k = i64::from(request.top_k.clamp(1, 64));
         let min_score = request.binding.min_score.unwrap_or(0.0);
 
@@ -74,7 +69,6 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
                 c.document_id,
                 c.document_version_id,
                 c.space_id,
-                c.collection_id,
                 d.title,
                 c.content_text,
                 c.token_count,
@@ -119,10 +113,6 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
         query.push_bind(space_id);
         query.push(" AND c.status = ");
         query.push_bind(ACTIVE_STATUS);
-        if let Some(collection_id) = collection_id {
-            query.push(" AND c.collection_id = ");
-            query.push_bind(collection_id);
-        }
         push_binding_scope_filters(
             &mut query,
             tenant_id,
@@ -170,10 +160,6 @@ fn chunk_hit_from_row(
         space_id: row
             .try_get::<i64, _>("space_id")
             .map_err(backend_sqlx_error)? as u64,
-        collection_id: row
-            .try_get::<Option<i64>, _>("collection_id")
-            .map_err(backend_sqlx_error)?
-            .map(|value| value as u64),
         title: row.try_get("title").map_err(backend_sqlx_error)?,
         content: row.try_get("content_text").map_err(backend_sqlx_error)?,
         score,

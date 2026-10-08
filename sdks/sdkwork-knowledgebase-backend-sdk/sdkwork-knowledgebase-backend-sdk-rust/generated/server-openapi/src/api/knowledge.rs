@@ -28,7 +28,7 @@ impl KnowledgeApi {
     }
 
     /// Retrieve the group knowledgebase launch capability state for the runtime deployment
-    pub async fn group_launch_capability(&self) -> Result<GroupKnowledgebaseLaunchCapability, SdkworkError> {
+    pub async fn group_launch_list(&self) -> Result<GroupKnowledgebaseLaunchCapability, SdkworkError> {
         let path = backend_path(&"/knowledge/group_launch_capability".to_string());
         self.client.get(&path, None, None).await
     }
@@ -56,7 +56,7 @@ impl KnowledgeApi {
     }
 
     /// Rebuild a knowledge index
-    pub async fn indexes_rebuild(&self, index_id: &str, body: &OkfBundleIndexRebuildRequest) -> Result<OkfIndexDocument, SdkworkError> {
+    pub async fn indexes_rebuild(&self, index_id: &str, body: &OkfBundleIndexRebuildRequest) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&format!("/knowledge/indexes/{}/rebuild", serialize_path_parameter(index_id, PathParameterSpec::new("indexId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
@@ -74,7 +74,7 @@ impl KnowledgeApi {
     /// List OKF candidates
     pub async fn okf_candidates_list(&self, space_id: i64, cursor: Option<&str>, page_size: Option<i64>) -> Result<serde_json::Value, SdkworkError> {
         let query = build_query_string(&[
-            QueryParameterSpec::new("spaceId", space_id, "form", true, false, None),
+            QueryParameterSpec::new("space_id", space_id, "form", true, false, None),
             QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
             QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
         ]);

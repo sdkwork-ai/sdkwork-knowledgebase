@@ -16,7 +16,11 @@ export function validateWebLinkUrl(raw: string): URL {
 }
 
 function buildIdempotencyKey(spaceId: string, url: URL): string {
-  return `pc-weblink-${spaceId}-${url.hostname}-${url.pathname}`.slice(0, 128);
+  // Per-attempt uniqueness: the ingest create-or-get deduplicates by key, and
+  // a key without the query string (or a repeated import of the same URL)
+  // would otherwise collide into the first job.
+  const randomSuffix = Math.random().toString(36).slice(2, 10);
+  return `pc-weblink-${spaceId}-${url.hostname}-${url.pathname}-${Date.now()}-${randomSuffix}`.slice(0, 128);
 }
 
 export async function importWebLinkToKnowledgeBase(params: {

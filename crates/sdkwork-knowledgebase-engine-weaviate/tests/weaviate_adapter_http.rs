@@ -12,15 +12,9 @@ use sdkwork_knowledgebase_test_support::provider_execution::{
 };
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
-// Wiremock fixtures run on loopback; the provider SSRF protection fails closed unless
-// this explicit test-only allowance is set (never set it in a deployed environment).
-fn allow_test_loopback() {
-    std::env::set_var("SDKWORK_KNOWLEDGEBASE_PROVIDER_RUNTIME_ALLOW_LOOPBACK", "1");
-}
 
 #[tokio::test]
 async fn weaviate_search_uses_configured_remote_resource_id() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     let class_name = "KnowledgeChunk";
     Mock::given(method("POST"))
@@ -45,6 +39,7 @@ async fn weaviate_search_uses_configured_remote_resource_id() {
     let config = WeaviateConnectorConfig {
         base_url: mock_server.uri(),
         api_key: Some(zeroize::Zeroizing::new("test-api-key".to_string())),
+        allow_private_network: true,
         default_class_name: Some(class_name.to_string()),
         title_property: DEFAULT_WEAVIATE_TITLE_PROPERTY.to_string(),
         content_property: DEFAULT_WEAVIATE_CONTENT_PROPERTY.to_string(),
@@ -71,7 +66,6 @@ async fn weaviate_search_uses_configured_remote_resource_id() {
 
 #[tokio::test]
 async fn weaviate_read_document_fetches_object_by_id() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     let class_name = "KnowledgeChunk";
     Mock::given(method("GET"))
@@ -89,6 +83,7 @@ async fn weaviate_read_document_fetches_object_by_id() {
     let config = WeaviateConnectorConfig {
         base_url: mock_server.uri(),
         api_key: Some(zeroize::Zeroizing::new("test-api-key".to_string())),
+        allow_private_network: true,
         default_class_name: Some(class_name.to_string()),
         title_property: DEFAULT_WEAVIATE_TITLE_PROPERTY.to_string(),
         content_property: DEFAULT_WEAVIATE_CONTENT_PROPERTY.to_string(),
@@ -114,10 +109,10 @@ async fn weaviate_read_document_fetches_object_by_id() {
 
 #[tokio::test]
 async fn weaviate_list_documents_is_explicitly_unsupported() {
-    allow_test_loopback();
     let config = WeaviateConnectorConfig {
         base_url: "http://localhost:8080".to_string(),
         api_key: None,
+        allow_private_network: true,
         default_class_name: Some("KnowledgeChunk".to_string()),
         title_property: DEFAULT_WEAVIATE_TITLE_PROPERTY.to_string(),
         content_property: DEFAULT_WEAVIATE_CONTENT_PROPERTY.to_string(),
@@ -150,6 +145,7 @@ async fn assert_weaviate_health(upstream_status: u16, expected: KnowledgeEngineH
     let engine = WeaviateKnowledgeEngine::with_config(WeaviateConnectorConfig {
         base_url: mock_server.uri(),
         api_key: None,
+        allow_private_network: true,
         default_class_name: Some("HealthClass".to_string()),
         title_property: DEFAULT_WEAVIATE_TITLE_PROPERTY.to_string(),
         content_property: DEFAULT_WEAVIATE_CONTENT_PROPERTY.to_string(),
@@ -160,7 +156,6 @@ async fn assert_weaviate_health(upstream_status: u16, expected: KnowledgeEngineH
 
 #[tokio::test]
 async fn weaviate_health_maps_upstream_availability() {
-    allow_test_loopback();
     assert_weaviate_health(200, KnowledgeEngineHealthStatus::Available).await;
     assert_weaviate_health(503, KnowledgeEngineHealthStatus::Degraded).await;
 }

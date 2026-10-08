@@ -7,6 +7,9 @@ license.workspace = true
 description = "Trusted generated IM RPC adapter for Knowledgebase group-launch tickets."
 
 
+[lib]
+name = "sdkwork_knowledgebase_im_rpc_adapter"
+
 [lints]
 workspace = true
 [dependencies]

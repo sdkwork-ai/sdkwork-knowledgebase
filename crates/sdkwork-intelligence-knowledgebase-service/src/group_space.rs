@@ -466,14 +466,22 @@ impl<'a> KnowledgeGroupKnowledgeSpaceService<'a> {
             Err(error) => {
                 // The binding remains fail-closed in `archiving`; releasing only this attempt's
                 // lease lets the deterministic IM outbox retry converge immediately.
-                let _ = self
+                if let Err(release_error) = self
                     .binding_store
                     .release_group_space_archive_lease(
                         command,
                         &archive_lease_token,
                         "group_space_archive_saga_failed",
                     )
-                    .await;
+                    .await
+                {
+                    // A failed release leaves the binding lease-owned until lease expiry
+                    // with no retry convergence, so the operator must be able to see why.
+                    tracing::error!(
+                        error = %release_error,
+                        "failed to release group-space archive lease after saga failure"
+                    );
+                }
                 Err(error)
             }
         }

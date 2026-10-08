@@ -1306,7 +1306,7 @@ impl KnowledgeOkfConceptStore for MemoryOkfConceptStore {
             .iter()
             .position(|concept| concept.id == concept_row_id && concept.space_id == space_id)
             .ok_or_else(|| {
-                KnowledgeOkfConceptStoreError::Internal(format!(
+                KnowledgeOkfConceptStoreError::NotFound(format!(
                     "missing okf concept: {concept_row_id}"
                 ))
             })?;

@@ -17,10 +17,6 @@ pub struct KnowledgeContextFragment {
     #[serde(rename = "spaceId")]
     pub space_id: String,
 
-    #[serde(rename = "collectionId")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub collection_id: Option<String>,
-
     pub title: String,
 
     pub content: String,

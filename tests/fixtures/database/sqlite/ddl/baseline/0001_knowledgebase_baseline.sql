@@ -27,26 +27,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_space_drive_space
     ON kb_space (tenant_id, drive_space_id)
     WHERE drive_space_id IS NOT NULL AND status = 1;
 
-CREATE TABLE IF NOT EXISTS kb_collection (
-    id BIGINT NOT NULL,
-    uuid TEXT NOT NULL,
-    tenant_id INTEGER NOT NULL,
-    space_id INTEGER NOT NULL,
-    parent_id INTEGER NOT NULL DEFAULT 0,
-    name TEXT NOT NULL,
-    path TEXT NOT NULL,
-    level_no INTEGER NOT NULL,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    status INTEGER NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    version INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (id)
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_collection_uuid
-    ON kb_collection (tenant_id, uuid);
-
 CREATE TABLE IF NOT EXISTS kb_source (
     id BIGINT NOT NULL,
     uuid TEXT NOT NULL,
@@ -142,7 +122,6 @@ CREATE TABLE IF NOT EXISTS kb_document (
     uuid TEXT NOT NULL,
     tenant_id INTEGER NOT NULL,
     space_id INTEGER NOT NULL,
-    collection_id INTEGER NOT NULL DEFAULT 0,
     source_id INTEGER,
     identity_scope TEXT NOT NULL DEFAULT 'source_and_original_drive_node',
     original_file_drive_node_id TEXT,
@@ -171,7 +150,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_document_identity
     ON kb_document (
         tenant_id,
         space_id,
-        collection_id,
         identity_scope,
         COALESCE(source_id, 0),
         CASE
@@ -215,7 +193,6 @@ CREATE TABLE IF NOT EXISTS kb_chunk (
     uuid TEXT NOT NULL,
     tenant_id INTEGER NOT NULL,
     space_id INTEGER NOT NULL,
-    collection_id INTEGER NOT NULL DEFAULT 0,
     document_id INTEGER NOT NULL,
     document_version_id INTEGER NOT NULL,
     chunk_index INTEGER NOT NULL,
@@ -242,14 +219,13 @@ CREATE INDEX IF NOT EXISTS idx_kb_chunk_document_version
     ON kb_chunk (tenant_id, document_version_id, status, chunk_index);
 
 CREATE INDEX IF NOT EXISTS idx_kb_chunk_space_status
-    ON kb_chunk (tenant_id, space_id, collection_id, status);
+    ON kb_chunk (tenant_id, space_id, status);
 
 CREATE TABLE IF NOT EXISTS kb_index (
     id BIGINT NOT NULL,
     uuid TEXT NOT NULL,
     tenant_id INTEGER NOT NULL,
     space_id INTEGER NOT NULL,
-    collection_id INTEGER NOT NULL DEFAULT 0,
     index_kind TEXT NOT NULL,
     embedding_provider_id TEXT,
     embedding_model TEXT,
@@ -268,7 +244,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_index_uuid
     ON kb_index (tenant_id, uuid);
 
 CREATE INDEX IF NOT EXISTS idx_kb_index_scope
-    ON kb_index (tenant_id, space_id, collection_id, index_kind, status);
+    ON kb_index (tenant_id, space_id, index_kind, status);
 
 CREATE TABLE IF NOT EXISTS kb_embedding (
     id BIGINT NOT NULL,
@@ -277,12 +253,10 @@ CREATE TABLE IF NOT EXISTS kb_embedding (
     index_id INTEGER NOT NULL,
     chunk_id INTEGER NOT NULL,
     embedding_hash TEXT NOT NULL,
-    vector_ref TEXT NOT NULL,
     dimension INTEGER NOT NULL,
     provider_id TEXT,
     model TEXT,
     metadata TEXT,
-    vector_json TEXT,
     embedding_vector TEXT,
     status INTEGER NOT NULL,
     created_at TEXT NOT NULL,
@@ -423,7 +397,6 @@ CREATE TABLE IF NOT EXISTS kb_agent_knowledge_binding (
     tenant_id INTEGER NOT NULL,
     profile_id INTEGER NOT NULL,
     space_id INTEGER NOT NULL,
-    collection_id INTEGER,
     source_filter TEXT,
     document_filter TEXT,
     priority INTEGER NOT NULL DEFAULT 0,

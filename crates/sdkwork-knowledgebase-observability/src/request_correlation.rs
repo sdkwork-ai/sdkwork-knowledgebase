@@ -213,7 +213,8 @@ mod tests {
         let payload: serde_json::Value = serde_json::from_slice(&body).expect("json");
 
         assert_eq!(0, payload["code"].as_i64().unwrap());
-        assert_eq!(7, payload["data"]["spaceId"].as_u64().unwrap());
+        // Int64 ids serialize as canonical decimal strings (API_SPEC §13.6).
+        assert_eq!("7", payload["data"]["spaceId"].as_str().unwrap());
         assert_eq!(
             "drv-kb-001",
             payload["data"]["driveSpaceId"].as_str().unwrap()

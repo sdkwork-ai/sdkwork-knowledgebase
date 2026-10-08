@@ -287,6 +287,7 @@ export function PdfViewer({ activeDoc }: PdfViewerProps) {
             type="button"
             disabled={pageNumber <= 1}
             onClick={() => setPageNumber((value) => value - 1)}
+            aria-label={t('pdfPrevPage')}
             className="p-1 rounded-md hover:bg-zinc-200/60 dark:hover:bg-[var(--color-kb-panel-border)] disabled:opacity-30 disabled:cursor-not-allowed text-zinc-500 dark:text-[var(--color-kb-text-muted)] hover:text-zinc-900 dark:hover:text-[var(--color-kb-text-heading)] transition-all active:scale-95"
           >
             <ChevronLeft size={14} strokeWidth={2.5} />
@@ -298,6 +299,7 @@ export function PdfViewer({ activeDoc }: PdfViewerProps) {
             type="button"
             disabled={pageNumber >= (numPages || -1)}
             onClick={() => setPageNumber((value) => value + 1)}
+            aria-label={t('pdfNextPage')}
             className="p-1 rounded-md hover:bg-zinc-200/60 dark:hover:bg-[var(--color-kb-panel-border)] disabled:opacity-30 disabled:cursor-not-allowed text-zinc-500 dark:text-[var(--color-kb-text-muted)] hover:text-zinc-900 dark:hover:text-[var(--color-kb-text-heading)] transition-all active:scale-95"
           >
             <ChevronRight size={14} strokeWidth={2.5} />

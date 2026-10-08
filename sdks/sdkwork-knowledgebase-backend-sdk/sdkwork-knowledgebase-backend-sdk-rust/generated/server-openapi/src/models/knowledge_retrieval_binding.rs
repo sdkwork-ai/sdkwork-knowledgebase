@@ -7,10 +7,6 @@ pub struct KnowledgeRetrievalBinding {
     #[serde(rename = "spaceId")]
     pub space_id: String,
 
-    #[serde(rename = "collectionId")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub collection_id: Option<String>,
-
     #[serde(rename = "sourceFilter")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_filter: Option<Vec<KnowledgeFilter>>,

@@ -34,7 +34,10 @@ fn map_drive_error(error: DriveServiceError) -> KnowledgeAccessControlError {
             KnowledgeAccessControlError::InvalidRequest(message)
         }
         DriveServiceError::NotFound(message) => {
-            KnowledgeAccessControlError::InvalidRequest(message)
+            // A missing drive-side resource (space anchor node, binding) is definitive:
+            // preserving NotFound lets callers retire the knowledge-space reference
+            // instead of surfacing a permanent 500 for a zombie space.
+            KnowledgeAccessControlError::NotFound(message)
         }
         DriveServiceError::PermissionDenied(message) => {
             KnowledgeAccessControlError::Denied(message)
@@ -181,22 +184,40 @@ impl KnowledgeAccessControl for KnowledgebaseKnowledgeAccessControlAdapter {
             .await
             .map_err(map_drive_error)?;
         // Drive permission pagination uses offset page_token; cursor is forwarded as-is.
+        let mut members = Vec::with_capacity(list.items.len());
+        for item in list.items {
+            // Unmapped subject types or roles are skipped loudly instead of being
+            // silently dropped by a filter_map, so drift between the Drive and
+            // Knowledge vocabularies is observable in logs.
+            let Some(subject_type) = KnowledgeSubjectType::from_drive_subject_type(
+                &item.subject_type,
+            ) else {
+                tracing::warn!(
+                    subject_id = %item.subject_id,
+                    subject_type = %item.subject_type,
+                    "skipping drive permission with unmapped subject type in knowledge space member list"
+                );
+                continue;
+            };
+            let Some(role) = KnowledgeAccessRole::from_drive_role(&item.role) else {
+                tracing::warn!(
+                    subject_id = %item.subject_id,
+                    subject_type = %item.subject_type,
+                    role = %item.role,
+                    "skipping drive permission with unmapped role in knowledge space member list"
+                );
+                continue;
+            };
+            members.push(KnowledgeSpaceMember {
+                subject_type,
+                subject_id: item.subject_id,
+                role,
+                inherited: false,
+            });
+        }
 
         Ok(KnowledgeSpaceMemberList {
-            members: list
-                .items
-                .into_iter()
-                .filter_map(|item| {
-                    Some(KnowledgeSpaceMember {
-                        subject_type: KnowledgeSubjectType::from_drive_subject_type(
-                            &item.subject_type,
-                        )?,
-                        subject_id: item.subject_id,
-                        role: KnowledgeAccessRole::from_drive_role(&item.role)?,
-                        inherited: false,
-                    })
-                })
-                .collect(),
+            members,
             next_cursor: list.next_page_token,
         })
     }

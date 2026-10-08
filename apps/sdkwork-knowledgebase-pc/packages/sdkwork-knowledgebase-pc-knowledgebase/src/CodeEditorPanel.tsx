@@ -9,10 +9,12 @@ import { buildSandboxedHtmlPreview } from './services/sandboxedHtmlPreview';
 export interface CodeEditorPanelProps extends ReactKeyedComponentProps {
   activeDoc: DocumentMeta;
   docContent: string;
+  /** True while the active document's content request is in flight. */
+  isDocLoading?: boolean;
   onContentChange: (content: string) => void;
 }
 
-export function CodeEditorPanel({ activeDoc, docContent, onContentChange }: CodeEditorPanelProps) {
+export function CodeEditorPanel({ activeDoc, docContent, isDocLoading = false, onContentChange }: CodeEditorPanelProps) {
   const [viewMode, setViewMode] = useState<'code' | 'preview'>('preview');
   const [device, setDevice] = useState<'current' | 'mobile' | 'tablet'>('current');
   const [, setDeviceMenuOpen] = useState(false);
@@ -210,7 +212,7 @@ export function CodeEditorPanel({ activeDoc, docContent, onContentChange }: Code
       )}
 
       <div className="flex-1 w-full relative min-h-0 min-w-0 flex bg-[var(--color-kb-panel-hover)]">
-        {docContent === 'Loading...' ? (
+        {isDocLoading ? (
           <div className="absolute inset-4 animate-pulse bg-[var(--color-kb-panel-border)] rounded-lg"></div>
         ) : (
           <>

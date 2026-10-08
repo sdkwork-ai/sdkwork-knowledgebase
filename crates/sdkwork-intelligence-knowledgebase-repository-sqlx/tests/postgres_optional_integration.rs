@@ -270,7 +270,6 @@ async fn postgres_browser_projection_batches_document_status_when_database_url_c
     let document = documents
         .create_document(CreateKnowledgeDocumentRecord {
             space_id: 7,
-            collection_id: 0,
             source_id: None,
             identity_scope: KnowledgeDocumentIdentityScope::SourceAndOriginalDriveNode,
             original_file_drive_node_id: Some("node-pdf".to_string()),

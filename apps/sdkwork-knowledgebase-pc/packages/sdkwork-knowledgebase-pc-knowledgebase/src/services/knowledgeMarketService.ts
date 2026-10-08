@@ -1,13 +1,22 @@
 import {
   KnowledgebaseErrorCodes,
   requireKnowledgebaseAppSdkHttpClient,
-  requirePositiveNumber,
+  throwKnowledgebaseError,
 } from 'sdkwork-knowledgebase-pc-core';
 
 import type { MarketKnowledgeBase } from './document';
 
+// Listing ids are int64 strings on the wire: routing them through `Number`
+// silently rounds ids past 2^53 and the corrupted id is then replayed to the
+// subscriptions API, so the canonical decimal text is validated instead.
 function parseListingId(id: string): string {
-  return String(requirePositiveNumber(Number(id), KnowledgebaseErrorCodes.INVALID_MARKET_LISTING));
+  const trimmed = id.trim();
+  if (!/^[0-9]+$/.test(trimmed) || /^0+$/.test(trimmed)) {
+    throwKnowledgebaseError(KnowledgebaseErrorCodes.INVALID_MARKET_LISTING, {
+      cause: `market listing id must be a canonical positive integer, received: ${id}`,
+    });
+  }
+  return trimmed;
 }
 
 function mapCatalogItem(item: {

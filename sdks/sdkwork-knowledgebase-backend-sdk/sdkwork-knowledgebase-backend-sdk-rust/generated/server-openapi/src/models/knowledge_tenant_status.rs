@@ -11,10 +11,10 @@ pub struct KnowledgeTenantStatus {
     pub status: String,
 
     #[serde(rename = "spaceCount")]
-    pub space_count: i64,
+    pub space_count: String,
 
     #[serde(rename = "documentCount")]
-    pub document_count: i64,
+    pub document_count: String,
 
     #[serde(rename = "createdAt")]
     #[serde(default, skip_serializing_if = "Option::is_none")]

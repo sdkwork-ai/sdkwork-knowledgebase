@@ -21,6 +21,7 @@ use sdkwork_knowledgebase_contract::{
     OkfIndexRebuildRequest, OkfLogEntry, OkfQualityRunRequest,
 };
 use serde::Deserialize;
+use sdkwork_utils_rust::SdkWorkCommandData;
 
 use crate::{
     auth::{require_backend_context, require_backend_mutation_context, RequiredBackendContext},
@@ -36,14 +37,15 @@ macro_rules! backend_handler {
             State(state): State<BackendState>,
             context: RequiredBackendContext,
         ) -> Result<Response, BackendApiProblem> {
-            require_backend_context(&state, context)?;
-            $body(state).await
+            let context = require_backend_context(&state, context)?;
+            $body(state, context).await
         }
     };
 }
 
+// Query parameter names follow the API_SPEC §13 lower_snake_case canonical form.
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ListOkfCandidatesQuery {
     pub space_id: u64,
     pub cursor: Option<String>,
@@ -140,6 +142,21 @@ fn provider_audit_metadata(
     }
 }
 
+// Lifecycle commands (approve/reject/publish/rebuild) use the command envelope
+// (data.accepted) per API_SPEC section 15.4, mirroring the provider command
+// handlers; resourceId/status carry the operation outcome when the port
+// result exposes it.
+fn command_data(
+    resource_id: Option<String>,
+    status: Option<String>,
+) -> SdkWorkCommandData {
+    SdkWorkCommandData {
+        accepted: true,
+        resource_id,
+        status,
+    }
+}
+
 pub(crate) async fn list_sources(
     State(state): State<BackendState>,
     context: RequiredBackendContext,
@@ -202,7 +219,11 @@ pub(crate) async fn approve_okf_candidate(
 ) -> Result<Response, BackendApiProblem> {
     let context = require_backend_mutation_context(&state, context, "okf.candidates.approve")?;
     let result = state.api.approve_okf_candidate(candidate_id, request).await;
-    ok_json(audit_backend_mutation(&context, "okf.candidates.approve", result).await?)
+    command_json(
+        audit_backend_mutation(&context, "okf.candidates.approve", result)
+            .await?
+            .map(|candidate| command_data(Some(candidate.id.to_string()), Some(candidate.state))),
+    )
 }
 
 pub(crate) async fn reject_okf_candidate(
@@ -213,7 +234,11 @@ pub(crate) async fn reject_okf_candidate(
 ) -> Result<Response, BackendApiProblem> {
     let context = require_backend_mutation_context(&state, context, "okf.candidates.reject")?;
     let result = state.api.reject_okf_candidate(candidate_id, request).await;
-    ok_json(audit_backend_mutation(&context, "okf.candidates.reject", result).await?)
+    command_json(
+        audit_backend_mutation(&context, "okf.candidates.reject", result)
+            .await?
+            .map(|candidate| command_data(Some(candidate.id.to_string()), Some(candidate.state))),
+    )
 }
 
 pub(crate) async fn publish_okf_concept(
@@ -224,7 +249,11 @@ pub(crate) async fn publish_okf_concept(
 ) -> Result<Response, BackendApiProblem> {
     let context = require_backend_mutation_context(&state, context, "okf.concepts.publish")?;
     let result = state.api.publish_okf_concept(concept_id, request).await;
-    ok_json(audit_backend_mutation(&context, "okf.concepts.publish", result).await?)
+    command_json(
+        audit_backend_mutation(&context, "okf.concepts.publish", result)
+            .await?
+            .map(|summary| command_data(Some(summary.concept_id), None)),
+    )
 }
 
 pub(crate) async fn create_okf_profile(
@@ -255,7 +284,11 @@ pub(crate) async fn rebuild_okf_index(
 ) -> Result<Response, BackendApiProblem> {
     let context = require_backend_mutation_context(&state, context, "okf.bundle.index.rebuild")?;
     let result = state.api.rebuild_okf_index(request).await;
-    ok_json(audit_backend_mutation(&context, "okf.bundle.index.rebuild", result).await?)
+    command_json(
+        audit_backend_mutation(&context, "okf.bundle.index.rebuild", result)
+            .await?
+            .map(|_| command_data(None, None)),
+    )
 }
 
 pub(crate) async fn create_okf_log_entry(
@@ -377,7 +410,11 @@ pub(crate) async fn rebuild_index(
 ) -> Result<Response, BackendApiProblem> {
     let context = require_backend_mutation_context(&state, context, "indexes.rebuild")?;
     let result = state.api.rebuild_index(index_id, request).await;
-    ok_json(audit_backend_mutation(&context, "indexes.rebuild", result).await?)
+    command_json(
+        audit_backend_mutation(&context, "indexes.rebuild", result)
+            .await?
+            .map(|_| command_data(None, None)),
+    )
 }
 
 pub(crate) async fn create_retrieval_profile(
@@ -872,7 +909,9 @@ provider_binding_command_handler!(
 
 backend_handler!(
     retrieve_group_launch_capability,
-    |state: BackendState| async move { ok_json(state.api.retrieve_group_launch_capability().await) }
+    |state: BackendState, _context: KnowledgeBackendRequestContext| async move {
+        ok_json(state.api.retrieve_group_launch_capability().await)
+    }
 );
 
 // ============================================================================
@@ -881,10 +920,12 @@ backend_handler!(
 
 // Retrieves the caller's own tenant knowledgebase status.
 //
-// Security: The tenant is identified by the authenticated principal's token claims.
+// Security: The summary is scoped to the authenticated principal's tenant id,
+// validated against the configured runtime tenant before the store is read.
 // Returns space count, document count, and status for the current tenant.
-backend_handler!(retrieve_current_tenant, |state: BackendState| async move {
-    ok_json(state.api.retrieve_current_tenant().await)
+backend_handler!(retrieve_current_tenant, |state: BackendState,
+                                            context: KnowledgeBackendRequestContext| async move {
+    ok_json(state.api.retrieve_current_tenant(&context).await)
 });
 
 #[derive(Debug, Deserialize)]

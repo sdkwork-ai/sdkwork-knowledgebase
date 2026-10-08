@@ -7,9 +7,13 @@ license.workspace = true
 description = "Bounded and observable outbound HTTP runtime for SDKWork Knowledgebase providers"
 
 
+[lib]
+name = "sdkwork_knowledgebase_provider_runtime"
+
 [lints]
 workspace = true
 [dependencies]
+percent-encoding = "2"
 reqwest.workspace = true
 httpdate.workspace = true
 serde.workspace = true

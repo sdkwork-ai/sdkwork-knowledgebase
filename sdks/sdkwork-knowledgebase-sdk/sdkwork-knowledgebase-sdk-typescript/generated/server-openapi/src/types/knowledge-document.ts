@@ -5,7 +5,6 @@ import type { KnowledgeDocumentVisibility } from './knowledge-document-visibilit
 export interface KnowledgeDocument {
   id: string;
   spaceId: string;
-  collectionId: string;
   sourceId?: string | null;
   originalFileDriveNodeId?: string | null;
   title: string;

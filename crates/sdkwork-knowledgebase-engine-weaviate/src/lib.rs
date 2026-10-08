@@ -24,8 +24,8 @@ use std::sync::Arc;
 pub use client::WeaviateApiClient;
 pub use config::{
     WeaviateConnectorConfig, DEFAULT_WEAVIATE_CONTENT_PROPERTY, DEFAULT_WEAVIATE_TITLE_PROPERTY,
-    WEAVIATE_BASE_URL_ENV, WEAVIATE_CLASS_NAME_ENV, WEAVIATE_CONTENT_PROPERTY_ENV,
-    WEAVIATE_TITLE_PROPERTY_ENV,
+    WEAVIATE_ALLOW_PRIVATE_NETWORK_ENV, WEAVIATE_BASE_URL_ENV, WEAVIATE_CLASS_NAME_ENV,
+    WEAVIATE_CONTENT_PROPERTY_ENV, WEAVIATE_TITLE_PROPERTY_ENV,
 };
 
 pub const WEAVIATE_VENDOR_ID: &str = "weaviate";
@@ -43,10 +43,21 @@ impl WeaviateKnowledgeEngine {
     }
 
     pub fn with_config(config: WeaviateConnectorConfig) -> Self {
-        let client = WeaviateApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match WeaviateApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    WEAVIATE_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -103,7 +114,14 @@ impl KnowledgeEngine for WeaviateKnowledgeEngine {
             .ok_or_else(|| KnowledgeEngineError::Unsupported(self.unconfigured_message()))?;
         config.api_key = credential.map(KnowledgeEngineProviderCredential::into_secret);
         config.default_class_name = Some(binding.remote_resource_id.clone());
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "Weaviate binding was rejected: base URL, class name, or property names do not satisfy the adapter contract"
+                    .to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

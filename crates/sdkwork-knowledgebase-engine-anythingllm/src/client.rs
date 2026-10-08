@@ -6,7 +6,8 @@ use sdkwork_knowledgebase_contract::knowledge_engine::{
     KnowledgeEngineSearchHit, KnowledgeEngineSearchResult,
 };
 use sdkwork_knowledgebase_provider_runtime::{
-    ProviderExecutionContext, ProviderHttpRequest, ProviderOperation, ProviderRuntime,
+    encoded_path_segment, is_path_segment_id, optional_bearer_token, ProviderExecutionContext,
+    ProviderHttpRequest, ProviderOperation, ProviderRuntime,
 };
 use serde::Deserialize;
 
@@ -20,24 +21,48 @@ pub struct AnythingLlmApiClient {
 }
 
 impl AnythingLlmApiClient {
-    pub fn new(config: AnythingLlmConnectorConfig) -> Self {
-        let http = ProviderRuntime::for_base_url(&config.base_url)
-            .expect("AnythingLLM base URL must satisfy Provider Runtime target policy");
-        Self { config, http }
+    pub fn new(config: AnythingLlmConnectorConfig) -> Result<Self, KnowledgeEngineError> {
+        let http = ProviderRuntime::for_base_url_with_private_targets(
+            &config.base_url,
+            config.allow_private_network,
+        )
+        .map_err(KnowledgeEngineError::from)?;
+        Ok(Self { config, http })
+    }
+
+    fn bearer_token(&self) -> Option<&str> {
+        optional_bearer_token(Some(self.config.api_key.as_str()))
     }
 
     fn health_context(&self) -> ProviderExecutionContext {
         ProviderExecutionContext::for_system_health(ANYTHINGLLM_IMPLEMENTATION_ID)
     }
 
+    /// Binding-controlled workspace slugs are spliced into URL paths, so they are
+    /// validated and percent-encoded at every interpolation point.
+    fn validated_workspace_slug<'a>(
+        &self,
+        workspace_slug: &'a str,
+    ) -> Result<&'a str, KnowledgeEngineError> {
+        if is_path_segment_id(workspace_slug) {
+            Ok(workspace_slug)
+        } else {
+            Err(KnowledgeEngineError::Validation(
+                "AnythingLLM workspace slug must match [A-Za-z0-9._:-]{1,256}".to_string(),
+            ))
+        }
+    }
+
     pub async fn connector_health(&self, workspace_slug: &str) -> Result<(), KnowledgeEngineError> {
+        let workspace_slug = self.validated_workspace_slug(workspace_slug)?;
         let url = format!(
-            "{}/api/v1/workspace/{workspace_slug}",
-            self.config.base_url.trim_end_matches('/')
+            "{}/api/v1/workspace/{}",
+            self.config.base_url.trim_end_matches('/'),
+            encoded_path_segment(workspace_slug),
         );
         let request = ProviderHttpRequest::new(ProviderOperation::Health, Method::GET, url)
             .map_err(KnowledgeEngineError::from)?
-            .bearer_auth(self.config.api_key.as_str())
+            .optional_bearer_auth(self.bearer_token())
             .map_err(KnowledgeEngineError::from)?
             .idempotent(true);
         self.http
@@ -55,13 +80,15 @@ impl AnythingLlmApiClient {
         query: &str,
         top_k: u32,
     ) -> Result<KnowledgeEngineSearchResult, KnowledgeEngineError> {
+        let workspace_slug = self.validated_workspace_slug(workspace_slug)?;
         let url = format!(
-            "{}/api/v1/workspace/{workspace_slug}/vector-search",
-            self.config.base_url.trim_end_matches('/')
+            "{}/api/v1/workspace/{}/vector-search",
+            self.config.base_url.trim_end_matches('/'),
+            encoded_path_segment(workspace_slug),
         );
         let request = ProviderHttpRequest::new(ProviderOperation::Search, Method::POST, url)
             .map_err(KnowledgeEngineError::from)?
-            .bearer_auth(self.config.api_key.as_str())
+            .optional_bearer_auth(self.bearer_token())
             .map_err(KnowledgeEngineError::from)?
             .json(&serde_json::json!({
                 "query": query,

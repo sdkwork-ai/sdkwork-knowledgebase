@@ -1,5 +1,5 @@
 export interface OkfBundleImportRequest {
-  spaceId: number;
+  spaceId: string;
   importType: string;
   importId?: string;
 }

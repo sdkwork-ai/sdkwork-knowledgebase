@@ -1,7 +1,7 @@
 import type { KnowledgeSourceType } from './knowledge-source-type';
 
 export interface CreateKnowledgeSourceRequest {
-  spaceId: number;
+  spaceId: string;
   sourceType: KnowledgeSourceType;
   provider?: string | null;
   driveBucket?: string | null;

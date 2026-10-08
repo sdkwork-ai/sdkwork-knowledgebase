@@ -95,7 +95,7 @@ impl KnowledgeCommerceAppService for HostedCommerceService {
         &self,
         context: KnowledgeAppRequestContext,
         listing_id: u64,
-    ) -> ApiResult<KnowledgeMarketSubscriptionResult> {
+    ) -> ApiResult<()> {
         ensure_runtime_tenant(&self.runtime, &context)?;
         let actor_id = require_actor_id(&context)?.parse::<u64>().map_err(|_| {
             ApiError::invalid_request("invalid_actor_id", "actor_id must be numeric")
@@ -111,10 +111,7 @@ impl KnowledgeCommerceAppService for HostedCommerceService {
             .unsubscribe(context.tenant_id, actor_id, listing_id)
             .await
             .map_err(map_market_error)?;
-        Ok(KnowledgeMarketSubscriptionResult {
-            accepted: true,
-            status: "completed".to_string(),
-        })
+        Ok(())
     }
 
     async fn create_media_task(

@@ -6,6 +6,9 @@ edition.workspace = true
 license.workspace = true
 
 
+[lib]
+name = "sdkwork_knowledgebase_agent_provider"
+
 [lints]
 workspace = true
 [dependencies]

@@ -475,7 +475,6 @@ impl MarkdownIndexMetadataStore for MemoryMarkdownIndexMetadataStore {
             document: sdkwork_knowledgebase_contract::document::KnowledgeDocument {
                 id: document_id,
                 space_id: record.document.space_id,
-                collection_id: record.document.collection_id,
                 source_id: Some(source_id),
                 original_file_drive_node_id: record.document.original_file_drive_node_id.clone(),
                 title: record.document.title.clone(),

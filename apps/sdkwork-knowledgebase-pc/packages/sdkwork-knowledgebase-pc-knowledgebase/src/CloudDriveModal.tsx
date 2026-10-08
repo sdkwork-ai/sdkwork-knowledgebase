@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { isBlank } from '@sdkwork/utils';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -131,13 +131,20 @@ export function CloudDriveModal({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
+  // Monotonic request sequence: a stale tab/folder response must never
+  // overwrite a newer view, and an in-flight load-more must never append into
+  // the wrong list (same guard pattern as components.tsx).
+  const requestSeqRef = useRef(0);
+
   const loadDriveItems = useCallback(async () => {
     if (!spaceId || isBlank(spaceId)) {
+      requestSeqRef.current += 1;
       setItems([]);
       setLoadError(t('spaceRequired', { defaultValue: 'Knowledge space is required to browse enterprise drive.' }));
       return;
     }
 
+    const seq = ++requestSeqRef.current;
     setIsLoading(true);
     setLoadError(null);
     try {
@@ -156,6 +163,9 @@ export function CloudDriveModal({
           page = await CloudDriveService.listBrowserItemsPage(spaceId, currentFolderId);
           break;
       }
+      if (seq !== requestSeqRef.current) {
+        return;
+      }
       const nextItems = page.items;
       setDriveNextCursor(page.nextCursor);
       setDriveHasMore(page.hasMore);
@@ -168,11 +178,16 @@ export function CloudDriveModal({
         return nextIndex;
       });
     } catch (error) {
+      if (seq !== requestSeqRef.current) {
+        return;
+      }
       console.error('[CloudDriveModal] failed to list drive browser items', error);
       setItems([]);
       setLoadError(t('loadFailed', { defaultValue: 'Failed to load enterprise drive files.' }));
     } finally {
-      setIsLoading(false);
+      if (seq === requestSeqRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [spaceId, currentFolderId, activeTab, t]);
 
@@ -189,6 +204,9 @@ export function CloudDriveModal({
 
   useEffect(() => {
     if (!isOpen) {
+      // Invalidate any in-flight browse/load-more responses so they cannot land
+      // after the modal resets its state.
+      requestSeqRef.current += 1;
       const timer = window.setTimeout(() => {
         setActiveTab('my-drive');
         setCurrentFolderId(null);
@@ -294,6 +312,9 @@ export function CloudDriveModal({
       return;
     }
 
+    // Bound to the current view: if a new tab/folder load starts while this
+    // load-more is in flight, its bumped sequence discards the results below.
+    const seq = requestSeqRef.current;
     setLoadingMore(true);
     try {
       let page: CloudDriveBrowserItemsPage;
@@ -311,6 +332,9 @@ export function CloudDriveModal({
           page = await CloudDriveService.listBrowserItemsPage(spaceId, currentFolderId, driveNextCursor);
           break;
       }
+      if (seq !== requestSeqRef.current) {
+        return;
+      }
       setItems((previous) => [...previous, ...page.items]);
       setDriveNextCursor(page.nextCursor);
       setDriveHasMore(page.hasMore);
@@ -322,10 +346,15 @@ export function CloudDriveModal({
         return merged;
       });
     } catch (error) {
+      if (seq !== requestSeqRef.current) {
+        return;
+      }
       console.error('[CloudDriveModal] failed to load more drive browser items', error);
       setLoadError(t('loadFailed', { defaultValue: 'Failed to load enterprise drive files.' }));
     } finally {
-      setLoadingMore(false);
+      if (seq === requestSeqRef.current) {
+        setLoadingMore(false);
+      }
     }
   };
 

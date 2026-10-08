@@ -1,7 +1,7 @@
 export interface CreateKnowledgeDocumentVersionRequest {
-  documentId: number;
-  originalObjectRefId: number;
+  documentId: string;
+  originalObjectRefId: string;
   checksumSha256Hex?: string | null;
-  sizeBytes: number;
+  sizeBytes: string;
   mimeType?: string | null;
 }

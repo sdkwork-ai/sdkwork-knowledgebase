@@ -9,7 +9,6 @@ pub trait KnowledgeIndexStore: Send + Sync {
     async fn get_or_create_active_vector_index(
         &self,
         space_id: u64,
-        collection_id: u64,
     ) -> Result<KnowledgeIndex, KnowledgeIndexStoreError>;
 }
 

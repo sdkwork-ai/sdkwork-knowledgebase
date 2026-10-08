@@ -131,12 +131,37 @@ export async function listDriveFavoriteNodeIds(driveSpaceId: string): Promise<Se
   return favorites;
 }
 
-async function enrichDocumentTreeItem(
+// One drive property read per document leaf; large trees must not fan out an
+// unbounded number of concurrent HTTP requests (connection-pool exhaustion,
+// 429 storms), so leaf reads run through a fixed-size worker pool.
+const METADATA_ENRICHMENT_CONCURRENCY = 6;
+
+function runWithBoundedConcurrency(
+  tasks: Array<() => Promise<void>>,
+  concurrency: number,
+): Promise<void> {
+  if (tasks.length === 0) {
+    return Promise.resolve();
+  }
+  let nextIndex = 0;
+  const workerCount = Math.max(1, Math.min(concurrency, tasks.length));
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (nextIndex < tasks.length) {
+      const task = tasks[nextIndex];
+      nextIndex += 1;
+      await task();
+    }
+  });
+  return Promise.all(workers).then(() => undefined);
+}
+
+function collectDocumentTreeEnrichmentTasks(
   item: FolderNode | DocumentMeta,
   nodeByDocId: Map<string, KnowledgeBrowserNode>,
   loadOkfTags: (conceptRowId: string) => Promise<string[] | undefined>,
-  favoriteNodeIds?: Set<string>,
-): Promise<void> {
+  favoriteNodeIds: Set<string> | undefined,
+  tasks: Array<() => Promise<void>>,
+): void {
   if (item.type === 'folder') {
     const folderNode = nodeByDocId.get(item.id);
     const folderDriveNodeId = folderNode ? resolveDriveNodeId(folderNode) : null;
@@ -145,18 +170,20 @@ async function enrichDocumentTreeItem(
     }
 
     const children = (item as FolderNode).children ?? [];
-    await Promise.all(
-      children.map((child) => enrichDocumentTreeItem(child, nodeByDocId, loadOkfTags, favoriteNodeIds)),
-    );
+    for (const child of children) {
+      collectDocumentTreeEnrichmentTasks(child, nodeByDocId, loadOkfTags, favoriteNodeIds, tasks);
+    }
     return;
   }
 
   const okfMatch = /^okf:\d+:(\d+)$/.exec(item.id);
   if (okfMatch) {
-    const tags = await loadOkfTags(okfMatch[1]);
-    if (tags) {
-      item.tags = tags;
-    }
+    tasks.push(async () => {
+      const tags = await loadOkfTags(okfMatch[1]);
+      if (tags) {
+        item.tags = tags;
+      }
+    });
     return;
   }
 
@@ -170,13 +197,15 @@ async function enrichDocumentTreeItem(
     item.isPinned = true;
   }
 
-  try {
-    const metadata = await readDriveDocumentMetadata(driveNodeId);
-    item.tags = metadata.tags;
-    item.order = metadata.order;
-  } catch {
-    // Leave metadata unset when drive properties are unavailable.
-  }
+  tasks.push(async () => {
+    try {
+      const metadata = await readDriveDocumentMetadata(driveNodeId);
+      item.tags = metadata.tags;
+      item.order = metadata.order;
+    } catch {
+      // Leave metadata unset when drive properties are unavailable.
+    }
+  });
 }
 
 export async function enrichDocumentTreeMetadata(
@@ -196,7 +225,9 @@ export async function enrichDocumentTreeMetadata(
     nodeByDocId.set(docId, node);
   }
 
-  await Promise.all(
-    items.map((item) => enrichDocumentTreeItem(item, nodeByDocId, loadOkfTags, favoriteNodeIds)),
-  );
+  const tasks: Array<() => Promise<void>> = [];
+  for (const item of items) {
+    collectDocumentTreeEnrichmentTasks(item, nodeByDocId, loadOkfTags, favoriteNodeIds, tasks);
+  }
+  await runWithBoundedConcurrency(tasks, METADATA_ENRICHMENT_CONCURRENCY);
 }

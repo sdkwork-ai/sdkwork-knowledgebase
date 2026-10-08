@@ -46,6 +46,28 @@ function isAppAssetPath(source: string): boolean {
   );
 }
 
+/** Final schemes a normalized PDF URL may carry; everything else is rejected. */
+const ALLOWED_PDF_URL_PROTOCOLS = new Set(['http:', 'https:', 'blob:', 'data:']);
+
+function assertAllowedPdfUrl(url: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch (error) {
+    throwKnowledgebaseError(KnowledgebaseErrorCodes.URL_INVALID_SCHEME, {
+      cause: error instanceof Error ? error.message : String(error),
+    });
+  }
+  if (!ALLOWED_PDF_URL_PROTOCOLS.has(parsed.protocol)) {
+    // A `javascript:`-style value must not survive normalization as a URL the
+    // renderer (or a fallback fetch) will consume.
+    throwKnowledgebaseError(KnowledgebaseErrorCodes.URL_INVALID_SCHEME, {
+      cause: parsed.protocol,
+    });
+  }
+  return url;
+}
+
 export function normalizePdfUrl(source: string): string {
   const trimmed = source.trim();
   if (!trimmed) {
@@ -58,14 +80,22 @@ export function normalizePdfUrl(source: string): string {
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://')
   ) {
-    return trimmed;
+    return assertAllowedPdfUrl(trimmed);
   }
 
   if (trimmed.startsWith('//')) {
-    return `${globalThis.location?.protocol ?? 'https:'}${trimmed}`;
+    return assertAllowedPdfUrl(`${globalThis.location?.protocol ?? 'https:'}${trimmed}`);
   }
 
-  return new URL(trimmed, globalThis.location?.origin ?? 'http://localhost').href;
+  let resolved: string;
+  try {
+    resolved = new URL(trimmed, globalThis.location?.origin ?? 'http://localhost').href;
+  } catch (error) {
+    throwKnowledgebaseError(KnowledgebaseErrorCodes.URL_INVALID_SCHEME, {
+      cause: error instanceof Error ? error.message : String(error),
+    });
+  }
+  return assertAllowedPdfUrl(resolved);
 }
 
 export function resolveInitialPdfSource(source: string | undefined): PdfDocumentSource | null {
@@ -76,12 +106,15 @@ export function resolveInitialPdfSource(source: string | undefined): PdfDocument
     return null;
   }
 
-  if (isDirectPdfUrl(trimmed)) {
+  // Direct urls and bare relative paths such as "docs/guide.pdf" both resolve
+  // through normalizePdfUrl. A rejected scheme degrades to null so the
+  // react-pdf consumer shows "Unsupported PDF source." instead of throwing
+  // inside the render/effect path.
+  try {
     return { kind: 'url', url: normalizePdfUrl(trimmed) };
+  } catch {
+    return null;
   }
-
-  // Bare relative paths such as "docs/guide.pdf".
-  return { kind: 'url', url: normalizePdfUrl(trimmed) };
 }
 
 async function fetchViaNativeHost(url: string, host: HostAdapter): Promise<Uint8Array> {

@@ -174,7 +174,8 @@ mod tests {
             let binds = binds.clone();
             move || {
                 binds.fetch_add(1, Ordering::SeqCst);
-                Ok(Arc::new(OpaqueEngine) as Arc<dyn KnowledgeEngine>)
+                let engine: std::sync::Arc<dyn KnowledgeEngine> = std::sync::Arc::new(OpaqueEngine);
+                Ok(engine)
             }
         };
 
@@ -197,7 +198,8 @@ mod tests {
             let binds = binds.clone();
             move || {
                 binds.fetch_add(1, Ordering::SeqCst);
-                Ok(Arc::new(OpaqueEngine) as Arc<dyn KnowledgeEngine>)
+                let engine: std::sync::Arc<dyn KnowledgeEngine> = std::sync::Arc::new(OpaqueEngine);
+                Ok(engine)
             }
         };
 

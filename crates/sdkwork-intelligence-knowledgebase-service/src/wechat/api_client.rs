@@ -6,9 +6,10 @@ use reqwest::Url;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use thiserror::Error;
+use tokio::sync::Mutex as AsyncMutex;
 
 const WECHAT_API_HOST: &str = "api.weixin.qq.com";
 const WECHAT_API_TIMEOUT_SECS: u64 = 30;
@@ -55,6 +56,9 @@ pub struct WechatUserTag {
 pub struct WechatApiClient {
     http: Result<Client, String>,
     token_cache: Mutex<HashMap<String, (String, Instant)>>,
+    /// Per-appid single-flight refresh locks. The std map guard is only held to clone the Arc
+    /// out (never across an await); the tokio mutex is what concurrent misses serialize on.
+    token_refresh_locks: Mutex<HashMap<String, Arc<AsyncMutex<()>>>>,
 }
 
 impl Default for WechatApiClient {
@@ -66,6 +70,7 @@ impl Default for WechatApiClient {
                 .build()
                 .map_err(|error| redacted_reqwest_error_detail(&error)),
             token_cache: Mutex::new(HashMap::new()),
+            token_refresh_locks: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -81,13 +86,22 @@ impl WechatApiClient {
             .map_err(|detail| WechatApiClientError::Configuration(detail.clone()))
     }
 
-    /// Returns a cached, still-valid access token when present, otherwise fetches a fresh
-    /// one with bounded retries and caches it.
+    /// Returns a cached, still-valid access token when present, otherwise fetches a fresh one
+    /// with bounded retries and caches it. Concurrent misses for the same appid share a single
+    /// in-flight refresh so one cold start burns one token quota unit, not one per request.
     pub async fn fetch_access_token(
         &self,
         app_id: &str,
         app_secret: &str,
     ) -> Result<String, WechatApiClientError> {
+        if let Some(token) = self.cached_access_token(app_id) {
+            return Ok(token);
+        }
+
+        let refresh_lock = self.token_refresh_lock(app_id);
+        let _refresh_guard = refresh_lock.lock().await;
+        // Double-check: another request may have completed the refresh while this one waited
+        // on the single-flight lock.
         if let Some(token) = self.cached_access_token(app_id) {
             return Ok(token);
         }
@@ -107,6 +121,14 @@ impl WechatApiClient {
             }
         }
         Err(last_error)
+    }
+
+    fn token_refresh_lock(&self, app_id: &str) -> Arc<AsyncMutex<()>> {
+        let mut locks = self
+            .token_refresh_locks
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        Arc::clone(locks.entry(app_id.to_string()).or_default())
     }
 
     fn cached_access_token(&self, app_id: &str) -> Option<String> {

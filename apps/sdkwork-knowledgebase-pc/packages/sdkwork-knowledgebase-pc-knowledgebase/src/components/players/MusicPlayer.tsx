@@ -6,6 +6,7 @@ import {
   Headphones, FileText, AlignLeft
 } from 'lucide-react';
 import { isKnowledgebaseApiAvailable, shouldUseKnowledgebaseDemoFallback } from 'sdkwork-knowledgebase-pc-core';
+import { useTranslation } from 'react-i18next';
 import { DocumentMeta } from '../../services/document';
 import { AIService } from '../../services/ai';
 
@@ -133,6 +134,7 @@ export function MusicPlayer({
   aiEnabled = true,
 }: MusicPlayerProps) {
   const demoPlaylist = shouldUseKnowledgebaseDemoFallback() ? DEMO_PLAYLIST : [];
+  const { t } = useTranslation('editor');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -156,28 +158,41 @@ export function MusicPlayer({
     }
   };
 
-  // Execute transcription
+  // Execute transcription. The request-id guard discards stale completions so a
+  // late response can never deliver a transcript into a newer request or a
+  // newly-active document; the guard also collapses duplicate effect runs into
+  // a single speechToText call.
+  const transcribeRequestRef = useRef(0);
   useEffect(() => {
-    if (aiEnabled && isTranscribing && onTranscribeComplete) {
-      if (isKnowledgebaseApiAvailable() && !activeDoc.url) {
-        triggerToast('音频文件缺少下载地址，无法转写。');
-        onTranscribeComplete('');
+    if (!(aiEnabled && isTranscribing && onTranscribeComplete)) {
+      return;
+    }
+    const requestId = ++transcribeRequestRef.current;
+    if (isKnowledgebaseApiAvailable() && !activeDoc.url) {
+      triggerToast(t('speechMissingAudioUrl'));
+      onTranscribeComplete('');
+      return;
+    }
+    triggerToast(t('speechTranscribing'));
+    AIService.speechToText(activeDoc.url || '', {
+      spaceId: activeDoc.kbId,
+      documentId: activeDoc.id,
+    }).then(text => {
+      if (requestId !== transcribeRequestRef.current) {
         return;
       }
-      triggerToast('AI 正在语音转文字，请稍候...');
-      AIService.speechToText(activeDoc.url || '', {
-        spaceId: activeDoc.kbId,
-        documentId: activeDoc.id,
-      }).then(text => {
-        onTranscribeComplete(text);
-        triggerToast('语音转写已经成功完成！');
-      }).catch(err => {
-        console.error(err);
-        triggerToast(err instanceof Error ? err.message : '语音转写失败。');
-        onTranscribeComplete('');
-      });
-    }
-  }, [activeDoc, aiEnabled, isTranscribing, onTranscribeComplete]);
+      onTranscribeComplete(text);
+      triggerToast(t('speechTranscribeSuccess'));
+    }).catch(err => {
+      if (requestId !== transcribeRequestRef.current) {
+        return;
+      }
+      console.error(err);
+      triggerToast(err instanceof Error ? err.message : t('speechTranscribeFailed'));
+      onTranscribeComplete('');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDoc, aiEnabled, isTranscribing, onTranscribeComplete, t]);
 
   // Sync volume state with HTMLAudioElement
   useEffect(() => {

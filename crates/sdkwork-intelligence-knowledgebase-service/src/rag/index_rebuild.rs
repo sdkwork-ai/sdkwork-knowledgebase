@@ -45,7 +45,7 @@ pub async fn rebuild_rag_index_for_space(
     })?;
 
     let index = index_store
-        .get_or_create_active_vector_index(space_id, 0)
+        .get_or_create_active_vector_index(space_id)
         .await?;
 
     embed_rag_index_chunks(

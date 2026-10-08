@@ -76,6 +76,12 @@ pub enum DriveNodeKind {
 pub enum KnowledgeDriveNodeTreeError {
     #[error("knowledge drive node tree invalid request: {0}")]
     InvalidRequest(String),
+    #[error("knowledge drive node tree not found: {0}")]
+    NotFound(String),
+    #[error("knowledge drive node tree conflict: {0}")]
+    Conflict(String),
+    #[error("knowledge drive node tree permission denied: {0}")]
+    PermissionDenied(String),
     #[error("knowledge drive node tree upstream error: {0}")]
     Upstream(String),
     #[error("knowledge drive node tree internal error: {0}")]

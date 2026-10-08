@@ -8,11 +8,6 @@ use sdkwork_knowledgebase_engine_flowise::{
 use sdkwork_knowledgebase_test_support::provider_execution::provider_execution_context;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
-// Wiremock fixtures run on loopback; the provider SSRF protection fails closed unless
-// this explicit test-only allowance is set (never set it in a deployed environment).
-fn allow_test_loopback() {
-    std::env::set_var("SDKWORK_KNOWLEDGEBASE_PROVIDER_RUNTIME_ALLOW_LOOPBACK", "1");
-}
 
 async fn assert_flowise_health(upstream_status: u16, expected: KnowledgeEngineHealthStatus) {
     let mock_server = MockServer::start().await;
@@ -25,6 +20,7 @@ async fn assert_flowise_health(upstream_status: u16, expected: KnowledgeEngineHe
     let engine = FlowiseKnowledgeEngine::with_config(FlowiseConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("health-key".to_string()),
+        allow_private_network: true,
         default_store_id: Some("health-store".to_string()),
     });
 
@@ -33,14 +29,12 @@ async fn assert_flowise_health(upstream_status: u16, expected: KnowledgeEngineHe
 
 #[tokio::test]
 async fn flowise_health_maps_upstream_availability() {
-    allow_test_loopback();
     assert_flowise_health(200, KnowledgeEngineHealthStatus::Available).await;
     assert_flowise_health(503, KnowledgeEngineHealthStatus::Degraded).await;
 }
 
 #[tokio::test]
 async fn flowise_search_uses_configured_remote_resource_id() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/api/v1/document-store/vectorstore/query"))
@@ -60,6 +54,7 @@ async fn flowise_search_uses_configured_remote_resource_id() {
     let config = FlowiseConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
+        allow_private_network: true,
         default_store_id: Some("603a7b51-ae7c-4b0a-8865-e454ed2f6766".to_string()),
     };
     let engine = FlowiseKnowledgeEngine::with_config(config);
@@ -88,7 +83,6 @@ async fn flowise_search_uses_configured_remote_resource_id() {
 
 #[tokio::test]
 async fn flowise_read_document_resolves_chunk_from_vector_query() {
-    allow_test_loopback();
     let mock_server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/api/v1/document-store/vectorstore/query"))
@@ -108,6 +102,7 @@ async fn flowise_read_document_resolves_chunk_from_vector_query() {
     let config = FlowiseConnectorConfig {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
+        allow_private_network: true,
         default_store_id: Some("603a7b51-ae7c-4b0a-8865-e454ed2f6766".to_string()),
     };
     let engine = FlowiseKnowledgeEngine::with_config(config);

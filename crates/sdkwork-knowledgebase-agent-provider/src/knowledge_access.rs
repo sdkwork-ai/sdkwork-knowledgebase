@@ -237,7 +237,6 @@ pub fn enabled_bindings(bindings: &[KnowledgeAgentBinding]) -> Vec<KnowledgeRetr
         .filter(|binding| binding.enabled)
         .map(|binding| KnowledgeRetrievalBinding {
             space_id: binding.space_id,
-            collection_id: binding.collection_id,
             source_filter: binding.source_filter.clone(),
             document_filter: binding.document_filter.clone(),
             priority: binding.priority,
@@ -353,7 +352,6 @@ mod tests {
                     document_id: 2,
                     document_version_id: None,
                     space_id: 7,
-                    collection_id: None,
                     title: "Doc".to_string(),
                     content: "content".to_string(),
                     score: Some(0.9),
@@ -385,7 +383,6 @@ mod tests {
         let gateway = KnowledgeAccessGateway::new(FakeOkf, FailingRetrieval);
         let bindings = vec![KnowledgeRetrievalBinding {
             space_id: 7,
-            collection_id: None,
             source_filter: None,
             document_filter: None,
             priority: 0,
@@ -418,7 +415,6 @@ mod tests {
         let gateway = KnowledgeAccessGateway::new(FakeOkf, FakeRetrieval);
         let bindings = vec![KnowledgeRetrievalBinding {
             space_id: 7,
-            collection_id: None,
             source_filter: None,
             document_filter: None,
             priority: 0,
@@ -501,7 +497,6 @@ mod tests {
             .with_space_engine(Arc::new(FakeSpaceEngine));
         let bindings = vec![KnowledgeRetrievalBinding {
             space_id: 9,
-            collection_id: None,
             source_filter: None,
             document_filter: None,
             priority: 0,
@@ -572,7 +567,6 @@ mod tests {
         let gateway = KnowledgeAccessGateway::new(PopulatedOkf, FakeRetrieval);
         let bindings = vec![KnowledgeRetrievalBinding {
             space_id: 7,
-            collection_id: None,
             source_filter: None,
             document_filter: None,
             priority: 0,

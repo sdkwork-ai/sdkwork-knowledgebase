@@ -18,7 +18,7 @@ fn source_contract_serializes_source_type_and_drive_projection_as_camel_case() {
 
     let json = serde_json::to_value(source).unwrap();
 
-    assert_eq!(json["spaceId"], 7);
+    assert_eq!(json["spaceId"], "7");
     assert_eq!(json["sourceType"], "api");
     assert_eq!(json["provider"], "app-api");
     assert_eq!(json["drivePrefix"], "inbox/api/1");
@@ -33,7 +33,6 @@ fn document_contract_keeps_metadata_and_drive_references_out_of_payload_bytes() 
     let document = KnowledgeDocument {
         id: 2,
         space_id: 7,
-        collection_id: 0,
         source_id: Some(1),
         original_file_drive_node_id: Some("node-api-payload".to_string()),
         title: "API payload note".to_string(),
@@ -81,6 +80,5 @@ fn create_document_request_accepts_missing_optional_int64_fields() {
     .expect("deserialize create document request without optional ids");
 
     assert_eq!(request.space_id, 332_872_288_108_019_712);
-    assert_eq!(request.collection_id, None);
     assert_eq!(request.source_id, None);
 }

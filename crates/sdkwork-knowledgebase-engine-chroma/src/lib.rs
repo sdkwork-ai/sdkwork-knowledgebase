@@ -23,8 +23,9 @@ use std::sync::Arc;
 
 pub use client::ChromaApiClient;
 pub use config::{
-    ChromaConnectorConfig, CHROMA_BASE_URL_ENV, CHROMA_COLLECTION_ID_ENV, CHROMA_DATABASE_ENV,
-    CHROMA_TENANT_ENV, DEFAULT_CHROMA_DATABASE, DEFAULT_CHROMA_TENANT,
+    ChromaConnectorConfig, CHROMA_ALLOW_PRIVATE_NETWORK_ENV, CHROMA_BASE_URL_ENV,
+    CHROMA_COLLECTION_ID_ENV, CHROMA_DATABASE_ENV, CHROMA_TENANT_ENV, DEFAULT_CHROMA_DATABASE,
+    DEFAULT_CHROMA_TENANT,
 };
 
 pub const CHROMA_VENDOR_ID: &str = "chroma";
@@ -42,10 +43,21 @@ impl ChromaKnowledgeEngine {
     }
 
     pub fn with_config(config: ChromaConnectorConfig) -> Self {
-        let client = ChromaApiClient::new(config.clone());
-        Self {
-            config: Some(config),
-            client: Some(client),
+        match ChromaApiClient::new(config.clone()) {
+            Ok(client) => Self {
+                config: Some(config),
+                client: Some(client),
+            },
+            Err(error) => {
+                sdkwork_knowledgebase_provider_runtime::log_engine_degraded(
+                    CHROMA_IMPLEMENTATION_ID,
+                    &error,
+                );
+                Self {
+                    config: None,
+                    client: None,
+                }
+            }
         }
     }
 
@@ -102,7 +114,13 @@ impl KnowledgeEngine for ChromaKnowledgeEngine {
             .ok_or_else(|| KnowledgeEngineError::Unsupported(self.unconfigured_message()))?;
         config.api_key = credential.map(KnowledgeEngineProviderCredential::into_secret);
         config.default_collection_id = Some(binding.remote_resource_id.clone());
-        Ok(Arc::new(Self::with_config(config)))
+        let engine = Self::with_config(config);
+        if engine.client.is_none() {
+            return Err(KnowledgeEngineError::Validation(
+                "Chroma base URL does not satisfy the Provider runtime target policy".to_string(),
+            ));
+        }
+        Ok(Arc::new(engine))
     }
 
     async fn health(&self) -> Result<KnowledgeEngineHealth, KnowledgeEngineError> {

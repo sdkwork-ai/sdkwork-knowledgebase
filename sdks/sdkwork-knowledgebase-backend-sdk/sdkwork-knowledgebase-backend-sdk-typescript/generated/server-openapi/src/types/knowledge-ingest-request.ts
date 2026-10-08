@@ -1,5 +1,5 @@
 export interface KnowledgeIngestRequest {
-  spaceId: number;
+  spaceId: string;
   title: string;
   payloadMarkdown?: string;
   sourceUrl?: string;

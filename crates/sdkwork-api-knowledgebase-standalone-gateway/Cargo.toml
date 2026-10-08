@@ -5,6 +5,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[lib]
+name = "sdkwork_api_knowledgebase_standalone_gateway"
+
 [[bin]]
 name = "sdkwork-api-knowledgebase-standalone-gateway"
 path = "src/bin/app_main.rs"

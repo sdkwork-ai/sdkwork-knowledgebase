@@ -100,7 +100,6 @@ impl KnowledgeEngine for RagNativeKnowledgeEngine {
                 query: request.query.clone(),
                 binding: KnowledgeRetrievalBinding {
                     space_id: request.space_id,
-                    collection_id: None,
                     source_filter: None,
                     document_filter: None,
                     priority: 0,
@@ -165,7 +164,6 @@ impl KnowledgeEngine for RagNativeKnowledgeEngine {
                 query: document.title.clone(),
                 binding: KnowledgeRetrievalBinding {
                     space_id: request.space_id,
-                    collection_id: None,
                     source_filter: None,
                     document_filter: None,
                     priority: 0,

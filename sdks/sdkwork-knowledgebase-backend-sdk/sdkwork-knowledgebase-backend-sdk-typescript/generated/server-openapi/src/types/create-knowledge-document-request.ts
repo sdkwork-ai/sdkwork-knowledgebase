@@ -1,6 +1,5 @@
 export interface CreateKnowledgeDocumentRequest {
-  spaceId: number;
-  collectionId?: number;
+  spaceId: string;
   sourceId?: number | null;
   title: string;
   mimeType?: string | null;

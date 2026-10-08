@@ -31,6 +31,24 @@ const fn knowledge_abuse_route(
         .with_rate_limit_tier(RateLimitTier::AuthCritical)
 }
 
+/// WeChat public-platform servers call the callback routes directly and cannot
+/// present SDKWork dual tokens or an ingress token, so the least-privilege honest
+/// declaration is explicit `Public` with the AuthCritical (abuse) rate-limit tier:
+/// authentication is the WeChat msg_signature scheme verified inside the handler
+/// against the tenant-stored per-account token, plus the `tenant`/`account_id`
+/// query scope. `external_wire_protocol` marks these operations as mirroring the
+/// WeChat server-callback wire (API_SPEC §4.5.2), so the plain-text echo/"success"
+/// bodies are exempt from the SdkWorkApiResponse envelope.
+const fn knowledge_wechat_callback_route(
+    method: HttpMethod,
+    path: &'static str,
+    operation_id: &'static str,
+) -> HttpRoute {
+    HttpRoute::public(method, path, "knowledge", operation_id)
+        .with_rate_limit_tier(RateLimitTier::AuthCritical)
+        .with_external_wire_protocol("wechat-mp-server-callback")
+}
+
 const HTTP_ROUTES: &[HttpRoute] = &[
     knowledge_abuse_route(
         HttpMethod::Post,
@@ -126,7 +144,9 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/knowledge/wechat/official_accounts",
         "wechat.officialAccounts.update",
     ),
-    knowledge_read_route(
+    // Fan tags proxy straight into an outbound WeChat call, so this read carries the abuse tier
+    // like the other externally-amplifying routes.
+    knowledge_abuse_route(
         HttpMethod::Get,
         "/app/v3/api/knowledge/wechat/official_accounts/{accountId}/fan_tags",
         "wechat.officialAccounts.fanTags.list",
@@ -150,6 +170,16 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/app/v3/api/knowledge/wechat/articles/preview",
         "wechat.articles.preview",
+    ),
+    knowledge_wechat_callback_route(
+        HttpMethod::Get,
+        "/app/v3/api/knowledge/wechat/callback",
+        "wechat.callback.verify",
+    ),
+    knowledge_wechat_callback_route(
+        HttpMethod::Post,
+        "/app/v3/api/knowledge/wechat/callback",
+        "wechat.callback.receive",
     ),
     knowledge_abuse_route(
         HttpMethod::Post,

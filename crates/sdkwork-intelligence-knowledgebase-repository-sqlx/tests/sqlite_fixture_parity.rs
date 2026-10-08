@@ -25,7 +25,6 @@ const SQLITE_MIGRATIONS_DIR: &str = "tests/fixtures/database/sqlite/migrations";
 /// Tables that must carry `organization_id` after the organization-isolation cutover.
 /// Mirrors the PostgreSQL folded section `ALTER TABLE ... ADD COLUMN organization_id`.
 const ORGANIZATION_TABLES: &[&str] = &[
-    "kb_collection",
     "kb_source",
     "kb_drive_object_ref",
     "kb_document",

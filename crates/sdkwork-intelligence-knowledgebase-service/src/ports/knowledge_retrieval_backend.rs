@@ -27,7 +27,6 @@ pub struct KnowledgeChunkSearchHit {
     pub document_id: u64,
     pub document_version_id: Option<u64>,
     pub space_id: u64,
-    pub collection_id: Option<u64>,
     pub title: String,
     pub content: String,
     pub score: f64,

@@ -135,7 +135,7 @@ impl KnowledgeOutboxDispatcher for WebhookKnowledgeOutboxDispatcher {
             .header(EVENT_RETRY_COUNT_HEADER, event.retry_count.to_string())
             .header(
                 EVENT_SIGNATURE_HEADER,
-                sign_webhook_payload(&self.webhook_secret, &event_time, body_bytes),
+                sign_webhook_payload(&self.webhook_secret, &event_time, body_bytes)?,
             );
 
         let response = request
@@ -155,24 +155,28 @@ impl KnowledgeOutboxDispatcher for WebhookKnowledgeOutboxDispatcher {
     }
 }
 
-fn sign_webhook_payload(secret: &str, timestamp: &str, body: &[u8]) -> String {
+fn sign_webhook_payload(
+    secret: &str,
+    timestamp: &str,
+    body: &[u8],
+) -> Result<String, KnowledgeOutboxDispatchError> {
     use hmac::{Hmac, Mac};
     use sha2::Sha256;
 
     type HmacSha256 = Hmac<Sha256>;
-    let mut mac =
-        HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC accepts arbitrary key length");
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
+        .map_err(|error| KnowledgeOutboxDispatchError::Internal(error.to_string()))?;
     mac.update(timestamp.as_bytes());
     mac.update(b".");
     mac.update(body);
     let signature = mac.finalize().into_bytes();
-    format!(
+    Ok(format!(
         "sha256={}",
         signature
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>()
-    )
+    ))
 }
 
 fn validate_webhook_url(
@@ -348,8 +352,12 @@ mod tests {
         let event_time = request.headers[EVENT_TIME_HEADER]
             .to_str()
             .expect("event time header");
-        let expected =
-            sign_webhook_payload(&dispatcher.webhook_secret, event_time, payload.as_bytes());
+        let expected = sign_webhook_payload(
+            &dispatcher.webhook_secret,
+            event_time,
+            payload.as_bytes(),
+        )
+        .expect("webhook signing accepts the configured secret");
         assert_eq!(request.headers[EVENT_SIGNATURE_HEADER], expected);
     }
 }
