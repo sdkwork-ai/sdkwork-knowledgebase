@@ -357,6 +357,15 @@ impl KnowledgeDriveStorage for KnowledgebaseDriveStorageAdapter {
         let locator = if request.bucket.is_empty() {
             self.locator_for(&logical_path, request.space_uuid.as_deref())?
         } else {
+            // Explicit bucket/key heads must stay inside this tenant's key
+            // plan; an arbitrary caller-supplied bucket/key would otherwise
+            // probe storage across tenants.
+            let planned_root = format!("knowledge/{}/", self.tenant_id);
+            if !request.object_key.starts_with(&planned_root) {
+                return Err(KnowledgeStorageError::InvalidRequest(
+                    "object_key is outside this tenant's knowledge key namespace".to_string(),
+                ));
+            }
             DriveObjectLocator {
                 bucket: request.bucket,
                 object_key: request.object_key,

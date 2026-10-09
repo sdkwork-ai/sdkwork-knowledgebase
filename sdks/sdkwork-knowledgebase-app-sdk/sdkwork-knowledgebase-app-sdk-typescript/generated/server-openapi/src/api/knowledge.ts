@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { ChangeKnowledgeWikiSourceFileVisibilityRequest, ConsumeGroupKnowledgebaseLaunchTicketRequest, CreateKnowledgeDocumentRequest, CreateKnowledgeDocumentVersionRequest, CreateKnowledgeSpaceContextBindingRequest, CreateKnowledgeSpaceRequest, GrantKnowledgeSpaceMemberRequest, GroupKnowledgebaseLaunchTarget, IngestionJob, KnowledgeAgentBinding, KnowledgeAgentBindingRequest, KnowledgeAgentChatRequest, KnowledgeAgentChatResponse, KnowledgeAgentProfile, KnowledgeAgentProfileRequest, KnowledgeBrowserListData, KnowledgeBrowserView, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeDocument, KnowledgeDocumentContent, KnowledgeDocumentVersion, KnowledgeDriveImportRequest, KnowledgeDriveImportResult, KnowledgeGitImportRequest, KnowledgeGitImportResult, KnowledgeGitSyncRequest, KnowledgeGitSyncResult, KnowledgeIngestRequest, KnowledgeMarketCatalogItem, KnowledgeMarketSubscriptionRequest, KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult, KnowledgeOkfBundleFile, KnowledgeOkfConceptRevisionList, KnowledgeRetrievalRequest, KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceContextBinding, KnowledgeSpaceMember, KnowledgeSpaceMemberSubjectType, KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest, KnowledgeWechatFanTagList, KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest, KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest, KnowledgeWikiSourceFile, KnowledgeWikiSourceFileCommandResult, KnowledgeWikiSourceFileVersionCommandRequest, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfConceptSummary, OkfConceptSummaryList, OkfConceptUpsertRequest, OkfContextPackRequest, OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun, OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, PageInfo, PublishKnowledgeWikiSourceFileRequest, SdkWorkCommandData, UpdateKnowledgeSpaceContextBindingRequest, UpdateKnowledgeSpaceRequest } from '../types';
+import type { ChangeKnowledgeWikiSourceFileVisibilityRequest, ConsumeGroupKnowledgebaseLaunchTicketRequest, CreateKnowledgeDocumentRequest, CreateKnowledgeDocumentVersionRequest, CreateKnowledgeSpaceContextBindingRequest, CreateKnowledgeSpaceRequest, GrantKnowledgeSpaceMemberRequest, GroupKnowledgebaseLaunchTarget, IngestionJob, KnowledgeAgentBinding, KnowledgeAgentBindingRequest, KnowledgeAgentChatRequest, KnowledgeAgentChatResponse, KnowledgeAgentProfile, KnowledgeAgentProfileRequest, KnowledgeBrowserListData, KnowledgeBrowserView, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeDocument, KnowledgeDocumentContent, KnowledgeDocumentVersion, KnowledgeDriveImportRequest, KnowledgeDriveImportResult, KnowledgeGitImportRequest, KnowledgeGitImportResult, KnowledgeGitSyncRequest, KnowledgeGitSyncResult, KnowledgeIngestRequest, KnowledgeMarketCatalogItem, KnowledgeMarketSubscriptionRequest, KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult, KnowledgeOkfBundleFile, KnowledgeOkfConceptRevisionList, KnowledgeRetrievalRequest, KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceContextBinding, KnowledgeSpaceMember, KnowledgeSpaceMemberSubjectType, KnowledgeWechatApplet, KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest, KnowledgeWechatFanTag, KnowledgeWechatOfficialAccount, KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest, KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest, KnowledgeWikiSourceFile, KnowledgeWikiSourceFileCommandResult, KnowledgeWikiSourceFileVersionCommandRequest, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfConceptSummary, OkfConceptSummaryList, OkfConceptUpsertRequest, OkfContextPackRequest, OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun, OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, PageInfo, PublishKnowledgeWikiSourceFileRequest, SdkWorkCommandData, UpdateKnowledgeSpaceContextBindingRequest, UpdateKnowledgeSpaceRequest } from '../types';
 
 
 export interface KnowledgeWikiSourceFilesVisibilityUpdateParams {
@@ -218,13 +218,18 @@ export class KnowledgeWechatArticlesApi {
 
 /** Publish WeChat articles */
   async publish(body: KnowledgeWechatArticlesPublishRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeWechatOperationResult> {
-    return this.client.request<KnowledgeWechatOperationResult>(appApiPath(`/knowledge/wechat/articles/publish`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+    return this.client.request<KnowledgeWechatOperationResult>(appApiPath(`/knowledge/wechat/articles/publish`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Preview WeChat articles */
   async preview(body: KnowledgeWechatArticlesPreviewRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeWechatOperationResult> {
-    return this.client.request<KnowledgeWechatOperationResult>(appApiPath(`/knowledge/wechat/articles/preview`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
+    return this.client.request<KnowledgeWechatOperationResult>(appApiPath(`/knowledge/wechat/articles/preview`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
+}
+
+export interface KnowledgeWechatAppletsListParams {
+  cursor?: string;
+  pageSize?: number;
 }
 
 export class KnowledgeWechatAppletsApi {
@@ -236,14 +241,23 @@ export class KnowledgeWechatAppletsApi {
 
 
 /** List WeChat applets */
-  async list(requestOptions?: ApiRequestOptions): Promise<KnowledgeWechatAppletList> {
-    return this.client.request<KnowledgeWechatAppletList>(appApiPath(`/knowledge/wechat/applets`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async list(params?: KnowledgeWechatAppletsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: KnowledgeWechatApplet[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: KnowledgeWechatApplet[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/knowledge/wechat/applets`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Replace WeChat applets */
   async update(body: KnowledgeWechatReplaceAppletsRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeWechatAppletList> {
     return this.client.request<KnowledgeWechatAppletList>(appApiPath(`/knowledge/wechat/applets`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
+}
+
+export interface KnowledgeWechatOfficialAccountsFanTagsListParams {
+  cursor?: string;
+  pageSize?: number;
 }
 
 export class KnowledgeWechatOfficialAccountsFanTagsApi {
@@ -255,9 +269,18 @@ export class KnowledgeWechatOfficialAccountsFanTagsApi {
 
 
 /** List WeChat official account fan tags */
-  async list(accountId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeWechatFanTagList> {
-    return this.client.request<KnowledgeWechatFanTagList>(appApiPath(`/knowledge/wechat/official_accounts/${serializePathParameter(accountId, { name: 'accountId', style: 'simple', explode: false })}/fan_tags`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async list(accountId: string, params?: KnowledgeWechatOfficialAccountsFanTagsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: KnowledgeWechatFanTag[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: KnowledgeWechatFanTag[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/knowledge/wechat/official_accounts/${serializePathParameter(accountId, { name: 'accountId', style: 'simple', explode: false })}/fan_tags`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
+}
+
+export interface KnowledgeWechatOfficialAccountsListParams {
+  cursor?: string;
+  pageSize?: number;
 }
 
 export class KnowledgeWechatOfficialAccountsApi {
@@ -271,8 +294,12 @@ export class KnowledgeWechatOfficialAccountsApi {
 
 
 /** List WeChat official accounts */
-  async list(requestOptions?: ApiRequestOptions): Promise<KnowledgeWechatOfficialAccountList> {
-    return this.client.request<KnowledgeWechatOfficialAccountList>(appApiPath(`/knowledge/wechat/official_accounts`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async list(params?: KnowledgeWechatOfficialAccountsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: KnowledgeWechatOfficialAccount[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: KnowledgeWechatOfficialAccount[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/knowledge/wechat/official_accounts`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Replace WeChat official accounts */
@@ -523,6 +550,10 @@ export class KnowledgeOkfBundleExportApi {
   }
 }
 
+export interface KnowledgeOkfBundleProfileListParams {
+  spaceId: string;
+}
+
 export class KnowledgeOkfBundleProfileApi {
   private client: HttpClient;
 
@@ -532,9 +563,16 @@ export class KnowledgeOkfBundleProfileApi {
 
 
 /** Retrieve the OKF bundle profile */
-  async list(requestOptions?: ApiRequestOptions): Promise<OkfProfileDocument> {
-    return this.client.request<OkfProfileDocument>(appApiPath(`/knowledge/okf/profile`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async list(params: KnowledgeOkfBundleProfileListParams, requestOptions?: ApiRequestOptions): Promise<OkfProfileDocument> {
+    const query = buildQueryString([
+      { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<OkfProfileDocument>(appendQueryString(appApiPath(`/knowledge/okf/profile`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
+}
+
+export interface KnowledgeOkfBundleLogListParams {
+  spaceId: string;
 }
 
 export class KnowledgeOkfBundleLogApi {
@@ -546,9 +584,16 @@ export class KnowledgeOkfBundleLogApi {
 
 
 /** Retrieve the OKF bundle log */
-  async list(requestOptions?: ApiRequestOptions): Promise<OkfLogDocument> {
-    return this.client.request<OkfLogDocument>(appApiPath(`/knowledge/okf/log`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async list(params: KnowledgeOkfBundleLogListParams, requestOptions?: ApiRequestOptions): Promise<OkfLogDocument> {
+    const query = buildQueryString([
+      { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<OkfLogDocument>(appendQueryString(appApiPath(`/knowledge/okf/log`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
+}
+
+export interface KnowledgeOkfBundleIndexListParams {
+  spaceId: string;
 }
 
 export class KnowledgeOkfBundleIndexApi {
@@ -560,8 +605,11 @@ export class KnowledgeOkfBundleIndexApi {
 
 
 /** Retrieve the OKF bundle index */
-  async list(requestOptions?: ApiRequestOptions): Promise<OkfIndexDocument> {
-    return this.client.request<OkfIndexDocument>(appApiPath(`/knowledge/okf/index`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async list(params: KnowledgeOkfBundleIndexListParams, requestOptions?: ApiRequestOptions): Promise<OkfIndexDocument> {
+    const query = buildQueryString([
+      { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<OkfIndexDocument>(appendQueryString(appApiPath(`/knowledge/okf/index`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 

@@ -55,7 +55,7 @@ export function normalizeAppbaseGatewayBaseUrl(value: string): string {
     : normalized;
 }
 
-function resolveLifecycleEnvironment(
+export function resolveLifecycleEnvironment(
   environment: KnowledgebaseRuntimeEnvironment,
 ): KnowledgebaseLifecycleEnvironment {
   const configured = readEnv(environment, "VITE_SDKWORK_KNOWLEDGEBASE_H5_ENVIRONMENT")
@@ -65,8 +65,21 @@ function resolveLifecycleEnvironment(
     if (LIFECYCLE_ENVIRONMENTS.has(normalized as KnowledgebaseLifecycleEnvironment)) {
       return normalized as KnowledgebaseLifecycleEnvironment;
     }
+    // The sanctioned build pipeline invokes vite with profile-shaped modes
+    // (`standalone.<env>` / `cloud.<env>`); map them to their lifecycle env
+    // instead of rejecting the bundle at boot.
+    const profileMatch = /^(?:standalone|cloud)\.(development|test|staging|production|demo)$/u
+      .exec(normalized);
+    if (profileMatch) {
+      const lifecycle = profileMatch[1];
+      if (LIFECYCLE_ENVIRONMENTS.has(lifecycle as KnowledgebaseLifecycleEnvironment)) {
+        return lifecycle as KnowledgebaseLifecycleEnvironment;
+      }
+      // demo has no dedicated lifecycle env: closest safe posture is staging.
+      return "staging";
+    }
     throw new Error(
-      "VITE_SDKWORK_KNOWLEDGEBASE_H5_ENVIRONMENT must be development, test, staging, or production.",
+      "VITE_SDKWORK_KNOWLEDGEBASE_H5_ENVIRONMENT must be development, test, staging, production, or a standalone/cloud profile mode (e.g. standalone.production).",
     );
   }
   return environment.PROD === true || environment.PROD === "true"

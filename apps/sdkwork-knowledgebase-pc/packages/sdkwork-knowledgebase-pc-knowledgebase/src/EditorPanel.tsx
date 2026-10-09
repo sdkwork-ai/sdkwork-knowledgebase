@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useRef, lazy } from 'react';
 import { Share2, Pin, Sparkles, Music, Video, FileText, Code, Image as ImageIcon } from 'lucide-react';
 import { Tabs } from './components/Tabs';
 import { DocumentMeta, KnowledgeBase, FolderNode } from './services/document';
 import { useTranslation } from 'react-i18next';
 import { TiptapEditor } from './TiptapEditor';
-import { CodeEditorPanel } from './CodeEditorPanel';
+// Monaco (via CodeEditorPanel) is by far the heaviest dependency in this
+// package and is only needed for `code` documents; lazy-loading it keeps the
+// main knowledgebase chunk inside its size budget.
+const CodeEditorPanel = lazy(() =>
+  import('./CodeEditorPanel').then((module) => ({ default: module.CodeEditorPanel })),
+);
 import { useHydratedViewerDocument } from './hooks/useHydratedViewerDocument';
 import { AiAssistantPanel } from './AiAssistantPanel';
 import { AssetLibraryModal } from './components/AssetLibraryModal';
@@ -265,9 +270,11 @@ export function EditorPanel({
                 <span className="flex-1">{t('closeTabsToRight', { ns: 'editor' })}</span>
               </button>
               <div className="h-px bg-[var(--color-kb-panel-border)]/40 my-1"></div>
-              <button 
+              <button
                 type="button"
-                onClick={() => { onSelectDoc?.(openDocs.find(d => d.id === contextMenu.docId)!); onCloseAll?.(); setContextMenu(null); }}
+                // Close-all only: selecting the right-clicked doc here would
+                // kick off a content fetch that close-all immediately orphans.
+                onClick={() => { onCloseAll?.(); setContextMenu(null); }}
                 className="flex items-center w-full px-3 py-2 text-left text-red-500 hover:bg-red-500/10 transition-colors"
               >
                 <span className="flex-1 font-medium">{t('closeAllTabs', { ns: 'editor' })}</span>
@@ -393,16 +400,26 @@ export function EditorPanel({
             )}
 
             {activeDoc?.type === 'code' && (
-              <CodeEditorPanel
-                key={activeDoc.id}
-                activeDoc={activeDoc}
-                docContent={docContent}
-                isDocLoading={isDocLoading}
-                onContentChange={onContentChange}
-              />
+              <React.Suspense
+                fallback={
+                  <div className="h-full w-full flex items-center justify-center text-[var(--color-kb-text-muted)] text-sm">
+                    <div className="h-6 w-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                  </div>
+                }
+              >
+                <CodeEditorPanel
+                  key={activeDoc.id}
+                  activeDoc={activeDoc}
+                  docContent={docContent}
+                  isDocLoading={isDocLoading}
+                  onContentChange={onContentChange}
+                />
+              </React.Suspense>
             )}
 
-            {activeDoc?.type === 'pdf' && pdfViewDoc && (
+            {/* The id guard prevents one frame of rendering the PREVIOUS pdf
+                while the hydration hook still holds the old doc on switch. */}
+            {activeDoc?.type === 'pdf' && pdfViewDoc?.id === activeDoc.id && (
               <React.Suspense fallback={<div className="h-full w-full bg-[var(--color-kb-editor)]" />}>
                 <PdfViewer activeDoc={pdfViewDoc} />
               </React.Suspense>

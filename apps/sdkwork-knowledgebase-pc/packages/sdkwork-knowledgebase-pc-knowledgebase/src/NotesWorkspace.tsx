@@ -1,71 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Plus, Search, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  CloudOff,
+  FileText,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+} from 'lucide-react';
 import type { ErrorTranslateFn } from 'sdkwork-knowledgebase-pc-core';
 
 import { DocumentService } from './services/document';
 import { getDocumentContent } from './services/knowledgebaseDocumentApiBridge';
 import { listSpaceNotes, type KnowledgeNoteSummary } from './services/knowledgeNotesListService';
+import { isDocumentConflictError } from './services/documentConflict';
+import type { NotesAutosaveEvent } from './hooks/notesAutosaveEngine';
+import {
+  useNotesAutosave,
+  type NotesAutosavePortWithBaseline,
+  type NotesSaveStatus,
+} from './hooks/useNotesAutosave';
 import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
 import { toast } from './components/ui/toast-manager';
+import { formatNoteSavedTime } from './utils/noteSavedTimeFormatter';
 import { TiptapEditor } from './TiptapEditor';
-
-const TITLE_SAVE_DEBOUNCE_MS = 800;
-const CONTENT_SAVE_DEBOUNCE_MS = 1200;
-
-/**
- * Debounced callback with explicit flush support: pending invocations are
- * flushed on unmount (and on demand via the returned `flush`, used by the
- * `beforeunload` guard) so a debounced save is never silently dropped —
- * mirroring `useKnowledgeBaseDocumentPersistence`.
- */
-function useDebouncedCallback<A extends unknown[]>(callback: (...args: A) => void, delayMs: number): [(...args: A) => void, () => void] {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callbackRef = useRef(callback);
-  callbackRef.current = callback;
-  const pendingArgsRef = useRef<A | null>(null);
-
-  const invokePending = useCallback(() => {
-    const args = pendingArgsRef.current;
-    if (args === null) {
-      return;
-    }
-    pendingArgsRef.current = null;
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    callbackRef.current(...args);
-  }, []);
-
-  useEffect(() => () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    const args = pendingArgsRef.current;
-    if (args !== null) {
-      pendingArgsRef.current = null;
-      callbackRef.current(...args);
-    }
-  }, [invokePending]);
-
-  const flush = useCallback(() => {
-    invokePending();
-  }, [invokePending]);
-
-  const schedule = useCallback((...args: A) => {
-    pendingArgsRef.current = args;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null;
-      pendingArgsRef.current = null;
-      callbackRef.current(...args);
-    }, delayMs);
-  }, [delayMs]);
-
-  return [schedule, flush];
-}
 
 interface NoteEditorState {
   id: string;
@@ -73,14 +34,20 @@ interface NoteEditorState {
   content: string;
 }
 
+type NoteContentLoadState = 'empty' | 'loading' | 'ready' | 'error';
+
 /**
  * Full notes workspace: notes list on the left, the shared TiptapEditor on the
  * right (Notion / Tencent IMA style). Notes are the space's knowledge documents
  * listed through `documents.list`, so notes created here and notes created from
  * the knowledge base view ("新的笔记") are the same documents and stay in sync.
+ *
+ * Writing → auto-save runs through `useNotesAutosave`: edits coalesce behind a
+ * debounce, saves serialize per note, transient failures retry with backoff,
+ * and the header pill reports 保存中 / 已保存 / 保存失败 / 冲突 at all times.
  */
 export function NotesWorkspace() {
-  const { t } = useTranslation('kb');
+  const { t, i18n } = useTranslation('kb');
   const [kbId, setKbId] = useState<string>('');
   const [kbResolved, setKbResolved] = useState(false);
   const [notes, setNotes] = useState<KnowledgeNoteSummary[]>([]);
@@ -88,12 +55,15 @@ export function NotesWorkspace() {
   const [searchText, setSearchText] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editor, setEditor] = useState<NoteEditorState | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [contentLoadState, setContentLoadState] = useState<NoteContentLoadState>('empty');
+  const [contentLoadRetryToken, setContentLoadRetryToken] = useState(0);
+  const [focusTitleNoteId, setFocusTitleNoteId] = useState<string | null>(null);
 
   // Resolve the working knowledge base: the stored active KB first, then the
   // first personal KB, so the workspace is self-sufficient on first launch.
   useEffect(() => {
     let cancelled = false;
+    let resolvedKbId: string | null = null;
     (async () => {
       try {
         const stored = window.localStorage.getItem('app-active-kb');
@@ -101,7 +71,8 @@ export function NotesWorkspace() {
           try {
             const parsed = JSON.parse(stored) as { id?: string };
             if (parsed.id && parsed.id.trim()) {
-              if (!cancelled) setKbId(parsed.id.trim());
+              resolvedKbId = parsed.id.trim();
+              if (!cancelled) setKbId(resolvedKbId);
               return;
             }
           } catch {
@@ -110,11 +81,22 @@ export function NotesWorkspace() {
         }
         const grouped = await DocumentService.getKnowledgeBases();
         const first = grouped.personal[0] ?? grouped.team[0] ?? grouped.public[0];
-        if (first && !cancelled) setKbId(first.id);
+        if (first && !cancelled) {
+          resolvedKbId = first.id;
+          setKbId(first.id);
+        }
       } catch (error) {
         toastKnowledgebaseError(error, t as unknown as ErrorTranslateFn);
       } finally {
-        if (!cancelled) setKbResolved(true);
+        if (!cancelled) {
+          setKbResolved(true);
+          // KB resolution failed (no working KB): end the list loading state
+          // so the workspace shows its empty state instead of a forever
+          // spinner. The `resolvedKbId` local beats the stale `kbId` closure.
+          if (!resolvedKbId) {
+            setLoading(false);
+          }
+        }
       }
     })();
     return () => {
@@ -151,81 +133,134 @@ export function NotesWorkspace() {
   const notesRef = useRef<KnowledgeNoteSummary[]>([]);
   notesRef.current = notes;
 
-  // Load the selected note into the shared editor. Depends only on `activeId`:
-  // the title is read from the latest notes snapshot via ref, so list refetches
-  // never revert in-progress edits.
+  // Autosave port over the document service facade. Stable identity: the save
+  // queue behind it must never be rebuilt by a re-render.
+  const autosavePort = useMemo<NotesAutosavePortWithBaseline>(
+    () => ({
+      saveTitle: async (noteId, title) => {
+        // No `kbId`: the bridge treats a kbId that differs from the document's
+        // resolved space as a cross-space move, which would swallow the rename.
+        // Manual notes always rename in place via `documents.update`.
+        await DocumentService.updateDocument(noteId, { title });
+        setNotes((prev) =>
+          prev.map((note) => (note.id === noteId ? { ...note, title } : note)),
+        );
+      },
+      saveContent: async (noteId, content, baseVersionId) => {
+        const result = await DocumentService.saveDocumentContent(noteId, content, {
+          baseVersionId,
+        });
+        return result.currentVersionId;
+      },
+      isConflictError: isDocumentConflictError,
+      loadVersionBaseline: async (noteId) => {
+        try {
+          const context = await DocumentService.getDocumentSaveContext(noteId);
+          return context.currentVersionId;
+        } catch {
+          return null;
+        }
+      },
+    }),
+    [],
+  );
+
+  // Conflicts need a decision from the user, so they also surface as a toast;
+  // ordinary save failures stay on the status pill (with its retry action).
+  const handleAutosaveEvent = useCallback(
+    (event: NotesAutosaveEvent) => {
+      if (event.type === 'conflict') {
+        toast.error(t('notesConflictToast'));
+      }
+    },
+    [t],
+  );
+
+  const autosave = useNotesAutosave({
+    activeNoteId: activeId,
+    port: autosavePort,
+    onEvent: handleAutosaveEvent,
+  });
+
+  // Translator held in a ref so error toasts inside effects never depend on
+  // the `t` identity (a locale switch must not refetch note content).
+  const translatorRef = useRef(t);
+  translatorRef.current = t;
+
+  // Latest editor identity for change guards: async continuations (AI insert,
+  // image upload) may resolve after the user switched notes and must never
+  // write another note's content into the autosave queue.
+  const editorIdRef = useRef<string | null>(null);
+  editorIdRef.current = editor?.id ?? null;
+
+  // Stable engine accessor: pending edits must be readable while loading a
+  // note without the loader depending on the per-render autosave object.
+  const { getPendingEdits } = autosave;
+
+  // Load the selected note into the shared editor. Depends only on `activeId`
+  // (plus the explicit retry token): the title is read from the latest notes
+  // snapshot via ref, so list refetches never revert in-progress edits.
   useEffect(() => {
     let cancelled = false;
     if (!activeId) {
       setEditor(null);
+      setContentLoadState('empty');
       return;
     }
+    setContentLoadState('loading');
     const title = notesRef.current.find((note) => note.id === activeId)?.title ?? '';
     (async () => {
       try {
         const content = await getDocumentContent(activeId);
         if (cancelled) return;
-        setEditor({ id: activeId, title, content });
+        // Buffered edits (a failed or still-queued autosave) win over the
+        // server copy: re-opening a dirty note must show what the user typed.
+        const pending = getPendingEdits(activeId);
+        setEditor({
+          id: activeId,
+          title: pending?.title ?? title,
+          content: pending?.content ?? content,
+        });
+        setContentLoadState('ready');
       } catch (error) {
-        if (!cancelled) {
-          setEditor({ id: activeId, title, content: '' });
-          toastKnowledgebaseError(error, t as unknown as ErrorTranslateFn);
-        }
+        if (cancelled) return;
+        setContentLoadState('error');
+        toastKnowledgebaseError(error, translatorRef.current as unknown as ErrorTranslateFn);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [activeId, t]);
+  }, [activeId, contentLoadRetryToken, getPendingEdits]);
 
-  const [persistTitle, flushTitle] = useDebouncedCallback(async (id: string, title: string) => {
-    try {
-      setSaving(true);
-      // No `kbId`: the bridge treats a kbId that differs from the document's
-      // resolved space as a cross-space move, which would swallow the rename.
-      // Manual notes always rename in place via `documents.update`.
-      await DocumentService.updateDocument(id, { title });
-      setNotes((prev) => prev.map((note) => (note.id === id ? { ...note, title } : note)));
-    } catch (error) {
-      toastKnowledgebaseError(error, t as unknown as ErrorTranslateFn);
-    } finally {
-      setSaving(false);
-    }
-  }, TITLE_SAVE_DEBOUNCE_MS);
-
-  const [persistContent, flushContent] = useDebouncedCallback(async (id: string, content: string) => {
-    try {
-      setSaving(true);
-      await DocumentService.saveDocumentContent(id, content);
-    } catch (error) {
-      toastKnowledgebaseError(error, t as unknown as ErrorTranslateFn);
-    } finally {
-      setSaving(false);
-    }
-  }, CONTENT_SAVE_DEBOUNCE_MS);
-
-  // Flush debounced saves when the tab is closing so in-progress edits are not
-  // lost (fire-and-forget: the browser may not wait for these requests).
+  // The "focus the title" affordance applies to the first mount of a freshly
+  // created note only; afterwards it must not steal the caret back on every
+  // reselection.
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      flushTitle();
-      flushContent();
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [flushTitle, flushContent]);
+    if (contentLoadState === 'ready' && focusTitleNoteId !== null) {
+      setFocusTitleNoteId(null);
+    }
+  }, [contentLoadState, focusTitleNoteId]);
 
-  const handleTitleChange = useCallback((value: string) => {
-    setEditor((prev) => (prev ? { ...prev, title: value } : prev));
-    if (activeId) persistTitle(activeId, value);
-  }, [activeId, persistTitle]);
+  const handleTitleChange = useCallback(
+    (value: string) => {
+      if (activeId && editorIdRef.current === activeId) {
+        setEditor((prev) => (prev && prev.id === activeId ? { ...prev, title: value } : prev));
+        autosave.editTitle(activeId, value);
+      }
+    },
+    [activeId, autosave],
+  );
 
-  const handleContentChange = useCallback((content: string) => {
-    setEditor((prev) => (prev ? { ...prev, content } : prev));
-    if (activeId) persistContent(activeId, content);
-  }, [activeId, persistContent]);
+  const handleContentChange = useCallback(
+    (content: string) => {
+      if (activeId && editorIdRef.current === activeId) {
+        setEditor((prev) => (prev && prev.id === activeId ? { ...prev, content } : prev));
+        autosave.editContent(activeId, content);
+      }
+    },
+    [activeId, autosave],
+  );
 
   const handleCreateNote = async () => {
     if (!kbId) return;
@@ -236,8 +271,8 @@ export function NotesWorkspace() {
         content: '',
         kbId,
       });
+      setFocusTitleNoteId(created.id);
       await refreshNotes(created.id);
-      toast.success(t('notesCreated'));
     } catch (error) {
       toastKnowledgebaseError(error, t as unknown as ErrorTranslateFn);
     }
@@ -251,6 +286,8 @@ export function NotesWorkspace() {
     notesDeleteInFlightRef.current.add(id);
     try {
       await DocumentService.deleteDocument(id);
+      // The document is gone: drop any buffered autosave edits for it.
+      autosave.forget(id);
       if (activeId === id) setActiveId(null);
       await refreshNotes();
       toast.success(t('notesDeleted'));
@@ -279,19 +316,25 @@ export function NotesWorkspace() {
           <h1 className="text-[15px] font-semibold text-[var(--color-kb-text-heading)]">
             {t('notesWorkspaceTitle')}
           </h1>
-          {saving ? (
-            <span className="text-[11px] text-[var(--color-kb-text-muted)]">{t('notesSaving')}</span>
-          ) : null}
         </div>
-        <button
-          type="button"
-          onClick={handleCreateNote}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-kb-accent)] text-white text-[13px] font-medium hover:opacity-90 transition-opacity"
-          data-testid="knowledgebase-pc-notes-new"
-        >
-          <Plus size={15} />
-          {t('notesNew')}
-        </button>
+        <div className="flex items-center gap-3">
+          <NotesSaveStatusPill
+            status={autosave.status}
+            lastSavedAt={autosave.lastSavedAt}
+            locale={i18n.language}
+            onRetry={() => void autosave.flushActive()}
+            onOverwrite={() => void autosave.overwriteActive()}
+          />
+          <button
+            type="button"
+            onClick={handleCreateNote}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-kb-accent)] text-white text-[13px] font-medium hover:opacity-90 transition-opacity"
+            data-testid="knowledgebase-pc-notes-new"
+          >
+            <Plus size={15} />
+            {t('notesNew')}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
@@ -363,7 +406,28 @@ export function NotesWorkspace() {
 
         {/* Right: the shared Tiptap editor (same editor as the knowledge base) */}
         <div className="flex-1 flex flex-col overflow-hidden bg-[var(--color-kb-editor)]">
-          {editor ? (
+          {contentLoadState === 'loading' ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-[var(--color-kb-text-muted)]">
+              <Loader2 size={22} className="animate-spin" />
+              <p className="text-[13px]">{t('notesContentLoading')}</p>
+            </div>
+          ) : contentLoadState === 'error' ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3">
+              <CloudOff size={30} className="text-[var(--color-kb-text-muted)]" />
+              <p className="text-[14px] text-[var(--color-kb-text-heading)]">
+                {t('notesContentLoadFailed')}
+              </p>
+              <button
+                type="button"
+                onClick={() => setContentLoadRetryToken((token) => token + 1)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-kb-panel-border)] text-[13px] text-[var(--color-kb-text)] hover:bg-[var(--color-kb-panel-hover)] transition-colors"
+                data-testid="knowledgebase-pc-notes-content-retry"
+              >
+                <RotateCcw size={13} />
+                {t('notesContentLoadRetry')}
+              </button>
+            </div>
+          ) : editor ? (
             <TiptapEditor
               key={editor.id}
               initialContent={editor.content}
@@ -372,6 +436,7 @@ export function NotesWorkspace() {
               docTitle={editor.title}
               onTitleChange={handleTitleChange}
               kbId={kbId || null}
+              autoFocusTitle={editor.id === focusTitleNoteId}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center">
@@ -387,5 +452,102 @@ export function NotesWorkspace() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Autosave status pill (Notion-style): quiet "已保存 <time>" when healthy, a
+ * spinner while saving, and explicit recovery actions when a save failed or a
+ * concurrent edit was detected. Announced politely to screen readers.
+ */
+function NotesSaveStatusPill(props: {
+  status: NotesSaveStatus;
+  lastSavedAt: number | null;
+  locale: string;
+  onRetry: () => void;
+  onOverwrite: () => void;
+}) {
+  const { t } = useTranslation('kb');
+  const { status, lastSavedAt, locale, onRetry, onOverwrite } = props;
+
+  if (status === 'idle') {
+    return null;
+  }
+
+  const baseClass =
+    'flex items-center gap-1.5 text-[12px] leading-none text-[var(--color-kb-text-muted)]';
+
+  if (status === 'saving') {
+    return (
+      <span className={baseClass} role="status" aria-live="polite" data-testid="knowledgebase-pc-notes-save-status">
+        <Loader2 size={12} className="animate-spin" />
+        {t('notesSaving')}
+      </span>
+    );
+  }
+
+  if (status === 'saved') {
+    const timeLabel =
+      lastSavedAt !== null
+        ? formatNoteSavedTime(lastSavedAt, locale || 'zh-CN')
+        : null;
+    return (
+      <span className={baseClass} role="status" aria-live="polite" data-testid="knowledgebase-pc-notes-save-status">
+        <Check size={12} className="text-emerald-500" />
+        {timeLabel ? t('notesStatusSavedAt', { time: timeLabel }) : t('notesStatusSaved')}
+      </span>
+    );
+  }
+
+  if (status === 'conflict') {
+    return (
+      <span
+        className="flex items-center gap-1.5 text-[12px] leading-none text-amber-600"
+        role="status"
+        aria-live="polite"
+        data-testid="knowledgebase-pc-notes-save-status"
+      >
+        <AlertTriangle size={12} />
+        {t('notesStatusConflict')}
+        <button
+          type="button"
+          onClick={onOverwrite}
+          className="ml-0.5 px-2 py-1 rounded-md border border-amber-500/50 text-amber-600 text-[11px] font-medium hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-kb-accent)]"
+          data-testid="knowledgebase-pc-notes-overwrite"
+        >
+          {t('notesStatusOverwrite')}
+        </button>
+      </span>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <span
+        className="flex items-center gap-1.5 text-[12px] leading-none text-rose-500"
+        role="status"
+        aria-live="polite"
+        data-testid="knowledgebase-pc-notes-save-status"
+      >
+        <CloudOff size={12} />
+        {t('notesStatusSaveFailed')}
+        <button
+          type="button"
+          onClick={onRetry}
+          className="ml-0.5 px-2 py-1 rounded-md border border-rose-400/50 text-rose-500 text-[11px] font-medium hover:bg-rose-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-kb-accent)]"
+          data-testid="knowledgebase-pc-notes-retry"
+        >
+          {t('notesStatusRetry')}
+        </button>
+      </span>
+    );
+  }
+
+  // dirty: local edits are waiting for the debounce window.
+  return (
+    <span className={baseClass} role="status" aria-live="polite" data-testid="knowledgebase-pc-notes-save-status">
+      <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-kb-text-muted)]/60" />
+      {t('notesStatusUnsaved')}
+    </span>
   );
 }

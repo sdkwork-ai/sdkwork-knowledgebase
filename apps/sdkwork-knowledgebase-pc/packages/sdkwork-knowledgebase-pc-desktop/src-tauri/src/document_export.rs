@@ -57,9 +57,15 @@ pub fn markdown_to_typst(markdown: &str) -> String {
             },
             Event::End(TagEnd::CodeBlock) => output.push_str("]\n\n"),
             Event::Code(text) => {
-                output.push_str("#raw(`");
-                output.push_str(&escape_typst_text(text.as_ref()));
-                output.push_str("`)");
+                // Raw literal content is verbatim, so backslash-escaping does
+                // not protect the single-backtick delimiter. Use the
+                // double-backtick form (tolerates embedded single backticks);
+                // embedded double backticks become backtick+space (lossy but
+                // bounded) instead of truncating the raw span.
+                let code = text.replace("``", "` `");
+                output.push_str("#raw(``");
+                output.push_str(&code);
+                output.push_str("``)");
             }
             Event::Text(text) => output.push_str(&escape_typst_text(text.as_ref())),
             Event::SoftBreak | Event::HardBreak => output.push('\n'),
@@ -74,9 +80,22 @@ pub fn markdown_to_typst(markdown: &str) -> String {
             Event::Start(Tag::TableCell) => output.push('|'),
             Event::End(TagEnd::TableCell) => output.push(' '),
             Event::Start(Tag::Image { dest_url, .. }) => {
-                output.push_str("#figure(image(\"");
-                output.push_str(&escape_typst_string(dest_url.as_ref()));
-                output.push_str("\"))\n\n");
+                // The export world has no file/network resolver, so image
+                // references cannot be embedded; emit a visible placeholder
+                // instead of failing the whole compile.
+                output.push_str(&format!(
+                    "#text(fill: gray)[[图片: {}]]\n\n",
+                    escape_typst_text(dest_url.as_ref())
+                ));
+            }
+            Event::InlineMath(text) => {
+                // Keep formulas VISIBLE in the export instead of silently
+                // dropping them: emit as Typst math content. The dialects
+                // differ (LaTeX-ish vs Typst), so this is best-effort.
+                output.push_str(&format!("${}${}", escape_typst_math(text.as_ref()), ""));
+            }
+            Event::DisplayMath(text) => {
+                output.push_str(&format!("\n$ ${}$ $\n\n", escape_typst_math(text.as_ref())));
             }
             _ => {}
         }
@@ -132,7 +151,29 @@ fn escape_typst_text(input: &str) -> String {
     let mut escaped = String::with_capacity(input.len());
     for ch in input.chars() {
         match ch {
-            '#' | '$' | '@' | '\\' | '*' | '_' | '`' => {
+            '#' | '$' | '@' | '\\' | '*' | '_' | '`' | '<' | '>' | '~' | '[' | ']' => {
+                escaped.push('\\');
+                escaped.push(ch);
+            }
+            '/' => {
+                // `//` starts a Typst line comment: escape the slash so plain
+                // text URLs and code lines survive.
+                escaped.push_str("\\/");
+            }
+            _ => escaped.push(ch),
+        }
+    }
+    escaped
+}
+
+/// Math content goes into Typst math mode where the markup charset differs;
+/// escape the characters that would break the math delimiters or start
+/// markup, accepting that LaTeX-specific commands render as text.
+fn escape_typst_math(input: &str) -> String {
+    let mut escaped = String::with_capacity(input.len());
+    for ch in input.chars() {
+        match ch {
+            '$' | '\\' | '#' | '@' => {
                 escaped.push('\\');
                 escaped.push(ch);
             }

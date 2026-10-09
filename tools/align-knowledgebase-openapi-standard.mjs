@@ -155,33 +155,36 @@ const appOperations = [
   noContent('delete', '/app/v3/api/knowledge/spaces/{spaceId}/members', {
     operationId: 'spaces.members.delete',
   }),
-  resource('get', '/app/v3/api/knowledge/wechat/official_accounts', {
+  // The WeChat config/fan-tag list handlers emit the standard
+  // `data.{items,pageInfo}` envelope (ok_list_json), not a named list wrapper.
+  list('get', '/app/v3/api/knowledge/wechat/official_accounts', {
     operationId: 'wechat.officialAccounts.list',
-    itemRef: '#/components/schemas/KnowledgeWechatOfficialAccountList',
+    itemRef: '#/components/schemas/KnowledgeWechatOfficialAccount',
   }),
   resource('put', '/app/v3/api/knowledge/wechat/official_accounts', {
     operationId: 'wechat.officialAccounts.update',
     itemRef: '#/components/schemas/KnowledgeWechatOfficialAccountList',
   }),
-  resource('get', '/app/v3/api/knowledge/wechat/applets', {
+  list('get', '/app/v3/api/knowledge/wechat/applets', {
     operationId: 'wechat.applets.list',
-    itemRef: '#/components/schemas/KnowledgeWechatAppletList',
+    itemRef: '#/components/schemas/KnowledgeWechatApplet',
   }),
   resource('put', '/app/v3/api/knowledge/wechat/applets', {
     operationId: 'wechat.applets.update',
     itemRef: '#/components/schemas/KnowledgeWechatAppletList',
   }),
+  // Publish/preview are single-resource command results: the handlers wrap
+  // KnowledgeWechatOperationResult in `data.item` (ok_json), with the real
+  // status values accepted (publish submitted) / validated (preview passed).
   resource('post', '/app/v3/api/knowledge/wechat/articles/publish', {
     operationId: 'wechat.articles.publish',
     status: '200',
     itemRef: '#/components/schemas/KnowledgeWechatOperationResult',
-    command: true,
   }),
   resource('post', '/app/v3/api/knowledge/wechat/articles/preview', {
     operationId: 'wechat.articles.preview',
     status: '200',
     itemRef: '#/components/schemas/KnowledgeWechatOperationResult',
-    command: true,
   }),
   command('post', '/app/v3/api/knowledge/git_syncs', {
     operationId: 'gitSyncs.create',
@@ -1490,12 +1493,14 @@ function alignCommandResultSchemas(spec) {
   }
 
   const replacements = {
-    KnowledgeWechatOperationResult: commandResultSchema(),
+    // WeChat publish/preview carry their real statuses: accepted (publish
+    // submitted upstream) and validated (preview passed all publish checks).
+    KnowledgeWechatOperationResult: commandResultSchema(['accepted', 'validated']),
     KnowledgeGitSyncResult: {
       ...commandResultSchema(),
       required: ['accepted', 'status', 'hash', 'syncedCount'],
       properties: {
-        ...commandResultProperties(),
+        ...commandResultSchema().properties,
         hash: { type: 'string', minLength: 1 },
         syncedCount: { type: 'integer', format: 'uint32', minimum: 0 },
       },
@@ -1505,7 +1510,7 @@ function alignCommandResultSchemas(spec) {
       ...commandResultSchema(),
       required: ['accepted', 'status', 'suggestions', 'similars'],
       properties: {
-        ...commandResultProperties(),
+        ...commandResultSchema().properties,
         url: { type: ['string', 'null'] },
         resolution: { type: ['string', 'null'] },
         text: { type: ['string', 'null'] },
@@ -1522,18 +1527,14 @@ function alignCommandResultSchemas(spec) {
   }
 }
 
-function commandResultSchema() {
+function commandResultSchema(statuses = ['completed']) {
   return {
     type: 'object',
     required: ['accepted', 'status'],
-    properties: commandResultProperties(),
-  };
-}
-
-function commandResultProperties() {
-  return {
-    accepted: { type: 'boolean', const: true },
-    status: { type: 'string', enum: ['completed'] },
+    properties: {
+      accepted: { type: 'boolean', const: true },
+      status: { type: 'string', enum: [...statuses] },
+    },
   };
 }
 

@@ -264,5 +264,8 @@
   "adminConsoleNo": "否",
   "adminConsoleLoadMore": "加载更多",
   "adminConsoleLoadingMore": "加载中…",
-  "notesNav": "笔记"
+  "notesNav": "笔记",
+  "avatarUploadUnavailable": "当前环境不支持上传头像",
+  "avatarUploaded": "头像已更新",
+  "avatarUploadFailed": "头像上传失败，请重试"
 }

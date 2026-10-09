@@ -1,5 +1,6 @@
 {
   "mcpConsoleTitle": "智能体集成与 MCP 协议管理器",
+  "comingSoon": "即将上线",
   "activeStatus": "ACTIVE",
   "mcpConsoleDesc": "智能核心已绑定主流的编辑器实例，支持浏览器底层的本地 Skills 工具库和 Model Context Protocol，可完全根据自由对话解析并执行：",
   "coreSkills": "已挂载的浏览器端核心智能技能 (Core Skills)",
@@ -24,7 +25,6 @@
   "noDocAvailable": "无可用文档",
   "processError": "处理请求时发生错误: ",
   "closeAiAssistant": "关闭AI助手",
-
   "typographyTitle": "一键排版",
   "typographyDesc": "选择排版样式整体美化布局，内置色彩色泽校调与微信排版最适字距间隙比例",
   "previewArea": "微信标准排版预览区",

@@ -27,7 +27,11 @@ client.setAuthToken('your-auth-token');
 client.setAccessToken('your-access-token');
 
 // Use the SDK
-const result = await client.knowledge.okf.bundle.index.list();
+const params = {
+  cursor: 'cursor',
+  page_size: 2,
+};
+const result = await client.knowledge.wechat.officialAccounts.list(params);
 ```
 
 ## Authentication
@@ -61,8 +65,12 @@ const client = new SdkworkKnowledgebaseAppClient({
 ### knowledge
 
 ```typescript
-// Retrieve the OKF bundle index
-const result = await client.knowledge.okf.bundle.index.list();
+// List WeChat official accounts
+const params = {
+  cursor: 'cursor',
+  page_size: 2,
+};
+const result = await client.knowledge.wechat.officialAccounts.list(params);
 ```
 
 ## Error Handling
@@ -71,7 +79,11 @@ const result = await client.knowledge.okf.bundle.index.list();
 import { SdkworkKnowledgebaseAppClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/knowledgebase-app-sdk';
 
 try {
-  const result = await client.knowledge.okf.bundle.index.list();
+  const params = {
+    cursor: 'cursor',
+    page_size: 2,
+  };
+  const result = await client.knowledge.wechat.officialAccounts.list(params);
 } catch (error) {
   if (error instanceof AuthenticationError) {
     console.error('Authentication failed:', error.message);

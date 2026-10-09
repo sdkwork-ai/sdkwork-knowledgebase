@@ -3,6 +3,11 @@ import {
   type KnowledgeRouteParams,
 } from "../models/knowledgeModels";
 
+// The architecture-alignment test (and any consumer) resolves route identity
+// through this module, so re-export the canonical id list alongside the
+// contribution shape.
+export { KNOWLEDGEBASE_CAPABILITY_ROUTE_IDS };
+
 /**
  * Standard route contribution shape
  * (`APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md` section 7).

@@ -137,3 +137,79 @@ fn contract_wechat_configuration_inputs_are_bounded() {
         );
     }
 }
+
+/// Regression guards for the envelope shapes repaired during the 2026-10
+/// contract regression: WeChat config/fan-tag lists use the standard
+/// `data.{items,pageInfo}` envelope (not `data.item.<NamedList>`), WeChat
+/// publish/preview return `data.item` with the real status values, and the
+/// space-scoped OKF retrievals declare their required `space_id` parameter.
+#[test]
+fn contract_regression_guards_pin_wechat_envelopes_and_okf_space_param() {
+    let spec: Value = serde_json::from_str(include_str!(
+        "../../../sdks/sdkwork-knowledgebase-app-sdk/openapi/knowledgebase-app-api.openapi.json"
+    ))
+    .unwrap();
+
+    let list_response = |path: &str| -> String {
+        spec["paths"][path]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+            .to_string()
+    };
+    let official_accounts = list_response("/app/v3/api/knowledge/wechat/official_accounts");
+    assert!(
+        official_accounts.contains("\"items\"")
+            && official_accounts.contains("KnowledgeWechatOfficialAccount\"")
+            && !official_accounts.contains("KnowledgeWechatOfficialAccountList"),
+        "official_accounts GET must use the data.items envelope: {official_accounts}"
+    );
+    let applets = list_response("/app/v3/api/knowledge/wechat/applets");
+    assert!(
+        applets.contains("\"items\"")
+            && applets.contains("KnowledgeWechatApplet\"")
+            && !applets.contains("KnowledgeWechatAppletList"),
+        "applets GET must use the data.items envelope: {applets}"
+    );
+    let fan_tags = list_response("/app/v3/api/knowledge/wechat/official_accounts/{accountId}/fan_tags");
+    assert!(
+        fan_tags.contains("\"items\"") && fan_tags.contains("KnowledgeWechatFanTag\""),
+        "fan_tags GET must use the data.items envelope: {fan_tags}"
+    );
+
+    for path in [
+        "/app/v3/api/knowledge/wechat/articles/publish",
+        "/app/v3/api/knowledge/wechat/articles/preview",
+    ] {
+        let response = spec["paths"][path]["post"]["responses"]["200"]["content"]
+            ["application/json"]["schema"]
+            .to_string();
+        assert!(
+            response.contains("\"item\"") && response.contains("KnowledgeWechatOperationResult"),
+            "{path} must wrap KnowledgeWechatOperationResult in data.item: {response}"
+        );
+    }
+    assert_eq!(
+        spec["components"]["schemas"]["KnowledgeWechatOperationResult"]["properties"]["status"]
+            ["enum"],
+        json!(["accepted", "validated"]),
+        "operation result status enum drifted"
+    );
+
+    for path in [
+        "/app/v3/api/knowledge/okf/index",
+        "/app/v3/api/knowledge/okf/log",
+        "/app/v3/api/knowledge/okf/profile",
+    ] {
+        let parameters = &spec["paths"][path]["get"]["parameters"];
+        let has_required_space_id = parameters
+            .as_array()
+            .expect("okf retrieval parameters array")
+            .iter()
+            .any(|parameter| {
+                parameter["name"] == json!("space_id") && parameter["required"] == json!(true)
+            });
+        assert!(
+            has_required_space_id,
+            "{path} must declare the required space_id query parameter: {parameters}"
+        );
+    }
+}
+

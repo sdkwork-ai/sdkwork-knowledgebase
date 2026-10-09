@@ -18,6 +18,11 @@
       "types": "./src/i18n/index.ts",
       "import": "./src/i18n/index.ts",
       "default": "./src/i18n/index.ts"
+    },
+    "./pages": {
+      "types": "./src/pages/index.ts",
+      "import": "./src/pages/index.ts",
+      "default": "./src/pages/index.ts"
     }
   },
   "dependencies": {

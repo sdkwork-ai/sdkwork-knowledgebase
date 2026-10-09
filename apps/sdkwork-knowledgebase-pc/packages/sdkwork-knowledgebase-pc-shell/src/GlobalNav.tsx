@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { BookOpen, Shield, StickyNote, Store, Settings, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { createRuntimeConfig, type KnowledgebaseAccountViewModel } from 'sdkwork-knowledgebase-pc-core';
-import { UserProfile, DEFAULT_USER_PROFILE } from './UserProfileModal';
+import { useKnowledgebaseRuntime, type KnowledgebaseAccountViewModel } from 'sdkwork-knowledgebase-pc-core';
+import { UserProfile, DEFAULT_USER_PROFILE, EMOTE_PRESETS } from './UserProfileModal';
 
 export interface GlobalNavProps {
   account?: KnowledgebaseAccountViewModel;
@@ -11,7 +11,6 @@ export interface GlobalNavProps {
   onTabChange: (tab: string) => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
-  onOpenAccountSettings?: () => void;
   showAdminConsole?: boolean;
   onOpenAdminConsole?: () => void;
 }
@@ -28,18 +27,22 @@ export function GlobalNav({
 }: GlobalNavProps) {
   const { t } = useTranslation('shell');
 
-  const featureFlags = createRuntimeConfig().featureFlags;
+  // Consume the composed app runtime instead of rebuilding a fresh runtime
+  // config on every render: host-injected overrides must stay authoritative
+  // and identical to what the rest of the shell sees.
+  const { config } = useKnowledgebaseRuntime();
+
   const navItems = useMemo(() => {
     const items = [
       { id: 'kb', icon: BookOpen, title: t('myKnowledgeBase') },
       { id: 'notes', icon: StickyNote, title: t('notesNav') },
       { id: 'search', icon: Search, title: t('search') },
     ];
-    if (featureFlags.knowledgeMarketCatalog) {
+    if (config.featureFlags.knowledgeMarketCatalog) {
       items.push({ id: 'market', icon: Store, title: t('knowledgeBaseMarket') });
     }
     return items;
-  }, [featureFlags.knowledgeMarketCatalog, t]);
+  }, [config.featureFlags.knowledgeMarketCatalog, t]);
 
   const statusMap = {
     online: 'bg-emerald-500',
@@ -49,7 +52,10 @@ export function GlobalNav({
   };
 
   const userAvatar = account?.avatarUrl || profile?.avatar || 'https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=f0d9b5';
-  const isEmojiAvatar = userAvatar.length <= 2;
+  // ZWJ emoji presets (👩‍💻) span several UTF-16 code units, so a raw
+  // `length <= 2` check misclassifies them as URLs and renders a broken image.
+  const isEmojiAvatar = EMOTE_PRESETS.includes(userAvatar)
+    || (userAvatar.length <= 2 && !/^https?:|^data:/i.test(userAvatar));
 
   return (
     <div className="w-[64px] min-w-[64px] h-full flex flex-col items-center py-4 space-y-6 bg-[var(--color-kb-nav)] z-10 border-r border-[var(--color-kb-panel-border)]/70">

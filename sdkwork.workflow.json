@@ -54,12 +54,6 @@
       "tokenSecret": "SDKWORK_RELEASE_TOKEN"
     },
     {
-      "id": "sdkwork-discovery",
-      "repository": "sdkwork-ai/sdkwork-discovery",
-      "refInput": "SDKWORK_DISCOVERY_REF",
-      "tokenSecret": "SDKWORK_RELEASE_TOKEN"
-    },
-    {
       "id": "sdkwork-drive",
       "repository": "sdkwork-ai/sdkwork-drive",
       "refInput": "SDKWORK_DRIVE_REF",

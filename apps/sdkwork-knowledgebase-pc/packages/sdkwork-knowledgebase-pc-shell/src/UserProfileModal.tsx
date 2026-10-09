@@ -47,7 +47,10 @@ const PRESET_AVATARS = [
   'https://api.dicebear.com/7.x/notionists/svg?seed=Nala&backgroundColor=ffdfbf',
 ];
 
-const EMOTE_PRESETS = ['👩‍💻', '👨‍💻', '🤖', '🦊', '🎨', '🚀', '🌟', '🍀', '✨', '☕'];
+// Exported so avatar renderers can distinguish emoji (including ZWJ sequences
+// like 👩‍💻, which span 5 UTF-16 code units) from URLs without brittle
+// length heuristics.
+export const EMOTE_PRESETS = ['👩‍💻', '👨‍💻', '🤖', '🦊', '🎨', '🚀', '🌟', '🍀', '✨', '☕'];
 
 const QUICK_STATUS_PRESETS = [
   { text: '💻 专注于写作', status: 'busy' as const },
@@ -208,12 +211,15 @@ export function UserProfileModal({ account, avatarUploadService, isOpen, onClose
     }
   };
 
-  const statusMap = {
+  const statusMap: Record<string, { label: string; color: string; text: string }> = {
     online: { label: t('statusOnline', { defaultValue: '在线' }), color: 'bg-emerald-500', text: 'text-emerald-500' },
     busy: { label: t('statusBusy', { defaultValue: '忙碌' }), color: 'bg-rose-500', text: 'text-rose-500' },
     away: { label: t('statusAway', { defaultValue: '离开' }), color: 'bg-amber-500', text: 'text-amber-500' },
     offline: { label: t('statusOffline', { defaultValue: '离线' }), color: 'bg-zinc-400', text: 'text-zinc-500' }
   };
+  // A stale/corrupt persisted profile may carry a status value this build does
+  // not know; default instead of throwing on a missing statusMap key.
+  const statusOf = (status: string) => statusMap[status] ?? statusMap.online;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/40 backdrop-blur-[4px] transition-opacity p-4">
@@ -259,7 +265,7 @@ export function UserProfileModal({ account, avatarUploadService, isOpen, onClose
               </div>
               
               {/* Online indicator badge */}
-              <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-zinc-900 ${statusMap[isEditing ? editStatus : profile.status].color} flex items-center justify-center shadow-md`}>
+              <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-zinc-900 ${statusOf(isEditing ? editStatus : profile.status).color} flex items-center justify-center shadow-md`}>
                 <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-white opacity-40"></span>
               </span>
             </div>
@@ -303,9 +309,9 @@ export function UserProfileModal({ account, avatarUploadService, isOpen, onClose
           {!isEditing && (profile.statusText || profile.status) && (
             <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">
               <div className="flex items-center space-x-2 text-xs">
-                <span className={`w-2 h-2 rounded-full ${statusMap[profile.status].color}`} />
+                <span className={`w-2 h-2 rounded-full ${statusOf(profile.status).color}`} />
                 <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                  {t('statusColon', { defaultValue: '状态：' })}{statusMap[profile.status].label}
+                  {t('statusColon', { defaultValue: '状态：' })}{statusOf(profile.status).label}
                 </span>
                 {profile.statusText && (
                   <span className="text-zinc-400 dark:text-zinc-500">|</span>

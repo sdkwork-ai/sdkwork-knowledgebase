@@ -1,5 +1,6 @@
 {
   "mcpConsoleTitle": "Agent Integration & MCP Manager",
+  "comingSoon": "Coming soon",
   "activeStatus": "ACTIVE",
   "mcpConsoleDesc": "Smart Core is bound to major editor instances, supporting browser-level local Skills and Model Context Protocol, parsing and executing conversational commands:",
   "coreSkills": "Mounted Browser-Side Core Skills",
@@ -24,7 +25,6 @@
   "noDocAvailable": "No Available Documents",
   "processError": "An error occurred while processing: ",
   "closeAiAssistant": "Close AI Assistant",
-
   "typographyTitle": "One-Click Layout",
   "typographyDesc": "Select formatting stylesheets to enhance layout, with fine-tuned color matching and optmized letter-spacing & line-height.",
   "previewArea": "WeChat Standard Preview Frame",

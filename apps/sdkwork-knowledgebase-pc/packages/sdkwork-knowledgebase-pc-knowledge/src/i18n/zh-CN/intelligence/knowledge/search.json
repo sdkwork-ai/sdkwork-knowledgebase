@@ -33,5 +33,6 @@
   "exportNoteTitle": "AI 检索成果笔记",
   "exportDocTitlePrefix": "搜索导记: {{title}}",
   "exportDocIntro": "💡 本笔记由 AI 对话式搜索引擎一键导出生成。",
-  "savedToKb": "成果已保存至【{{title}}】"
+  "savedToKb": "成果已保存至【{{title}}】",
+  "saveToKbFailed": "保存到知识库失败，请稍后重试。"
 }

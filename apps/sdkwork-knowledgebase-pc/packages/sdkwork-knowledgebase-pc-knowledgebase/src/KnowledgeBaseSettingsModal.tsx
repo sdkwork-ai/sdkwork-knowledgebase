@@ -25,9 +25,13 @@ interface KnowledgeSpaceMemberDraft extends KnowledgeSpaceMemberUi {}
 
 export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBaseSettingsModalProps) {
   const { t } = useTranslation(['kb', 'common']);
-  const numericKbId = Number(kb.id);
-  const wikiTabAvailable = Number.isFinite(numericKbId) && numericKbId > 0;
-  const [activeTab, setActiveTab] = useState<'basic' | 'permissions' | 'model' | 'wiki' | 'developer'>('basic');
+  // Space ids are canonical int64 decimal STRINGS; routing them through
+  // `Number` silently corrupts ids above 2^53, so they are validated and
+  // passed as strings everywhere (mirroring knowledgeMarketService).
+  const spaceId = kb.id.trim();
+  const hasValidSpaceId = /^\d+$/u.test(spaceId) && spaceId !== '0';
+  const wikiTabAvailable = hasValidSpaceId;
+  const [activeTab, setActiveTab] = useState<'basic' | 'permissions' | 'model' | 'wikiPublication' | 'developer'>('basic');
   
   // Basic Settings States
   const [title, setTitle] = useState(kb.title);
@@ -49,8 +53,7 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
   const [newMemberRole, setNewMemberRole] = useState<'admin' | 'editor' | 'viewer'>('viewer');
 
   useEffect(() => {
-    const spaceId = Number(kb.id);
-    if (!isKnowledgebaseApiAvailable() || !Number.isFinite(spaceId) || spaceId <= 0) {
+    if (!isKnowledgebaseApiAvailable() || !hasValidSpaceId) {
       loadedMemberEmailsRef.current = new Set();
       membersDirtyRef.current = false;
       setMembers([]);
@@ -117,8 +120,7 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
   };
 
   const handleLoadMoreMembers = async () => {
-    const spaceId = Number(kb.id);
-    if (!membersHasMore || membersLoadingMore || !Number.isFinite(spaceId) || spaceId <= 0) {
+    if (!membersHasMore || membersLoadingMore || !hasValidSpaceId) {
       return;
     }
     setMembersLoadingMore(true);
@@ -136,14 +138,8 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
   };
 
   const handleSaveAll = async () => {
-    const spaceId = Number(kb.id);
     try {
-      if (
-        membersDirtyRef.current
-        && isKnowledgebaseApiAvailable()
-        && Number.isFinite(spaceId)
-        && spaceId > 0
-      ) {
+      if (membersDirtyRef.current && isKnowledgebaseApiAvailable() && hasValidSpaceId) {
         setMembersSaving(true);
         const baseline = await DocumentService.loadKnowledgeSpaceMembers(spaceId);
         await DocumentService.syncKnowledgeSpaceMembersPartial(
@@ -213,8 +209,8 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
             </button>
             {wikiTabAvailable && (
               <button
-                onClick={() => setActiveTab('wiki')}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${activeTab === 'wiki' ? 'bg-zinc-900 text-white dark:bg-[var(--color-kb-accent)] shadow-md' : 'text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text)] hover:bg-black/5 dark:hover:bg-[var(--color-kb-panel-hover)]'}`}
+                onClick={() => setActiveTab('wikiPublication')}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${activeTab === 'wikiPublication' ? 'bg-zinc-900 text-white dark:bg-[var(--color-kb-accent)] shadow-md' : 'text-zinc-500 hover:text-zinc-900 dark:text-[var(--color-kb-text)] hover:bg-black/5 dark:hover:bg-[var(--color-kb-panel-hover)]'}`}
               >
                 <BookOpen size={15} />
                 <span>Wiki 发布管理</span>
@@ -239,14 +235,14 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
                 {activeTab === 'basic' && t('basicSettings')}
                 {activeTab === 'permissions' && t('permissionsSettingsDesc')}
                 {activeTab === 'model' && t('modelSettingsDesc')}
-                {activeTab === 'wiki' && t('wikiPanelTitle', { defaultValue: 'Wiki 站点发布管理' })}
+                {activeTab === 'wikiPublication' && t('wikiPanelTitle', { defaultValue: 'Wiki 站点发布管理' })}
                 {activeTab === 'developer' && t('openApiPanelTitle', { defaultValue: 'Open API 接入' })}
               </h3>
               <p className="text-[12px] text-zinc-500 dark:text-[var(--color-kb-text-muted)] mt-1 font-medium">
                 {activeTab === 'basic' && t('basicSettingsDesc')}
                 {activeTab === 'permissions' && t('permissionsSettingsDesc2')}
                 {activeTab === 'model' && t('modelSettingsDesc2')}
-                {activeTab === 'wiki' && t('wikiPanelDesc', { defaultValue: '管理 Wiki 站点的发布状态与页面可见性' })}
+                {activeTab === 'wikiPublication' && t('wikiPanelDesc', { defaultValue: '管理 Wiki 站点的发布状态与页面可见性' })}
                 {activeTab === 'developer' && t('openApiPanelDesc', { defaultValue: '面向组织开发者的程序化接入接口' })}
               </p>
             </div>
@@ -567,7 +563,7 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
               </div>
             )}
             {/* TAB: WIKI PUBLICATION MANAGEMENT */}
-            {activeTab === 'wiki' && (
+            {activeTab === 'wikiPublication' && (
               <div className="animate-in fade-in duration-300">
                 <WikiManagePanel kb={kb} />
               </div>
@@ -583,7 +579,7 @@ export function KnowledgeBaseSettingsModal({ kb, onClose, onSave }: KnowledgeBas
 
           {/* Bottom Dialog Action footer */}
           <div className="px-8 py-5 border-t border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] bg-[#fafafa] dark:bg-[var(--color-kb-panel)]/30 backdrop-blur-sm flex justify-end gap-3 z-30">
-            {activeTab === 'wiki' || activeTab === 'developer' ? (
+            {activeTab === 'wikiPublication' || activeTab === 'developer' ? (
               <button
                 type="button"
                 onClick={onClose}

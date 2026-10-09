@@ -78,7 +78,10 @@ pub struct OkfConceptSummaryList {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListOkfConceptsQuery {
+    // Wire name follows the app-api contract's snake_case query canon
+    // (`space_id`), matching `documents.list` and the materialized OpenAPI.
     #[serde(
+        rename = "space_id",
         serialize_with = "serialize_u64_as_string",
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]

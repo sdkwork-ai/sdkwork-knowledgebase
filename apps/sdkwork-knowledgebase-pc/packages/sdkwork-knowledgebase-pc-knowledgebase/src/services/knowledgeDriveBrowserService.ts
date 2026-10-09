@@ -1,3 +1,4 @@
+import { isBlank } from '@sdkwork/utils';
 import type { KnowledgeBrowserNode } from 'sdkwork-knowledgebase-pc-core';
 import {
   parseKnowledgeSpaceId,
@@ -14,8 +15,12 @@ import { normalizeDriveNodePage, readDriveNode } from './knowledgeDriveSdkRespon
 // through to create and let a genuine conflict surface naturally.
 const FOLDER_LOOKUP_SCAN_PAGES = 20;
 
+function trimmedOrUndefined(value: string | null | undefined): string | undefined {
+  return isBlank(value) ? undefined : (value ?? '').trim();
+}
+
 function resolveDriveNodeId(node: KnowledgeBrowserNode): string | null {
-  return node.driveNodeId?.trim() || node.id?.trim() || null;
+  return trimmedOrUndefined(node.driveNodeId) ?? trimmedOrUndefined(node.id) ?? null;
 }
 
 function spaceIdFromKbId(kbId: string): string {
@@ -37,12 +42,12 @@ export async function createKnowledgeDriveFolder(input: {
   const folder = readDriveNode(
     await requireDriveApiClient().drive.nodes.folders.create({
       spaceId: driveSpaceId,
-      parentNodeId: input.parentDriveNodeId?.trim() || undefined,
+      parentNodeId: trimmedOrUndefined(input.parentDriveNodeId),
       nodeName: input.nodeName.trim()}),
   );
   return {
     driveNodeId: folder.id,
-    nodeName: folder.nodeName?.trim() || input.nodeName.trim()};
+    nodeName: trimmedOrUndefined(folder.nodeName) ?? input.nodeName.trim()};
 }
 
 export async function applyDriveBrowserNodeUpdates(
@@ -58,7 +63,7 @@ export async function applyDriveBrowserNodeUpdates(
   // through from partial update objects.
   if (
     updates.title !== undefined
-    && updates.title.trim() !== ''
+    && !isBlank(updates.title)
     && updates.title.trim() !== node.name
   ) {
     await drive.drive.nodes.update(driveNodeId, {
@@ -66,8 +71,8 @@ export async function applyDriveBrowserNodeUpdates(
   }
 
   if (updates.parentId !== undefined) {
-    const targetParent = updates.parentId?.trim() || undefined;
-    const currentParent = node.parentId?.trim() || undefined;
+    const targetParent = trimmedOrUndefined(updates.parentId);
+    const currentParent = trimmedOrUndefined(node.parentId);
     if (targetParent !== currentParent) {
       const targetDriveParent = await resolveKnowledgeBrowserParentDriveNodeId(
         kbId,
@@ -127,16 +132,16 @@ export async function ensureDriveFolderPath(
   folderCache: Map<string, string>,
 ): Promise<string | undefined> {
   if (!relativePath || !relativePath.includes('/')) {
-    return rootParentNodeId?.trim() || undefined;
+    return trimmedOrUndefined(rootParentNodeId);
   }
 
   const parts = relativePath.split('/');
   parts.pop();
   if (parts.length === 0) {
-    return rootParentNodeId?.trim() || undefined;
+    return trimmedOrUndefined(rootParentNodeId);
   }
 
-  let currentParent = rootParentNodeId?.trim() || undefined;
+  let currentParent = trimmedOrUndefined(rootParentNodeId);
   let pathAccumulator = '';
 
   for (const folderName of parts) {

@@ -145,7 +145,7 @@ export function useKnowledgeBaseDocumentPersistence({
   }, [activeDoc, flushDocumentSave]);
 
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const flushAllPendingNow = () => {
       for (const docId of pendingByDocRef.current.keys()) {
         const timer = timersByDocRef.current.get(docId);
         if (timer) {
@@ -159,10 +159,23 @@ export function useKnowledgeBaseDocumentPersistence({
         }
       }
     };
+    const handleBeforeUnload = () => {
+      flushAllPendingNow();
+    };
+    // visibilitychange→hidden fires while the page is still alive, so the
+    // multi-request ingest save can actually complete — unlike a beforeunload
+    // flush, which browsers routinely abort mid-chain.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushAllPendingNow();
+      }
+    };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       void flushAllPendingSaves();
     };
   }, [flushAllPendingSaves]);

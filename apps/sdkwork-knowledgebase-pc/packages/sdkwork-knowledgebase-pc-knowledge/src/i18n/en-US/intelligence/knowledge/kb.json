@@ -191,6 +191,17 @@
   "notesEditorEmptyHintSelect": "Pick a note from the list, or create a new one",
   "notesEditorEmptyHintCreate": "Click \"New Note\" in the top right to start your first note",
   "notesDeleteConfirm": "Delete this note? This cannot be undone.",
+  "notesStatusSaved": "Saved",
+  "notesStatusSavedAt": "Saved {{time}}",
+  "notesStatusUnsaved": "Unsaved changes",
+  "notesStatusSaveFailed": "Save failed",
+  "notesStatusRetry": "Retry",
+  "notesStatusConflict": "Modified in another window",
+  "notesStatusOverwrite": "Overwrite",
+  "notesConflictToast": "This note was changed in another window. Click \"Overwrite\" to keep this device's content.",
+  "notesContentLoading": "Loading note…",
+  "notesContentLoadFailed": "Failed to load note content",
+  "notesContentLoadRetry": "Reload",
   "deleteKbConfirm": "Delete knowledge base \"{{title}}\"? All of its documents will be removed. This cannot be undone.",
   "folderSubtextItems": "{{count}} items | Created {{date}}"
 }

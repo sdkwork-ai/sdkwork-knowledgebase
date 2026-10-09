@@ -49,5 +49,40 @@ export function createKnowledgebaseSessionTokenManager(
         refreshToken: tokens.refreshToken,
       });
     },
+    setAccessToken(token: string): void {
+      sessionStore.updateSession({ accessToken: token });
+    },
+    setAuthToken(token: string): void {
+      sessionStore.updateSession({ authToken: token });
+    },
+    setRefreshToken(token: string): void {
+      sessionStore.updateSession({ refreshToken: token });
+    },
+    clearAuthToken(): void {
+      sessionStore.updateSession({ authToken: undefined });
+    },
+    clearAccessToken(): void {
+      sessionStore.updateSession({ accessToken: undefined });
+    },
+    // The session store carries no expiry metadata; tokens expire server-side
+    // and refresh is driven by the IAM session lifecycle, not locally.
+    isExpired(): boolean {
+      return false;
+    },
+    isValid(): boolean {
+      return this.hasToken();
+    },
+    hasToken(): boolean {
+      return !!(this.getAccessToken() || this.getAuthToken());
+    },
+    hasAuthToken(): boolean {
+      return !!this.getAuthToken();
+    },
+    hasAccessToken(): boolean {
+      return !!this.getAccessToken();
+    },
+    willExpireIn(_seconds: number): boolean {
+      return false;
+    },
   };
 }

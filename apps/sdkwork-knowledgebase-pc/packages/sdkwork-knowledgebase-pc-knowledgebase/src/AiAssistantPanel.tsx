@@ -249,7 +249,7 @@ export function AiAssistantPanel({
                         // Quick-tool commands are not yet wired to a server capability; keep
                         // the entry honest and disabled instead of invoking a guaranteed failure.
                         disabled
-                        title={t('comingSoon', { ns: 'mcp' }) || '即将上线'}
+                        title={t('comingSoon', { ns: 'mcp', defaultValue: '即将上线' })}
                         className="px-3.5 py-1.5 text-[12px] font-bold bg-[#fafafa] dark:bg-[var(--color-kb-editor)] border border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] text-zinc-400 dark:text-[var(--color-kb-text-muted)] rounded-full transition-all cursor-not-allowed opacity-70"
                       >
                         {chip.label}

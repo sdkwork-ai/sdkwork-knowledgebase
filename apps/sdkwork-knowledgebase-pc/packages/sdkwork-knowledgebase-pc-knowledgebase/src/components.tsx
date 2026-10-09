@@ -10,7 +10,9 @@ import {
 import {
   assertKnowledgebasePreviewFeature,
   getKnowledgebaseTenantId,
+  KnowledgebaseErrorCodes,
   shouldUseKnowledgebaseDemoFallback,
+  throwKnowledgebaseError,
 } from 'sdkwork-knowledgebase-pc-core';
 import { findDocInTree } from './utils/docTreeUtils';
 import { DocumentService, FolderNode, DocumentMeta, KnowledgeBase } from './services/document';
@@ -472,16 +474,23 @@ export function KnowledgeBaseApp({
     if (activeKb) {
       tabCache.closeAll(activeKb.id);
     }
+    // Invalidate any in-flight content fetch: without this, a response for the
+    // previously active doc would land after the state was cleared.
+    docRequestSeqRef.current += 1;
     setOpenDocs([]);
     setActiveDoc(null);
     setDocContent('');
   }, [activeKb, tabCache]);
 
   const handleTitleChange = useCallback(async (docId: string, newTitle: string) => {
+    // Capture the previous title up front so a failed rename can revert the
+    // optimistic update instead of leaving UI and server out of sync.
+    const previousTitle = openDocs.find((d) => d.id === docId)?.title
+      ?? docs.find((d) => d.id === docId)?.title;
     // 1. Update active list/state
     setActiveDoc(prev => (prev && prev.id === docId ? { ...prev, title: newTitle } : prev));
     setOpenDocs(prev => prev.map(d => (d.id === docId ? { ...d, title: newTitle } : d)));
-    
+
     // 2. Update flat / deep document tree
     setDocs(prev => {
       const updateInTree = (items: any[]): any[] => {
@@ -498,9 +507,26 @@ export function KnowledgeBaseApp({
       return updateInTree(prev);
     });
 
-    // 3. Persist
-    await DocumentService.updateDocument(docId, { title: newTitle });
-  }, []);
+    // 3. Persist, with revert + toast on failure (this callback's promise is
+    // fire-and-forget for callers, so a rejection must never go unhandled).
+    try {
+      await DocumentService.updateDocument(docId, { title: newTitle });
+    } catch (error) {
+      toastKnowledgebaseError(error, t);
+      const revertInTree = (items: any[]): any[] => items.map(item => {
+        if (item.id === docId && previousTitle !== undefined) {
+          return { ...item, title: previousTitle };
+        }
+        if (item.type === 'folder' && item.children) {
+          return { ...item, children: revertInTree(item.children) };
+        }
+        return item;
+      });
+      setActiveDoc(prev => (prev && prev.id === docId && previousTitle !== undefined ? { ...prev, title: previousTitle } : prev));
+      setOpenDocs(prev => prev.map(d => (d.id === docId && previousTitle !== undefined ? { ...d, title: previousTitle } : d)));
+      setDocs(revertInTree);
+    }
+  }, [docs, openDocs, t]);
 
   const handleCreateKb = async (gitUrl?: string, gitBranch?: string) => {
     if (isBlank(newKbTitle)) return;
@@ -547,6 +573,13 @@ export function KnowledgeBaseApp({
     if (actionType === 'folder') { titleStr = t('newFolder'); docType = 'folder'; }
 
     try {
+      // Every creation path below needs a selected knowledge base; `activeKb`
+      // can be null while the KB list refreshes, and the non-null assertions
+      // further down would turn that into a confusing TypeError toast.
+      if (!activeKb) {
+        throwKnowledgebaseError(KnowledgebaseErrorCodes.KB_ID_REQUIRED);
+      }
+      const currentKbId = activeKb.id;
       let resultItem: any = null;
       if (actionType === 'batch_create' && Array.isArray(payload)) {
         assertKnowledgebasePreviewFeature('offline-import-batch-create');
@@ -565,7 +598,7 @@ export function KnowledgeBaseApp({
         }
       } else if ((actionType === 'localFile' || actionType === 'localFolder' || actionType === 'audioUpload' || actionType === 'musicUpload') && payload && payload.length > 0) {
         // Use custom type for music Upload
-        const uploaded = await DocumentService.uploadFiles(payload, activeKb!.id, parentId, actionType === 'musicUpload' ? 'music' : undefined);
+        const uploaded = await DocumentService.uploadFiles(payload, currentKbId, parentId, actionType === 'musicUpload' ? 'music' : undefined);
         if (uploaded && uploaded.length > 0) {
           resultItem = uploaded[0];
         }
@@ -590,29 +623,51 @@ export function KnowledgeBaseApp({
           } else if (actionType === 'link') {
             initialContent = `# [${payload?.url}](${payload?.url})\n\n> 正在抓取网页内容中，请稍候...`;
           }
-        } else if (actionType === 'link' && payload?.url) {
-          initialContent = `# [${payload.url}](${payload.url})\n\n> 正在抓取网页内容中，请稍候...`;
         }
 
-        const newDocParams: Partial<DocumentMeta> = {
-          title: titleStr,
-          type: docType as any,
-          url: contentUrl,
-          content: initialContent,
-          kbId: activeKb?.id,
-          parentId
-        };
-        const createdDoc = await DocumentService.createDocument(newDocParams);
-        resultItem = createdDoc;
+        if (actionType === 'link' && payload?.url && !shouldUseKnowledgebaseDemoFallback()) {
+          // Real web ingest: fetches the page through the bounded importer
+          // (SSRF-guarded, size-capped) and creates the document from the
+          // retrieved content. The old branch created a placeholder markdown
+          // doc whose "fetching, please wait" text was never replaced.
+          const imported = await DocumentService.importWebLink({
+            kbId: currentKbId,
+            parentId: parentId || null,
+            url: payload.url,
+            title: titleStr,
+          });
+          resultItem = imported;
+        } else {
+          const newDocParams: Partial<DocumentMeta> = {
+            title: titleStr,
+            type: docType as any,
+            url: contentUrl,
+            content: initialContent,
+            kbId: activeKb?.id,
+            parentId
+          };
+          const createdDoc = await DocumentService.createDocument(newDocParams);
+          resultItem = createdDoc;
+        }
       }
 
-      // Preserve the authoritative mutation result while the browser projection catches up.
-      const updatedDocs = await DocumentService.getDocuments(activeKb!.id);
+      // Preserve the authoritative mutation result while the browser projection
+      // catches up. A tree-refresh failure must not discard the creation
+      // result: the document exists server-side, so keep it selected/returned.
+      let updatedDocs;
+      try {
+        updatedDocs = await DocumentService.getDocuments(currentKbId);
+      } catch (refreshError) {
+        console.error('document tree refresh failed after create', refreshError);
+        updatedDocs = null;
+      }
       const selectableResult = resultItem?.type !== 'folder' ? resultItem : null;
-      const nextDocs = selectableResult && !findDocInTree(updatedDocs, selectableResult.id)
-        ? [...updatedDocs, selectableResult]
-        : updatedDocs;
-      setDocs(nextDocs);
+      if (updatedDocs) {
+        const nextDocs = selectableResult && !findDocInTree(updatedDocs, selectableResult.id)
+          ? [...updatedDocs, selectableResult]
+          : updatedDocs;
+        setDocs(nextDocs);
+      }
       if (selectableResult) {
         handleSelectDoc(selectableResult);
       }

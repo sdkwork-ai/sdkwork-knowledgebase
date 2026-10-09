@@ -39,6 +39,8 @@ export interface TiptapEditorProps extends ReactKeyedComponentProps {
   docTitle?: string;
   onTitleChange?: (title: string) => void;
   hideTitle?: boolean;
+  /** Focuses the title input on mount (Notion-style new-note flow). */
+  autoFocusTitle?: boolean;
   onOpenImageGallery?: () => void;
   onWechatScan?: () => void;
   onOpenAiImage?: () => void;
@@ -113,8 +115,9 @@ const StyleGlobalExtension = Extension.create({
   }
 });
 
-export function TiptapEditor({ 
+export function TiptapEditor({
   initialContent, mode = 'richtext', onChange, onEditorReady, docTitle = '', onTitleChange, hideTitle = false,
+  autoFocusTitle = false,
   onOpenImageGallery, onWechatScan, onOpenAiImage, onAudioGallery, onVideoGallery, toolbarConfig,
   kbId, parentFolderId, workspaceMode = 'standard',
 }: TiptapEditorProps) {
@@ -123,10 +126,17 @@ export function TiptapEditor({
   const aiEnabled = isKnowledgebaseWorkspaceAiEnabled(workspaceMode);
   const isEphemeralFixedWorkspace = workspaceMode === 'ephemeral-fixed';
   const [title, setTitle] = useState(docTitle);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTitle(docTitle);
   }, [docTitle]);
+
+  useEffect(() => {
+    if (autoFocusTitle) {
+      titleInputRef.current?.focus();
+    }
+  }, [autoFocusTitle]);
 
   const handleTitleChangeLocal = (newTitle: string) => {
     setTitle(newTitle);
@@ -297,6 +307,12 @@ export function TiptapEditor({
 
   editorRef.current = editor;
 
+  // Drive-backed media resolve: exposed on a ref so setContent calls with
+  // `emitUpdate: false` (source-mode toggle-back, split-mode keystrokes) can
+  // trigger it explicitly — with the update event suppressed, the media
+  // listener below never fires and resolved URLs would be lost on round-trip.
+  const resolveMediaRef = useRef<() => void>(() => undefined);
+
   useEffect(() => {
     if (!editor) {
       return undefined;
@@ -320,6 +336,7 @@ export function TiptapEditor({
         }
       }));
     };
+    resolveMediaRef.current = () => { void resolveMedia(); };
     const handleUpdate = () => { void resolveMedia(); };
     editor.on('update', handleUpdate);
     void resolveMedia();
@@ -345,7 +362,12 @@ export function TiptapEditor({
     if (isSourceMode && !isSplitMode) {
       if (editor) {
         const sanitized = mode === 'markdown' ? sourceCode : sanitizeEditorHtml(sourceCode);
-        editor.commands.setContent(sanitized);
+        // emitUpdate: false — the explicit onChange below already notifies the
+        // persistence layer; letting setContent also emit would double-fire it.
+        // resolveMedia runs explicitly because the suppressed update event is
+        // what normally re-resolves Drive media after a content round-trip.
+        editor.commands.setContent(sanitized, { emitUpdate: false });
+        resolveMediaRef.current();
         onChange?.(sanitized);
       }
     } else {
@@ -590,6 +612,7 @@ export function TiptapEditor({
           <div className="w-full flex flex-col select-text shrink-0 px-6 pt-6 pb-2 max-w-4xl mx-auto">
             <input
               type="text"
+              ref={titleInputRef}
               placeholder={t('untitledNote')}
               value={title}
               onChange={(e) => handleTitleChangeLocal(e.target.value)}
@@ -607,7 +630,15 @@ export function TiptapEditor({
         {isSourceMode && !isSplitMode && (
           <textarea
             value={sourceCode}
-            onChange={(e) => setSourceCode(e.target.value)}
+            onChange={(e) => {
+              setSourceCode(e.target.value);
+              // Persist source edits like split mode does: the doc-switch and
+              // unload flushes only know about `onChange`, so without this the
+              // typed source text is silently lost on tab/doc switch. Richtext
+              // persists sanitized HTML, matching the onUpdate path.
+              const nextValue = e.target.value;
+              onChange?.(mode === 'markdown' ? nextValue : sanitizeEditorHtml(nextValue));
+            }}
             className="w-full max-w-4xl mx-auto px-6 py-6 flex-1 bg-transparent text-[var(--color-kb-text)] font-mono text-sm border-none focus:outline-none resize-none"
             spellCheck={false}
           />
@@ -618,9 +649,15 @@ export function TiptapEditor({
                <textarea
                  value={sourceCode}
                  onChange={(e) => {
-                   setSourceCode(e.target.value);
-                   editor.commands.setContent(e.target.value);
-                   onChange?.(e.target.value);
+                   const nextValue = e.target.value;
+                   const sanitizedNextValue = mode === 'markdown' ? nextValue : sanitizeEditorHtml(nextValue);
+                   setSourceCode(nextValue);
+                   // emitUpdate: false — the explicit onChange below is the
+                   // single persistence notification per keystroke; resolveMedia
+                   // runs explicitly for the same reason as toggle-back.
+                   editor.commands.setContent(sanitizedNextValue, { emitUpdate: false });
+                   resolveMediaRef.current();
+                   onChange?.(sanitizedNextValue);
                  }}
                  className="w-full h-full p-6 bg-transparent text-[var(--color-kb-text)] font-mono text-sm border-none focus:outline-none resize-none"
                  spellCheck={false}

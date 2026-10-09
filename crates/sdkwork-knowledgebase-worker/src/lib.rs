@@ -670,9 +670,6 @@ pub async fn run_polling_loop(runtime: KnowledgebaseRuntime, config: Maintenance
         tokio::select! {
             _ = ticker.tick() => {
                 let renew_wiki_event_deliveries = last_delivery_renewal.elapsed() >= renewal_interval;
-                if renew_wiki_event_deliveries {
-                    last_delivery_renewal = std::time::Instant::now();
-                }
                 let maintenance = config.maintenance.clone();
                 let mut result = MaintenanceTickResult::default();
 
@@ -818,6 +815,15 @@ pub async fn run_polling_loop(runtime: KnowledgebaseRuntime, config: Maintenance
                     result.wiki_drive_event_delivery_relays_verified = delivery.embedded_relays_verified;
                     result.wiki_drive_event_delivery_failures = delivery.failures.len();
                     result.wiki_drive_next_after_event_delivery_checkpoint_id = delivery.next_after_checkpoint_id;
+                    // Reset the interval clock only from an OBSERVED completed
+                    // sweep (next = None): a phase timeout or error yields a
+                    // struct-default None without running the sweep, and
+                    // resetting there would stall a mid-scan renewal for a
+                    // whole interval — the starvation this latch exists to
+                    // prevent.
+                    if renew_wiki_event_deliveries && delivery.next_after_checkpoint_id.is_none() {
+                        last_delivery_renewal = std::time::Instant::now();
+                    }
                 }
 
                 if let Some(blocked) = result.wiki_drive_blocked_checkpoint_id {
@@ -845,6 +851,14 @@ pub async fn run_polling_loop(runtime: KnowledgebaseRuntime, config: Maintenance
                 }
                 if let Some(next) = result.wiki_drive_next_after_event_delivery_checkpoint_id {
                     wiki_delivery_cursor = Some(next);
+                } else {
+                    // Full sweep completed (or no sweep ran this tick): next
+                    // renewal attempt restarts from the beginning, so
+                    // checkpoints scanned in earlier passes keep getting their
+                    // Drive event-delivery subscriptions renewed. (The interval
+                    // clock is reset in the WikiDelivery result block above,
+                    // only for an observed completed sweep.)
+                    wiki_delivery_cursor = None;
                 }
 
                 if maintenance_tick_has_activity(&result) {

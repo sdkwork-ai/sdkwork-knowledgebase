@@ -47,6 +47,9 @@ Desktop.ini
 *.log
 *.tmp
 *.bak
+# Editor scratch backup shadow (e.g. NotesWorkspace.js.bak-shadow), never committed
+*.bak-shadow
+*.bak-*
 .tmp-*.err
 .tmp-*.out
 .tmp-*.log

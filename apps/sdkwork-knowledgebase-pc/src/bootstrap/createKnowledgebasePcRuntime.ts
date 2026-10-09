@@ -93,6 +93,40 @@ interface ResolvedSessionStorage {
   hydrated?: Promise<void>;
 }
 
+// Hardened browsers / private modes can throw SecurityError on mere storage
+// ACCESS; startup runs before any error boundary, so a throw here white-screens
+// the whole app. Fall back to an in-memory no-op storage instead — auth simply
+// behaves as "not logged in" for the tab.
+function createMemoryFallbackStorage(): SessionStorageLike {
+  const entries = new Map<string, string>();
+  return {
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => {
+      entries.set(key, value);
+    },
+    removeItem: (key) => {
+      entries.delete(key);
+    },
+  };
+}
+
+function safeWindowStorage(area: 'localStorage' | 'sessionStorage'): SessionStorageLike {
+  try {
+    return window[area];
+  } catch (error) {
+    console.error(`window.${area} is unavailable; falling back to in-memory storage`, error);
+    return createMemoryFallbackStorage();
+  }
+}
+
+function safeMigrateLegacyBrowserSession(): void {
+  try {
+    migrateLegacyBrowserSession();
+  } catch (error) {
+    console.error('legacy session migration failed; skipping', error);
+  }
+}
+
 function resolveSessionStorage(
   tokenStorage: KnowledgebasePcRuntime['config']['auth']['tokenStorage'],
 ): ResolvedSessionStorage {
@@ -101,16 +135,21 @@ function resolveSessionStorage(
   }
   if (tokenStorage === 'browser-local') {
     // Persistent browser login: keep the legacy sessionStorage migration path.
-    migrateLegacyBrowserSession();
-    return { storage: window.localStorage };
+    safeMigrateLegacyBrowserSession();
+    return { storage: safeWindowStorage('localStorage') };
   }
   if (tokenStorage === 'browser-session') {
     // Session-scoped login: tokens live in sessionStorage and expire with the
     // tab, shrinking the XSS-exposed credential window.
-    return { storage: window.sessionStorage };
+    return { storage: safeWindowStorage('sessionStorage') };
   }
   if (tokenStorage === 'os-secure-storage') {
-    return createDesktopSecureSessionStorage() ?? {};
+    try {
+      return createDesktopSecureSessionStorage() ?? {};
+    } catch (error) {
+      console.error('desktop secure storage init failed; auth starts signed out', error);
+      return {};
+    }
   }
   return {};
 }

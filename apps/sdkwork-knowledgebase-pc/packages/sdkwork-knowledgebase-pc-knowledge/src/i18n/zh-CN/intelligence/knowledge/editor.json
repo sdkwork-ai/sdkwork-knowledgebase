@@ -71,6 +71,7 @@
   "uploadLocalVideo": "本地上传",
   "selectFromVideos": "从视频库选择",
   "untitledNote": "无标题",
+  "placeholderText": "请输入正文或开始创作...",
   "heading1": "标题 1",
   "heading2": "标题 2",
   "aiWritingAssistant": "智能写作助手",

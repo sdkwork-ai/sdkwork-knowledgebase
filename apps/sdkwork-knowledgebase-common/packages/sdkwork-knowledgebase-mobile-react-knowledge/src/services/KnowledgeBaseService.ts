@@ -429,28 +429,66 @@ export class KnowledgeBaseService {
   }
 
   /**
-   * Creates the document metadata through `documents.create` and, when the form
-   * carries markdown, pushes the content through the async `ingests.create`
-   * pipeline. The content becomes readable once the ingest job succeeds.
+   * Creates a document. Content-bearing documents are created BY the ingest
+   * pipeline (`ingests.create` projects a new document), so calling
+   * `documents.create` first would yield a duplicate empty draft next to the
+   * ingest-created document — content goes through the ingest exclusively,
+   * and the ingest-created document is then resolved with a bounded title
+   * scan (the projection can land a beat after the job succeeds).
    */
   static async createDocument(
     document: Omit<KnowledgeDocument, "id" | "createdAt" | "updatedAt">,
   ): Promise<KnowledgeDocument> {
     const { client } = requireRuntime();
-    const created = await client.knowledge.documents.create({
-      spaceId: document.kbId,
-      title: document.title,
-      mimeType: 'text/markdown',
-    });
-    if (document.content && document.content.trim().length > 0) {
-      await client.knowledge.ingests.create({
+    const hasContent = Boolean(document.content && document.content.trim().length > 0);
+    if (!hasContent) {
+      const created = await client.knowledge.documents.create({
         spaceId: document.kbId,
         title: document.title,
-        payloadMarkdown: document.content,
-        idempotencyKey: createIdempotencyKey(),
+        mimeType: 'text/markdown',
       });
+      return { ...mapServerDocument(created), content: document.content };
     }
-    return { ...mapServerDocument(created), content: document.content };
+
+    await client.knowledge.ingests.create({
+      spaceId: document.kbId,
+      title: document.title,
+      payloadMarkdown: document.content,
+      idempotencyKey: createIdempotencyKey(),
+    });
+
+    const RESOLVE_ATTEMPTS = 6;
+    const RESOLVE_RETRY_MS = 300;
+    // Cursor-paginate the whole space (bounded): page-1-only scans false-NotFound
+    // in spaces with many documents.
+    const MAX_SCAN_PAGES = 5;
+    for (let attempt = 0; attempt < RESOLVE_ATTEMPTS; attempt += 1) {
+      if (attempt > 0) {
+        await new Promise((resolve) => setTimeout(resolve, RESOLVE_RETRY_MS));
+      }
+      const matches: ServerKnowledgeDocument[] = [];
+      let cursor: string | undefined;
+      for (let page = 0; page < MAX_SCAN_PAGES; page += 1) {
+        const pageData = await client.knowledge.documents.list({
+          spaceId: document.kbId,
+          pageSize: 100,
+          ...(cursor ? { cursor } : {}),
+        });
+        matches.push(...pageData.items.filter((item) => item.title === document.title));
+        cursor = pageData.pageInfo.nextCursor ?? undefined;
+        if (!cursor) break;
+      }
+      if (matches.length > 0) {
+        // Prefer the LAST match: with duplicate titles the ingest projection is
+        // the newest entry, and a pre-existing same-title document would
+        // otherwise shadow the just-created one.
+        const match = matches[matches.length - 1];
+        return { ...mapServerDocument(match), content: document.content };
+      }
+    }
+    throw new NotFoundError(
+      `ingest-created document was not found after ${RESOLVE_ATTEMPTS} attempts: ${document.title}`,
+    );
   }
 
   static async updateDocument(

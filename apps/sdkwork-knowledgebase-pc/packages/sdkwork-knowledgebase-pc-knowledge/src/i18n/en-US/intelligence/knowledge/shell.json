@@ -264,5 +264,8 @@
   "adminConsoleNo": "No",
   "adminConsoleLoadMore": "Load more",
   "adminConsoleLoadingMore": "Loading…",
-  "notesNav": "Notes"
+  "notesNav": "Notes",
+  "avatarUploadUnavailable": "Avatar upload is unavailable in this environment",
+  "avatarUploaded": "Avatar updated",
+  "avatarUploadFailed": "Avatar upload failed, please retry"
 }

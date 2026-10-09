@@ -41,8 +41,35 @@ impl SecureSessionState {
         let mut keys = load_key_index(&keys_path);
 
         if legacy_path.exists() {
-            migrate_legacy_snapshot(&legacy_path, &mut keys)?;
-            let _ = fs::remove_file(&legacy_path);
+            // Migration failure must NOT abort startup (an unreadable or
+            // oversized legacy file would otherwise make the app refuse to
+            // launch on every start). Skip and retry on the next launch; the
+            // plaintext snapshot stays until the migration succeeds.
+            match migrate_legacy_snapshot(&legacy_path, &mut keys) {
+                Ok(()) => {
+                    if fs::remove_file(&legacy_path).is_err() {
+                        // Deletion can fail (AV lock, permissions). Rename first
+                        // so the migrated plaintext is out of the way; a stale
+                        // leftover from an interrupted earlier run is removed
+                        // first (Windows rename fails onto an existing file);
+                        // if even the rename fails, keep the file and warn —
+                        // the values are already safely in the OS keychain.
+                        let renamed = legacy_path.with_extension("json.migrated");
+                        let _ = fs::remove_file(&renamed);
+                        if fs::rename(&legacy_path, &renamed).is_err() {
+                            eprintln!(
+                                "warning: legacy secure-session snapshot could not be removed after migration: {}",
+                                legacy_path.display()
+                            );
+                        }
+                    }
+                }
+                Err(error) => {
+                    eprintln!(
+                        "warning: legacy secure-session migration failed and will retry on next launch: {error}"
+                    );
+                }
+            }
         }
 
         persist_key_index(&keys_path, &keys)?;
@@ -205,33 +232,102 @@ pub fn remove_secure_session_value(
     request: SecureSessionKeyRequest,
 ) -> Result<(), String> {
     let key = validate_secure_key(&request.key)?;
-    if let Ok(entry) = keyring_entry(key) {
-        let _ = entry.delete_credential();
+    let entry = keyring_entry(key).ok();
+    // Entry::new failing (platform-level) is undeletable: no keychain
+    // operation succeeded, so the key must stay tracked for retry.
+    if entry.is_none() {
+        return Err(
+            "failed to access the OS keychain; the credential stays tracked for retry".to_string(),
+        );
     }
-    state.untrack_key(key)
+    let deleted = entry
+        .as_ref()
+        .and_then(|entry| entry.delete_credential().ok())
+        .is_some();
+    // Only keyring::Error::NoEntry proves absence: a transient platform/IPC
+    // error on a still-present secret must keep the key tracked for retry
+    // instead of silently orphaning it.
+    let missing = !deleted
+        && entry
+            .as_ref()
+            .map(|entry| matches!(entry.get_password(), Err(keyring::Error::NoEntry)))
+            .unwrap_or(false);
+    // Failed deletions stay tracked so a later clear can retry instead of
+    // orphaning the OS-keychain secret.
+    if deleted || missing {
+        state.untrack_key(key)
+    } else {
+        Err("failed to delete secure session credential; it stays tracked for retry".to_string())
+    }
 }
 
 #[tauri::command]
 pub fn clear_secure_session_values(
     state: tauri::State<'_, SecureSessionState>,
 ) -> Result<(), String> {
-    let keys = state
+    let scanned_keys = state
         .keys
         .lock()
         .map_err(|_| "secure session lock poisoned".to_string())?
         .clone();
-    for key in keys {
-        if let Ok(entry) = keyring_entry(&key) {
-            let _ = entry.delete_credential();
+    let scanned: std::collections::HashSet<String> = scanned_keys.iter().cloned().collect();
+    let mut undeletable: Vec<String> = Vec::new();
+    for key in &scanned_keys {
+        let entry = keyring_entry(key).ok();
+        // Entry::new failing (platform-level) is undeletable: no keychain
+        // operation was attempted for this key.
+        if entry.is_none() {
+            undeletable.push(key.clone());
+            continue;
         }
+        let deleted = entry
+            .as_ref()
+            .and_then(|entry| entry.delete_credential().ok())
+            .is_some();
+        // The missing probe runs only after a failed deletion: only
+        // keyring::Error::NoEntry proves absence — a transient platform error
+        // on a still-present secret keeps the key tracked for retry.
+        let missing = !deleted
+            && entry
+                .as_ref()
+                .map(|entry| matches!(entry.get_password(), Err(keyring::Error::NoEntry)))
+                .unwrap_or(false);
+        // Keys whose OS-keychain deletion failed stay tracked so a later clear
+        // can retry; dropping them from the index would orphan the secret in
+        // the OS credential store forever despite a successful logout.
+        if deleted || missing {
+            continue;
+        }
+        undeletable.push(key.clone());
     }
     {
         let mut keys = state
             .keys
             .lock()
             .map_err(|_| "secure session lock poisoned".to_string())?;
-        keys.clear();
+        // Union with the live index: keys written while deletions ran (the
+        // clone→replace window) were never deletion targets and must stay
+        // tracked, or the persisted index would orphan their just-written
+        // OS-keychain secrets.
+        keys.retain(|key| {
+            if scanned.contains(key) {
+                undeletable.contains(key)
+            } else {
+                true
+            }
+        });
+        for key in &undeletable {
+            if !keys.contains(key) {
+                keys.push(key.clone());
+            }
+        }
         persist_key_index(&state.keys_path, &keys)?;
+    }
+    if !undeletable.is_empty() {
+        eprintln!(
+            "warning: {} secure session credential(s) could not be deleted from the OS keychain and stay tracked for retry",
+            undeletable.len()
+        );
     }
     Ok(())
 }

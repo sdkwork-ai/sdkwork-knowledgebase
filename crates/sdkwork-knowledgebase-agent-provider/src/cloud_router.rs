@@ -195,7 +195,11 @@ fn build_chat_messages(request: &ModelRequest) -> Vec<OpenAiChatMessage> {
 }
 
 fn map_sdk_error(error: SdkworkError) -> String {
-    error.to_string()
+    // Raw SDK error text can carry upstream URLs, request ids, or response
+    // fragments; it is diagnostic-only and must not reach API error surfaces
+    // (same policy as the engine adapters' `engine_provider_error`).
+    tracing::warn!(error = %error, "cloud router sdk call failed");
+    "cloud router request failed".to_string()
 }
 
 #[cfg(test)]

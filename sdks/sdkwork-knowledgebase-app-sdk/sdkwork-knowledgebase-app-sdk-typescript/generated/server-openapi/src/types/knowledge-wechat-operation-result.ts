@@ -1,4 +1,4 @@
 export interface KnowledgeWechatOperationResult {
   accepted: true;
-  status: 'completed';
+  status: 'accepted' | 'validated';
 }

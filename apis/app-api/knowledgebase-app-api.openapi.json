@@ -3883,7 +3883,20 @@
         "summary": "Retrieve the OKF bundle index",
         "x-sdkwork-auth-mode": "dual-token",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": [
+          {
+            "name": "space_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uint64",
+              "pattern": "^[0-9]+$",
+              "x-sdkwork-int64-string": true
+            }
+          }
+        ]
       }
     },
     "/app/v3/api/knowledge/okf/log": {
@@ -4047,7 +4060,20 @@
         "summary": "Retrieve the OKF bundle log",
         "x-sdkwork-auth-mode": "dual-token",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": [
+          {
+            "name": "space_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uint64",
+              "pattern": "^[0-9]+$",
+              "x-sdkwork-int64-string": true
+            }
+          }
+        ]
       }
     },
     "/app/v3/api/knowledge/okf/profile": {
@@ -4211,7 +4237,20 @@
         "summary": "Retrieve the OKF bundle profile",
         "x-sdkwork-auth-mode": "dual-token",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": [
+          {
+            "name": "space_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uint64",
+              "pattern": "^[0-9]+$",
+              "x-sdkwork-int64-string": true
+            }
+          }
+        ]
       }
     },
     "/app/v3/api/knowledge/okf/queries": {
@@ -9610,11 +9649,18 @@
                         "data": {
                           "type": "object",
                           "required": [
-                            "item"
+                            "items",
+                            "pageInfo"
                           ],
                           "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/KnowledgeWechatOfficialAccountList"
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/KnowledgeWechatOfficialAccount"
+                              }
+                            },
+                            "pageInfo": {
+                              "$ref": "#/components/schemas/PageInfo"
                             }
                           }
                         }
@@ -9740,7 +9786,30 @@
         "x-sdkwork-auth-mode": "dual-token",
         "description": "List WeChat official accounts Bounded collection: at most 100 entries per kind and at most 50 values per domain list (REQ-2026-0731).",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
+            }
+          }
+        ]
       },
       "put": {
         "operationId": "wechat.officialAccounts.update",
@@ -9932,6 +10001,27 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
+            }
           }
         ],
         "security": [
@@ -9958,12 +10048,20 @@
                       "properties": {
                         "data": {
                           "type": "object",
+                          "additionalProperties": false,
                           "required": [
-                            "item"
+                            "items",
+                            "pageInfo"
                           ],
                           "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/KnowledgeWechatFanTagList"
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/KnowledgeWechatFanTag"
+                              }
+                            },
+                            "pageInfo": {
+                              "$ref": "#/components/schemas/PageInfo"
                             }
                           }
                         }
@@ -10104,11 +10202,18 @@
                         "data": {
                           "type": "object",
                           "required": [
-                            "item"
+                            "items",
+                            "pageInfo"
                           ],
                           "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/KnowledgeWechatAppletList"
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/KnowledgeWechatApplet"
+                              }
+                            },
+                            "pageInfo": {
+                              "$ref": "#/components/schemas/PageInfo"
                             }
                           }
                         }
@@ -10234,7 +10339,30 @@
         "x-sdkwork-auth-mode": "dual-token",
         "description": "List WeChat applets Bounded collection: at most 100 entries per kind and at most 50 values per domain list (REQ-2026-0731).",
         "x-sdkwork-tenant-scope": "tenant",
-        "x-sdkwork-data-scope": "organization"
+        "x-sdkwork-data-scope": "organization",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
+            }
+          }
+        ]
       },
       "put": {
         "operationId": "wechat.applets.update",
@@ -10441,7 +10569,15 @@
                       ],
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/KnowledgeWechatOperationResult"
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/KnowledgeWechatOperationResult"
+                            }
+                          }
                         }
                       }
                     }
@@ -10542,21 +10678,6 @@
           },
           "500": {
             "description": "Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Operation not implemented: WeChat publish pipeline is not available in this release",
             "content": {
               "application/json": {
                 "schema": {
@@ -10624,7 +10745,15 @@
                       ],
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/KnowledgeWechatOperationResult"
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/KnowledgeWechatOperationResult"
+                            }
+                          }
                         }
                       }
                     }
@@ -10725,21 +10854,6 @@
           },
           "500": {
             "description": "Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Operation not implemented: WeChat publish pipeline is not available in this release",
             "content": {
               "application/json": {
                 "schema": {
@@ -10906,7 +11020,7 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
-        "x-sdkwork-auth-mode": "public",
+        "x-sdkwork-auth-mode": "anonymous",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "description": "Verifies a WeChat official-account server callback URL. WeChat's servers call this operation without SDKWork credentials: the WeChat msg_signature scheme over the tenant-stored callback token authenticates the caller, and the decrypted echo receive id must match the configured account appid. Mirrors the WeChat public-platform server-callback wire, so the success body is the raw echo string instead of the SdkWorkApiResponse envelope.",
         "x-sdkwork-wire-protocol": "external",
@@ -11048,7 +11162,7 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-app-api",
-        "x-sdkwork-auth-mode": "public",
+        "x-sdkwork-auth-mode": "anonymous",
         "x-sdkwork-rate-limit-tier": "auth-critical",
         "description": "Receives an encrypted WeChat official-account server callback: verifies msg_signature over the encrypted payload, decrypts with the stored EncodingAESKey, checks the five minute replay window and the bounded replay seen-set, persists the raw encrypted payload as a tenant Drive artifact, and acks with the plain-text body success. Unverified payloads return problem responses so WeChat retries. Mirrors the WeChat public-platform server-callback wire.",
         "x-sdkwork-wire-protocol": "external",
@@ -17163,7 +17277,8 @@
           "status": {
             "type": "string",
             "enum": [
-              "completed"
+              "accepted",
+              "validated"
             ]
           }
         }

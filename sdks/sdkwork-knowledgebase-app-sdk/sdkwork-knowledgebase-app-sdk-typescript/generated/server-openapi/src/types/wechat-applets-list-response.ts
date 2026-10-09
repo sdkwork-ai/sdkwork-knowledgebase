@@ -1,8 +1,9 @@
-import type { KnowledgeWechatAppletList } from './knowledge-wechat-applet-list';
+import type { KnowledgeWechatApplet } from './knowledge-wechat-applet';
+import type { PageInfo } from './page-info';
 
 export interface WechatAppletsListResponse {
   code: 0;
-  data: unknown & { item: KnowledgeWechatAppletList; };
+  data: unknown & { items: KnowledgeWechatApplet[]; pageInfo: PageInfo; };
   /** Server-owned request correlation id. */
   traceId: string;
 }

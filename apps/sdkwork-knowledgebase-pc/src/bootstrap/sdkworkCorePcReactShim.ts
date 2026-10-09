@@ -15,6 +15,19 @@ export interface PcReactRuntimeSession {
 const SESSION_STORAGE_KEY = DEFAULT_SESSION_STORAGE_KEY;
 let runtimeSessionCache: PcReactRuntimeSession = {};
 
+// Hardened browsers / private modes throw SecurityError on mere storage
+// ACCESS (this shim runs on the login/session-restore path, outside any error
+// boundary). Degrade to an in-memory no-op storage — auth behaves as "not
+// logged in" for the tab instead of throwing.
+function safeWindowStorage(area: 'localStorage' | 'sessionStorage'): Storage | undefined {
+  try {
+    return window[area];
+  } catch (error) {
+    console.error(`window.${area} is unavailable; session persistence is disabled`, error);
+    return undefined;
+  }
+}
+
 function readStorage(): Storage | undefined {
   if (typeof window === 'undefined') {
     return undefined;
@@ -22,11 +35,15 @@ function readStorage(): Storage | undefined {
 
   const tokenStorage = createRuntimeConfig(import.meta.env).auth.tokenStorage;
   if (tokenStorage === 'browser-local') {
-    migrateLegacyBrowserSession();
-    return window.localStorage;
+    try {
+      migrateLegacyBrowserSession();
+    } catch (error) {
+      console.error('legacy session migration failed; skipping', error);
+    }
+    return safeWindowStorage('localStorage');
   }
   if (tokenStorage === 'browser-session') {
-    return window.sessionStorage;
+    return safeWindowStorage('sessionStorage');
   }
   return undefined;
 }

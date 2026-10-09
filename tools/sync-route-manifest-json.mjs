@@ -10,6 +10,12 @@ const pendingChanges = [];
 const targets = [
   {
     manifestRs: 'crates/sdkwork-routes-knowledgebase-app-api/src/manifest.rs',
+    // Auth reality lives in the HttpRoute builder declarations; entries built
+    // via `HttpRoute::public(...)` (directly or through a const helper) are
+    // unauthenticated on the wire and MUST NOT be emitted as dual-token, or
+    // manifest-consuming gateways would 401 callers that cannot present
+    // SDKWork tokens (e.g. WeChat server callbacks).
+    authSourceRs: 'crates/sdkwork-routes-knowledgebase-app-api/src/http_route_manifest.rs',
     jsonFile: 'sdks/_route-manifests/app-api/sdkwork-routes-knowledgebase-app-api.route-manifest.json',
     apiSurface: 'app-api',
   },
@@ -78,7 +84,59 @@ function parseHttpRouteBuilders(manifestSource) {
   return routes;
 }
 
-function buildRoute(route, manifest, apiSurface) {
+/**
+ * Collects the operation ids declared as unauthenticated (`HttpRoute::public`)
+ * in the route builder source — either directly or through a const helper that
+ * returns `HttpRoute::public(...)`, e.g. the WeChat callback route builder.
+ */
+function parsePublicRouteOperationIds(authSourceRs) {
+  const operationIds = new Set();
+  const directPattern =
+    /HttpRoute::public\(\s*HttpMethod::[A-Za-z]+,\s*"[^"]+",\s*"[^"]*",\s*"([^"]+)"/g;
+  for (const match of authSourceRs.matchAll(directPattern)) {
+    operationIds.add(match[1]);
+  }
+  // Const helpers: `const fn <name>(...) -> HttpRoute { HttpRoute::public(...) }`
+  // — capture the helper name, then its call sites' operation id argument.
+  const helperNames = new Set();
+  const helperPattern =
+    /const\s+fn\s+([a-z_0-9]+)\([^)]*\)\s*->\s*HttpRoute\s*\{[^}]*HttpRoute::public\(/g;
+  for (const match of authSourceRs.matchAll(helperPattern)) {
+    helperNames.add(match[1]);
+  }
+  for (const helperName of helperNames) {
+    const callPattern = new RegExp(`${helperName}\\(\\s*HttpMethod::[A-Za-z]+,\\s*"[^"]+",\\s*"[^"]+"`, 'g');
+    for (const match of authSourceRs.matchAll(callPattern)) {
+      operationIds.add(match[0].match(/"([^"]+)"\s*$/)?.[1] ?? '');
+    }
+  }
+  operationIds.delete('');
+  return operationIds;
+}
+
+function buildRoute(route, manifest, apiSurface, publicOperationIds) {
+  if (publicOperationIds.has(route.operationId)) {
+    return {
+      method: route.method,
+      path: route.path,
+      operationId: route.operationId,
+      tags: ['knowledge'],
+      auth: {
+        mode: 'anonymous',
+        required: false,
+      },
+      handler: {
+        module: 'crate::routes',
+        name: null,
+      },
+      ownership: {
+        owner: manifest.owner,
+        apiAuthority: manifest.apiAuthority,
+      },
+      requestContext: 'WebRequestContext',
+      apiSurface,
+    };
+  }
   const authMode = apiSurface === 'open-api'
     ? 'bearer'
     : apiSurface === 'internal-api'
@@ -126,7 +184,13 @@ for (const target of targets) {
   if (routes.length === 0) {
     throw new Error(`No routes parsed from ${target.manifestRs}`);
   }
-  manifest.routes = routes.map((route) => buildRoute(route, manifest, target.apiSurface));
+  let publicOperationIds = new Set();
+  if (target.authSourceRs) {
+    const authSourceRs = await readFile(path.join(workspaceRoot, target.authSourceRs), 'utf8');
+    publicOperationIds = parsePublicRouteOperationIds(authSourceRs);
+  }
+  manifest.routes = routes.map((route) =>
+    buildRoute(route, manifest, target.apiSurface, publicOperationIds));
   const desired = `${JSON.stringify(manifest, null, 2)}\n`;
   if (current === desired) {
     continue;

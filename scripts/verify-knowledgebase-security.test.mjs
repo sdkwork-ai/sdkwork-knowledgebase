@@ -77,8 +77,13 @@ describe('knowledgebase security standard alignment', () => {
     assert.match(configStore, /MAX_WECHAT_CONFIG_BYTES/);
     assert.match(configStore, /get_object_text_bounded/);
     assert.doesNotMatch(configStore, /load_config\(\)\.await\.unwrap_or_default\(\)/);
-    assert.match(service, /UnsupportedOperation\(\s*"wechat\.articles\.publish"/);
-    assert.match(service, /UnsupportedOperation\(\s*"wechat\.articles\.preview"/);
+    // Publish/preview are implemented against the real WeChat pipeline, so the
+    // old UnsupportedOperation stubs are gone. The security invariants that
+    // replaced them: scheduling and fan-tag targeting fail closed before any
+    // outbound call, and the submit path is the bounded freepublish pipeline.
+    assert.match(service, /scheduleTime is not supported/);
+    assert.match(service, /groupNotification \(fan-tag targeted publish\) is not supported/);
+    assert.match(service, /submit_freepublish/);
     assert.doesNotMatch(service, /status: "completed"\.to_string\(\)/);
   });
 

@@ -1,0 +1,29 @@
+{
+  "environment": "production",
+  "deploymentProfile": "cloud",
+  "profileId": "cloud.production",
+  "runtimeTarget": "browser",
+  "browserOriginMode": "cross-origin",
+  "configProfile": "prod",
+  "buildMode": "production",
+  "appKey": "sdkwork-knowledgebase-pc",
+  "sdkBaseUrls": {
+    "appApiBaseUrl": "https://api.sdkwork.com",
+    "openApiBaseUrl": "https://api.sdkwork.com",
+    "platformApiGatewayBaseUrl": "https://gateway.sdkwork.com"
+  },
+  "featureFlags": {
+    "enableDemoMode": false
+  },
+  "notes": "Checked-in browser runtime example template for production. Copy to a real runtime-env.*.json with environment-owned values; never commit real secrets.",
+  "auth": {
+    "tokenStorage": "browser-local"
+  },
+  "appApiBaseUrl": "https://api.sdkwork.com",
+  "backendApiBaseUrl": "https://api.sdkwork.com",
+  "driveAppApiBaseUrl": "https://api.sdkwork.com",
+  "appbaseAppApiBaseUrl": "https://api.sdkwork.com",
+  "deployAppApiBaseUrl": "https://api.sdkwork.com",
+  "openApiBaseUrl": "https://api.sdkwork.com",
+  "sdkBaseUrl": "https://api.sdkwork.com"
+}

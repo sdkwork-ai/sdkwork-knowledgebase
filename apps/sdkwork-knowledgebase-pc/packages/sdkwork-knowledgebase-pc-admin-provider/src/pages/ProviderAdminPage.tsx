@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, ArrowLeft, KeyRound, Link2, Plus, RefreshCw, RotateCcw, ShieldAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -57,10 +57,18 @@ function Status({ value }: { value: string }) {
 
 export function ProviderAdminPage() {
   const translation = useTranslation();
-  registerProviderAdminI18n(translation.i18n);
-  const t = translation.i18n.getFixedT(
-    translation.i18n.resolvedLanguage ?? translation.i18n.language,
-    'providerAdmin',
+  // Registration is idempotent (bundle-presence guarded); memoizing keeps the
+  // render side effect to a single call per i18n instance instead of firing on
+  // every render, and the fixed t is not rebuilt per render either.
+  const t = useMemo(
+    () => {
+      registerProviderAdminI18n(translation.i18n);
+      return translation.i18n.getFixedT(
+        translation.i18n.resolvedLanguage ?? translation.i18n.language,
+        'providerAdmin',
+      );
+    },
+    [translation.i18n, translation.i18n.resolvedLanguage, translation.i18n.language],
   );
   const navigate = useNavigate();
   const runtime = useKnowledgebaseRuntime();

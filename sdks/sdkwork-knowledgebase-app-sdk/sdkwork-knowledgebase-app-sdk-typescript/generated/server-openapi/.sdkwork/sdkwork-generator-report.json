@@ -10,37 +10,143 @@
   },
   "status": "ok",
   "mode": "apply",
-  "hasChanges": false,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "70c03f2cad819fcdc86217ee763668e9abb504b5da00bc4791d0f165133f7f73",
+  "hasChanges": true,
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "821de1e075a1499e589b72e6d4c4e0adb874cc2a96549ea2159441115c5ca45b",
   "changeImpact": {
     "schemaVersion": 1,
-    "areas": [],
-    "details": [],
-    "requiresVerification": false,
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+    "areas": [
+      "api-surface",
+      "models",
+      "documentation"
+    ],
+    "details": [
+      {
+        "area": "api-surface",
+        "paths": [
+          "src/api/knowledge.ts"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/types/index.ts",
+          "src/types/knowledge-wechat-fan-tag-list.ts",
+          "src/types/knowledge-wechat-operation-result.ts",
+          "src/types/wechat-applets-list-response.ts",
+          "src/types/wechat-articles-preview-response.ts",
+          "src/types/wechat-articles-publish-response.ts",
+          "src/types/wechat-official-accounts-fan-tags-list-response.ts",
+          "src/types/wechat-official-accounts-list-response.ts"
+        ]
+      },
+      {
+        "area": "documentation",
+        "paths": [
+          "README.md"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "low",
-    "nextAction": "skip",
+    "riskLevel": "high",
+    "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "No actionable changes were detected. No apply or verification step is required.",
+    "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "no-actionable-changes"
+      "deleted-generated-files",
+      "manual-review-required",
+      "verification-required"
     ]
   },
   "executionHandoff": {
     "schemaVersion": 1,
-    "summary": "No further commands are required.",
-    "steps": []
+    "summary": "Run the required verification commands now.",
+    "steps": [
+      {
+        "id": "verify-check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
+      },
+      {
+        "id": "verify-build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, documentation.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
+      }
+    ]
   },
   "verificationPlan": {
-    "shouldRun": false,
-    "runPhase": "skip",
-    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-    "steps": []
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
+      },
+      {
+        "id": "build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, documentation.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "typescript",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
+      }
+    ]
   },
   "sdk": {
     "name": "sdkwork-knowledgebase-app-sdk",
@@ -56,24 +162,34 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 238,
-    "models": 214,
+    "totalFiles": 210,
+    "models": 186,
     "apis": 1,
-    "types": 216
+    "types": 188
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 0,
+    "writtenFiles": 9,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 236,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 199,
+    "deletedGeneratedFiles": 1,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "70c03f2cad819fcdc86217ee763668e9abb504b5da00bc4791d0f165133f7f73",
+    "changeFingerprint": "821de1e075a1499e589b72e6d4c4e0adb874cc2a96549ea2159441115c5ca45b",
     "changes": {
       "createdGeneratedFiles": [],
-      "updatedGeneratedFiles": [],
+      "updatedGeneratedFiles": [
+        "README.md",
+        "src/api/knowledge.ts",
+        "src/types/index.ts",
+        "src/types/knowledge-wechat-operation-result.ts",
+        "src/types/wechat-applets-list-response.ts",
+        "src/types/wechat-articles-preview-response.ts",
+        "src/types/wechat-articles-publish-response.ts",
+        "src/types/wechat-official-accounts-fan-tags-list-response.ts",
+        "src/types/wechat-official-accounts-list-response.ts"
+      ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
@@ -83,11 +199,9 @@
         "CHANGELOG.md",
         "LICENSE",
         "package.json",
-        "README.md",
         "sdkwork-sdk.json",
         "src/api/base.ts",
         "src/api/index.ts",
-        "src/api/knowledge.ts",
         "src/api/paths.ts",
         "src/auth/index.ts",
         "src/http/client.ts",
@@ -110,7 +224,6 @@
         "src/types/context-packs-create-response201.ts",
         "src/types/create-knowledge-document-request.ts",
         "src/types/create-knowledge-document-version-request.ts",
-        "src/types/create-knowledge-source-request.ts",
         "src/types/create-knowledge-space-context-binding-request.ts",
         "src/types/create-knowledge-space-request.ts",
         "src/types/documents-content-list-response.ts",
@@ -128,7 +241,6 @@
         "src/types/group-knowledge-space-lifecycle-state.ts",
         "src/types/group-knowledgebase-launch-target.ts",
         "src/types/group-launches-consume-response.ts",
-        "src/types/index.ts",
         "src/types/ingestion-job-state.ts",
         "src/types/ingestion-job.ts",
         "src/types/ingests-create-response201.ts",
@@ -155,9 +267,7 @@
         "src/types/knowledge-context-pack.ts",
         "src/types/knowledge-context-type.ts",
         "src/types/knowledge-document-content.ts",
-        "src/types/knowledge-document-list.ts",
         "src/types/knowledge-document-state.ts",
-        "src/types/knowledge-document-version-list.ts",
         "src/types/knowledge-document-version-state.ts",
         "src/types/knowledge-document-version.ts",
         "src/types/knowledge-document-visibility.ts",
@@ -170,37 +280,25 @@
         "src/types/knowledge-git-import-result.ts",
         "src/types/knowledge-git-sync-request.ts",
         "src/types/knowledge-git-sync-result.ts",
-        "src/types/knowledge-index-request.ts",
-        "src/types/knowledge-index.ts",
         "src/types/knowledge-ingest-request.ts",
         "src/types/knowledge-market-catalog-item.ts",
-        "src/types/knowledge-market-catalog-list.ts",
         "src/types/knowledge-market-subscription-request.ts",
         "src/types/knowledge-market-subscription-result.ts",
         "src/types/knowledge-media-task-request.ts",
         "src/types/knowledge-media-task-result.ts",
         "src/types/knowledge-media-task-type.ts",
         "src/types/knowledge-memory-context-fragment.ts",
-        "src/types/knowledge-okf-bundle-file-list.ts",
         "src/types/knowledge-okf-bundle-file.ts",
         "src/types/knowledge-okf-concept-revision-list.ts",
         "src/types/knowledge-okf-concept-revision.ts",
-        "src/types/knowledge-okf-profile-request.ts",
-        "src/types/knowledge-provider-health.ts",
         "src/types/knowledge-retrieval-binding.ts",
         "src/types/knowledge-retrieval-method.ts",
-        "src/types/knowledge-retrieval-profile-request.ts",
-        "src/types/knowledge-retrieval-profile.ts",
         "src/types/knowledge-retrieval-request.ts",
         "src/types/knowledge-retrieval-result.ts",
-        "src/types/knowledge-retrieval-trace-list.ts",
         "src/types/knowledge-retrieval-trace.ts",
-        "src/types/knowledge-source-list.ts",
         "src/types/knowledge-source-type.ts",
         "src/types/knowledge-source.ts",
-        "src/types/knowledge-space-context-binding-list.ts",
         "src/types/knowledge-space-context-binding.ts",
-        "src/types/knowledge-space-member-list.ts",
         "src/types/knowledge-space-member-role.ts",
         "src/types/knowledge-space-member-subject-type.ts",
         "src/types/knowledge-space-member.ts",
@@ -211,11 +309,9 @@
         "src/types/knowledge-wechat-article.ts",
         "src/types/knowledge-wechat-articles-preview-request.ts",
         "src/types/knowledge-wechat-articles-publish-request.ts",
-        "src/types/knowledge-wechat-fan-tag-list.ts",
         "src/types/knowledge-wechat-fan-tag.ts",
         "src/types/knowledge-wechat-official-account-list.ts",
         "src/types/knowledge-wechat-official-account.ts",
-        "src/types/knowledge-wechat-operation-result.ts",
         "src/types/knowledge-wechat-replace-applets-request.ts",
         "src/types/knowledge-wechat-replace-official-accounts-request.ts",
         "src/types/knowledge-wiki-index-state.ts",
@@ -231,7 +327,6 @@
         "src/types/knowledge-wiki-source-state.ts",
         "src/types/knowledge-wiki-update-policy.ts",
         "src/types/knowledge-wiki-visibility.ts",
-        "src/types/list-knowledge-browser-request.ts",
         "src/types/market-listings-list-response.ts",
         "src/types/market-subscriptions-create-response201.ts",
         "src/types/media-tasks-create-response201.ts",
@@ -243,13 +338,8 @@
         "src/types/okf-bundle-import-request.ts",
         "src/types/okf-bundle-import-result.ts",
         "src/types/okf-bundle-index-list-response.ts",
-        "src/types/okf-bundle-index-rebuild-request.ts",
         "src/types/okf-bundle-log-list-response.ts",
         "src/types/okf-bundle-profile-list-response.ts",
-        "src/types/okf-candidate-result.ts",
-        "src/types/okf-candidate-review-request.ts",
-        "src/types/okf-compile-job-request.ts",
-        "src/types/okf-concept-publish-request.ts",
         "src/types/okf-concept-summary-list.ts",
         "src/types/okf-concept-summary.ts",
         "src/types/okf-concept-upsert-request.ts",
@@ -263,7 +353,6 @@
         "src/types/okf-index-document.ts",
         "src/types/okf-lint-runs-create-response201.ts",
         "src/types/okf-log-document.ts",
-        "src/types/okf-log-entry.ts",
         "src/types/okf-profile-document.ts",
         "src/types/okf-quality-run-request.ts",
         "src/types/okf-quality-run.ts",
@@ -280,12 +369,7 @@
         "src/types/retrievals-retrieve-response.ts",
         "src/types/sdk-work-api-response.ts",
         "src/types/sdk-work-command-data.ts",
-        "src/types/sdk-work-command-response.ts",
-        "src/types/sdk-work-list-response.ts",
-        "src/types/sdk-work-page-data.ts",
         "src/types/sdk-work-platform-error-code.ts",
-        "src/types/sdk-work-resource-data.ts",
-        "src/types/sdk-work-resource-response.ts",
         "src/types/spaces-browser-list-response.ts",
         "src/types/spaces-context-bindings-create-response201.ts",
         "src/types/spaces-context-bindings-list-response.ts",
@@ -296,12 +380,7 @@
         "src/types/spaces-update-response.ts",
         "src/types/update-knowledge-space-context-binding-request.ts",
         "src/types/update-knowledge-space-request.ts",
-        "src/types/wechat-applets-list-response.ts",
         "src/types/wechat-applets-update-response.ts",
-        "src/types/wechat-articles-preview-response.ts",
-        "src/types/wechat-articles-publish-response.ts",
-        "src/types/wechat-official-accounts-fan-tags-list-response.ts",
-        "src/types/wechat-official-accounts-list-response.ts",
         "src/types/wechat-official-accounts-update-response.ts",
         "src/types/wiki-publications-activate-response.ts",
         "src/types/wiki-publications-pause-response.ts",
@@ -312,7 +391,9 @@
         "src/types/wiki-source-files-visibility-update-response.ts",
         "tsconfig.json"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/types/knowledge-wechat-fan-tag-list.ts"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
@@ -322,26 +403,95 @@
     },
     "impact": {
       "schemaVersion": 1,
-      "areas": [],
-      "details": [],
-      "requiresVerification": false,
-      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
+      "areas": [
+        "api-surface",
+        "models",
+        "documentation"
+      ],
+      "details": [
+        {
+          "area": "api-surface",
+          "paths": [
+            "src/api/knowledge.ts"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "src/types/index.ts",
+            "src/types/knowledge-wechat-fan-tag-list.ts",
+            "src/types/knowledge-wechat-operation-result.ts",
+            "src/types/wechat-applets-list-response.ts",
+            "src/types/wechat-articles-preview-response.ts",
+            "src/types/wechat-articles-publish-response.ts",
+            "src/types/wechat-official-accounts-fan-tags-list-response.ts",
+            "src/types/wechat-official-accounts-list-response.ts"
+          ]
+        },
+        {
+          "area": "documentation",
+          "paths": [
+            "README.md"
+          ]
+        }
+      ],
+      "requiresVerification": true,
+      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
     },
     "verificationPlan": {
-      "shouldRun": false,
-      "runPhase": "skip",
-      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
-      "steps": []
+      "shouldRun": true,
+      "runPhase": "now",
+      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "steps": [
+        {
+          "id": "check",
+          "title": "Unified package check",
+          "required": true,
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "typescript",
+            "--project-dir",
+            ".",
+            "--action",
+            "check"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
+        },
+        {
+          "id": "build",
+          "title": "Unified package build",
+          "required": true,
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, documentation.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "typescript",
+            "--project-dir",
+            ".",
+            "--action",
+            "build"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
+        }
+      ]
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "low",
-      "nextAction": "skip",
+      "riskLevel": "high",
+      "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
-      "summary": "No actionable changes were detected. No apply or verification step is required.",
+      "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "no-actionable-changes"
+        "deleted-generated-files",
+        "manual-review-required",
+        "verification-required"
       ]
     },
     "backedUpFiles": [],

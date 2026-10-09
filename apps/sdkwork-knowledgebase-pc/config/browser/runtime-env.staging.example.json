@@ -1,0 +1,29 @@
+{
+  "environment": "staging",
+  "deploymentProfile": "cloud",
+  "profileId": "cloud.staging",
+  "runtimeTarget": "browser",
+  "browserOriginMode": "cross-origin",
+  "configProfile": "test",
+  "buildMode": "production",
+  "appKey": "sdkwork-knowledgebase-pc",
+  "sdkBaseUrls": {
+    "appApiBaseUrl": "https://api.staging.sdkwork.com",
+    "openApiBaseUrl": "https://api.staging.sdkwork.com",
+    "platformApiGatewayBaseUrl": "https://gateway.staging.sdkwork.com"
+  },
+  "featureFlags": {
+    "enableDemoMode": false
+  },
+  "notes": "Checked-in browser runtime example template for staging. Copy to a real runtime-env.*.json with environment-owned values; never commit real secrets.",
+  "auth": {
+    "tokenStorage": "browser-local"
+  },
+  "appApiBaseUrl": "https://api.staging.sdkwork.com",
+  "backendApiBaseUrl": "https://api.staging.sdkwork.com",
+  "driveAppApiBaseUrl": "https://api.staging.sdkwork.com",
+  "appbaseAppApiBaseUrl": "https://api.staging.sdkwork.com",
+  "deployAppApiBaseUrl": "https://api.staging.sdkwork.com",
+  "openApiBaseUrl": "https://api.staging.sdkwork.com",
+  "sdkBaseUrl": "https://api.staging.sdkwork.com"
+}

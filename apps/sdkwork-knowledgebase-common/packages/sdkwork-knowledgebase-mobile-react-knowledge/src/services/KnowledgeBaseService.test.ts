@@ -160,6 +160,18 @@ function createStubClient() {
         async create(body: Record<string, unknown>) {
           calls.push({ op: "ingests.create", body });
           ingests.push(body);
+          // Mirror the real markdown ingest pipeline: the ingest projects a
+          // NEW document (create binding), it does not fill an existing one.
+          const projected = {
+            id: `doc-${documents.length + 1}`,
+            spaceId: body.spaceId as string,
+            collectionId: "",
+            title: body.title as string,
+            visibility: "space",
+            contentState: "draft",
+            indexState: "draft",
+          };
+          documents.push(projected);
           return {
             id: `ingest-${ingests.length}`,
             spaceId: body.spaceId as string,
@@ -432,12 +444,13 @@ test("createDocument creates metadata and pushes content through the ingest pipe
     assert.equal(doc.title, "新文档");
     assert.equal(doc.content, "## 内容");
 
-    const createCall = stub.calls.find((call) => call.op === "documents.create");
-    assert.deepEqual(createCall?.body, {
-      spaceId: "1",
-      title: "新文档",
-      mimeType: "text/markdown",
-    });
+    // Content-bearing documents are created BY the ingest projection:
+    // documents.create must NOT run (it would yield a duplicate empty draft).
+    assert.equal(
+      stub.calls.some((call) => call.op === "documents.create"),
+      false,
+      "documents.create must not be called for content documents",
+    );
 
     const ingestCall = stub.calls.find((call) => call.op === "ingests.create");
     assert.ok(ingestCall, "expected an ingest job for the markdown content");

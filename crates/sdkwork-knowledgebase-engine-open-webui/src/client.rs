@@ -205,7 +205,10 @@ fn map_row_to_hit(
             source_uri,
         },
         snippet: content,
-        score: Some(distance),
+        // Open WebUI returns vector DISTANCES (lower = more similar); the
+        // hit contract carries similarity SCORES (higher = more similar),
+        // matching the Chroma adapter's conversion.
+        score: Some(1.0 - distance),
     }
 }
 
@@ -248,6 +251,9 @@ mod tests {
         );
         assert_eq!(hits[0].document.title, "Policy Doc");
         assert_eq!(hits[0].snippet, "policy snippet");
-        assert_eq!(hits[0].score, Some(0.91));
+        // distance 0.91 → similarity score 0.09 (lower distance = more similar);
+        // compared with a tolerance because 1.0 - 0.91 is not exact in f64.
+        let score = hits[0].score.expect("score should be present");
+        assert!((score - 0.09).abs() < 1e-9, "score was {score}");
     }
 }

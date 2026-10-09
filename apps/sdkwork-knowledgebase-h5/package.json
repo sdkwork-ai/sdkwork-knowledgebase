@@ -11,7 +11,7 @@
     "build": "tsc -p tsconfig.app.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "test": "tsx --test tests/architecture-alignment.test.ts",
+    "test": "tsx --test tests/*.test.ts",
     "check": "pnpm typecheck && pnpm test",
     "verify": "pnpm check",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",

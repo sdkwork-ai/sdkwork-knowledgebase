@@ -40,10 +40,11 @@ pub fn worker_health_router(readiness: ReadinessCheck) -> Router {
         .merge(sdkwork_knowledgebase_observability::metrics_route())
 }
 
-pub async fn serve_worker_health(listen_addr: &str, readiness: ReadinessCheck) {
-    let listener = tokio::net::TcpListener::bind(listen_addr)
-        .await
-        .expect("bind knowledgebase worker health listener");
+pub async fn serve_worker_health(listener: tokio::net::TcpListener, readiness: ReadinessCheck) {
+    let listen_addr = listener
+        .local_addr()
+        .map(|addr| addr.to_string())
+        .unwrap_or_default();
     tracing::info!(%listen_addr, "knowledgebase worker health endpoint listening");
     axum::serve(listener, worker_health_router(readiness))
         .await

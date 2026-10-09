@@ -191,6 +191,17 @@
   "notesEditorEmptyHintSelect": "从左侧列表选择一篇笔记,或新建一篇开始创作",
   "notesEditorEmptyHintCreate": "点击右上角「新建笔记」开始你的第一篇笔记",
   "notesDeleteConfirm": "确定要删除这篇笔记吗？此操作无法恢复。",
+  "notesStatusSaved": "已保存",
+  "notesStatusSavedAt": "已保存 {{time}}",
+  "notesStatusUnsaved": "未保存的更改",
+  "notesStatusSaveFailed": "保存失败",
+  "notesStatusRetry": "重试",
+  "notesStatusConflict": "笔记已在其他窗口修改",
+  "notesStatusOverwrite": "覆盖保存",
+  "notesConflictToast": "这篇笔记已在其他窗口被修改。可点击「覆盖保存」保留本机内容。",
+  "notesContentLoading": "正在加载笔记…",
+  "notesContentLoadFailed": "笔记内容加载失败",
+  "notesContentLoadRetry": "重新加载",
   "deleteKbConfirm": "确定要删除知识库「{{title}}」吗？其中的所有文档都将被删除，此操作无法恢复。",
   "folderSubtextItems": "{{count}}项 | {{date}}创建"
 }

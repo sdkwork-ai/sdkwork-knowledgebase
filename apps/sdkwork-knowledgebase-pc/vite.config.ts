@@ -30,6 +30,20 @@ const APP_SOURCE_CHUNKS = [
 const APP_SOURCE_SUB_CHUNKS = [
   [
     [
+      'packages/sdkwork-knowledgebase-pc-knowledgebase/src/services/wechat',
+      'packages/sdkwork-knowledgebase-pc-knowledgebase/src/services/wechatCredentialStore',
+    ],
+    'feature-wechat-services',
+  ],
+  [
+    [
+      'packages/sdkwork-knowledgebase-pc-knowledgebase/src/WechatPublishPage',
+      'packages/sdkwork-knowledgebase-pc-knowledgebase/src/components/WechatPublishModal',
+    ],
+    'feature-wechat-publish',
+  ],
+  [
+    [
       'packages/sdkwork-knowledgebase-pc-knowledgebase/src/components/players/',
       'packages/sdkwork-knowledgebase-pc-knowledgebase/src/MediaViewer.tsx',
       'packages/sdkwork-knowledgebase-pc-knowledgebase/src/PdfViewer.tsx',
@@ -212,7 +226,13 @@ export default defineConfig(({mode}) => {
       }),
       react(),
       tailwindcss(),
-      browserSecurityHeadersPlugin(mode === 'development'),
+      browserSecurityHeadersPlugin(
+        // Playwright mode serves the production-shaped bundle for the E2E
+        // harness, which points the API base at a local gateway port and
+        // fulfills it with page.route mocks; the locked-down production CSP
+        // would block those localhost API calls in the browser.
+        mode === 'development' || mode.startsWith('playwright'),
+      ),
       bundleSizeBudgetPlugin(),
     ],
     build: {
@@ -257,6 +277,10 @@ export default defineConfig(({mode}) => {
       exclude: ['pdfjs-dist'],
     },
     resolve: {
+      // `.ts/.tsx` MUST win over `.js`: stale compiled `.js` artifacts next to
+      // authored sources would otherwise shadow every source change (this bit
+      // the app once — 604 shadow artifacts had to be removed by hand).
+      extensions: ['.ts', '.tsx', '.mjs', '.js', '.jsx', '.json'],
       dedupe: [
         'react',
         'react-dom',

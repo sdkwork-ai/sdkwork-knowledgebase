@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, HelpCircle, Calendar, Users, Radio, CheckCircle2, ChevronDown, ChevronUp, RefreshCw, AlertCircle } from 'lucide-react';
-import { toast } from './ui/toast-manager';
 import { useTranslation } from 'react-i18next';
 import {
   resolveUserFacingErrorMessage,
@@ -89,11 +88,13 @@ export function WechatPublishModal({
     };
   }, [isOpen, officialAccountId, t, tErrors]);
 
-  // States matching the screenshot UI
-  const [sendNotification, setSendNotification] = useState(true);
+  // States matching the screenshot UI. `sendNotification` is a hard `true`:
+  // the backend treats `false` as draft-only, which is the separate "save as
+  // draft" flow — the publish dialog must never downgrade to it.
+  const sendNotification = true;
   const [groupNotification, setGroupNotification] = useState(false);
   const [scheduledPublish, setScheduledPublish] = useState(false);
-  
+
   // Custom interactive params
   const [selectedGroupId, setSelectedGroupId] = useState('all');
   const [scheduleDate, setScheduleDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -106,10 +107,10 @@ export function WechatPublishModal({
     maxDate.setDate(maxDate.getDate() + 7);
     return { min, max: maxDate.toISOString().slice(0, 10) };
   }, []);
-  
+
   // API description collapsible panel state
   const [isApiDetailsOpen, setIsApiDetailsOpen] = useState(true);
-  
+
   if (!isOpen) return null;
 
   const handlePublishClick = async () => {
@@ -121,10 +122,11 @@ export function WechatPublishModal({
         selectedGroupId,
         scheduleTime: finalSchedule
       });
-      toast.success(scheduledPublish ? t('schedPublishSuccess', { defaultValue: '文章定时发表任务已成功提交微信发布队列！' }) : t('publishSuccess', { defaultValue: '文章已发表，发布成功！' }));
+      // The owning page toasts the outcome (typed errors included); the modal
+      // only closes on success so a failure keeps the dialog for a retry.
       onClose();
-    } catch (e: any) {
-      toast.error(t('publishException', { defaultValue: '发表异常: ' }) + (e.message || '未知错误'));
+    } catch {
+      // Outcome toast is owned by the page's onConfirmPublish handler.
     }
   };
 
@@ -166,43 +168,26 @@ export function WechatPublishModal({
             </div>
           )}
           
-          {/* Card 1: 群发通知 */}
+          {/* Card 1: 群发通知 — informational only: publishing always pushes to
+              all followers (the fan-tag filter is not supported server-side),
+              and "save as draft" on the page is the dedicated draft-only flow. */}
           <div className="bg-[var(--color-kb-panel)] rounded-2xl p-5 border border-[var(--color-kb-panel-border)] shadow-xs space-y-2.5">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[14px] text-[var(--color-kb-text-heading)]">
-                  {t('oaMassNotification', { defaultValue: '公众号粉丝群发通知' })}
-                </span>
-                <div className="group relative inline-block cursor-help text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)]">
-                  <HelpCircle size={14} />
-                  {/* Tooltip */}
-                  <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-[var(--color-kb-editor)] border border-[var(--color-kb-panel-border)] text-[var(--color-kb-text)] text-[11px] font-medium leading-relaxed rounded-xl shadow-xl z-50">
-                    {t('massNotificationTooltip', { defaultValue: '开启后，图文消息将通过公众号下发给粉丝，促成聊天列表中的强弹窗通知。' })}
-                  </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-[14px] text-[var(--color-kb-text-heading)]">
+                {t('oaMassNotification', { defaultValue: '公众号粉丝群发通知' })}
+              </span>
+              <div className="group relative inline-block cursor-help text-[var(--color-kb-text-muted)] hover:text-[var(--color-kb-text-heading)]">
+                <HelpCircle size={14} />
+                {/* Tooltip */}
+                <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-[var(--color-kb-editor)] border border-[var(--color-kb-panel-border)] text-[var(--color-kb-text)] text-[11px] font-medium leading-relaxed rounded-xl shadow-xl z-50">
+                  {t('massNotificationTooltip', { defaultValue: '发表后，图文消息将通过公众号下发给全部粉丝，促成聊天列表中的强弹窗通知。' })}
                 </div>
               </div>
-              
-              {/* Green iOS-style Toggle Switch */}
-              <button
-                onClick={() => {
-                  setSendNotification(!sendNotification);
-                }}
-                className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors duration-300 focus:outline-none ${
-                  sendNotification ? 'bg-[#07c160]' : 'bg-[var(--color-kb-panel-hover)] border border-[var(--color-kb-panel-border)]'
-                }`}
-                id="toggle-mass-send"
-              >
-                <div 
-                  className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
-                    sendNotification ? 'translate-x-6' : 'translate-x-0'
-                  }`} 
-                />
-              </button>
             </div>
-            
+
             <p className="text-[12px] text-[var(--color-kb-text-muted)] font-medium">
               {t('massQuotaFromWechat', {
-                defaultValue: '群发配额与剩余次数以微信公众平台接口返回为准。',
+                defaultValue: '发表将下发给全部粉丝；群发配额与剩余次数以微信公众平台接口返回为准。',
               })}
             </p>
           </div>
@@ -219,10 +204,13 @@ export function WechatPublishModal({
                   </span>
                 </div>
                 
-                {/* Switch */}
+                {/* Switch — disabled: the server rejects fan-tag targeting with a
+                    typed 400 (fail-closed), because the publish pipeline delivers
+                    to all followers and cannot honor a group filter. */}
               <button
                 onClick={() => setGroupNotification(!groupNotification)}
-                disabled={loadingFanTags || Boolean(fanTagError)}
+                disabled
+                title={t('groupTargetingUnsupported', { defaultValue: '当前版本暂不支持定向分组群发，发表将下发给全部粉丝' })}
                 className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors duration-300 focus:outline-none ${
                   groupNotification ? 'bg-[#07c160]' : 'bg-[var(--color-kb-panel-hover)] border border-[var(--color-kb-panel-border)]'
                 } disabled:cursor-not-allowed disabled:opacity-50`}
@@ -276,12 +264,15 @@ export function WechatPublishModal({
                   </div>
                 </div>
                 
-                {/* Switch */}
-                <button 
+                {/* Switch — disabled: the server rejects scheduleTime with a typed
+                    400; articles publish immediately. */}
+                <button
                   onClick={() => setScheduledPublish(!scheduledPublish)}
+                  disabled
+                  title={t('scheduledPublishUnsupported', { defaultValue: '当前版本暂不支持定时发表，文章将立即发表' })}
                   className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors duration-300 focus:outline-none ${
                     scheduledPublish ? 'bg-[#07c160]' : 'bg-[var(--color-kb-panel-hover)] border border-[var(--color-kb-panel-border)]'
-                  }`}
+                  } disabled:cursor-not-allowed disabled:opacity-50`}
                   id="toggle-schedule-send"
                 >
                   <div 

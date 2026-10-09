@@ -160,6 +160,12 @@ export class DocumentService {
     return withKnowledgebaseApi(() => KnowledgebaseDocumentApiBridge.getDocumentContent(id));
   }
 
+  static async getDocumentSaveContext(
+    id: string,
+  ): Promise<import('./knowledgebaseDocumentApiBridge').DocumentSaveContext> {
+    return withKnowledgebaseApi(() => KnowledgebaseDocumentApiBridge.getDocumentSaveContext(id));
+  }
+
   static async hydrateDocumentForViewer(doc: DocumentMeta): Promise<DocumentMeta> {
     return withKnowledgebaseApi(() => KnowledgebaseDocumentApiBridge.hydrateDocumentForViewer(doc));
   }

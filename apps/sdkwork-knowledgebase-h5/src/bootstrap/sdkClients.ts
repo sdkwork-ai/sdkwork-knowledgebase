@@ -5,7 +5,7 @@ import {
 } from "@sdkwork/knowledgebase-h5-core/sdk";
 
 import { resolveKnowledgebaseH5Environment } from "./environment";
-import { getKnowledgebaseH5Session } from "./iamRuntime";
+import { createKnowledgebaseH5IamRuntime } from "./iamRuntime";
 
 /**
  * Construct the generated app-api SDK clients for one authenticated session.
@@ -16,8 +16,10 @@ import { getKnowledgebaseH5Session } from "./iamRuntime";
  */
 export function bootstrapSdkClients() {
   const environment = resolveKnowledgebaseH5Environment();
-  const session = getKnowledgebaseH5Session();
-  const tokenManager = createKnowledgebaseSessionTokenManager(session);
+  // The token manager adapts the live session STORE (read/update/subscribe),
+  // not a point-in-time snapshot.
+  const sessionStore = createKnowledgebaseH5IamRuntime();
+  const tokenManager = createKnowledgebaseSessionTokenManager(sessionStore);
   const knowledgebase = createKnowledgebaseAppSdkClient({
     baseUrl: environment.appApiBaseUrl,
     tokenManager,

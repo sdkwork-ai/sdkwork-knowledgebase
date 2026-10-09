@@ -327,7 +327,15 @@ export function AppShell() {
     const prev = localStorage.getItem('app-active-kb');
     let newKb: { id: string; title: string };
     if (prev && prev !== 'null') {
-      newKb = { ...JSON.parse(prev), id: kbId, title: kbTitle ?? JSON.parse(prev).title ?? '' };
+      // The stored value may be legacy/corrupt (written by several surfaces);
+      // a parse failure must not break search→KB navigation.
+      let parsed: { title?: string } | null = null;
+      try {
+        parsed = JSON.parse(prev) as { title?: string } | null;
+      } catch {
+        parsed = null;
+      }
+      newKb = { ...(parsed ?? {}), id: kbId, title: kbTitle ?? parsed?.title ?? '' };
     } else {
       newKb = { id: kbId, title: kbTitle ?? '' };
     }
@@ -414,7 +422,6 @@ export function AppShell() {
         onTabChange={(tab) => setActiveTab(tab as 'kb' | 'market' | 'notes' | 'search')}
         onOpenSettings={() => openSettings('appearance')}
         onOpenProfile={() => setIsProfileOpen(true)}
-        onOpenAccountSettings={() => openSettings('account')}
         showAdminConsole={canAccessAdminConsole}
         onOpenAdminConsole={handleOpenAdminConsole}
       />
@@ -430,11 +437,16 @@ export function AppShell() {
         ) : null}
         <div className="flex-1 flex overflow-hidden">
         {activeTab === 'search' ? (
-          <SearchModule
-            onGoToKb={handleGoToKb}
-            onGoToFile={handleGoToFile}
-            onOpenWebLink={handleOpenWebLink}
-          />
+          <FeatureErrorBoundary
+            title={tErrors('feature.knowledge.title')}
+            description={tErrors('feature.knowledge.description')}
+          >
+            <SearchModule
+              onGoToKb={handleGoToKb}
+              onGoToFile={handleGoToFile}
+              onOpenWebLink={handleOpenWebLink}
+            />
+          </FeatureErrorBoundary>
         ) : activeTab === 'notes' ? (
           <FeatureErrorBoundary
             title={tErrors('feature.knowledge.title')}

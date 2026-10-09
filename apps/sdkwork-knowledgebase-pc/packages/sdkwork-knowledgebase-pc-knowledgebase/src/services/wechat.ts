@@ -203,7 +203,7 @@ export interface WechatCommandResult {
 export class WechatService {
   static async getOfficialAccounts(): Promise<OfficialAccount[]> {
     const list = await requireWechatSdk().officialAccounts.list();
-    const accounts = list.accounts.map(toOfficialAccount);
+    const accounts = (list.items ?? []).map(toOfficialAccount);
     if (isDesktopSecureStorageAvailable()) {
       return Promise.all(accounts.map((account) => hydrateOfficialAccountSecrets(account)));
     }
@@ -228,7 +228,7 @@ export class WechatService {
 
   static async getApplets(): Promise<WechatAppletConfig[]> {
     const list = await requireWechatSdk().applets.list();
-    const applets = list.applets.map(toApplet);
+    const applets = (list.items ?? []).map(toApplet);
     if (isDesktopSecureStorageAvailable()) {
       return Promise.all(applets.map((applet) => hydrateAppletSecrets(applet)));
     }
@@ -256,7 +256,7 @@ export class WechatService {
       throwKnowledgebaseError(KnowledgebaseErrorCodes.WECHAT_INVALID_ARGS);
     }
     const list = await requireWechatSdk().officialAccounts.fanTags.list(accountId);
-    return (list.tags ?? []).map((tag) => ({
+    return (list.items ?? []).map((tag) => ({
       id: tag.id,
       name: tag.name,
       fanCount: Number(tag.fanCount ?? 0),

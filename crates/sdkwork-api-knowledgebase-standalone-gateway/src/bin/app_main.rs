@@ -138,11 +138,26 @@ fn unify_process_environment() -> String {
     let framework_value = match effective.as_str() {
         "dev" | "development" => "development",
         "test" | "testing" => "test",
-        // production, staging, and any unknown value fail closed to production.
+        // Any unknown value takes the production posture everywhere —
+        // hardening checks included — instead of slipping past the
+        // production Redis/PostgreSQL fail-fast with a less specific
+        // downstream error.
         _ => "production",
     };
+    // Canonicalize the alias IN PLACE: every downstream validator
+    // (`GatewayServerConfig::from_env`, `DeploymentEnvironment::parse`) reads
+    // the raw `SDKWORK_KNOWLEDGEBASE_ENVIRONMENT` variable, so an accepted
+    // `dev`/`testing` value must never survive into them and abort the boot
+    // after assembly succeeded.
+    let canonical = match effective.as_str() {
+        "dev" => "development",
+        "testing" => "test",
+        "development" | "test" | "staging" | "demo" | "production" => effective.as_str(),
+        _ => "production",
+    };
+    std::env::set_var("SDKWORK_KNOWLEDGEBASE_ENVIRONMENT", canonical);
     std::env::set_var("SDKWORK_ENVIRONMENT", framework_value);
-    effective
+    canonical.to_string()
 }
 
 fn effective_environment() -> String {

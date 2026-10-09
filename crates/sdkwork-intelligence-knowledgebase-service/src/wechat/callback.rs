@@ -51,6 +51,8 @@ const MAX_CALLBACK_BODY_BYTES: usize = 100 * 1024;
 const BOUNDED_REPLAY_SEEN_CAPACITY: usize = 4096;
 const MAX_REPLAY_KEY_CHARS: usize = 256;
 
+static REPLAY_SEEN: std::sync::Mutex<VecDeque<String>> = std::sync::Mutex::new(VecDeque::new());
+
 #[derive(Debug, Error)]
 pub enum WechatCallbackError {
     #[error("invalid wechat callback request: {0}")]
@@ -242,8 +244,11 @@ pub struct BoundedWechatMessageFields {
     pub from_user_name: String,
     pub create_time: i64,
     /// Present for passive messages, absent for most event pushes; the replay key
-    /// falls back to `(msg_type, from_user_name, create_time)` when absent.
+    /// falls back to `(msg_type, from_user_name, event_key, create_time)` when absent.
     pub msg_id: Option<String>,
+    /// Menu/event payloads carry an `EventKey` that distinguishes distinct
+    /// same-type events from one user within the same second.
+    pub event_key: Option<String>,
 }
 
 /// Extracts only the bounded top-level fields needed for receipt bookkeeping.
@@ -270,11 +275,13 @@ pub fn extract_bounded_message_fields(
         WechatCallbackCryptoError::MalformedPayload("CreateTime is not epoch seconds".to_string())
     })?;
     let msg_id = extract_xml_tag_value(xml, "MsgId", MAX_CALLBACK_FIELD_BYTES)?;
+    let event_key = extract_xml_tag_value(xml, "EventKey", MAX_CALLBACK_FIELD_BYTES)?;
     Ok(BoundedWechatMessageFields {
         msg_type,
         from_user_name,
         create_time,
         msg_id,
+        event_key,
     })
 }
 
@@ -336,19 +343,41 @@ fn decode_simple_xml_text(raw: &str) -> String {
 /// `BOUNDED_REPLAY_SEEN_CAPACITY` keys, oldest evicted first. Returns `true` when
 /// the key was already recorded (a replay).
 pub fn callback_already_seen(key: &str) -> bool {
-    static REPLAY_SEEN: std::sync::Mutex<VecDeque<String>> = std::sync::Mutex::new(VecDeque::new());
+    if callback_seen_contains(key) {
+        return true;
+    }
+    callback_remember_seen(key);
+    false
+}
+
+/// Check-only probe of the replay seen-set; does not record anything.
+pub fn callback_seen_contains(key: &str) -> bool {
+    let key = truncate_char_bound(key, MAX_REPLAY_KEY_CHARS);
+    let seen = REPLAY_SEEN
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    seen.iter().any(|entry| entry == &key)
+}
+
+/// Records a key in the replay seen-set. Call only AFTER the callback receipt
+/// persisted successfully, so a storage failure can be retried by the
+/// upstream redelivery instead of being misclassified as a replay.
+pub fn callback_remember_seen(key: &str) {
     let key = truncate_char_bound(key, MAX_REPLAY_KEY_CHARS);
     let mut seen = REPLAY_SEEN
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
-    if seen.iter().any(|entry| entry == &key) {
-        return true;
-    }
     if seen.len() >= BOUNDED_REPLAY_SEEN_CAPACITY {
         seen.pop_front();
     }
     seen.push_back(key);
-    false
+}
+
+/// Fixed-length digest for composite replay keys (raw field concatenation can
+/// collide after bounded-field truncation).
+fn replay_key_hash(raw: &str) -> String {
+    use sha2::Digest;
+    format!("wechat-replay-{:x}", sha2::Sha256::digest(raw.as_bytes()))
 }
 
 fn truncate_char_bound(value: &str, max_chars: usize) -> String {
@@ -450,21 +479,29 @@ impl<'a> WechatCallbackService<'a> {
             ))
         })?;
         let fields = extract_bounded_message_fields(xml)?;
-        let replay_key = fields
+        // Hash the composite key: raw msg_type/from_user_name/EventKey fields
+        // can each be up to 256 bytes, so truncating the concatenation could
+        // collide distinct deliveries sharing a long prefix. A fixed-length
+        // SHA-256 digest cannot.
+        let replay_key = replay_key_hash(&fields
             .msg_id
             .as_deref()
             .map(|msg_id| format!("{}:{msg_id}", self.tenant_id))
             .unwrap_or_else(|| {
                 format!(
-                    "{}:{}:{}:{}",
-                    self.tenant_id, fields.msg_type, fields.from_user_name, fields.create_time
+                    "{}:{}:{}:{}:{}",
+                    self.tenant_id,
+                    fields.msg_type,
+                    fields.from_user_name,
+                    fields.event_key.as_deref().unwrap_or_default(),
+                    fields.create_time
                 )
-            });
-        let duplicate = callback_already_seen(&replay_key);
+            }));
+        let duplicate = callback_seen_contains(&replay_key);
         let artifact_path = if duplicate {
             None
         } else {
-            Some(
+            let path = Some(
                 self.config_store
                     .store_callback_receipt(&crate::wechat::config_store::WechatCallbackReceiptArtifact {
                         account_id: request.account_id.clone(),
@@ -477,7 +514,12 @@ impl<'a> WechatCallbackService<'a> {
                         create_time: fields.create_time,
                     })
                     .await?,
-            )
+            );
+            // Mark seen only after the receipt persisted: a transient storage
+            // error returns Err (WeChat redelivers within its window), and the
+            // retry must not be misclassified as a duplicate and dropped.
+            callback_remember_seen(&replay_key);
+            path
         };
         Ok(WechatCallbackReceipt {
             msg_type: fields.msg_type,

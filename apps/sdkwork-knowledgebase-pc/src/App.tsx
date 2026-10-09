@@ -1,5 +1,5 @@
 import React, { Suspense, useMemo, useRef, type ErrorInfo, type ReactNode } from 'react';
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { SdkworkSessionAuthBrowserRoot } from '@sdkwork/auth-pc-react';
 import {
@@ -115,8 +115,19 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
+// The runtime factory performs module-global wiring (session store binding,
+// SDK client configuration, subscriptions), so it must run exactly once per
+// process. A `useMemo` factory under StrictMode/concurrent rendering would
+// run it twice with no guarantee which instance survives; a module singleton
+// makes the created instance and the committed one identical by construction.
+let pcRuntime: ReturnType<typeof createKnowledgebasePcRuntime> | null = null;
+function getKnowledgebasePcRuntime() {
+  pcRuntime ??= createKnowledgebasePcRuntime();
+  return pcRuntime;
+}
+
 export default function App() {
-  const runtime = useMemo(() => createKnowledgebasePcRuntime(), []);
+  const runtime = getKnowledgebasePcRuntime();
 
   return (
     <ErrorBoundary>
@@ -175,6 +186,8 @@ function KnowledgebaseAppRoutes({
             <Route path="/admin/providers" element={<ProviderAdminPage />} />
             <Route path="/wechat-publish" element={<WechatPublishPage />} />
             <Route path={GROUP_KNOWLEDGEBASE_LAUNCH_PATH} element={<GroupKnowledgebaseLaunchPage />} />
+            {/* Unknown/deep-link paths must not render a blank workspace. */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </KnowledgebaseAuthGate>

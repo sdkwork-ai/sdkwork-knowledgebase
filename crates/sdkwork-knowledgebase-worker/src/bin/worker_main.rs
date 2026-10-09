@@ -99,9 +99,19 @@ async fn main() {
     );
 
     let readiness = runtime.readiness_check_adapter();
-    let health_addr_for_task = health_addr.clone();
+    // Bind before spawning so a port collision fails fast with a clear exit
+    // instead of panicking inside a detached task while the worker keeps
+    // polling with no health endpoints.
+    let health_listener = tokio::net::TcpListener::bind(&health_addr)
+        .await
+        .unwrap_or_else(|error| {
+            eprintln!(
+                "failed to bind knowledgebase worker health listener on {health_addr}: {error}"
+            );
+            std::process::exit(1);
+        });
     tokio::spawn(async move {
-        health::serve_worker_health(&health_addr_for_task, readiness).await;
+        health::serve_worker_health(health_listener, readiness).await;
     });
 
     run_polling_loop(

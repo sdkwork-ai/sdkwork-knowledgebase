@@ -723,6 +723,13 @@ export async function getDocumentContent(id: string): Promise<string> {
         }
         return indexed;
       }
+      // A document without any persisted version (e.g. a freshly created note
+      // opened from another device, with no local cache) is EMPTY — never seed
+      // the editor with fabricated placeholder text, or the autosave would
+      // persist that placeholder as the note's first real version.
+      if (!document.currentVersionId) {
+        return '';
+      }
       return `# ${document.title}\n\nThis document is indexed in Knowledgebase but no retrieval chunks were found yet.`;
     } catch {
       // Fall through to browser-node resolution.
@@ -871,8 +878,10 @@ export async function saveDocumentContent(
           currentVersionId = refreshed.currentVersionId;
         }
       } catch {
-        // Best effort: keep the pre-save version id; the next save may surface a conflict
-        // that the user can resolve explicitly.
+        // The ingest succeeded, so the version advanced; only its id is unknown.
+        // Reporting the stale pre-save id would make the NEXT save falsely
+        // conflict, so report "unknown" (null) and skip the check once instead.
+        currentVersionId = null;
       }
     }
   } catch (error) {
@@ -893,6 +902,38 @@ export async function saveDocumentContent(
 function buildSaveDocumentIngestIdempotencyKey(numericDocumentId: string): string {
   const randomSuffix = Math.random().toString(36).slice(2, 10);
   return `pc-save-${numericDocumentId}-${Date.now()}-${randomSuffix}`.slice(0, 128);
+}
+
+export interface DocumentSaveContext {
+  documentId: string;
+  title: string;
+  spaceId: string;
+  /** Server version id to pass back as `saveDocumentContent` `baseVersionId`;
+   * null when the document has no persisted version yet or does not expose one. */
+  currentVersionId: string | null;
+}
+
+/**
+ * One-call snapshot used to arm optimistic concurrency when a document is
+ * opened: editors record `currentVersionId` as their baseline and pass it to
+ * every subsequent `saveDocumentContent` call.
+ */
+export async function getDocumentSaveContext(id: string): Promise<DocumentSaveContext> {
+  const numericDocumentId = await resolveNumericDocumentId(id);
+  if (!numericDocumentId) {
+    throwKnowledgebaseError(KnowledgebaseErrorCodes.DOCUMENT_RESOLVE_FAILED);
+  }
+  const client = requireSdkClient();
+  const document = await client.knowledge.documents.retrieve(String(numericDocumentId));
+  assertEphemeralWorkspaceSpaceId(String(document.spaceId));
+  return {
+    documentId: String(document.id),
+    title: document.title,
+    spaceId: String(document.spaceId),
+    currentVersionId: typeof document.currentVersionId === 'string'
+      ? document.currentVersionId
+      : null,
+  };
 }
 
 async function resolveNumericDocumentId(id: string): Promise<string | null> {
@@ -1196,8 +1237,15 @@ export async function updateDocument(id: string, updates: Partial<DocumentMeta>)
     await saveDocumentContent(id, updates.content, { baseVersionId: null });
   }
 
+  // `hasDriveMetadataUpdate` alone must not count as an applied update: when
+  // the document has no browser node (e.g. a manually created note), the
+  // drive-sync branch above never ran, so reporting success for an unperformed
+  // move misleads callers like placeDocumentInParentFolder's retry loop.
   const didUpdate =
-    metadataUpdated || hasDriveMetadataUpdate || numericDocumentId !== null || updates.content !== undefined;
+    metadataUpdated
+    || (hasDriveMetadataUpdate && Boolean(browserMatch))
+    || numericDocumentId !== null
+    || updates.content !== undefined;
   if (didUpdate) {
     invalidateKnowledgeBrowserNodeCacheForSpaceIds(
       browserMatch?.spaceId,

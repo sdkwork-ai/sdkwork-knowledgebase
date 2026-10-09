@@ -33,5 +33,6 @@
   "exportNoteTitle": "AI search export note",
   "exportDocTitlePrefix": "Search note: {{title}}",
   "exportDocIntro": "This note was exported from the conversational AI search engine.",
-  "savedToKb": "Saved to [{{title}}]"
+  "savedToKb": "Saved to [{{title}}]",
+  "saveToKbFailed": "Failed to save to the knowledge base. Please try again later."
 }

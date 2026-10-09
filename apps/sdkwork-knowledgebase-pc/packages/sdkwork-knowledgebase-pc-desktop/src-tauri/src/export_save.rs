@@ -90,18 +90,52 @@ pub fn sanitize_file_name(raw: &str) -> String {
         return "document.bin".to_string();
     }
 
-    let mut sanitized = trimmed
+    let mut sanitized: String = trimmed
         .chars()
         .map(|ch| {
-            if matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
+            if matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') || ch.is_control()
+            {
                 '_'
             } else {
                 ch
             }
         })
-        .collect::<String>();
+        .collect();
 
-    if sanitized.is_empty() {
+    // Windows: trailing dots/spaces are dropped by the filesystem, and device
+    // names (CON.pdf, NUL.txt, COM1.pdf) map to devices. A bare `..` would
+    // walk up a directory when joined.
+    while sanitized.ends_with('.') || sanitized.ends_with(' ') {
+        sanitized.pop();
+    }
+    let upper = sanitized.to_ascii_uppercase();
+    let stem = upper.split('.').next().unwrap_or("");
+    let is_reserved_device = matches!(
+        stem,
+        "CON"
+            | "PRN"
+            | "AUX"
+            | "NUL"
+            | "COM1"
+            | "COM2"
+            | "COM3"
+            | "COM4"
+            | "COM5"
+            | "COM6"
+            | "COM7"
+            | "COM8"
+            | "COM9"
+            | "LPT1"
+            | "LPT2"
+            | "LPT3"
+            | "LPT4"
+            | "LPT5"
+            | "LPT6"
+            | "LPT7"
+            | "LPT8"
+            | "LPT9"
+    );
+    if sanitized.is_empty() || sanitized == ".." || is_reserved_device {
         sanitized = "document.bin".to_string();
     }
 
@@ -184,6 +218,7 @@ fn save_bytes_to_export_path(
             std::fs::create_dir_all(&downloads_dir).map_err(map_io_error)?;
             let target_path = unique_file_path(&downloads_dir, &safe_name);
             std::fs::write(&target_path, bytes).map_err(map_io_error)?;
+            track_issued_export_path(&target_path);
             Ok(SaveExportFileResponse {
                 saved: true,
                 cancelled: false,
@@ -207,6 +242,7 @@ fn save_bytes_to_export_path(
             };
 
             std::fs::write(&path, bytes).map_err(map_io_error)?;
+            track_issued_export_path(&path);
             Ok(SaveExportFileResponse {
                 saved: true,
                 cancelled: false,
@@ -238,6 +274,7 @@ pub async fn save_base64_to_export_path_async(
 
 pub fn reveal_export_in_folder(raw_path: &str) -> Result<(), String> {
     let path = validate_export_file_path(raw_path)?;
+    ensure_issued_export_path(&path)?;
 
     #[cfg(windows)]
     {
@@ -275,8 +312,62 @@ pub fn reveal_export_in_folder(raw_path: &str) -> Result<(), String> {
     }
 }
 
+/// Export paths this application issued via `save_export_file`. `open` /
+/// `reveal` accept ONLY these: a compromised renderer must not be able to use
+/// them as an arbitrary program-execution (ShellExecute "open") or
+/// file-reveal primitive against renderer-chosen absolute paths.
+static ISSUED_EXPORT_PATHS: LazyLock<std::sync::Mutex<std::collections::HashSet<PathBuf>>> =
+    LazyLock::new(|| std::sync::Mutex::new(std::collections::HashSet::new()));
+
+fn track_issued_export_path(path: &Path) {
+    if let Ok(mut issued) = ISSUED_EXPORT_PATHS.lock() {
+        issued.insert(path.to_path_buf());
+    }
+}
+
+fn ensure_issued_export_path(path: &Path) -> Result<(), String> {
+    let issued = ISSUED_EXPORT_PATHS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if issued.contains(path) {
+        return Ok(());
+    }
+    Err(format!(
+        "export file was not issued by this session: {}",
+        path.display()
+    ))
+}
+
+/// Document extensions the desktop shell will `ShellExecute("open")`. The
+/// allowlist is the last line of defense: the renderer supplies both the
+/// suggested filename and the payload bytes for an export, so without it a
+/// compromised renderer could mint `evil.bat`/`evil.hta` and execute it via
+/// the open command. New export formats extend this list deliberately.
+// `.doc` (Word-HTML export) and `.html` are live save formats from the
+// document-export UI; keep this list in step with documentExportRender.
+const OPENABLE_EXPORT_EXTENSIONS: &[&str] = &[
+    "pdf", "png", "jpg", "jpeg", "webp", "txt", "md", "doc", "html",
+];
+
+fn openable_export_extension(path: &Path) -> Result<String, String> {
+    let extension = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_ascii_lowercase())
+        .ok_or_else(|| "export file has no extension".to_string())?;
+    if OPENABLE_EXPORT_EXTENSIONS.contains(&extension.as_str()) {
+        Ok(extension)
+    } else {
+        Err(format!(
+            "export file extension is not openable: .{extension}"
+        ))
+    }
+}
+
 pub fn launch_export_file(raw_path: &str) -> Result<(), String> {
     let path = validate_export_file_path(raw_path)?;
+    ensure_issued_export_path(&path)?;
+    openable_export_extension(&path)?;
     open::that(&path).map_err(|error| format!("failed to open export file: {error}"))
 }
 
@@ -314,8 +405,15 @@ pub fn locate_export_in_downloads(file_name: &str) -> Result<PathBuf, String> {
             .unwrap_or("");
         let file_ext = entry_path.extension().and_then(|value| value.to_str());
 
-        let stem_matches = file_stem == stem || file_stem.starts_with(&format!("{stem} ("));
-        let ext_matches = extension.is_none() || extension == file_ext;
+        let stem_matches = file_stem == stem
+            || file_stem
+                .strip_prefix(&format!("{stem} ("))
+                .and_then(|suffix| suffix.strip_suffix(')'))
+                .and_then(|inner| inner.parse::<u32>().ok())
+                .is_some();
+        let ext_matches = extension.is_none()
+            || extension.map(|value| value.to_ascii_lowercase())
+                == file_ext.map(|value| value.to_ascii_lowercase());
         if !stem_matches || !ext_matches {
             continue;
         }
@@ -364,6 +462,36 @@ pub async fn save_export_file(
 }
 
 #[cfg(test)]
+mod openable_extension_tests {
+    use super::*;
+
+    #[test]
+    fn allows_document_extensions_case_insensitively() {
+        assert!(openable_export_extension(Path::new("report.PDF")).is_ok());
+        assert!(openable_export_extension(Path::new("shot.Jpeg")).is_ok());
+        assert!(openable_export_extension(Path::new("notes.md")).is_ok());
+    }
+
+    #[test]
+    fn rejects_executable_and_script_extensions() {
+        for name in [
+            "evil.bat", "evil.cmd", "evil.exe", "evil.hta", "evil.lnk", "evil.ps1",
+        ] {
+            assert!(
+                openable_export_extension(Path::new(name)).is_err(),
+                "{name} must be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_missing_extensions_and_dotfiles() {
+        assert!(openable_export_extension(Path::new("noext")).is_err());
+        assert!(openable_export_extension(Path::new(".gitignore")).is_err());
+    }
+}
+
+#[cfg(test)]
 mod payload_tests {
     use super::*;
 
@@ -396,6 +524,9 @@ pub fn open_export_file(request: RevealExportFileRequest) -> Result<(), String> 
 #[tauri::command]
 pub fn locate_export_file(request: LocateExportFileRequest) -> Result<String, String> {
     let path = locate_export_in_downloads(&request.file_name)?;
+    // Located exports are app-produced Downloads files (strict stem/extension
+    // match above); tracking them lets the subsequent open/reveal succeed.
+    track_issued_export_path(&path);
     Ok(path.to_string_lossy().into_owned())
 }
 

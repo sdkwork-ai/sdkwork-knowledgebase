@@ -200,6 +200,16 @@ async function handleKnowledgeRoute(route: Route, state: MockState): Promise<voi
     return;
   }
 
+  if (method === 'GET' && pathname.endsWith('/knowledge/spaces')) {
+    // Space collection listing: backs getKnowledgeBases (notes workspace KB
+    // resolution, KB view sidebar).
+    await sdkworkData(route, 200, {
+      items: [E2E_SPACE],
+      pageInfo: { mode: 'offset', nextCursor: null, hasMore: false },
+    });
+    return;
+  }
+
   if (method === 'GET' && /\/knowledge\/spaces\/\d+$/.test(pathname)) {
     await sdkworkItem(route, 200, E2E_SPACE);
     return;
@@ -307,6 +317,35 @@ async function handleKnowledgeRoute(route: Route, state: MockState): Promise<voi
     return;
   }
 
+  if (method === 'GET' && pathname.endsWith('/knowledge/documents')) {
+    // Offset-paginated space listing (documents.list): drives the notes
+    // workspace list and the knowledge document tree.
+    const url = new URL(request.url());
+    const spaceId = Number(url.searchParams.get('space_id') ?? '1');
+    const pageSize = Number(url.searchParams.get('page_size') ?? '100');
+    const offset = Number(url.searchParams.get('cursor') ?? '0');
+    const all = [...state.documents.values()].filter(
+      (document) => document.spaceId === spaceId,
+    );
+    const items = all
+      .slice(offset, offset + pageSize)
+      .map((document) => ({
+        ...document,
+        visibility: 'private',
+        language: 'en',
+      }));
+    const nextCursor = offset + pageSize < all.length ? String(offset + pageSize) : null;
+    await sdkworkData(route, 200, {
+      items,
+      pageInfo: {
+        mode: 'offset',
+        nextCursor,
+        hasMore: nextCursor !== null,
+      },
+    });
+    return;
+  }
+
   if (method === 'POST' && pathname.endsWith('/knowledge/documents')) {
     const body = request.postDataJSON() as { title?: string; spaceId?: number; mimeType?: string } | null;
     state.nextDocumentId += 1;
@@ -356,10 +395,44 @@ async function handleKnowledgeRoute(route: Route, state: MockState): Promise<voi
     return;
   }
 
+  if (method === 'PATCH' && /\/knowledge\/documents\/\d+$/.test(pathname)) {
+    // Notes workspace title autosave: documents.update renames in place.
+    const documentId = Number(pathname.split('/').pop());
+    const document = state.documents.get(documentId);
+    if (!document) {
+      await sdkworkProblem(route, 404, 40401, 'Document not found', 'The document does not exist.');
+      return;
+    }
+    const body = request.postDataJSON() as { title?: string; mimeType?: string } | null;
+    if (body?.title !== undefined) {
+      document.title = body.title;
+    }
+    if (body?.mimeType !== undefined) {
+      document.mimeType = body.mimeType;
+    }
+    await sdkworkItem(route, 200, {
+      ...document,
+      visibility: 'private',
+      language: 'en',
+    });
+    return;
+  }
+
   if (method === 'POST' && pathname.endsWith('/knowledge/ingests')) {
-    const body = request.postDataJSON() as { payloadMarkdown?: string } | null;
+    const body = request.postDataJSON() as { payloadMarkdown?: string; title?: string } | null;
     if (body?.payloadMarkdown) {
       state.telemetry?.ingestPayloads.push(body.payloadMarkdown);
+    }
+    // Mirror the real Create-binding ingest pipeline: the markdown lands in a
+    // document with the request's title, so content survives a page reload
+    // exactly as it does against the real backend.
+    if (body?.payloadMarkdown && typeof body.title === 'string') {
+      for (const document of state.documents.values()) {
+        if (document.title === body.title) {
+          document.content = body.payloadMarkdown;
+          break;
+        }
+      }
     }
     const ingestId = state.nextIngestId;
     state.nextIngestId += 1;
@@ -447,6 +520,29 @@ export async function mockKnowledgebaseAppApi(
   });
 
   await page.route('**/app/v3/api/drive/**', async (route) => {
+    const request = route.request();
+    const method = request.method().toUpperCase();
+    const drivePath = new URL(request.url()).pathname;
+    // Drive node rename (drive.nodes.update): project the new node name onto
+    // the underlying mock document so renames survive reloads, mirroring the
+    // real drive-backed metadata flow for browser-listed documents.
+    const renameMatch = /^(?:PATCH|PUT) \/app\/v3\/api\/drive\/nodes\/drive-node-(\d+)$/.exec(
+      `${method} ${drivePath}`,
+    );
+    if (renameMatch) {
+      const body = request.postDataJSON() as { nodeName?: string } | null;
+      const documentId = Number(renameMatch[1]);
+      const document = state.documents.get(documentId);
+      if (document && body?.nodeName !== undefined) {
+        document.title = body.nodeName;
+      }
+      await json(route, 200, {
+        id: `drive-node-${documentId}`,
+        nodeName: body?.nodeName ?? document?.title ?? '',
+        nodeType: 'document',
+      });
+      return;
+    }
     await json(route, 200, { items: [], nodes: [], nextCursor: null });
   });
 

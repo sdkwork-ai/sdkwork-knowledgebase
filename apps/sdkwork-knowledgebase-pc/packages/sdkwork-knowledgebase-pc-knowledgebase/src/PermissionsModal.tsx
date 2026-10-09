@@ -47,8 +47,9 @@ export function PermissionsModal({
 
     Promise.all([
       DocumentService.getDocumentAccess(item.id),
-      item.kbId
-        ? DocumentService.loadKnowledgeSpaceMembersPage(Number(item.kbId), null, 20)
+      // Space ids are int64 strings: `Number` would corrupt ids above 2^53.
+      item.kbId && /^\d+$/u.test(item.kbId.trim()) && item.kbId.trim() !== '0'
+        ? DocumentService.loadKnowledgeSpaceMembersPage(item.kbId.trim(), null, 20)
         : Promise.resolve({ items: [], nextCursor: null, hasMore: false }),
     ])
       .then(([access, membersPage]) => {

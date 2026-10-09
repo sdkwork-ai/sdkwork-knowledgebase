@@ -10,6 +10,7 @@ import { SearchLandingPage } from './components/SearchLandingPage';
 import { SearchMediaViewerHost } from './components/SearchMediaViewerHost';
 import { SearchSessionSidebar } from './components/SearchSessionSidebar';
 import { SEARCH_SESSIONS_STORAGE_KEY } from './constants';
+import { persistSearchSessions, loadSearchSessions } from './searchSessionStorage';
 import { buildRelatedMedia } from './services/buildRelatedMedia';
 import { generateCitationsAndResults } from './services/searchQueryEngine';
 import type { SearchMessage, SearchModuleProps, SearchSession } from './types';
@@ -110,22 +111,37 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
   const shouldAutoScrollRef = useRef(true);
   const wasInChatModeRef = useRef(false);
   const mediaMigrationDoneRef = useRef(false);
+  // Hydration gate: the persistence effect must not write until the load
+  // effect below has either restored stored sessions or seeded the first one.
+  // Without this gate the initial empty `sessions` array would overwrite
+  // localStorage before the load ran, wiping the user's saved history on
+  // every mount.
+  const sessionsHydratedRef = useRef(false);
+
+  // Single persistence point: every committed sessions change is trimmed and
+  // written through the bounded, failure-safe storage helpers. During active
+  // streaming the interval writer persists on its own throttled schedule, so
+  // the effect stands down until the stream interval is cleared.
+  useEffect(() => {
+    if (!sessionsHydratedRef.current || streamIntervalRef.current) {
+      return;
+    }
+    persistSearchSessions(SEARCH_SESSIONS_STORAGE_KEY, sessions);
+  }, [sessions]);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(SEARCH_SESSIONS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as SearchSession[];
-        if (parsed.length > 0) {
-          setSessions(parsed);
-          setActiveSessionId(parsed[0].id);
-          setWebSearchEnabled(parsed[0].webSearchEnabled ?? true);
-          setDeepThinkEnabled(parsed[0].deepThinkEnabled ?? false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.error('Failed to parse search sessions from localStorage', e);
+    // Hydration runs exactly once: a locale switch re-runs this effect via the
+    // `t` dependency, and re-seeding would reset the active session and the
+    // composer toggles mid-use.
+    if (sessionsHydratedRef.current) return;
+    const stored = loadSearchSessions(SEARCH_SESSIONS_STORAGE_KEY);
+    if (stored && stored.length > 0) {
+      sessionsHydratedRef.current = true;
+      setSessions(stored);
+      setActiveSessionId(stored[0].id);
+      setWebSearchEnabled(stored[0].webSearchEnabled ?? true);
+      setDeepThinkEnabled(stored[0].deepThinkEnabled ?? false);
+      return;
     }
 
     const firstSession: SearchSession = {
@@ -136,9 +152,10 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
       webSearchEnabled: true,
       deepThinkEnabled: false
     };
+    sessionsHydratedRef.current = true;
     setSessions([firstSession]);
     setActiveSessionId(firstSession.id);
-    localStorage.setItem(SEARCH_SESSIONS_STORAGE_KEY, JSON.stringify([firstSession]));
+    persistSearchSessions(SEARCH_SESSIONS_STORAGE_KEY, [firstSession]);
   }, [t]);
 
   useEffect(() => {
@@ -161,13 +178,36 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
 
     mediaMigrationDoneRef.current = true;
     void rehydrateMissingRelatedMedia(sessions).then(({ sessions: migrated, changed }) => {
-      if (changed) saveSessionsToStorage(migrated);
+      if (!changed) return;
+      // Merge by session/message id instead of overwriting: migration is slow
+      // (sequential search lookups), and any session change committed while it
+      // ran (queries sent, streams appended) must survive. Only the missing
+      // relatedMedia payloads are adopted; everything else keeps its live value.
+      setSessions((prev) => {
+        const migratedById = new Map(migrated.map((session) => [session.id, session]));
+        return prev.map((session) => {
+          const migratedSession = migratedById.get(session.id);
+          if (!migratedSession) return session;
+          const migratedMessages = new Map(migratedSession.messages.map((m) => [m.id, m]));
+          return {
+            ...session,
+            messages: session.messages.map((message) => {
+              const migratedMessage = migratedMessages.get(message.id);
+              if (!migratedMessage || hasRelatedMedia(message.relatedMedia) || !hasRelatedMedia(migratedMessage.relatedMedia)) {
+                return message;
+              }
+              return { ...message, relatedMedia: migratedMessage.relatedMedia };
+            }),
+          };
+        });
+      });
     });
   }, [sessions]);
 
   const saveSessionsToStorage = (updatedSessions: SearchSession[]) => {
+    // Persistence itself goes through the sessions effect; this helper only
+    // commits the new list.
     setSessions(updatedSessions);
-    localStorage.setItem(SEARCH_SESSIONS_STORAGE_KEY, JSON.stringify(updatedSessions));
   };
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
@@ -220,7 +260,6 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
     };
     setSessions((prev) => {
       const updated = [newSession, ...prev];
-      localStorage.setItem(SEARCH_SESSIONS_STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
     setActiveSessionId(newSession.id);
@@ -403,7 +442,6 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
           )
         };
       });
-      localStorage.setItem(SEARCH_SESSIONS_STORAGE_KEY, JSON.stringify(list));
       return list;
     });
 
@@ -421,7 +459,7 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
       persistedUpTo = index;
       const snapshot = sessionsRef.current;
       if (snapshot) {
-        localStorage.setItem(SEARCH_SESSIONS_STORAGE_KEY, JSON.stringify(snapshot));
+        persistSearchSessions(SEARCH_SESSIONS_STORAGE_KEY, snapshot);
       }
     };
     streamIntervalRef.current = setInterval(() => {
@@ -448,7 +486,7 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
         });
         sessionsRef.current = list;
         if (index % PERSIST_EVERY_CHARS === 0) {
-          localStorage.setItem(SEARCH_SESSIONS_STORAGE_KEY, JSON.stringify(list));
+          persistSearchSessions(SEARCH_SESSIONS_STORAGE_KEY, list);
           persistedUpTo = index;
         }
         return list;
@@ -486,7 +524,6 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
           )
         };
       });
-      localStorage.setItem(SEARCH_SESSIONS_STORAGE_KEY, JSON.stringify(list));
       return list;
     });
     setIsTyping(false);

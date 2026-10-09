@@ -500,6 +500,50 @@
       "apiSurface": "app-api"
     },
     {
+      "method": "GET",
+      "path": "/app/v3/api/knowledge/wechat/callback",
+      "operationId": "wechat.callback.verify",
+      "tags": [
+        "knowledge"
+      ],
+      "auth": {
+        "mode": "anonymous",
+        "required": false
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-knowledgebase",
+        "apiAuthority": "sdkwork-knowledgebase-app-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "app-api"
+    },
+    {
+      "method": "POST",
+      "path": "/app/v3/api/knowledge/wechat/callback",
+      "operationId": "wechat.callback.receive",
+      "tags": [
+        "knowledge"
+      ],
+      "auth": {
+        "mode": "anonymous",
+        "required": false
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-knowledgebase",
+        "apiAuthority": "sdkwork-knowledgebase-app-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "app-api"
+    },
+    {
       "method": "POST",
       "path": "/app/v3/api/knowledge/ingests",
       "operationId": "ingests.create",

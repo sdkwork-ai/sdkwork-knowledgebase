@@ -3,10 +3,10 @@ use axum::body::Body;
 use axum::http::{header, Method, Request, StatusCode};
 use sdkwork_intelligence_knowledgebase_service::wechat::{KnowledgeWechatService, WechatApiClient};
 use sdkwork_knowledgebase_contract::wechat::{
-    KnowledgeWechatApplet, KnowledgeWechatAppletList, KnowledgeWechatArticlesPublishRequest,
-    KnowledgeWechatOfficialAccount, KnowledgeWechatOfficialAccountList,
-    KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest,
-    KnowledgeWechatReplaceOfficialAccountsRequest,
+    KnowledgeWechatApplet, KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest,
+    KnowledgeWechatArticlesPublishRequest, KnowledgeWechatOfficialAccount,
+    KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult,
+    KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest,
 };
 use sdkwork_knowledgebase_test_support::fake_drive::FakeKnowledgeDriveStorage;
 use sdkwork_routes_knowledgebase_app_api::{
@@ -16,6 +16,8 @@ use sdkwork_routes_knowledgebase_app_api::{
 use serde_json::json;
 use std::sync::{Arc, Mutex, MutexGuard};
 use tower::util::ServiceExt;
+use wiremock::matchers::{any, method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 const TEST_TENANT_ID: u64 = 1;
 const TEST_ACTOR_ID: u64 = 42;
@@ -195,7 +197,7 @@ async fn integration_wechat_config_rejects_invalid_input_without_overwrite() {
 }
 
 #[tokio::test]
-async fn integration_wechat_publish_rejects_missing_managed_cover_before_upstream_io() {
+async fn integration_wechat_publish_rejects_account_without_app_secret_before_upstream_io() {
     let _env_guard = WechatIntegrationEnvGuard::with_test_secret_key();
     let app = test_app();
 
@@ -246,17 +248,310 @@ async fn integration_wechat_publish_rejects_missing_managed_cover_before_upstrea
         )
         .await
         .unwrap();
-    assert_problem(publish_response, StatusCode::NOT_IMPLEMENTED, 50001).await;
+    assert_problem(publish_response, StatusCode::BAD_REQUEST, 40001).await;
 }
 
-#[derive(Default)]
+#[tokio::test]
+async fn integration_wechat_preview_validates_without_outbound_calls() {
+    let _env_guard = WechatIntegrationEnvGuard::with_test_secret_key();
+    let mock_server = MockServer::start().await;
+    Mock::given(any())
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&mock_server)
+        .await;
+    let app = test_app_with_api(TestWechatApi::with_api_base(&mock_server.uri()));
+
+    let replace_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::PUT)
+                .uri(paths::WECHAT_OFFICIAL_ACCOUNTS)
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "accounts": [{
+                            "id": "acct-preview",
+                            "name": "Preview Account",
+                            "type": "subscription",
+                            "avatar": "PA",
+                            "appId": "wx-preview",
+                            "appSecret": "preview-account-secret"
+                        }]
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        replace_response.status(),
+        StatusCode::OK,
+        "replace failed: {}",
+        response_body_string(replace_response).await
+    );
+
+    let preview_response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(paths::WECHAT_ARTICLES_PREVIEW)
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "accountId": "acct-preview",
+                        "wechatIds": ["openid-1"],
+                        "articles": [{
+                            "id": "article-1",
+                            "title": "Title",
+                            "author": "Author",
+                            "content": "<p>Hello</p>"
+                        }]
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        preview_response.status(),
+        StatusCode::OK,
+        "preview failed: {}",
+        response_body_string(preview_response).await
+    );
+    let preview_body = response_body_json(preview_response).await;
+    assert_eq!(preview_body["accepted"], json!(true));
+    assert_eq!(preview_body["status"], "validated");
+}
+
+#[tokio::test]
+async fn integration_wechat_publish_runs_draft_and_freepublish_pipeline() {
+    let _env_guard = WechatIntegrationEnvGuard::with_test_secret_key();
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/cgi-bin/token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "access_token": "token-1",
+            "expires_in": 7200
+        })))
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/cgi-bin/draft/add"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "media_id": "DRAFT_ID_1"
+        })))
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/cgi-bin/freepublish/submit"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "errcode": 0,
+            "errmsg": "ok",
+            "publish_id": "PUBLISH_ID_1"
+        })))
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+    let app = test_app_with_api(TestWechatApi::with_api_base(&mock_server.uri()));
+
+    let replace_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::PUT)
+                .uri(paths::WECHAT_OFFICIAL_ACCOUNTS)
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "accounts": [{
+                            "id": "acct-publish",
+                            "name": "Publish Account",
+                            "type": "subscription",
+                            "avatar": "PA",
+                            "appId": "wx-publish",
+                            "appSecret": "publish-account-secret"
+                        }]
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        replace_response.status(),
+        StatusCode::OK,
+        "replace failed: {}",
+        response_body_string(replace_response).await
+    );
+
+    let publish_response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(paths::WECHAT_ARTICLES_PUBLISH)
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "accountIds": ["acct-publish"],
+                        "articles": [{
+                            "id": "article-1",
+                            "title": "Title",
+                            "author": "Author",
+                            "content": "<p>Hello</p>"
+                        }]
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        publish_response.status(),
+        StatusCode::OK,
+        "publish failed: {}",
+        response_body_string(publish_response).await
+    );
+    let publish_body = response_body_json(publish_response).await;
+    assert_eq!(publish_body["accepted"], json!(true));
+    assert_eq!(publish_body["status"], "accepted");
+}
+
+/// `sendNotification: false` is the documented draft-only trigger: the pipeline
+/// must stop after `draft/add` and NEVER call `freepublish/submit`, so a
+/// "save as draft" cannot silently publish to all followers.
+#[tokio::test]
+async fn integration_wechat_publish_with_send_notification_false_saves_draft_without_freepublish() {
+    let _env_guard = WechatIntegrationEnvGuard::with_test_secret_key();
+    let mock_server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/cgi-bin/token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "access_token": "token-draft-1",
+            "expires_in": 7200
+        })))
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/cgi-bin/draft/add"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "media_id": "DRAFT_ID_DRAFT_ONLY"
+        })))
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/cgi-bin/freepublish/submit"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "errcode": 0,
+            "errmsg": "ok",
+            "publish_id": "SHOULD_NEVER_BE_CALLED"
+        })))
+        .expect(0)
+        .mount(&mock_server)
+        .await;
+    let app = test_app_with_api(TestWechatApi::with_api_base(&mock_server.uri()));
+
+    let replace_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::PUT)
+                .uri(paths::WECHAT_OFFICIAL_ACCOUNTS)
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "accounts": [{
+                            "id": "acct-draft-only",
+                            "name": "Draft Account",
+                            "type": "subscription",
+                            "avatar": "DA",
+                            "appId": "wx-draft",
+                            "appSecret": "draft-account-secret"
+                        }]
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        replace_response.status(),
+        StatusCode::OK,
+        "replace failed: {}",
+        response_body_string(replace_response).await
+    );
+
+    let publish_response = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(paths::WECHAT_ARTICLES_PUBLISH)
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "accountIds": ["acct-draft-only"],
+                        "articles": [{
+                            "id": "article-1",
+                            "title": "Title",
+                            "author": "Author",
+                            "content": "<p>Hello</p>"
+                        }],
+                        "sendNotification": false
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        publish_response.status(),
+        StatusCode::OK,
+        "draft-only publish failed: {}",
+        response_body_string(publish_response).await
+    );
+    let publish_body = response_body_json(publish_response).await;
+    assert_eq!(publish_body["accepted"], json!(true));
+    assert_eq!(publish_body["status"], "accepted");
+}
+
 struct TestWechatApi {
     drive: FakeKnowledgeDriveStorage,
     /// Shared client, matching the production wiring so the token cache survives per call.
     api_client: Arc<WechatApiClient>,
 }
 
+impl Default for TestWechatApi {
+    fn default() -> Self {
+        Self {
+            drive: FakeKnowledgeDriveStorage::default(),
+            api_client: Arc::new(WechatApiClient::new()),
+        }
+    }
+}
+
 impl TestWechatApi {
+    /// Points the shared client at a local mock server so HTTP-level tests can intercept
+    /// the WeChat upstream wire.
+    fn with_api_base(api_base: &str) -> Self {
+        Self {
+            api_client: Arc::new(WechatApiClient::with_api_base_override(
+                api_base.parse().expect("mock wechat api base url"),
+            )),
+            ..Self::default()
+        }
+    }
+
     fn service(&self) -> KnowledgeWechatService<'_> {
         KnowledgeWechatService::new(&self.drive, "tenant-1", Arc::clone(&self.api_client))
     }
@@ -328,14 +623,25 @@ impl KnowledgeAppApi for TestWechatApi {
             .await
             .map_err(ApiError::from)
     }
+
+    async fn preview_wechat_articles(
+        &self,
+        _context: KnowledgeAppRequestContext,
+        request: KnowledgeWechatArticlesPreviewRequest,
+    ) -> ApiResult<KnowledgeWechatOperationResult> {
+        self.service()
+            .preview_articles(request)
+            .await
+            .map_err(ApiError::from)
+    }
 }
 
 fn test_app() -> axum::Router {
-    dev_auth::with_dev_app_auth(
-        build_router_with_app_api(TestWechatApi::default()),
-        TEST_TENANT_ID,
-        Some(TEST_ACTOR_ID),
-    )
+    test_app_with_api(TestWechatApi::default())
+}
+
+fn test_app_with_api(api: TestWechatApi) -> axum::Router {
+    dev_auth::with_dev_app_auth(build_router_with_app_api(api), TEST_TENANT_ID, Some(TEST_ACTOR_ID))
 }
 
 static WECHAT_INTEGRATION_ENV_LOCK: Mutex<()> = Mutex::new(());

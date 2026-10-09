@@ -1,8 +1,11 @@
-import { createClient, type SdkworkKnowledgebaseAppClient } from "@sdkwork/knowledgebase-app-sdk";
-import { readRuntimeEnv, resolveBaseUrl, type Interceptors, type SdkworkAppConfig } from "@sdkwork/sdk-common";
+import {
+  createClient,
+  type SdkworkAppConfig,
+  type SdkworkKnowledgebaseAppClient,
+} from "@sdkwork/knowledgebase-app-sdk";
+import { readRuntimeEnv, resolveBaseUrl } from "@sdkwork/sdk-common";
 
 import {
-  createKnowledgebaseRequestContextInterceptors,
   readKnowledgebaseSessionTokens,
   resolveKnowledgebaseAccessToken,
   resolveKnowledgebaseAuthToken,
@@ -44,14 +47,14 @@ export function createKnowledgebaseAppSdkClient(
   options: KnowledgebaseAppSdkClientOptions,
 ): SdkworkKnowledgebaseAppClient {
   const session = readKnowledgebaseSessionTokens();
-  const interceptors: Interceptors = createKnowledgebaseRequestContextInterceptors(
-    () => readKnowledgebaseSessionTokens() ?? session,
-  );
+  // Live token rotation propagates through `tokenManager` (the generated
+  // client re-reads it per request); the legacy request interceptors are no
+  // longer part of the generated `SdkworkAppConfig` surface and only
+  // duplicated the same two auth headers.
   return createClient({
     accessToken: resolveKnowledgebaseAccessToken(session) ?? readRuntimeEnv("SDKWORK_ACCESS_TOKEN"),
     authToken: resolveKnowledgebaseAuthToken(session),
     baseUrl: normalizeGeneratedSdkBaseUrl(options.baseUrl || resolveKnowledgebaseAppSdkBaseUrl()),
-    interceptors,
     platform: "h5",
     ...(options.tokenManager ? { tokenManager: options.tokenManager } : {}),
   });

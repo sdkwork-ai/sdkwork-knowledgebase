@@ -11,6 +11,11 @@ use sdkwork_knowledgebase_contract::{
 };
 use sdkwork_utils_rust::is_blank;
 
+/// Bounded result ceiling for kernel-driven OKF concept listings: upstream
+/// engines receive a u32 top_k, so an unbounded usize would request an
+/// impossible result set and overload the upstream.
+const OKF_LIST_TOP_K: usize = 32;
+
 pub trait OkfKnowledgeClient {
     fn search_okf_concepts(
         &self,
@@ -98,9 +103,13 @@ where
 
     fn list(&self, filter: KnowledgeDocumentFilter) -> KernelResult<Vec<KnowledgeDocument>> {
         let space_id = parse_namespace_space_id(filter.namespace.as_deref())?;
+        // A kernel-driven listing must never ask the upstream engine for an
+        // unbounded result set (`usize::MAX` truncated into the engine's
+        // u32 top_k would request ~4.29 billion hits); use the same bounded
+        // ceiling as the runtime's default_top_k.
         let pages = self
             .client
-            .search_okf_concepts(space_id, "", usize::MAX)
+            .search_okf_concepts(space_id, "", OKF_LIST_TOP_K)
             .map_err(|message| {
                 KernelError::provider_error("okf_bundle.list_failed", message)
                     .with_provider(OKF_KNOWLEDGE_PROVIDER_ID)

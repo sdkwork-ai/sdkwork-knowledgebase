@@ -101,7 +101,9 @@ pub fn cosine_similarity(left: &[f32], right: &[f32]) -> f64 {
 }
 
 fn map_sdk_error(error: SdkworkError) -> String {
-    error.to_string()
+    // Raw SDK error text is diagnostic-only (see cloud_router::map_sdk_error).
+    tracing::warn!(error = %error, "cloud router embeddings sdk call failed");
+    "cloud router request failed".to_string()
 }
 
 #[cfg(test)]

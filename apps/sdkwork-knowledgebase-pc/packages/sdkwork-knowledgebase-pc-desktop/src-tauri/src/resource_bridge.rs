@@ -125,10 +125,16 @@ async fn pinned_client_for_url(url: &Url) -> Result<reqwest::Client, String> {
             .map_err(|error| format!("HTTP client init failed: {error}"));
     }
 
-    let addresses: Vec<std::net::SocketAddr> = tokio::net::lookup_host((host, port))
-        .await
-        .map_err(|error| format!("resource URL DNS lookup failed: {error}"))?
-        .collect();
+    // Bounded DNS pre-resolution: a stalled resolver must not hold one of the
+    // two RESOURCE_IO_LIMIT permits indefinitely and wedge all resource IO.
+    let addresses: Vec<std::net::SocketAddr> = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        tokio::net::lookup_host((host, port)),
+    )
+    .await
+    .map_err(|_| "resource URL DNS lookup timed out".to_string())?
+    .map_err(|error| format!("resource URL DNS lookup failed: {error}"))?
+    .collect();
     if addresses.is_empty() {
         return Err("resource URL host could not be resolved".to_string());
     }

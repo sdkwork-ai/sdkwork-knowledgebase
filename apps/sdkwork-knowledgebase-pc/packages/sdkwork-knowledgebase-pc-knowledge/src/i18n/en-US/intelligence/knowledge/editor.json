@@ -71,6 +71,7 @@
   "uploadLocalVideo": "Upload from device",
   "selectFromVideos": "Choose from video library",
   "untitledNote": "Untitled",
+  "placeholderText": "Start writing, or press / for commands…",
   "heading1": "Heading 1",
   "heading2": "Heading 2",
   "aiWritingAssistant": "AI Writing Assistant",

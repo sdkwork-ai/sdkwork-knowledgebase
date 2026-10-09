@@ -37,6 +37,7 @@ enum DeploymentEnvironment {
     Development,
     Test,
     Staging,
+    Demo,
     Production,
 }
 
@@ -46,6 +47,10 @@ impl DeploymentEnvironment {
             "development" => Ok(Self::Development),
             "test" => Ok(Self::Test),
             "staging" => Ok(Self::Staging),
+            // `demo` is a first-class deployable environment (MODULE_BIN_SPEC);
+            // accepting it here keeps one canonical env value from aborting the
+            // boot in this validator while passing everywhere else.
+            "demo" => Ok(Self::Demo),
             "production" => Ok(Self::Production),
             _ => Err(GroupLaunchTicketConsumerConfigError::InvalidEnvironment(
                 value.to_string(),
@@ -54,6 +59,7 @@ impl DeploymentEnvironment {
     }
 
     fn requires_ticket_consumer(self) -> bool {
+        // Demo stays non-requiring: it is an internal showcase environment.
         matches!(self, Self::Staging | Self::Production)
     }
 }
@@ -179,7 +185,7 @@ fn parse_positive_u64(
 
 #[derive(Debug, Error)]
 pub enum GroupLaunchTicketConsumerConfigError {
-    #[error("{0} must be set to development, test, staging, or production")]
+    #[error("{0} must be set to development, test, staging, demo, or production")]
     InvalidEnvironment(String),
     #[error("required environment variable {0} is missing")]
     MissingEnvironment(&'static str),

@@ -195,7 +195,7 @@ pub async fn metrics_handler() -> impl IntoResponse {
          knowledge_api_auth_failures_total {}\n\
          # HELP knowledge_api_request_duration_ms_total Cumulative request duration in milliseconds.\n\
          # TYPE knowledge_api_request_duration_ms_total counter\n\
-         knowledge_api_request_duration_ms_total {}\n\\n\
+         knowledge_api_request_duration_ms_total {}\n\
          # HELP knowledge_api_request_duration_ms Request duration histogram (ms) for P95/P99 latency targets.\n\
          # TYPE knowledge_api_request_duration_ms histogram\n\
          {}{}\n\

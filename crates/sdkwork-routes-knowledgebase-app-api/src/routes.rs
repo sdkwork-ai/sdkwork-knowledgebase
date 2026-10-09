@@ -1564,9 +1564,10 @@ fn parse_okf_concept_list_query(query: Option<&str>) -> Result<ListOkfConceptsQu
     let mut pagination = OkfRevisionListQuery::default();
     for (key, value) in url::form_urlencoded::parse(query.unwrap_or_default().as_bytes()) {
         match key.as_ref() {
-            "spaceId" => {
-                reject_duplicate_query_parameter(space_id.is_some(), "spaceId")?;
-                let parsed = parse_positive_u64_query_parameter(&value, "spaceId")?;
+            // Wire name per the app-api contract (snake_case query canon).
+            "space_id" => {
+                reject_duplicate_query_parameter(space_id.is_some(), "space_id")?;
+                let parsed = parse_positive_u64_query_parameter(&value, "space_id")?;
                 space_id = Some(parsed);
             }
             "cursor" => {
@@ -1585,7 +1586,7 @@ fn parse_okf_concept_list_query(query: Option<&str>) -> Result<ListOkfConceptsQu
         }
     }
     Ok(ListOkfConceptsQuery {
-        space_id: space_id.ok_or_else(|| invalid_query_parameter("spaceId is required"))?,
+        space_id: space_id.ok_or_else(|| invalid_query_parameter("space_id is required"))?,
         cursor: pagination.cursor,
         page_size: pagination.page_size,
     })

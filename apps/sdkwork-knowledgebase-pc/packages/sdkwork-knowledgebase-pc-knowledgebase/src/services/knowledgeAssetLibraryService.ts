@@ -31,10 +31,19 @@ export interface KnowledgeAssetLibraryPage {
 interface AssetScanState {
   folderQueue: Array<string | null>;
   visitedParents: string[];
-  activeParentId: string | null;
+  /**
+   * Distinguishes "listing folder X / the root" from "between folders":
+   * `null` means between folders (pop the queue next), `'__root__'` means the
+   * root listing (fetch parentId = null) is in progress — the root carries a
+   * cursor just like any folder, and conflating the two silently dropped the
+   * root tail beyond the first page.
+   */
+  activeParentKey: string | null;
   activeBrowserCursor: string | null;
   scannedNodes: number;
 }
+
+const ROOT_PARENT_KEY = '__root__';
 
 const MAX_ASSET_LIBRARY_ITEMS = 200;
 const MAX_ASSET_SCAN_NODES = 2000;
@@ -71,7 +80,7 @@ function initialScanState(): AssetScanState {
   return {
     folderQueue: [null],
     visitedParents: [],
-    activeParentId: null,
+    activeParentKey: null,
     activeBrowserCursor: null,
     scannedNodes: 0,
   };
@@ -86,13 +95,35 @@ function decodeScanCursor(cursor: string | null | undefined): AssetScanState {
     return initialScanState();
   }
   try {
-    const parsed = JSON.parse(decodeURIComponent(escape(atob(cursor!)))) as AssetScanState;
+    // Legacy cursors may predate activeParentKey — read them through a loose
+    // record and derive the key below.
+    const parsed = JSON.parse(
+      decodeURIComponent(escape(atob(cursor!))),
+    ) as Partial<AssetScanState> & { activeParentId?: unknown };
+    // Migration for cursors minted before activeParentKey existed: derive the
+    // key from the old activeParentId/cursor pair, else start fresh.
+    const legacyActiveParentId =
+      typeof parsed.activeParentId === 'string' ? parsed.activeParentId : null;
+    const hasLegacyCursor = typeof parsed.activeBrowserCursor === 'string'
+      && parsed.activeBrowserCursor.length > 0;
+    const derivedActiveParentKey =
+      typeof parsed.activeParentKey === 'string'
+        ? parsed.activeParentKey
+        : legacyActiveParentId ?? (hasLegacyCursor ? ROOT_PARENT_KEY : null);
+    const scannedNodes =
+      typeof parsed.scannedNodes === 'number' && Number.isFinite(parsed.scannedNodes)
+        ? parsed.scannedNodes
+        : 0;
     return {
-      folderQueue: Array.isArray(parsed.folderQueue) ? parsed.folderQueue : [null],
+      folderQueue: Array.isArray(parsed.folderQueue)
+        ? parsed.folderQueue.filter((entry): entry is string | null => entry === null || typeof entry === 'string')
+        : [null],
       visitedParents: Array.isArray(parsed.visitedParents) ? parsed.visitedParents : [],
-      activeParentId: parsed.activeParentId ?? null,
-      activeBrowserCursor: parsed.activeBrowserCursor ?? null,
-      scannedNodes: Number.isFinite(parsed.scannedNodes) ? parsed.scannedNodes : 0,
+      activeParentKey: derivedActiveParentKey,
+      activeBrowserCursor: typeof parsed.activeBrowserCursor === 'string'
+        ? parsed.activeBrowserCursor
+        : null,
+      scannedNodes,
     };
   } catch {
     return initialScanState();
@@ -100,7 +131,7 @@ function decodeScanCursor(cursor: string | null | undefined): AssetScanState {
 }
 
 function scanStateExhausted(state: AssetScanState): boolean {
-  return state.folderQueue.length === 0 && state.activeParentId === null;
+  return state.folderQueue.length === 0 && state.activeParentKey === null;
 }
 
 async function collectAssetNodesPage(
@@ -114,53 +145,56 @@ async function collectAssetNodesPage(
   const working = { ...state, folderQueue: [...state.folderQueue] };
 
   while (matches.length < targetCount && !scanStateExhausted(working)) {
-    if (working.activeParentId === null) {
+    if (working.activeParentKey === null) {
       if (working.folderQueue.length === 0) {
         break;
       }
-      working.activeParentId = working.folderQueue.shift() ?? null;
+      const popped = working.folderQueue.shift() ?? null;
+      working.activeParentKey = popped === null ? ROOT_PARENT_KEY : popped;
       working.activeBrowserCursor = null;
-      const parentKey = working.activeParentId ?? '__root__';
-      if (working.visitedParents.includes(parentKey)) {
-        working.activeParentId = null;
+      if (working.visitedParents.includes(working.activeParentKey)) {
+        working.activeParentKey = null;
         continue;
       }
-      working.visitedParents.push(parentKey);
+      working.visitedParents.push(working.activeParentKey);
     }
 
-    const page = await listKnowledgeBrowserNodesPage(spaceId, working.activeParentId, {
+    const fetchParentId =
+      working.activeParentKey === ROOT_PARENT_KEY ? null : working.activeParentKey;
+    const page = await listKnowledgeBrowserNodesPage(spaceId, fetchParentId, {
       cursor: working.activeBrowserCursor,
     });
 
+    // Walk the FULL page before honoring the target count: breaking inside
+    // the loop used to (a) skip enqueueing folders later in the page — their
+    // assets were silently missing — and (b) leave the cursor on the current
+    // page, so "load more" re-read the same entries as duplicates.
     for (const node of page.items) {
       working.scannedNodes += 1;
       if (mapAssetType(node) === assetType) {
         matches.push(node);
-        if (matches.length >= targetCount) {
-          break;
-        }
       }
       if (isFolderNode(node)) {
         working.folderQueue.push(node.id);
       }
       if (working.scannedNodes >= MAX_ASSET_SCAN_NODES) {
         truncated = true;
-        working.activeParentId = null;
+        working.activeParentKey = null;
         working.activeBrowserCursor = null;
         working.folderQueue = [];
         return { matches, state: working, truncated: true };
       }
     }
 
-    if (matches.length >= targetCount) {
-      break;
-    }
-
     if (page.hasMore) {
       working.activeBrowserCursor = page.nextCursor;
     } else {
-      working.activeParentId = null;
+      working.activeParentKey = null;
       working.activeBrowserCursor = null;
+    }
+
+    if (matches.length >= targetCount) {
+      break;
     }
   }
 
@@ -220,7 +254,7 @@ export async function listKnowledgeAssetLibraryItemsPage(
     Math.min(pageSize, MAX_ASSET_LIBRARY_ITEMS),
   );
   const items = await hydrateAssetItems(matches, assetType, kbIdString);
-  const hasMore = !scanStateExhausted(state) && items.length > 0;
+  const hasMore = !scanStateExhausted(state);
   return {
     items,
     nextCursor: hasMore ? encodeScanCursor(state) : null,

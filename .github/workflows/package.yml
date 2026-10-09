@@ -83,6 +83,34 @@ on:
         description: sdkwork-cloudrouter-router commit/ref.
         required: false
         default: main
+      sdkwork_core_ref:
+        description: sdkwork-core commit/ref.
+        required: false
+        default: main
+      sdkwork_iam_ref:
+        description: sdkwork-iam commit/ref.
+        required: false
+        default: main
+      sdkwork_im_ref:
+        description: sdkwork-im commit/ref.
+        required: false
+        default: main
+      sdkwork_rpc_framework_ref:
+        description: sdkwork-rpc-framework commit/ref.
+        required: false
+        default: main
+      sdkwork_sandbox_ref:
+        description: sdkwork-sandbox commit/ref.
+        required: false
+        default: main
+      sdkwork_sdk_commons_ref:
+        description: sdkwork-sdk-commons commit/ref.
+        required: false
+        default: main
+      sdkwork_ui_ref:
+        description: sdkwork-ui commit/ref.
+        required: false
+        default: main
 
 permissions:
   contents: write
@@ -119,6 +147,13 @@ jobs:
           "SDKWORK_KERNEL_REF": "${{ github.event.inputs.sdkwork_kernel_ref || vars.SDKWORK_KERNEL_REF }}",
           "SDKWORK_MEMORY_REF": "${{ github.event.inputs.sdkwork_memory_ref || vars.SDKWORK_MEMORY_REF }}",
           "SDKWORK_UTILS_REF": "${{ github.event.inputs.sdkwork_utils_ref || vars.SDKWORK_UTILS_REF }}",
-          "SDKWORK_CLOUDROUTER_REF": "${{ github.event.inputs.sdkwork_cloudrouter_ref || vars.SDKWORK_CLOUDROUTER_REF }}"
+          "SDKWORK_CLOUDROUTER_REF": "${{ github.event.inputs.sdkwork_cloudrouter_ref || vars.SDKWORK_CLOUDROUTER_REF }}",
+          "SDKWORK_CORE_REF": "${{ github.event.inputs.sdkwork_core_ref || vars.SDKWORK_CORE_REF }}",
+          "SDKWORK_IAM_REF": "${{ github.event.inputs.sdkwork_iam_ref || vars.SDKWORK_IAM_REF }}",
+          "SDKWORK_IM_REF": "${{ github.event.inputs.sdkwork_im_ref || vars.SDKWORK_IM_REF }}",
+          "SDKWORK_RPC_FRAMEWORK_REF": "${{ github.event.inputs.sdkwork_rpc_framework_ref || vars.SDKWORK_RPC_FRAMEWORK_REF }}",
+          "SDKWORK_SANDBOX_REF": "${{ github.event.inputs.sdkwork_sandbox_ref || vars.SDKWORK_SANDBOX_REF }}",
+          "SDKWORK_SDK_COMMONS_REF": "${{ github.event.inputs.sdkwork_sdk_commons_ref || vars.SDKWORK_SDK_COMMONS_REF }}",
+          "SDKWORK_UI_REF": "${{ github.event.inputs.sdkwork_ui_ref || vars.SDKWORK_UI_REF }}"
         }
     secrets: inherit

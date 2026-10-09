@@ -57,7 +57,7 @@ pub fn log_engine_degraded(
 /// blank secret (the pre-binding default for required-credential adapters) must
 /// not become an empty `Authorization: Bearer` header.
 pub fn optional_bearer_token(token: Option<&str>) -> Option<&str> {
-    token.filter(|token| !token.trim().is_empty())
+    token.filter(|token| !sdkwork_utils_rust::is_blank(Some(token)))
 }
 pub use telemetry::{
     install_provider_telemetry, NoopProviderTelemetry, ProviderTelemetry, ProviderTelemetryEvent,

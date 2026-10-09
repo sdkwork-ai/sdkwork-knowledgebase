@@ -770,6 +770,10 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
                 CAST(updated_at AS TEXT) AS updated_at
             "#,
         );
+        // Both soft-deletes commit together: a crash between them would leave
+        // the concept DELETED while its revisions stay ACTIVE (revision rows
+        // inconsistent with their parent and still discoverable by scans).
+        let mut tx = self.pool.begin().await.map_err(sqlx_error)?;
         let row = sqlx::query(sqlx::AssertSqlSafe(update_concept_query.as_str()))
             .bind(DELETED_STATUS)
             .bind(&now)
@@ -778,7 +782,7 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
             .bind(space_id)
             .bind(concept_row_id)
             .bind(ACTIVE_STATUS)
-            .fetch_optional(&self.pool)
+            .fetch_optional(&mut *tx)
             .await
             .map_err(sqlx_error)?
             .ok_or_else(|| {
@@ -801,9 +805,10 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
             .bind(organization_id)
             .bind(concept_row_id)
             .bind(ACTIVE_STATUS)
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await
             .map_err(sqlx_error)?;
+        tx.commit().await.map_err(sqlx_error)?;
 
         concept_from_row(&row)
     }

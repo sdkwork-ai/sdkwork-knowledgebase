@@ -30,7 +30,9 @@ export function toOffsetPageInfo(input: {
     : input.itemCount >= input.pageSize;
   return {
     hasMore,
-    nextOffset: hasMore ? consumed : consumed,
+    // Exhausted pages report the offset where the scan stopped so a caller
+    // keying "load more" off `nextOffset !== offset` can detect completion.
+    nextOffset: hasMore ? consumed : input.offset,
     offset: input.offset,
     pageSize: input.pageSize,
     ...(typeof input.total === "number" ? { total: input.total } : {}),

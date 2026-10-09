@@ -399,18 +399,61 @@ impl<'a> OkfConceptService<'a> {
             .mark_concept_deleted(space_id, concept_row_id)
             .await?;
 
-        if let Some(link_store) = self.link_store {
-            link_store
-                .replace_outbound_links(ReplaceKnowledgeOkfConceptLinksRecord {
+        // The concept is now deleted (irreversible). The remaining steps only
+        // maintain derived state — link edges and the bundle catalog — so a
+        // transient failure must not make the API report failure for a delete
+        // that already happened (a caller retry would just get NotFound).
+        // Bounded-retry, then degrade to a logged error for reconciliation.
+        let mut follow_up_error = None;
+        for attempt in 0..2u8 {
+            let result = async {
+                if let Some(link_store) = self.link_store {
+                    link_store
+                        .replace_outbound_links(ReplaceKnowledgeOkfConceptLinksRecord {
+                            space_id,
+                            from_concept_id: concept.concept_id.clone(),
+                            links: vec![],
+                        })
+                        .await?;
+                }
+                self.finalize_bundle_catalog_deletion(
                     space_id,
-                    from_concept_id: concept.concept_id.clone(),
-                    links: vec![],
-                })
-                .await?;
+                    &concept.title,
+                    actor,
+                    drive_space_id,
+                )
+                .await
+            }
+            .await;
+            match result {
+                Ok(()) => {
+                    follow_up_error = None;
+                    break;
+                }
+                Err(error) => {
+                    if attempt == 0 {
+                        tracing::warn!(
+                            space_id,
+                            concept_row_id,
+                            concept_id = %concept.concept_id,
+                            error = %error,
+                            "okf concept delete follow-up failed; retrying once"
+                        );
+                    } else {
+                        follow_up_error = Some(error);
+                    }
+                }
+            }
         }
-
-        self.finalize_bundle_catalog_deletion(space_id, &concept.title, actor, drive_space_id)
-            .await?;
+        if let Some(error) = follow_up_error {
+            tracing::error!(
+                space_id,
+                concept_row_id,
+                concept_id = %concept.concept_id,
+                error = %error,
+                "okf concept deleted; derived link/bundle state still needs reconciliation"
+            );
+        }
 
         Ok(())
     }
