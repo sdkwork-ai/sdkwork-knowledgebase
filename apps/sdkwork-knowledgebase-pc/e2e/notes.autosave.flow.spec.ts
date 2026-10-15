@@ -115,4 +115,91 @@ test.describe('Notes workspace write → autosave flow', () => {
     const retry = page.getByTestId('knowledgebase-pc-notes-retry');
     await expect(retry).toBeVisible({ timeout: 15_000 });
   });
+
+  test('recovers automatically when the network heals after failed saves', async ({ page }) => {
+    const telemetry = createE2eMockTelemetry();
+    await setupKnowledgebaseE2ePage(page, telemetry);
+
+    // Simulate an outage: every content ingest fails while `ingestOnline` is
+    // false. The engine must burn its retry budget, surface the failure pill,
+    // keep the buffered body, and then save it via the explicit retry action
+    // once the outage ends.
+    let ingestOnline = false;
+    await page.route('**/app/v3/api/knowledge/ingests', async (route) => {
+      if (!ingestOnline) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            code: 50301,
+            traceId: '00000000-0000-4000-8000-00000000000f',
+            detail: 'simulated outage',
+          }),
+        });
+        return;
+      }
+      await route.fallback();
+    });
+
+    await page.goto('/');
+    await expect(page.getByTestId('knowledgebase-pc-app-shell')).toBeVisible({ timeout: 30_000 });
+    await page.getByTitle('Notes').click();
+    await expect(page.getByTestId('knowledgebase-pc-notes-workspace')).toBeVisible({ timeout: 15_000 });
+
+    const editor = page.locator('.ProseMirror').first();
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+    const bodyText = 'Offline recovery flow content.';
+    await editor.click();
+    await editor.fill(bodyText);
+
+    const retry = page.getByTestId('knowledgebase-pc-notes-retry');
+    await expect(retry).toBeVisible({ timeout: 20_000 });
+
+    // The outage ends: the explicit retry (the pill's action) must now save
+    // the buffered body without any re-typing.
+    ingestOnline = true;
+    await retry.click();
+    await expect
+      .poll(
+        () => telemetry.ingestPayloads.some((payload) => payload.includes(bodyText)),
+        { timeout: 15_000, message: 'expected the retried save to ingest the buffered body' },
+      )
+      .toBe(true);
+    await expect(page.getByTestId('knowledgebase-pc-notes-save-status')).toContainText(
+      'Saved',
+      { timeout: 15_000 },
+    );
+  });
+
+  test('saves immediately on Ctrl+S instead of waiting for the debounce', async ({ page }) => {
+    test.setTimeout(30_000);
+    const telemetry = createE2eMockTelemetry();
+    await setupKnowledgebaseE2ePage(page, telemetry);
+
+    await page.goto('/');
+    await expect(page.getByTestId('knowledgebase-pc-app-shell')).toBeVisible({ timeout: 30_000 });
+    await page.getByTitle('Notes').click();
+    const editor = page.locator('.ProseMirror').first();
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+
+    const bodyText = 'Ctrl+S immediate flush content.';
+    await editor.click();
+    await editor.fill(bodyText);
+
+    // Manual save: the ingest must arrive inside the debounce window (1.2 s),
+    // proving Ctrl+S flushed immediately instead of waiting for the timer.
+    const pressedAt = Date.now();
+    await page.keyboard.press('Control+s');
+    await expect
+      .poll(
+        () => telemetry.ingestPayloads.some((payload) => payload.includes(bodyText)),
+        { timeout: 1_100, message: 'expected Ctrl+S to flush before the 1.2 s debounce' },
+      )
+      .toBe(true);
+    expect(Date.now() - pressedAt).toBeLessThan(1_100);
+    await expect(page.getByTestId('knowledgebase-pc-notes-save-status')).toContainText(
+      'Saved',
+      { timeout: 15_000 },
+    );
+  });
 });
