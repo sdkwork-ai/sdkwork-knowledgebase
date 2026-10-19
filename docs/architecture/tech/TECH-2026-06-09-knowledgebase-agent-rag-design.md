@@ -189,7 +189,9 @@ The default adapter (`crates/sdkwork-knowledgebase-document-extraction`) decodes
 - PDF via `pdf-extract`, inside `catch_unwind`, rejecting documents with no
   extractable text (scanned/encrypted);
 - DOCX via `word/document.xml`;
-- PPTX via `ppt/slides/slideN.xml` in slide order.
+- PPTX via `ppt/slides/slideN.xml` in slide order;
+- XLSX via `xl/sharedStrings.xml` plus `xl/worksheets/sheetN.xml`, with rows
+  rendered as tab-separated lines so table shape survives chunking.
 
 Bounds: 32 MiB input, 16 MiB decompressed OOXML entry, 500 slides/pages,
 2,000,000 extracted characters, 512 KiB markdown payload (truncated on a

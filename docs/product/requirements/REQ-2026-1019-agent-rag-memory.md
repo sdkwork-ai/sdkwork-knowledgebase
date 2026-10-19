@@ -19,7 +19,7 @@ be able to carry its own memory policy.
 1. **Upload to retrieval.** A Drive upload that becomes a document version is
    chunked, indexed, and embedded by the ingestion pipeline; hybrid retrieval
    over the resulting index is the only knowledge source for answers.
-   Markdown/text is read directly. PDF, DOCX, and PPTX are decoded by the
+   Markdown/text is read directly. PDF, DOCX, PPTX, and XLSX are decoded by the
    bounded `DocumentTextExtractor` adapter
    (`crates/sdkwork-knowledgebase-document-extraction`) before chunking, so
    office documents and PDFs become answerable without a separate conversion
