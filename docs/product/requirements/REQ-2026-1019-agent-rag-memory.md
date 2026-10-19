@@ -1,6 +1,6 @@
 # REQ-2026-1019 Agent RAG And Per-Agent Memory
 
-- Status: implemented (knowledge path); memory provider wiring pending
+- Status: implemented (knowledge and Agents turn memory); Knowledgebase chat memory adapter pending
 - Owner: sdkwork-knowledgebase
 - Updated: 2026-10-19
 - Related:
@@ -120,15 +120,13 @@ retrieval.
 ## 5. Remaining Gates
 
 - Scanned/image-only PDFs need OCR; the current extractor fails with a typed
-  "no extractable text" error. Legacy binary `.doc`/`.ppt`/`.xls` and `.xlsx`
-  are not decoded yet (they receive the document upload profile but fail with
-  an actionable error instead of indexing garbage).
-- A production memory provider that implements
-  `KnowledgeMemoryContextProvider` over the memory module's runtime. Today the
-  Knowledgebase memory adapter exists but no production retriever is composed
-  into the App API runtime, so a profile with `memory_policy_ref` logs a
-  warning and answers without memory.
-- Wire-level citation delivery in `sdkwork-agents` turn responses/SSE (API and
-  SDK contract change).
+  "no extractable text" error. Legacy binary `.doc`/`.ppt`/`.xls` are not
+  decoded yet (they receive the document upload profile but fail with an
+  actionable error instead of indexing garbage).
+- A production memory provider for the Knowledgebase App API chat path: Agents
+  turns now resolve memory through the Memory App API Rust SDK and the
+  `MemoryGroundingResolver` port, but the Knowledgebase `KnowledgeAgentChatService`
+  still has no composed `KnowledgeMemoryContextProvider`, so a profile with
+  `memory_policy_ref` answers without memory there.
 - Live end-to-end evidence with a real Drive upload, worker ingestion, embedding
   provider, and model provider in a release environment.
