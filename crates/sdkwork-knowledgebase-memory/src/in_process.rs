@@ -44,6 +44,16 @@ impl KnowledgeMemoryContextProvider for InProcessMemoryContextProvider {
         request: KnowledgeMemoryContextRequest,
     ) -> Result<KnowledgeMemoryContextResult, KnowledgeMemoryContextProviderError> {
         validate_request(&request)?;
+        if request.actor_id.is_none() {
+            tracing::warn!(
+                tenant_id = request.tenant_id,
+                "in-process memory context requires an authenticated actor; skipping retrieval"
+            );
+            return Ok(KnowledgeMemoryContextResult {
+                fragments: Vec::new(),
+                truncated: false,
+            });
+        }
         let space_id = parse_memory_space_id(&request.memory_policy_ref).ok_or_else(|| {
             KnowledgeMemoryContextProviderError::InvalidRequest(
                 "memory_policy_ref must be a numeric Memory space id or space:<id>".to_string(),
