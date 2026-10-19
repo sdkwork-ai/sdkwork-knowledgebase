@@ -74,13 +74,13 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
                 c.token_count,
                 c.locator #>> '{}' AS locator,
                 'kb://documents/' || c.document_id::text AS source_uri,
-                (1 - (e.embedding_vector <=> CAST(
+                (1 - (e.embedding_vector OPERATOR(public.<=>) CAST(
             "#,
         );
         query.push_bind(vector_literal.clone());
         query.push(
             r#"
-                 AS vector))) AS score
+                 AS public.vector))) AS score
             FROM kb_chunk c
             JOIN kb_document d
               ON d.tenant_id = c.tenant_id
@@ -120,9 +120,9 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
             space_id,
             &request.binding,
         )?;
-        query.push(" ORDER BY e.embedding_vector <=> CAST(");
+        query.push(" ORDER BY e.embedding_vector OPERATOR(public.<=>) CAST(");
         query.push_bind(vector_literal);
-        query.push(" AS vector) LIMIT ");
+        query.push(" AS public.vector) LIMIT ");
         query.push_bind(top_k);
 
         let rows = query
@@ -164,9 +164,9 @@ fn chunk_hit_from_row(
         content: row.try_get("content_text").map_err(backend_sqlx_error)?,
         score,
         token_count: row
-            .try_get::<Option<i64>, _>("token_count")
+            .try_get::<Option<i32>, _>("token_count")
             .map_err(backend_sqlx_error)?
-            .map(|value| value as u32),
+            .map(|value| value.max(0) as u32),
         locator: row.try_get("locator").map_err(backend_sqlx_error)?,
         source_uri: row.try_get("source_uri").map_err(backend_sqlx_error)?,
         retrieval_method: method,

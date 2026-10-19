@@ -4,7 +4,7 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_embedding_store
     ChunkEmbeddingUpsertRequest, KnowledgeEmbeddingStore, KnowledgeEmbeddingStoreError,
 };
 use sdkwork_knowledgebase_agent_provider::serialize_embedding_vector;
-use sqlx::{Any, AnyPool, QueryBuilder, Row, Transaction};
+use sqlx::{PgPool, Postgres, QueryBuilder, Row, Transaction};
 use std::sync::Arc;
 use thiserror::Error;
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
@@ -29,7 +29,7 @@ pub enum PostgresKnowledgeEmbeddingStoreError {
 
 #[derive(Debug, Clone)]
 pub struct PostgresKnowledgeEmbeddingStore {
-    pool: AnyPool,
+    pool: PgPool,
     tenant_id: u64,
     organization_id: u64,
     id_generator: Arc<dyn KnowledgeIdGenerator>,
@@ -54,7 +54,7 @@ struct PreparedEmbeddingUpsert {
 
 impl PostgresKnowledgeEmbeddingStore {
     pub fn new(
-        pool: AnyPool,
+        pool: PgPool,
         tenant_id: u64,
         organization_id: u64,
         database_engine: DatabaseEngine,
@@ -69,7 +69,7 @@ impl PostgresKnowledgeEmbeddingStore {
     }
 
     pub fn with_id_generator(
-        pool: AnyPool,
+        pool: PgPool,
         tenant_id: u64,
         organization_id: u64,
         id_generator: Arc<dyn KnowledgeIdGenerator>,
@@ -248,15 +248,16 @@ impl PostgresKnowledgeEmbeddingStore {
 }
 
 async fn bulk_upsert_embeddings_postgres(
-    transaction: &mut Transaction<'_, Any>,
+    transaction: &mut Transaction<'_, Postgres>,
     timestamp_dialect: SqlTimestampDialect,
     batch: &[PreparedEmbeddingUpsert],
 ) -> Result<(), PostgresKnowledgeEmbeddingStoreError> {
-    let mut builder = QueryBuilder::new(
+    let mut builder: QueryBuilder<Postgres> = QueryBuilder::new(
         r#"
         INSERT INTO kb_embedding (
             id, uuid, tenant_id, organization_id, index_id, chunk_id, embedding_hash,
-            embedding_vector, dimension, provider_id, model, metadata, status, created_at, updated_at, version
+            vector_ref, embedding_vector, dimension, provider_id, model, metadata, status,
+            created_at, updated_at, version
         )
         "#,
     );
@@ -268,9 +269,13 @@ async fn bulk_upsert_embeddings_postgres(
             .push_bind(item.index_id)
             .push_bind(item.chunk_id)
             .push_bind(item.embedding_hash.as_str());
+        // Inline embeddings are their own reference: `embedding_hash` already
+        // identifies the exact model+vector pair. The column stays NOT NULL for
+        // external vector-store references.
+        row.push_bind(item.embedding_hash.as_str());
         row.push("CAST(");
         row.push_bind_unseparated(item.pgvector_literal.as_str());
-        row.push_unseparated(" AS vector)");
+        row.push_unseparated(" AS public.vector)");
         row.push_bind(item.dimension)
             .push_bind(item.provider_id.as_str())
             .push_bind(item.model.as_str())
@@ -284,6 +289,7 @@ async fn bulk_upsert_embeddings_postgres(
         r#"
         ON CONFLICT (tenant_id, organization_id, index_id, chunk_id) DO UPDATE SET
             embedding_hash = excluded.embedding_hash,
+            vector_ref = excluded.vector_ref,
             embedding_vector = excluded.embedding_vector,
             dimension = excluded.dimension,
             provider_id = excluded.provider_id,
@@ -422,10 +428,8 @@ mod embedding_content_hash_tests {
     #[test]
     fn hash_changes_with_model_and_vector() {
         let base = embedding_content_hash("openai/text-embedding-3-small", b"[0.1,0.2]");
-        let other_model =
-            embedding_content_hash("openai/text-embedding-3-large", b"[0.1,0.2]");
-        let other_vector =
-            embedding_content_hash("openai/text-embedding-3-small", b"[0.3,0.4]");
+        let other_model = embedding_content_hash("openai/text-embedding-3-large", b"[0.1,0.2]");
+        let other_vector = embedding_content_hash("openai/text-embedding-3-small", b"[0.3,0.4]");
         assert_ne!(base, other_model);
         assert_ne!(base, other_vector);
     }

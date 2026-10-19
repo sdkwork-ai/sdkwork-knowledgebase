@@ -101,11 +101,18 @@ ingested document are asserted.
 It drives the production ingestion pipeline (space, Drive object ref, document,
 version, leased ingestion job, chunk write) and then keyword retrieval through
 `PostgresKnowledgeChunkRetrievalStore`, asserting the ingested text is returned.
-Closing this loop exposed and fixed two production defects: keyword SQL used
-`"kb://documents/"` as a quoted identifier instead of a string literal, and the
-store executed `QueryBuilder<Any>` `?` placeholders that the `Any` driver never
-rewrites for PostgreSQL. The store now owns the authoritative `PgPool` and
-builds `$n` placeholders, with strict `PgRow` column decoding.
+The same test then writes 1536-dimension embeddings through
+`PostgresKnowledgeEmbeddingStore` and asserts the pgvector ANN backend returns
+the ingested chunk, so both retrieval modes are covered.
+Closing this loop exposed and fixed production defects: keyword SQL used
+`"kb://documents/"` as a quoted identifier instead of a string literal; the
+retrieval store executed `QueryBuilder<Any>` `?` placeholders that the `Any`
+driver never rewrites for PostgreSQL; the embedding upsert omitted the
+`vector_ref` NOT NULL column and also used unrewritten placeholders; and the
+pgvector SQL referenced `vector`/`<=>` outside the session search path. The
+retrieval and embedding stores now own the authoritative `PgPool` and build
+`$n` placeholders, and pgvector casts/operators are schema-qualified to the
+extension's `public` install schema.
 
 ## 5. Remaining Gates
 

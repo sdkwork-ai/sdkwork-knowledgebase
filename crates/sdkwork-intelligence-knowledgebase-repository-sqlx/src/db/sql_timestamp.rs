@@ -38,11 +38,13 @@ pub fn utc_sql_timestamp_text() -> Result<String, String> {
         .map_err(|error| error.to_string())
 }
 
-pub fn push_sql_timestamp_bind<Sep>(
-    row: &mut sqlx::query_builder::Separated<'_, sqlx::Any, Sep>,
+pub fn push_sql_timestamp_bind<DB, Sep>(
+    row: &mut sqlx::query_builder::Separated<'_, DB, Sep>,
     _dialect: SqlTimestampDialect,
     value: &str,
 ) where
+    DB: sqlx::Database,
+    for<'q> String: sqlx::Encode<'q, DB> + sqlx::Type<DB>,
     Sep: Display,
 {
     row.push("CAST(");

@@ -594,4 +594,108 @@ async fn postgres_ingest_to_retrieval_round_trip_when_database_url_configured() 
             .any(|hit| hit.content.contains("30 days")),
         "retrieved context must contain the ingested text"
     );
+
+    // Vector path: write embeddings for the ingested chunks and prove the
+    // pgvector ANN backend returns them. This guards the embedding write and
+    // the vector/hybrid retrieval contract, which the keyword assertions above
+    // cannot cover.
+    {
+        use sdkwork_intelligence_knowledgebase_repository_sqlx::{
+            connect_postgres_pool, PgVectorKnowledgeRetrievalBackend,
+            PostgresKnowledgeEmbeddingStore,
+        };
+        use sdkwork_intelligence_knowledgebase_service::ports::knowledge_embedding_store::{
+            ChunkEmbeddingUpsertRequest, KnowledgeEmbeddingStore,
+        };
+        use sdkwork_intelligence_knowledgebase_service::ports::knowledge_retrieval_backend::{
+            KnowledgeChunkSearchRequest, KnowledgeRetrievalBackend,
+        };
+
+        use sdkwork_knowledgebase_contract::rag::KnowledgeRetrievalMethod;
+
+        let chunk_ids: Vec<i64> = sqlx::query_scalar(
+            "SELECT id FROM kb_chunk WHERE tenant_id = $1 AND space_id = $2 ORDER BY id LIMIT 4",
+        )
+        .bind(tenant_id as i64)
+        .bind(space.id as i64)
+        .fetch_all(&pool)
+        .await
+        .expect("load ingested chunk ids");
+        assert!(!chunk_ids.is_empty(), "vector fixtures require chunks");
+
+        let vector_pg_pool = connect_postgres_pool(&database_url)
+            .await
+            .expect("connect vector retrieval pool");
+        // The embedding row is FK-bound to a knowledge index; create the index
+        // the ingestion pipeline would normally provision.
+        let index_id = 930_000_000_i64 + (nonce % 10_000_000) as i64;
+        sqlx::query(
+            r#"
+            INSERT INTO kb_index (
+                id, uuid, tenant_id, organization_id, space_id, index_kind,
+                schema_version, status, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, 0, $4, 'rag', '1', 1, now(), now())
+            "#,
+        )
+        .bind(index_id)
+        .bind(format!("index-{nonce}"))
+        .bind(tenant_id as i64)
+        .bind(space.id as i64)
+        .execute(&pool)
+        .await
+        .expect("create knowledge index for embeddings");
+
+        let embeddings = PostgresKnowledgeEmbeddingStore::new(
+            vector_pg_pool.clone(),
+            tenant_id,
+            0,
+            DatabaseEngine::Postgres,
+        );
+        let mut query_embedding = vec![0.0_f32; 1536];
+        query_embedding[0] = 1.0;
+        for chunk_id in &chunk_ids {
+            embeddings
+                .upsert_chunk_embedding(ChunkEmbeddingUpsertRequest {
+                    tenant_id,
+                    index_id: u64::try_from(index_id).expect("index id fits u64"),
+                    chunk_id: u64::try_from(*chunk_id).expect("chunk id fits u64"),
+                    vector: query_embedding.clone(),
+                    provider_id: Some("provider.test.embedding".to_string()),
+                    model: Some("test-embedding".to_string()),
+                })
+                .await
+                .expect("upsert chunk embedding");
+        }
+
+        let vector_backend = PgVectorKnowledgeRetrievalBackend::new(vector_pg_pool, tenant_id, 0);
+        let vector_hits = vector_backend
+            .search_chunks(KnowledgeChunkSearchRequest {
+                tenant_id,
+                query: "refund policy".to_string(),
+                binding: KnowledgeRetrievalBinding {
+                    space_id: space.id,
+                    source_filter: None,
+                    document_filter: None,
+                    priority: 0,
+                    top_k: Some(5),
+                    min_score: None,
+                },
+                method: KnowledgeRetrievalMethod::Vector,
+                top_k: 5,
+                query_embedding: Some(query_embedding),
+            })
+            .await
+            .expect("pgvector search");
+        assert!(
+            !vector_hits.is_empty(),
+            "vector retrieval must return embedded chunks"
+        );
+        assert!(
+            vector_hits
+                .iter()
+                .any(|hit| hit.content.contains("30 days")),
+            "vector retrieval must return the ingested text"
+        );
+    }
 }
