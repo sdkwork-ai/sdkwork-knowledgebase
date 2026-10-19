@@ -28,6 +28,7 @@ sdkwork-routes-knowledgebase-internal-api.workspace = true
 sdkwork-routes-knowledgebase-open-api.workspace = true
 sdkwork-drive-storage-local = { workspace = true }
 sdkwork-intelligence-knowledgebase-service.workspace = true
+sdkwork-knowledgebase-document-extraction.workspace = true
 sdkwork-intelligence-knowledgebase-repository-sqlx.workspace = true
 sdkwork-database-id.workspace = true
 sdkwork-database-config.workspace = true

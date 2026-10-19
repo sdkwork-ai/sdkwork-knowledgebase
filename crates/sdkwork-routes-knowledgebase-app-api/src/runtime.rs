@@ -1253,9 +1253,9 @@ impl KnowledgebaseRuntime {
             .as_ref()
             .is_some_and(|lease| !lease.is_healthy())
         {
-            return Err(Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(
-                "snowflake node lease is unhealthy",
-            )));
+            return Err(Box::<dyn std::error::Error + Send + Sync>::from(
+                std::io::Error::other("snowflake node lease is unhealthy"),
+            ));
         }
         knowledgebase_health_check(&self.pool)
             .await
@@ -1578,10 +1578,8 @@ impl KnowledgebaseRuntime {
     pub async fn resolve_knowledge_engine_implementation_id_for_space(
         &self,
         space_id: u64,
-    ) -> Result<
-        String,
-        sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineError,
-    > {
+    ) -> Result<String, sdkwork_knowledgebase_contract::knowledge_engine::KnowledgeEngineError>
+    {
         self.knowledge_engine_space_resolver()
             .resolve_for_space(space_id, None)
             .await
@@ -2106,6 +2104,9 @@ impl KnowledgebaseRuntime {
         use sdkwork_intelligence_knowledgebase_service::ingest::KnowledgeIngestionJobWorkerService;
 
         KnowledgeIngestionJobWorkerService::new(self.ingestion_job_store(), self.drive_storage())
+            .with_document_text_extractor(Some(std::sync::Arc::new(
+                sdkwork_knowledgebase_document_extraction::DefaultDocumentTextExtractor::new(),
+            )))
             .process_queued_jobs(worker_id, lease_duration, limit, max_attempts)
             .await
             .map(|result| result.processed)

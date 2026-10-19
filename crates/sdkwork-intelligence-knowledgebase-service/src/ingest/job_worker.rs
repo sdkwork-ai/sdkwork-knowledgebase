@@ -27,15 +27,34 @@ use sdkwork_knowledgebase_contract::{
 use thiserror::Error;
 use time::Duration;
 
+use crate::document_extraction::DocumentTextExtractor;
+use std::sync::Arc;
+
 pub struct KnowledgeIngestionJobWorkerService<'a> {
     jobs: &'a dyn IngestionJobStore,
 
     drive: &'a dyn KnowledgeDriveStorage,
+
+    document_text_extractor: Option<Arc<dyn DocumentTextExtractor>>,
 }
 
 impl<'a> KnowledgeIngestionJobWorkerService<'a> {
     pub fn new(jobs: &'a dyn IngestionJobStore, drive: &'a dyn KnowledgeDriveStorage) -> Self {
-        Self { jobs, drive }
+        Self {
+            jobs,
+            drive,
+            document_text_extractor: None,
+        }
+    }
+
+    /// Enables bounded binary-document extraction for queued Drive imports.
+    #[must_use]
+    pub fn with_document_text_extractor(
+        mut self,
+        extractor: Option<Arc<dyn DocumentTextExtractor>>,
+    ) -> Self {
+        self.document_text_extractor = extractor;
+        self
     }
 
     pub async fn process_queued_jobs(
@@ -164,6 +183,7 @@ impl<'a> KnowledgeIngestionJobWorkerService<'a> {
         import: &KnowledgeDriveImportResult,
     ) -> Result<DriveImportPipelineResult, KnowledgeDriveImportPipelineServiceError> {
         KnowledgeDriveImportPipelineService::new(self.drive, self.jobs)
+            .with_document_text_extractor(self.document_text_extractor.clone())
             .process_import_result(import)
             .await
     }
@@ -181,7 +201,8 @@ impl<'a> KnowledgeIngestionJobWorkerService<'a> {
         let mut heartbeat = tokio::time::interval_at(start, heartbeat_period);
         heartbeat.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
-        let pipeline = KnowledgeDriveImportPipelineService::new(self.drive, self.jobs);
+        let pipeline = KnowledgeDriveImportPipelineService::new(self.drive, self.jobs)
+            .with_document_text_extractor(self.document_text_extractor.clone());
         let processing = pipeline.process_claimed_import_result(import, &claimed.claim_token);
         tokio::pin!(processing);
 

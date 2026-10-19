@@ -169,6 +169,25 @@ Server-side capability consumers use that public transport instead of raw HTTP.
 The OpenAPI authority declares `KnowledgeAgentBindingList`, which the
 `agentProfiles.bindings.list` response references.
 
+## Binary Document Extraction
+
+`KnowledgeDriveImportPipeline` reads markdown/text as bounded UTF-8 and delegates
+binary documents to the `DocumentTextExtractor` SPI
+(`crates/sdkwork-intelligence-knowledgebase-service/src/document_extraction.rs`).
+The default adapter (`crates/sdkwork-knowledgebase-document-extraction`) decodes:
+
+- PDF via `pdf-extract`, inside `catch_unwind`, rejecting documents with no
+  extractable text (scanned/encrypted);
+- DOCX via `word/document.xml`;
+- PPTX via `ppt/slides/slideN.xml` in slide order.
+
+Bounds: 32 MiB input, 16 MiB decompressed OOXML entry, 500 slides/pages,
+2,000,000 extracted characters, 512 KiB markdown payload (truncated on a
+character boundary), 30 s extraction deadline. Extraction runs on a blocking
+worker, never inside a database transaction, and every failure is typed and
+content-free. Unsupported binary formats fail closed instead of indexing
+mojibake.
+
 ## Verification
 
 Required checks:
@@ -176,6 +195,8 @@ Required checks:
 - contract tests for DTOs and operation ids.
 - app/backend route tests proving every OpenAPI path is mounted.
 - migration tests proving all required `kb_` objects and indexes exist.
+- `cargo test -p sdkwork-knowledgebase-document-extraction`.
+- `cargo test -p sdkwork-intelligence-knowledgebase-service --lib drive_import_pipeline`.
 - `cargo fmt --all --check`.
 - `cargo test --workspace`.
 - `powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1`.

@@ -265,7 +265,10 @@ impl KnowledgeDriveImportAppService for HostedDriveImportService {
         let pipeline = sdkwork_intelligence_knowledgebase_service::ingest::KnowledgeIngestionJobWorkerService::new(
             self.runtime.ingestion_job_store(),
             self.runtime.drive_storage(),
-        );
+        )
+        .with_document_text_extractor(Some(std::sync::Arc::new(
+            sdkwork_knowledgebase_document_extraction::DefaultDocumentTextExtractor::new(),
+        )));
         match pipeline.process_drive_import_result(&result).await {
             Ok(pipeline_result) => {
                 if let Some(index_result) = pipeline_result.index_result {

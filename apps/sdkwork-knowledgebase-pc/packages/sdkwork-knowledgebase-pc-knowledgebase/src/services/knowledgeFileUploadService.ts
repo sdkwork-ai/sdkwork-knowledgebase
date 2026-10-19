@@ -125,13 +125,38 @@ function inferUploaderProfile(file: File): DriveUploaderProfile {
   if (file.type.startsWith('audio/')) {
     return KNOWLEDGEBASE_PC_AUDIO_UPLOAD.uploadProfileCode;
   }
-  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+  if (isBinaryDocument(file)) {
     return KNOWLEDGEBASE_PC_DOCUMENT_UPLOAD.uploadProfileCode;
   }
   if (isTextIngestible(file)) {
     return KNOWLEDGEBASE_PC_TEXT_UPLOAD.uploadProfileCode;
   }
   return KNOWLEDGEBASE_PC_ATTACHMENT_UPLOAD.uploadProfileCode;
+}
+
+/**
+ * Binary documents decoded server-side before chunking.
+ *
+ * Legacy `.doc`/`.ppt`/`.xls` are included so they receive the document profile
+ * even though the extractor rejects them with a typed error (better than a
+ * generic attachment silently never being indexed).
+ */
+const BINARY_DOCUMENT_EXTENSIONS = [
+  '.pdf',
+  '.docx',
+  '.pptx',
+  '.xlsx',
+  '.doc',
+  '.ppt',
+  '.xls',
+] as const;
+
+function isBinaryDocument(file: File): boolean {
+  if (file.type === 'application/pdf') {
+    return true;
+  }
+  const lower = file.name.toLowerCase();
+  return BINARY_DOCUMENT_EXTENSIONS.some((extension) => lower.endsWith(extension));
 }
 
 function buildIdempotencyKey(spaceId: string, file: File, index: number): string {

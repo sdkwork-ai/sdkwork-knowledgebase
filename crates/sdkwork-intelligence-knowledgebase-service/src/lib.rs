@@ -7,6 +7,7 @@ pub mod agent;
 pub mod agent_chat;
 pub mod browser;
 pub mod context_binding;
+pub mod document_extraction;
 pub mod domain;
 pub mod embedding_retrieval_backend;
 pub mod group_launch;

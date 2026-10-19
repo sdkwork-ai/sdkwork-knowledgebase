@@ -22,6 +22,7 @@ members = [
     "crates/sdkwork-intelligence-knowledgebase-rpc",
     "crates/sdkwork-intelligence-knowledgebase-rpc-bin",
     "crates/sdkwork-intelligence-knowledgebase-service",
+    "crates/sdkwork-knowledgebase-document-extraction",
     "crates/sdkwork-intelligence-knowledgebase-repository-sqlx",
     "crates/sdkwork-knowledgebase-engine-dify",
     "crates/sdkwork-knowledgebase-engine-ragflow",
@@ -100,6 +101,7 @@ sdkwork-agent-provider-rig = { path = "../sdkwork-kernel/agent-providers/crates/
 sdkwork-agent-plugin-core = { path = "../sdkwork-kernel/sdkwork-kernel-plugins/crates/sdkwork-agent-plugin-core" }
 sdkwork-intelligence-knowledgebase-object-key-service = { path = "crates/sdkwork-intelligence-knowledgebase-object-key-service" }
 sdkwork-knowledgebase-memory = { path = "crates/sdkwork-knowledgebase-memory" }
+sdkwork-knowledgebase-document-extraction = { path = "crates/sdkwork-knowledgebase-document-extraction" }
 sdkwork-knowledgebase-test-support = { path = "crates/sdkwork-knowledgebase-test-support" }
 sdkwork-api-knowledgebase-assembly = { path = "crates/sdkwork-api-knowledgebase-assembly" }
 sdkwork-api-knowledgebase-standalone-gateway = { path = "crates/sdkwork-api-knowledgebase-standalone-gateway" }

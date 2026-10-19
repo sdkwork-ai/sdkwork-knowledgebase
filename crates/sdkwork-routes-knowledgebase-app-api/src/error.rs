@@ -15,8 +15,8 @@ use sdkwork_intelligence_knowledgebase_service::{
     },
     okf::OkfConceptServiceError,
     ports::{
-        knowledge_agent_profile_store::KnowledgeAgentProfileStoreError,
         knowledge_access_control::KnowledgeAccessControlError,
+        knowledge_agent_profile_store::KnowledgeAgentProfileStoreError,
         knowledge_context_binding_store::KnowledgeContextBindingStoreError,
         knowledge_document_store::KnowledgeDocumentStoreError,
         knowledge_ingestion_job_store::IngestionJobStoreError,
@@ -338,14 +338,10 @@ impl From<KnowledgeSpaceServiceError> for ApiError {
                 error.to_string(),
             ),
             KnowledgeSpaceServiceError::AccessControl(error) => match error {
-                KnowledgeAccessControlError::NotFound(message) => Self::not_found(
-                    "knowledge_space_drive_anchor_missing",
-                    message,
-                ),
-                other => Self::internal(
-                    "knowledge_space_access_control_failed",
-                    other.to_string(),
-                ),
+                KnowledgeAccessControlError::NotFound(message) => {
+                    Self::not_found("knowledge_space_drive_anchor_missing", message)
+                }
+                other => Self::internal("knowledge_space_access_control_failed", other.to_string()),
             },
             KnowledgeSpaceServiceError::InitializationCleanup { original, .. }
             | KnowledgeSpaceServiceError::DriveSpaceCleanup { original, .. } => {
@@ -583,14 +579,12 @@ impl From<KnowledgeBrowserServiceError> for ApiError {
                 Self::internal("knowledge_browser_projection_failed", error.to_string())
             }
             KnowledgeBrowserServiceError::AccessControl(error) => match error {
-                KnowledgeAccessControlError::NotFound(message) => Self::not_found(
-                    "knowledge_browser_drive_anchor_missing",
-                    message,
-                ),
-                other => Self::internal(
-                    "knowledge_browser_access_control_failed",
-                    other.to_string(),
-                ),
+                KnowledgeAccessControlError::NotFound(message) => {
+                    Self::not_found("knowledge_browser_drive_anchor_missing", message)
+                }
+                other => {
+                    Self::internal("knowledge_browser_access_control_failed", other.to_string())
+                }
             },
         }
     }
@@ -1033,6 +1027,27 @@ impl From<sdkwork_intelligence_knowledgebase_service::imports::KnowledgeDriveImp
                     format!("drive import payload exceeds maximum allowed size of {max_bytes} bytes"),
                 ),
             },
+            sdkwork_intelligence_knowledgebase_service::imports::KnowledgeDriveImportPipelineServiceError::UnsupportedDocument(
+                content_type,
+            ) => Self::invalid_request(
+                "invalid_knowledge_drive_import_document",
+                format!("unsupported document content type: {content_type}"),
+            ),
+            sdkwork_intelligence_knowledgebase_service::imports::KnowledgeDriveImportPipelineServiceError::Extraction(
+                error,
+            ) => Self::invalid_request(
+                "invalid_knowledge_drive_import_document",
+                error.to_string(),
+            ),
+            sdkwork_intelligence_knowledgebase_service::imports::KnowledgeDriveImportPipelineServiceError::ExtractionTimedOut {
+                timeout,
+            } => Self::gateway_timeout(
+                "knowledge_drive_import_extraction_timed_out",
+                format!("document extraction timed out after {timeout:?}"),
+            ),
+            sdkwork_intelligence_knowledgebase_service::imports::KnowledgeDriveImportPipelineServiceError::ExtractionWorkerFailed(
+                detail,
+            ) => Self::internal("knowledge_drive_import_extraction_failed", detail),
         }
     }
 }
