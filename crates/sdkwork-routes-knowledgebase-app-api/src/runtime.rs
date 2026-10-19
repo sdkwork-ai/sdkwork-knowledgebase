@@ -902,9 +902,14 @@ impl KnowledgebaseRuntime {
             drive_pool.clone(),
         ));
 
+        let retrieval_pg_pool = pg_pool.clone().ok_or_else(|| {
+            configuration_error(
+                "knowledge retrieval requires the authoritative PostgreSQL pool",
+            )
+        })?;
         let retrieval_store = Arc::new(
             PostgresKnowledgeChunkRetrievalStore::with_keyword_backend(
-                pool.clone(),
+                retrieval_pg_pool,
                 tenant_id,
                 organization_id,
                 keyword_backend,

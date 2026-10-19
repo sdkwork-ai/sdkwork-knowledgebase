@@ -366,3 +366,232 @@ async fn postgres_rls_hides_rows_without_session_scope_when_database_url_configu
         "RLS must hide rows for a mismatched organization scope"
     );
 }
+
+/// End-to-end proof of the product's core claim on a real PostgreSQL database:
+/// a Drive document is ingested through the production pipeline into `kb_chunk`,
+/// then hybrid/keyword retrieval returns it.
+#[tokio::test]
+async fn postgres_ingest_to_retrieval_round_trip_when_database_url_configured() {
+    let Some(database_url) = optional_postgres_database_url() else {
+        eprintln!(
+            "skipping postgres ingest-to-retrieval test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL"
+        );
+        return;
+    };
+
+    use sdkwork_intelligence_knowledgebase_repository_sqlx::PostgresKnowledgeChunkRetrievalStore;
+    use sdkwork_intelligence_knowledgebase_service::imports::KnowledgeDriveImportPipelineService;
+    use sdkwork_intelligence_knowledgebase_service::ports::knowledge_ingestion_job_store::DriveImportJobLinkage;
+    use sdkwork_intelligence_knowledgebase_service::retrieval::KnowledgeRetrievalService;
+    use sdkwork_knowledgebase_contract::ingest::KnowledgeDriveImportResult;
+    use sdkwork_knowledgebase_contract::rag::{
+        KnowledgeRetrievalBinding, KnowledgeRetrievalMethod, KnowledgeRetrievalRequest,
+    };
+    use sdkwork_knowledgebase_contract::source::{KnowledgeSource, KnowledgeSourceType};
+    use sdkwork_knowledgebase_test_support::fake_drive::FakeKnowledgeDriveStorage;
+
+    let pool = connect_postgres_and_install_schema(&database_url)
+        .await
+        .expect("connect postgres knowledgebase schema");
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock")
+        .as_nanos() as u64;
+    // The pooled connection injects the deployment-bound RLS tenant, so the E2E
+    // uses the same tenant as the other optional Postgres probes in this file.
+    let tenant_id = 100_001_u64;
+    let spaces = PostgresKnowledgeSpaceStore::new(pool.clone(), tenant_id, 0);
+    let space = spaces
+        .create_space(CreateKnowledgeSpaceRecord {
+            name: format!("postgres e2e space {nonce}"),
+            description: Some("ingest-to-retrieval e2e".to_string()),
+            okf_bundle_initialized: false,
+            knowledge_mode: KnowledgeAgentKnowledgeMode::Rag,
+        })
+        .await
+        .expect("create e2e space");
+
+    let drive = FakeKnowledgeDriveStorage::default();
+    let stored = drive
+        .put_text(
+            "raw/documents/policy/original/policy.md",
+            "original_document",
+            "# Refund policy\n\nRefunds are accepted within 30 days of purchase.\n",
+        )
+        .await
+        .expect("store document payload");
+
+    let object_refs = PostgresKnowledgeDriveObjectRefStore::new(pool.clone(), tenant_id, 0);
+    let object_ref = object_refs
+        .create_object_ref(CreateKnowledgeDriveObjectRefRecord {
+            space_id: space.id,
+            drive_space_id: Some("drive-space-e2e".to_string()),
+            drive_node_id: Some(format!("node-e2e-{nonce}")),
+            logical_path: Some(stored.logical_path.clone()),
+            drive_provider_kind: SDKWORK_DRIVE_PROVIDER_KIND.to_string(),
+            drive_storage_provider_id: stored.storage_provider_id.clone(),
+            drive_bucket: stored.bucket.clone(),
+            drive_object_key: stored.object_key.clone(),
+            drive_object_version: None,
+            drive_etag: None,
+            content_type: Some("text/markdown".to_string()),
+            size_bytes: stored.size_bytes,
+            checksum_sha256_hex: stored.checksum_sha256_hex.clone(),
+            object_role: "original_document".to_string(),
+            access_mode: MANAGED_DRIVE_ACCESS_MODE.to_string(),
+        })
+        .await
+        .expect("create drive object ref");
+
+    let documents = PostgresKnowledgeDocumentStore::new(pool.clone(), tenant_id, 0);
+    let document = documents
+        .create_document(CreateKnowledgeDocumentRecord {
+            space_id: space.id,
+            source_id: None,
+            identity_scope: KnowledgeDocumentIdentityScope::SourceAndOriginalDriveNode,
+            original_file_drive_node_id: object_ref.drive_node_id.clone(),
+            title: "Refund policy".to_string(),
+            mime_type: Some("text/markdown".to_string()),
+            language: Some("en".to_string()),
+        })
+        .await
+        .expect("create e2e document");
+
+    let versions = PostgresKnowledgeDocumentVersionStore::new(pool.clone(), tenant_id, 0);
+    let version = versions
+        .create_document_version(CreateKnowledgeDocumentVersionRecord {
+            document_id: document.id,
+            version_no: 1,
+            original_object_ref_id: object_ref.id,
+            checksum_sha256_hex: object_ref.checksum_sha256_hex.clone(),
+            size_bytes: object_ref.size_bytes,
+            mime_type: Some("text/markdown".to_string()),
+        })
+        .await
+        .expect("create e2e document version");
+
+    let jobs = PostgresIngestionJobStore::new(pool.clone(), tenant_id, 0)
+        .with_database_engine(DatabaseEngine::Postgres);
+    let created = jobs
+        .create_or_get_job(CreateIngestionJobRecord {
+            space_id: space.id,
+            source_type: KnowledgeSourceType::DriveObject.as_str().to_string(),
+            idempotency_key: format!("postgres-e2e-{nonce}"),
+            idempotency_fingerprint_sha256_hex: None,
+        })
+        .await
+        .expect("create ingestion job");
+    jobs.attach_drive_import_linkage(
+        created.job.id,
+        DriveImportJobLinkage {
+            source_id: 1,
+            document_id: document.id,
+            document_version_id: version.id,
+            original_object_ref: object_ref.clone(),
+        },
+    )
+    .await
+    .expect("attach drive import linkage");
+
+    let import = KnowledgeDriveImportResult {
+        source: KnowledgeSource {
+            id: 1,
+            space_id: space.id,
+            source_type: KnowledgeSourceType::DriveObject,
+            provider: Some("sdkwork-drive".to_string()),
+            drive_bucket: Some(object_ref.drive_bucket.clone()),
+            drive_prefix: Some(object_ref.drive_object_key.clone()),
+            connector_metadata_json: None,
+        },
+        document,
+        version,
+        original_object_ref: object_ref,
+        job: created.job.clone(),
+    };
+    let pipeline = KnowledgeDriveImportPipelineService::new(&drive, &jobs);
+    let pipeline_result = pipeline
+        .process_import_result(&import)
+        .await
+        .expect("ingest drive document");
+    assert!(
+        pipeline_result.index_result.is_some(),
+        "ingestion must produce an index result"
+    );
+
+    let chunk_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM kb_chunk WHERE tenant_id = $1 AND space_id = $2")
+            .bind(tenant_id as i64)
+            .bind(space.id as i64)
+            .fetch_one(&pool)
+            .await
+            .expect("count ingested chunks");
+    assert!(chunk_count > 0, "ingestion must persist chunks");
+
+    let retrieval_pg_pool =
+        sdkwork_intelligence_knowledgebase_repository_sqlx::connect_postgres_pool(&database_url)
+            .await
+            .expect("connect PgPool for retrieval");
+    let retrieval_store =
+        PostgresKnowledgeChunkRetrievalStore::new(retrieval_pg_pool, tenant_id, 0)
+            .with_database_engine(DatabaseEngine::Postgres);
+    {
+        use sdkwork_intelligence_knowledgebase_service::ports::knowledge_retrieval_backend::{
+            KnowledgeChunkSearchRequest, KnowledgeRetrievalBackend,
+        };
+        let direct = retrieval_store
+            .search_chunks(KnowledgeChunkSearchRequest {
+                tenant_id,
+                query: "refund policy".to_string(),
+                binding: KnowledgeRetrievalBinding {
+                    space_id: space.id,
+                    source_filter: None,
+                    document_filter: None,
+                    priority: 0,
+                    top_k: Some(5),
+                    min_score: None,
+                },
+                method: KnowledgeRetrievalMethod::FullText,
+                top_k: 5,
+                query_embedding: None,
+            })
+            .await
+            .unwrap_or_else(|error| panic!("direct keyword search failed: {error:?}"));
+        assert!(!direct.is_empty());
+    }
+    let retrieval = KnowledgeRetrievalService::new(&retrieval_store, &retrieval_store);
+    let result = retrieval
+        .retrieve(KnowledgeRetrievalRequest {
+            tenant_id,
+            actor_id: None,
+            query: "refund policy".to_string(),
+            retrieval_profile_id: None,
+            bindings: vec![KnowledgeRetrievalBinding {
+                space_id: space.id,
+                source_filter: None,
+                document_filter: None,
+                priority: 0,
+                top_k: Some(5),
+                min_score: None,
+            }],
+            methods: vec![KnowledgeRetrievalMethod::FullText],
+            top_k: Some(5),
+            include_citations: true,
+            include_trace: false,
+            context_budget_tokens: None,
+            metadata: Vec::new(),
+        })
+        .await
+        .expect("retrieve ingested knowledge");
+
+    assert!(
+        !result.hits.is_empty(),
+        "retrieval must return the ingested document"
+    );
+    assert!(
+        result
+            .hits
+            .iter()
+            .any(|hit| hit.content.contains("30 days")),
+        "retrieved context must contain the ingested text"
+    );
+}

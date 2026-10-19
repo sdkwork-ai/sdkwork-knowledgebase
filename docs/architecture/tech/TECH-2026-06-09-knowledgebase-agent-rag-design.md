@@ -207,6 +207,9 @@ Required checks:
 - migration tests proving all required `kb_` objects and indexes exist.
 - `cargo test -p sdkwork-knowledgebase-document-extraction`.
 - `cargo test -p sdkwork-intelligence-knowledgebase-service --lib drive_import_pipeline`.
+- `cargo test -p sdkwork-intelligence-knowledgebase-repository-sqlx --test postgres_optional_integration postgres_ingest_to_retrieval_round_trip`
+  with `SDKWORK_DATABASE_URL` and `SDKWORK_KNOWLEDGEBASE_TENANT_ID` set (real
+  PostgreSQL ingest-to-retrieval round trip).
 - `cargo fmt --all --check`.
 - `cargo test --workspace`.
 - `powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1`.

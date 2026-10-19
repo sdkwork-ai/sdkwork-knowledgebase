@@ -10,7 +10,8 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_retrieval_trace
     KnowledgeRetrievalTraceStoreError,
 };
 use sdkwork_knowledgebase_contract::rag::KnowledgeRetrievalMethod;
-use sqlx::{any::AnyRow, AnyPool, QueryBuilder, Row};
+use sqlx::postgres::PgRow;
+use sqlx::{PgPool, QueryBuilder, Row};
 use std::sync::Arc;
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use uuid::Uuid;
@@ -28,12 +29,16 @@ const MAX_RETRIEVAL_TRACE_HITS: i64 = 256;
 /// This store serves keyword/embedding-indexed search only. Production servers
 /// always wire `PgVectorLayeredRetrievalBackend`, which routes Vector/Hybrid
 /// scoring to the pgvector ANN index (`kb_embedding.embedding_vector`) and uses
-/// this store only for keyword search, so this store is a degraded mode for
-/// runtimes without a PgPool (tests and tooling).
-
+/// this store for keyword, exact, and degraded search.
+///
+/// The store is bound to the authoritative PostgreSQL pool on purpose: SQLx's
+/// `Any` driver does not rewrite `?` placeholders for PostgreSQL, so keyword
+/// SQL built by `QueryBuilder<Any>` was sent verbatim and failed at execution.
+/// `QueryBuilder<Postgres>` emits `$n` placeholders, which the PostgreSQL wire
+/// accepts, and `PgRow` decoding keeps column types strict (INT4 vs INT8).
 #[derive(Debug, Clone)]
 pub struct PostgresKnowledgeChunkRetrievalStore {
-    pool: AnyPool,
+    pool: PgPool,
     tenant_id: u64,
     organization_id: u64,
     id_generator: Arc<dyn KnowledgeIdGenerator>,
@@ -43,7 +48,7 @@ pub struct PostgresKnowledgeChunkRetrievalStore {
 }
 
 impl PostgresKnowledgeChunkRetrievalStore {
-    pub fn new(pool: AnyPool, tenant_id: u64, organization_id: u64) -> Self {
+    pub fn new(pool: PgPool, tenant_id: u64, organization_id: u64) -> Self {
         Self::with_keyword_backend(
             pool,
             tenant_id,
@@ -54,7 +59,7 @@ impl PostgresKnowledgeChunkRetrievalStore {
     }
 
     pub fn with_id_generator(
-        pool: AnyPool,
+        pool: PgPool,
         tenant_id: u64,
         organization_id: u64,
         id_generator: Arc<dyn KnowledgeIdGenerator>,
@@ -69,7 +74,7 @@ impl PostgresKnowledgeChunkRetrievalStore {
     }
 
     pub fn with_keyword_backend(
-        pool: AnyPool,
+        pool: PgPool,
         tenant_id: u64,
         organization_id: u64,
         keyword_backend: KeywordSearchBackend,
@@ -247,7 +252,7 @@ impl PostgresKnowledgeChunkRetrievalStore {
                 c.content_text,
                 c.token_count,
                 c.locator #>> '{}' AS locator,
-                "kb://documents/" || c.document_id AS source_uri,
+                'kb://documents/' || c.document_id AS source_uri,
             "#,
         );
         push_keyword_score_expression(&mut query, &query_terms, &fts_match);
@@ -327,7 +332,7 @@ impl PostgresKnowledgeChunkRetrievalStore {
                 c.content_text,
                 c.token_count,
                 c.locator #>> '{}' AS locator,
-                "kb://documents/" || c.document_id AS source_uri,
+                'kb://documents/' || c.document_id AS source_uri,
             "#,
         );
         push_keyword_score_expression(&mut query, &query_terms, &fts_match);
@@ -714,7 +719,7 @@ pub(crate) fn merge_hybrid_hits(
 }
 
 fn push_keyword_score_expression(
-    query: &mut QueryBuilder<sqlx::Any>,
+    query: &mut QueryBuilder<sqlx::Postgres>,
     terms: &[String],
     keyword_match: &str,
 ) {
@@ -724,19 +729,23 @@ fn push_keyword_score_expression(
     for term in terms {
         query.push(" + CASE WHEN LOWER(d.title) LIKE ");
         query.push_bind(like_contains_term(term));
-        query.push(" ESCAPE '\\' THEN 0.5 ELSE 0.0 END");
+        query.push(" ESCAPE '!' THEN 0.5 ELSE 0.0 END");
     }
 }
 
-/// Builds a `%term%` LIKE pattern with the term's `%`/`_`/`\` escaped so user
+/// Builds a `%term%` LIKE pattern with the term's `%`/`_`/`!` escaped so user
 /// input cannot inject wildcards into the title-match predicate; the paired
-/// SQL fragments use `ESCAPE '\'`.
+/// SQL fragments use `ESCAPE '!'`.
+///
+/// `!` is deliberately not `\`: SQLx's `Any` placeholder rewriter treats a
+/// backslash inside a string literal as an escape, so `ESCAPE '\'` corrupts the
+/// rewritten statement and produced a runtime syntax error on PostgreSQL.
 fn like_contains_term(term: &str) -> String {
     let mut pattern = String::with_capacity(term.len() + 2);
     pattern.push('%');
     for ch in term.chars() {
-        if matches!(ch, '%' | '_' | '\\') {
-            pattern.push('\\');
+        if matches!(ch, '%' | '_' | '!') {
+            pattern.push('!');
         }
         pattern.push(ch);
     }
@@ -745,7 +754,7 @@ fn like_contains_term(term: &str) -> String {
 }
 
 fn push_keyword_or_title_filter(
-    query: &mut QueryBuilder<sqlx::Any>,
+    query: &mut QueryBuilder<sqlx::Postgres>,
     terms: &[String],
     term_operator: TermMatchOperator,
     keyword_match: &str,
@@ -754,7 +763,7 @@ fn push_keyword_or_title_filter(
 }
 
 fn push_postgres_ts_or_title_filter(
-    query: &mut QueryBuilder<sqlx::Any>,
+    query: &mut QueryBuilder<sqlx::Postgres>,
     terms: &[String],
     term_operator: TermMatchOperator,
     tsquery: &str,
@@ -767,7 +776,7 @@ fn push_postgres_ts_or_title_filter(
             for term in terms {
                 query.push(" OR LOWER(d.title) LIKE ");
                 query.push_bind(like_contains_term(term));
-                query.push(" ESCAPE '\\'");
+                query.push(" ESCAPE '!'");
             }
             query.push(")");
         }
@@ -782,7 +791,7 @@ fn push_postgres_ts_or_title_filter(
                 query.push_bind(single_term_query);
                 query.push(") OR LOWER(d.title) LIKE ");
                 query.push_bind(like_contains_term(term));
-                query.push(" ESCAPE '\\'");
+                query.push(" ESCAPE '!'");
                 query.push(")");
             }
         }
@@ -830,7 +839,7 @@ fn normalized_query_terms(query: &str) -> Vec<String> {
 }
 
 fn chunk_hit_from_row(
-    row: AnyRow,
+    row: PgRow,
     method: KnowledgeRetrievalMethod,
     min_score: Option<f64>,
 ) -> Result<Option<KnowledgeChunkSearchHit>, KnowledgeRetrievalBackendError> {
@@ -842,6 +851,7 @@ fn chunk_hit_from_row(
         return Ok(None);
     }
 
+    let token_count: Option<i32> = row.try_get("token_count").map_err(backend_sqlx_error)?;
     Ok(Some(KnowledgeChunkSearchHit {
         chunk_id: u64_from_row(&row, "chunk_id")?,
         document_id: u64_from_row(&row, "document_id")?,
@@ -850,7 +860,7 @@ fn chunk_hit_from_row(
         title: row.try_get("title").map_err(backend_sqlx_error)?,
         content: row.try_get("content_text").map_err(backend_sqlx_error)?,
         score,
-        token_count: optional_i64_from_row(&row, "token_count")?.map(|value| value as u32),
+        token_count: token_count.map(|value| value.max(0) as u32),
         locator: row.try_get("locator").map_err(backend_sqlx_error)?,
         source_uri: row.try_get("source_uri").map_err(backend_sqlx_error)?,
         retrieval_method: method,
@@ -901,7 +911,7 @@ fn trace_method_from_match_reason(
 }
 
 fn trace_record_from_row(
-    row: AnyRow,
+    row: PgRow,
 ) -> Result<KnowledgeRetrievalTraceRecord, KnowledgeRetrievalTraceStoreError> {
     let result_count = row
         .try_get::<i64, _>("result_count")
@@ -925,11 +935,12 @@ fn trace_record_from_row(
 }
 
 fn trace_hit_from_row(
-    row: AnyRow,
+    row: PgRow,
 ) -> Result<KnowledgeRetrievalTraceHitRecord, KnowledgeRetrievalTraceStoreError> {
     let result_rank = row
-        .try_get::<i64, _>("result_rank")
+        .try_get::<i32, _>("result_rank")
         .map_err(trace_sqlx_error)?;
+    let token_count: Option<i32> = row.try_get("token_count").map_err(trace_sqlx_error)?;
     Ok(KnowledgeRetrievalTraceHitRecord {
         chunk_id: trace_u64_from_row(&row, "chunk_id")?,
         document_id: trace_u64_from_row(&row, "document_id")?,
@@ -943,7 +954,7 @@ fn trace_hit_from_row(
                 "result_rank is out of u32 range".to_string(),
             )
         })?,
-        token_count: trace_optional_i64_from_row(&row, "token_count")?.map(|value| value as u32),
+        token_count: token_count.map(|value| value.max(0) as u32),
         retrieval_method: trace_method_from_match_reason(
             row.try_get("match_reason").map_err(trace_sqlx_error)?,
         )?,
@@ -951,7 +962,7 @@ fn trace_hit_from_row(
     })
 }
 
-fn u64_from_row(row: &AnyRow, column: &str) -> Result<u64, KnowledgeRetrievalBackendError> {
+fn u64_from_row(row: &PgRow, column: &str) -> Result<u64, KnowledgeRetrievalBackendError> {
     let value: i64 = row.try_get(column).map_err(backend_sqlx_error)?;
     u64::try_from(value).map_err(|_| {
         KnowledgeRetrievalBackendError::Internal(format!("{column} must not be negative"))
@@ -959,7 +970,7 @@ fn u64_from_row(row: &AnyRow, column: &str) -> Result<u64, KnowledgeRetrievalBac
 }
 
 fn optional_u64_from_row(
-    row: &AnyRow,
+    row: &PgRow,
     column: &str,
 ) -> Result<Option<u64>, KnowledgeRetrievalBackendError> {
     optional_i64_from_row(row, column)?
@@ -972,7 +983,7 @@ fn optional_u64_from_row(
 }
 
 fn optional_i64_from_row(
-    row: &AnyRow,
+    row: &PgRow,
     column: &str,
 ) -> Result<Option<i64>, KnowledgeRetrievalBackendError> {
     row.try_get(column).map_err(backend_sqlx_error)
@@ -992,10 +1003,7 @@ fn trace_to_i64(field_name: &str, value: u64) -> Result<i64, KnowledgeRetrievalT
     })
 }
 
-fn trace_u64_from_row(
-    row: &AnyRow,
-    column: &str,
-) -> Result<u64, KnowledgeRetrievalTraceStoreError> {
+fn trace_u64_from_row(row: &PgRow, column: &str) -> Result<u64, KnowledgeRetrievalTraceStoreError> {
     let value: i64 = row.try_get(column).map_err(trace_sqlx_error)?;
     u64::try_from(value).map_err(|_| {
         KnowledgeRetrievalTraceStoreError::Internal(format!("{column} must not be negative"))
@@ -1003,7 +1011,7 @@ fn trace_u64_from_row(
 }
 
 fn trace_optional_u64_from_row(
-    row: &AnyRow,
+    row: &PgRow,
     column: &str,
 ) -> Result<Option<u64>, KnowledgeRetrievalTraceStoreError> {
     trace_optional_i64_from_row(row, column)?
@@ -1018,7 +1026,7 @@ fn trace_optional_u64_from_row(
 }
 
 fn trace_optional_i64_from_row(
-    row: &AnyRow,
+    row: &PgRow,
     column: &str,
 ) -> Result<Option<i64>, KnowledgeRetrievalTraceStoreError> {
     row.try_get(column).map_err(trace_sqlx_error)

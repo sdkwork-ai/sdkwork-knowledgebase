@@ -78,6 +78,24 @@ pnpm --dir apps/sdkwork-knowledgebase-pc run lint
 
 Agents-side evidence is recorded in the cross-linked Agents design document.
 
+The PostgreSQL round-trip is executable evidence, not a mock:
+
+```powershell
+$env:SDKWORK_DATABASE_URL = 'postgres://<user>:<password>@127.0.0.1:5432/<db>'
+$env:SDKWORK_KNOWLEDGEBASE_TENANT_ID = '<deployment-tenant>'
+cargo test -p sdkwork-intelligence-knowledgebase-repository-sqlx `
+  --test postgres_optional_integration postgres_ingest_to_retrieval_round_trip
+```
+
+It drives the production ingestion pipeline (space, Drive object ref, document,
+version, leased ingestion job, chunk write) and then keyword retrieval through
+`PostgresKnowledgeChunkRetrievalStore`, asserting the ingested text is returned.
+Closing this loop exposed and fixed two production defects: keyword SQL used
+`"kb://documents/"` as a quoted identifier instead of a string literal, and the
+store executed `QueryBuilder<Any>` `?` placeholders that the `Any` driver never
+rewrites for PostgreSQL. The store now owns the authoritative `PgPool` and
+builds `$n` placeholders, with strict `PgRow` column decoding.
+
 ## 5. Remaining Gates
 
 - Scanned/image-only PDFs need OCR; the current extractor fails with a typed
