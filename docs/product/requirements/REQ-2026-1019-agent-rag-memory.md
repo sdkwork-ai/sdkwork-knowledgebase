@@ -85,7 +85,14 @@ $env:SDKWORK_DATABASE_URL = 'postgres://<user>:<password>@127.0.0.1:5432/<db>'
 $env:SDKWORK_KNOWLEDGEBASE_TENANT_ID = '<deployment-tenant>'
 cargo test -p sdkwork-intelligence-knowledgebase-repository-sqlx `
   --test postgres_optional_integration postgres_ingest_to_retrieval_round_trip
+cargo test -p sdkwork-intelligence-knowledgebase-repository-sqlx `
+  --test postgres_agent_chat_e2e
 ```
+
+The second test closes the full product loop: the same ingested document is bound
+to a persisted agent profile, the kernel RAG chat runs through the real
+PostgreSQL retrieval store, and the answer plus a citation pointing at the
+ingested document are asserted.
 
 It drives the production ingestion pipeline (space, Drive object ref, document,
 version, leased ingestion job, chunk write) and then keyword retrieval through
