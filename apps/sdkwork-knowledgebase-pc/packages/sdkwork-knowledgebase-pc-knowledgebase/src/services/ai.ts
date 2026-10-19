@@ -3,12 +3,14 @@ import {
   isKnowledgebaseApiAvailable,
   KnowledgebaseErrorCodes,
   throwKnowledgebaseError,
+  type KnowledgeAgentChatCitation,
 } from 'sdkwork-knowledgebase-pc-core';
 
 import type { McpToolCall } from './mcpAgent';
 import {
   buildEditorActionPrompt,
   sendKnowledgeAgentMessage,
+  sendKnowledgeAgentMessageWithCitations,
   synthesizeKnowledgeSearchAnswer,
 } from './knowledgeAgentChatService';
 import type { KnowledgeAgentChatHistoryEntry } from './knowledgeAgentChatService';
@@ -51,15 +53,22 @@ export class AIService {
     references?: string,
     scope?: KnowledgebaseWorkspaceAiScope,
     history?: KnowledgeAgentChatHistoryEntry[],
-  ): Promise<{ result: string; toolCalls?: ChatToolCallPayload[] }> {
+  ): Promise<{
+    result: string;
+    toolCalls?: ChatToolCallPayload[];
+    citations: KnowledgeAgentChatCitation[];
+  }> {
     requireAiApi(KnowledgebaseErrorCodes.API_UNAVAILABLE_CHAT, scope);
     const prompt = buildEditorActionPrompt(
       'chat',
       message,
       [context, references].filter((entry) => !isBlank(entry)).join('\n'),
     );
-    const result = await sendKnowledgeAgentMessage(prompt, { ...scope, history });
-    return { result, toolCalls: [] };
+    const outcome = await sendKnowledgeAgentMessageWithCitations(prompt, {
+      ...scope,
+      history,
+    });
+    return { result: outcome.answer, toolCalls: [], citations: outcome.citations };
   }
 
   static async streamRewrite(

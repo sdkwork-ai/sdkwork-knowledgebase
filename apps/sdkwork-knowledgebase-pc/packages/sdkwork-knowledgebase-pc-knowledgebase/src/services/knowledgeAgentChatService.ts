@@ -1,4 +1,7 @@
-import type { KnowledgeAgentKnowledgeMode } from 'sdkwork-knowledgebase-pc-core';
+import type {
+  KnowledgeAgentChatCitation,
+  KnowledgeAgentKnowledgeMode,
+} from 'sdkwork-knowledgebase-pc-core';
 import { isBlank } from '@sdkwork/utils';
 import {
   KnowledgebaseErrorCodes,
@@ -63,10 +66,15 @@ function sanitizeChatHistory(
     .slice(-MAX_CHAT_HISTORY_TURNS);
 }
 
-export async function sendKnowledgeAgentMessage(
+export interface KnowledgeAgentChatOutcome {
+  answer: string;
+  citations: KnowledgeAgentChatCitation[];
+}
+
+export async function sendKnowledgeAgentMessageWithCitations(
   message: string,
   options?: KnowledgeAgentMessageOptions,
-): Promise<string> {
+): Promise<KnowledgeAgentChatOutcome> {
   requireNonEmptyString(message, KnowledgebaseErrorCodes.MESSAGE_REQUIRED);
 
   if (getActiveEphemeralFixedKnowledgebaseWorkspaceSpaceId() !== null) {
@@ -99,7 +107,18 @@ export async function sendKnowledgeAgentMessage(
     chatRequest,
   );
 
-  return response.answer.trim();
+  return {
+    answer: response.answer.trim(),
+    citations: response.citations ?? [],
+  };
+}
+
+export async function sendKnowledgeAgentMessage(
+  message: string,
+  options?: KnowledgeAgentMessageOptions,
+): Promise<string> {
+  const outcome = await sendKnowledgeAgentMessageWithCitations(message, options);
+  return outcome.answer;
 }
 
 export async function queryKnowledgeSpace(

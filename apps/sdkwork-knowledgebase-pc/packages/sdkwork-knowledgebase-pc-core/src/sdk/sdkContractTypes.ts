@@ -6,6 +6,7 @@ export type {
   IngestionJob,
   AuthTokenManager,
   KnowledgeAccessLevel,
+  KnowledgeAgentChatCitation,
   KnowledgeAgentKnowledgeMode,
   KnowledgeBrowserListData,
   KnowledgeBrowserNode,

@@ -10,6 +10,7 @@ import {
 import {
   buildEditorActionPrompt,
   sendKnowledgeAgentMessage,
+  sendKnowledgeAgentMessageWithCitations,
   synthesizeKnowledgeSearchAnswer,
 } from './knowledgeAgentChatService';
 
@@ -137,8 +138,49 @@ describe('knowledge agent prompt builders', () => {
     });
   });
 
-  it('submits bounded conversation history with the chat request', async () => {
+  it('returns citations with the answer while the string wrapper stays compatible', async () => {
     const tenantId = 'tenant-1';
+    bindTenantContext(tenantId);
+    installRegisteredSpace(tenantId, '42');
+    window.localStorage.setItem(
+      `sdkwork.knowledgebase.spaceAgentProfile.v1.${tenantId}.42`,
+      'profile-1',
+    );
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          agentProfiles: {
+            retrieve: async () => ({ knowledgeMode: 'rag' }),
+            chat: {
+              create: async () => ({
+                answer: 'grounded answer',
+                citations: [
+                  {
+                    documentId: '7',
+                    title: 'Refund policy',
+                    snippet: 'Accepted within 30 days',
+                  },
+                ],
+              }),
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {},
+    });
+
+    await expect(
+      sendKnowledgeAgentMessageWithCitations('question', { spaceId: '42' }),
+    ).resolves.toMatchObject({
+      answer: 'grounded answer',
+      citations: [{ documentId: '7', title: 'Refund policy' }],
+    });
+    await expect(sendKnowledgeAgentMessage('question', { spaceId: '42' })).resolves.toBe(
+      'grounded answer',
+    );
+  });
+
+  it('submits bounded conversation history with the chat request', async () => {    const tenantId = 'tenant-1';
     const chatRequests: Array<Record<string, unknown>> = [];
     bindTenantContext(tenantId);
     installRegisteredSpace(tenantId, '42');

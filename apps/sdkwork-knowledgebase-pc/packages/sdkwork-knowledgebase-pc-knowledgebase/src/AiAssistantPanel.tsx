@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { isBlank } from '@sdkwork/utils';
-import { Sparkles, X, Loader2, File, Check, CheckCircle2, CircleAlert } from 'lucide-react';
+import { Sparkles, X, Loader2, File, Check, CheckCircle2, CircleAlert, BookOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AiModelSelector } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
 import { DocumentMeta, FolderNode } from './services/document';
@@ -9,6 +9,7 @@ import type { McpToolCall } from './services/mcpAgent';
 import {
   resolveUserFacingErrorMessage,
   type ErrorTranslateFn,
+  type KnowledgeAgentChatCitation,
 } from 'sdkwork-knowledgebase-pc-core';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
@@ -24,6 +25,7 @@ export interface ChatMessage {
   content: string;
   references?: DocumentMeta[];
   toolCalls?: McpToolCall[];
+  citations?: KnowledgeAgentChatCitation[];
 }
 
 export interface AiAssistantPanelProps {
@@ -98,7 +100,7 @@ export function AiAssistantPanel({
         .filter((entry) => !isBlank(entry.content))
         .slice(-20)
         .map((entry) => ({ role: entry.role, content: entry.content }));
-      const { result: responseText, toolCalls } = await AIService.generateChatResponse(
+      const { result: responseText, toolCalls, citations } = await AIService.generateChatResponse(
         userMessage,
         docContent,
         currentRefs.map((reference) => reference.title).join(','),
@@ -116,6 +118,7 @@ export function AiAssistantPanel({
         role: 'assistant',
         content: responseText,
         toolCalls: resolvedToolCalls,
+        citations,
       }]);
     } catch (error) {
       if (generation !== generationSeqRef.current) {
@@ -319,6 +322,30 @@ export function AiAssistantPanel({
                         </div>
                       )
                     })}
+                  </div>
+                )}
+
+                {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && (
+                  <div className="w-full mt-2 rounded-xl border border-zinc-200/80 dark:border-[var(--color-kb-panel-border)]/55 bg-white/70 dark:bg-[var(--color-kb-panel-hover)]/60 px-3 py-2">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-500 dark:text-[var(--color-kb-text-muted)]">
+                      <BookOpen size={12} className="opacity-70" />
+                      <span>{t('aiSources', { defaultValue: '参考来源' })}</span>
+                    </div>
+                    <ul className="mt-1 space-y-1">
+                      {msg.citations.map((citation, citationIdx) => (
+                        <li
+                          key={`${citation.documentId ?? citation.conceptId ?? 'citation'}-${citationIdx}`}
+                          className="text-[11px] leading-snug text-zinc-600 dark:text-[var(--color-kb-text-muted)]"
+                        >
+                          <span className="font-medium text-zinc-700 dark:text-[var(--color-kb-text)]">
+                            {citation.title}
+                          </span>
+                          {citation.snippet && (
+                            <div className="truncate opacity-80">{citation.snippet}</div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
              </div>
