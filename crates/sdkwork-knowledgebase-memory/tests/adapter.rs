@@ -4,9 +4,9 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context:
 };
 use sdkwork_knowledgebase_memory::KnowledgebaseMemoryContextProviderAdapter;
 use sdkwork_memory_spi::{
-    AssembleMemoryContextCommand, MAX_MEMORY_RETRIEVAL_CANDIDATES, MemoryContextAssemblerPort,
-    MemoryContextPackDraft, MemoryRetrieverPort, MemoryRetrieverResult, MemorySpiResult,
-    MemorySensitivityReadScope, RetrieveMemoryCandidatesCommand,
+    AssembleMemoryContextCommand, MemoryContextAssemblerPort, MemoryContextPackDraft,
+    MemoryRetrieverPort, MemoryRetrieverResult, MemorySensitivityReadScope, MemorySpiResult,
+    RetrieveMemoryCandidatesCommand, MAX_MEMORY_RETRIEVAL_CANDIDATES,
 };
 use std::sync::{Arc, Mutex};
 
@@ -29,6 +29,8 @@ async fn adapter_maps_memory_spi_context_into_knowledgebase_memory_fragments() {
             query: "concise sdkwork examples".to_string(),
             memory_policy_ref: "memory.session.summary".to_string(),
             max_tokens: 6,
+            auth_token: None,
+            access_token: None,
         })
         .await
         .unwrap();

@@ -4905,9 +4905,13 @@ dependencies = [
  "async-trait",
  "sdkwork-intelligence-knowledgebase-service",
  "sdkwork-knowledgebase-contract",
+ "sdkwork-memory-app-sdk",
  "sdkwork-memory-spi",
  "sdkwork-utils-rust",
+ "serde_json",
  "tokio",
+ "tracing",
+ "wiremock",
 ]
 
 [[package]]
@@ -5013,6 +5017,17 @@ dependencies = [
  "tokio",
  "tower 0.5.3",
  "tracing",
+]
+
+[[package]]
+name = "sdkwork-memory-app-sdk"
+version = "0.1.0"
+dependencies = [
+ "http",
+ "reqwest 0.13.5",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

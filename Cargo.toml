@@ -153,6 +153,7 @@ sdkwork-drive-config = { path = "../sdkwork-drive/crates/sdkwork-drive-config" }
 sdkwork-drive-test-support = { path = "../sdkwork-drive/crates/sdkwork-drive-test-support" }
 sdkwork-drive-internal-sdk-generated-rust = { path = "../sdkwork-drive/sdks/sdkwork-drive-internal-sdk/sdkwork-drive-internal-sdk-rust/generated/server-openapi" }
 sdkwork-memory-spi = { path = "../sdkwork-memory/crates/sdkwork-memory-spi" }
+sdkwork-memory-app-sdk-generated-rust = { package = "sdkwork-memory-app-sdk", path = "../sdkwork-memory/sdks/sdkwork-memory-app-sdk/sdkwork-memory-app-sdk-rust/generated/server-openapi" }
 sdkwork-id-core = { path = "../sdkwork-id/packages/sdkwork-id-core" }
 sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }
 sdkwork-im-rpc-sdk-rust = { path = "../sdkwork-im/sdks/sdkwork-im-rpc-sdk/sdkwork-im-rpc-sdk-rust" }

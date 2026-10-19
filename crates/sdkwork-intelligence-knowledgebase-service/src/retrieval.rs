@@ -218,6 +218,8 @@ impl<'a> KnowledgeRetrievalService<'a> {
                         query: request.query.clone(),
                         memory_policy_ref: memory_policy_ref.to_string(),
                         max_tokens: remaining_tokens,
+                        auth_token: None,
+                        access_token: None,
                     })
                     .await?;
                 truncated |= memory_result.truncated;

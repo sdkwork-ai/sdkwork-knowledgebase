@@ -5,9 +5,9 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context:
 };
 use sdkwork_knowledgebase_contract::rag::KnowledgeMemoryContextFragment;
 use sdkwork_memory_spi::{
-    AssembleMemoryContextCommand, MAX_MEMORY_RETRIEVAL_CANDIDATES, MemoryContextAssemblerPort,
-    MemoryContextPackDraft, MemoryRetrieverPort, MemorySensitivityReadScope,
-    RetrieveMemoryCandidatesCommand,
+    AssembleMemoryContextCommand, MemoryContextAssemblerPort, MemoryContextPackDraft,
+    MemoryRetrieverPort, MemorySensitivityReadScope, RetrieveMemoryCandidatesCommand,
+    MAX_MEMORY_RETRIEVAL_CANDIDATES,
 };
 use sdkwork_utils_rust::{is_blank, trim};
 use std::sync::Arc;

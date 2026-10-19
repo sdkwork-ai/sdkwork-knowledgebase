@@ -17,6 +17,13 @@ pub struct KnowledgeMemoryContextRequest {
     pub query: String,
     pub memory_policy_ref: String,
     pub max_tokens: u32,
+    /// Caller `Authorization` bearer token, forwarded unchanged to the memory
+    /// backend. `None` means the provider must fail closed rather than read
+    /// memory as another actor.
+    pub auth_token: Option<String>,
+    /// Caller `Access-Token`, forwarded unchanged when the backend requires the
+    /// dual-token exchange.
+    pub access_token: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -48,6 +48,13 @@ const MAX_CHAT_HISTORY_MESSAGE_CHARS: usize = 8_000;
 /// Maximum characters across all prior turns.
 const MAX_CHAT_HISTORY_TOTAL_CHARS: usize = 24_000;
 
+/// Caller credentials forwarded to actor-scoped capability providers.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct KnowledgeAgentChatCredentials<'a> {
+    pub auth_token: Option<&'a str>,
+    pub access_token: Option<&'a str>,
+}
+
 pub struct KnowledgeAgentChatService<'a, R, W> {
     profiles: &'a dyn KnowledgeAgentProfileStore,
     retrieval: &'a dyn KnowledgeRetrievalExecutor,
@@ -119,6 +126,7 @@ where
         &self,
         profile: &sdkwork_knowledgebase_contract::rag::KnowledgeAgentProfile,
         request: &KnowledgeAgentChatRequest,
+        credentials: KnowledgeAgentChatCredentials<'_>,
     ) -> Vec<sdkwork_knowledgebase_contract::rag::KnowledgeMemoryContextFragment> {
         let Some(policy_ref) = profile
             .memory_policy_ref
@@ -142,6 +150,8 @@ where
                 query: request.message.clone(),
                 memory_policy_ref: policy_ref.to_string(),
                 max_tokens: DEFAULT_AGENT_MEMORY_BUDGET_TOKENS,
+                auth_token: credentials.auth_token.map(str::to_string),
+                access_token: credentials.access_token.map(str::to_string),
             })
             .await
         {
@@ -166,9 +176,26 @@ where
         profile_id: u64,
         request: KnowledgeAgentChatRequest,
     ) -> Result<KnowledgeAgentChatResponse, KnowledgeAgentChatServiceError> {
+        self.chat_with_credentials(
+            profile_id,
+            request,
+            KnowledgeAgentChatCredentials::default(),
+        )
+        .await
+    }
+
+    /// Executes one chat turn with the caller's credentials available to
+    /// capability providers (memory reads are actor-scoped and cannot use a
+    /// service identity).
+    pub async fn chat_with_credentials(
+        &self,
+        profile_id: u64,
+        request: KnowledgeAgentChatRequest,
+        credentials: KnowledgeAgentChatCredentials<'_>,
+    ) -> Result<KnowledgeAgentChatResponse, KnowledgeAgentChatServiceError> {
         match tokio::time::timeout(
             self.execution_timeout,
-            self.chat_within_deadline(profile_id, request),
+            self.chat_within_deadline(profile_id, request, credentials),
         )
         .await
         {
@@ -183,6 +210,7 @@ where
         &self,
         profile_id: u64,
         request: KnowledgeAgentChatRequest,
+        credentials: KnowledgeAgentChatCredentials<'_>,
     ) -> Result<KnowledgeAgentChatResponse, KnowledgeAgentChatServiceError> {
         if profile_id == 0 {
             return Err(KnowledgeAgentChatServiceError::InvalidRequest(
@@ -299,7 +327,9 @@ where
         let retrieval_id = access_result.retrieval_id;
         let knowledge_namespace = access_result.namespace;
         let knowledge_methods = access_result.kernel_methods;
-        let memory_fragments = self.resolve_memory_fragments(&profile, &request).await;
+        let memory_fragments = self
+            .resolve_memory_fragments(&profile, &request, credentials)
+            .await;
 
         let model_provider_id = request
             .model_provider_id
@@ -346,15 +376,14 @@ where
 
         let conversation_prompt =
             build_conversation_prompt(&request.history, request.message.as_str());
-        let mut chat_request =
-            AgentChatRequest::new(chat_id.clone(), vec![conversation_prompt])
-                .with_provider_id(resolved_model_provider_id.clone())
-                .with_model_id(model_id.clone())
-                .with_knowledge_query(&request.message)
-                .with_knowledge_provider_id(knowledge_provider_id)
-                .with_knowledge_tenant_id(request.tenant_id.to_string())
-                .with_knowledge_namespace(knowledge_namespace)
-                .with_knowledge_top_k(default_top_k(&bindings));
+        let mut chat_request = AgentChatRequest::new(chat_id.clone(), vec![conversation_prompt])
+            .with_provider_id(resolved_model_provider_id.clone())
+            .with_model_id(model_id.clone())
+            .with_knowledge_query(&request.message)
+            .with_knowledge_provider_id(knowledge_provider_id)
+            .with_knowledge_tenant_id(request.tenant_id.to_string())
+            .with_knowledge_namespace(knowledge_namespace)
+            .with_knowledge_top_k(default_top_k(&bindings));
 
         for method in knowledge_methods {
             chat_request = chat_request.with_knowledge_method(method);
@@ -438,18 +467,10 @@ fn default_knowledge_provider_id(mode: KnowledgeAgentKnowledgeMode) -> &'static 
 /// skipped; the oldest turns are dropped first when the total budget is
 /// exceeded, so a long conversation never exceeds the model context by
 /// accident.
-fn build_conversation_prompt(
-    history: &[KnowledgeAgentChatMessage],
-    message: &str,
-) -> String {
+fn build_conversation_prompt(history: &[KnowledgeAgentChatMessage], message: &str) -> String {
     let message = message.trim();
     let mut turns: Vec<(&'static str, String)> = Vec::new();
-    for entry in history
-        .iter()
-        .rev()
-        .take(MAX_CHAT_HISTORY_MESSAGES)
-        .rev()
-    {
+    for entry in history.iter().rev().take(MAX_CHAT_HISTORY_MESSAGES).rev() {
         let role = match entry.role.trim().to_ascii_lowercase().as_str() {
             "user" => "User",
             "assistant" => "Assistant",
@@ -1388,13 +1409,21 @@ mod tests {
             .resolve_memory_fragments(
                 &memory_profile(Some("memory.agent.durable")),
                 &memory_request(),
+                KnowledgeAgentChatCredentials::default(),
             )
             .await;
         assert_eq!(configured.len(), 1);
         assert_eq!(configured[0].memory_id, "memory.1");
 
         let unconfigured = service
-            .resolve_memory_fragments(&memory_profile(None), &memory_request())
+            .resolve_memory_fragments(
+                &memory_profile(None),
+                &memory_request(),
+                KnowledgeAgentChatCredentials {
+                    auth_token: Some("auth-token"),
+                    access_token: None,
+                },
+            )
             .await;
         assert!(unconfigured.is_empty());
     }
