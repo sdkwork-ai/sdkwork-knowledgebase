@@ -123,9 +123,11 @@ retrieval.
   "no extractable text" error. Legacy binary `.doc`/`.ppt`/`.xls` are not
   decoded yet (they receive the document upload profile but fail with an
   actionable error instead of indexing garbage).
-- A production memory provider for the Knowledgebase App API chat path is
-  composed from `SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`; unset keeps the
-  documented no-memory degradation, while a set-but-invalid origin fails
+- A production memory provider for the Knowledgebase App API chat path supports
+  `SDKWORK_KNOWLEDGEBASE_MEMORY_MODE=in_process` (default) and `http`. In-process
+  calls the memory service in the same process; HTTP calls
+  `SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`. Missing optional configuration keeps
+  the documented no-memory degradation, while invalid configuration fails
   bootstrap.
 - Live end-to-end evidence with a real Drive upload, worker ingestion, embedding
   provider, and model provider in a release environment.

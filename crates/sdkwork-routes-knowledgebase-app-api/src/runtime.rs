@@ -24,22 +24,75 @@ use sdkwork_intelligence_knowledgebase_repository_sqlx::{
     SqlxWikiPersistenceStore,
 };
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context::KnowledgeMemoryContextProvider;
-use sdkwork_knowledgebase_memory::MemoryAppApiContextProvider;
+use sdkwork_knowledgebase_memory::{InProcessMemoryContextProvider, MemoryAppApiContextProvider};
 
+const MEMORY_MODE_ENV: &str = "SDKWORK_KNOWLEDGEBASE_MEMORY_MODE";
+const MEMORY_MODE_IN_PROCESS: &str = "in_process";
+const MEMORY_MODE_HTTP: &str = "http";
 const MEMORY_BASE_URL_ENV: &str = "SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL";
 
-fn memory_context_provider_from_env(
-) -> Result<Option<Arc<dyn KnowledgeMemoryContextProvider>>, sqlx::Error> {
-    let base_url = std::env::var(MEMORY_BASE_URL_ENV)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MemoryMode {
+    InProcess,
+    Http,
+}
+
+fn resolve_memory_mode() -> Result<MemoryMode, sqlx::Error> {
+    let configured = std::env::var(MEMORY_MODE_ENV)
         .ok()
-        .map(|value| value.trim().to_string())
+        .map(|value| value.trim().to_ascii_lowercase())
         .filter(|value| !value.is_empty());
-    let Some(base_url) = base_url else {
-        return Ok(None);
-    };
-    MemoryAppApiContextProvider::new(base_url)
-        .map(|provider| Some(Arc::new(provider) as Arc<dyn KnowledgeMemoryContextProvider>))
-        .map_err(|error| sqlx::Error::Configuration(error.into()))
+    match configured.as_deref() {
+        None | Some(MEMORY_MODE_IN_PROCESS) => Ok(MemoryMode::InProcess),
+        Some(MEMORY_MODE_HTTP) => Ok(MemoryMode::Http),
+        Some(other) => Err(sqlx::Error::Configuration(
+            format!(
+                "{MEMORY_MODE_ENV} must be {MEMORY_MODE_IN_PROCESS} or {MEMORY_MODE_HTTP}; got {other}"
+            )
+            .into(),
+        )),
+    }
+}
+
+async fn memory_context_provider_from_env(
+) -> Result<Option<Arc<dyn KnowledgeMemoryContextProvider>>, sqlx::Error> {
+    match resolve_memory_mode()? {
+        MemoryMode::InProcess => match InProcessMemoryContextProvider::from_env().await {
+            Ok(Some(provider)) => {
+                tracing::info!(
+                    mode = MEMORY_MODE_IN_PROCESS,
+                    "Knowledgebase memory grounding is enabled in-process"
+                );
+                Ok(Some(Arc::new(provider)))
+            }
+            Ok(None) => {
+                tracing::info!(
+                    mode = MEMORY_MODE_IN_PROCESS,
+                    "Knowledgebase memory database is not configured; memory grounding stays disabled"
+                );
+                Ok(None)
+            }
+            Err(error) => Err(sqlx::Error::Configuration(
+                format!("in-process memory bootstrap failed: {error}").into(),
+            )),
+        },
+        MemoryMode::Http => {
+            let base_url = std::env::var(MEMORY_BASE_URL_ENV)
+                .ok()
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty());
+            let Some(base_url) = base_url else {
+                tracing::info!(
+                    mode = MEMORY_MODE_HTTP,
+                    "Knowledgebase memory App API URL is not configured; memory grounding stays disabled"
+                );
+                return Ok(None);
+            };
+            MemoryAppApiContextProvider::new(base_url)
+                .map(|provider| Some(Arc::new(provider) as Arc<dyn KnowledgeMemoryContextProvider>))
+                .map_err(|error| sqlx::Error::Configuration(error.into()))
+        }
+    }
 }
 
 use sdkwork_intelligence_knowledgebase_service::{
@@ -1219,7 +1272,7 @@ impl KnowledgebaseRuntime {
                     .with_database_engine(database_engine),
             ),
             snowflake_node_lease,
-            memory_context_provider: memory_context_provider_from_env()?,
+            memory_context_provider: memory_context_provider_from_env().await?,
         })
     }
 

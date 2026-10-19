@@ -17,6 +17,8 @@ sdkwork-knowledgebase-contract.workspace = true
 sdkwork-intelligence-knowledgebase-service.workspace = true
 sdkwork-utils-rust.workspace = true
 sdkwork-memory-spi.workspace = true
+sdkwork-memory-inprocess.workspace = true
+sdkwork-memory-contract.workspace = true
 sdkwork-memory-app-sdk-generated-rust.workspace = true
 serde_json.workspace = true
 tokio = { workspace = true, features = ["time"] }

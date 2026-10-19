@@ -152,18 +152,28 @@ never coupled to the memory backend.
 
 ### Production Provider
 
-`MemoryAppApiContextProvider` (in `crates/sdkwork-knowledgebase-memory`) reads
-durable memory through the generator-owned Memory App API Rust SDK. The chat
-route extracts `Authorization` and `Access-Token`, passes them through
-`AgentChatCredentials` into `KnowledgeAgentChatService::chat_with_credentials`,
-and the provider forwards them unchanged; the memory backend derives actor,
-tenant, and owner scope from the token, so a service token is never substituted.
+Knowledgebase memory supports two selectable transports. `SDKWORK_KNOWLEDGEBASE_MEMORY_MODE`
+accepts `in_process` (default) or `http`; an unknown value fails bootstrap.
 
-The runtime composes the provider from
-`SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`. Unset = memory module not mounted
-(profiles with `memory_policy_ref` degrade to an answer without memory); a
-set-but-invalid origin fails bootstrap. `memory_policy_ref` must be a numeric
-Memory space id (`4242` or `space:4242`).
+**In-process (default).** `InProcessMemoryContextProvider` bootstraps the
+memory data plane from the process database profile (`SDKWORK_MEMORY_DATABASE_*`
+or the shared `SDKWORK_DATABASE_*`) and calls the same
+`MemoryAppApi::create_retrieval` service method as `retrievals.create`. This
+avoids an extra network hop but requires co-deployment and memory database
+access. When the memory database is not configured the capability stays
+disabled and profiles with `memory_policy_ref` degrade without memory.
+
+**HTTP.** `MemoryAppApiContextProvider` calls the Memory App API through the
+generator-owned Rust SDK. The chat route extracts `Authorization` and
+`Access-Token`, passes them through `AgentChatCredentials` into
+`KnowledgeAgentChatService::chat_with_credentials`, and the provider forwards
+them unchanged; the memory backend derives actor, tenant, and owner scope from
+the token, so a service token is never substituted. Configure
+`SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`; unset disables the capability.
+
+Both modes resolve `memory_policy_ref` as a numeric Memory space id (`4242` or
+`space:4242`) and use the same retrieval contract (`top_k`, context budget,
+active records), so switching transports does not change answer semantics.
 
 ## Cross-Repository Agent Runtime Consumption
 

@@ -14,7 +14,7 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context:
     KnowledgeMemoryContextRequest, KnowledgeMemoryContextResult,
 };
 use sdkwork_knowledgebase_contract::rag::KnowledgeMemoryContextFragment;
-use sdkwork_memory_app_sdk_generated_rust::models::{MemoryRecord, MemoryRecordList};
+use sdkwork_memory_app_sdk_generated_rust::models::MemoryRecord;
 use sdkwork_memory_app_sdk_generated_rust::SdkworkMemoryAppClient;
 
 /// Default per-turn memory retrieval deadline.
@@ -23,6 +23,8 @@ pub const DEFAULT_MEMORY_TIMEOUT: Duration = Duration::from_secs(8);
 pub const MAX_MEMORY_FRAGMENTS: usize = 8;
 /// Default memory retrieval depth when the caller does not budget tokens.
 pub const DEFAULT_MEMORY_TOP_K: i64 = 8;
+/// Default context budget for the retrieval request.
+const DEFAULT_CONTEXT_BUDGET_TOKENS: u32 = 1_024;
 
 /// Memory App API backed context provider.
 pub struct MemoryAppApiContextProvider {
@@ -89,12 +91,31 @@ impl KnowledgeMemoryContextProvider for MemoryAppApiContextProvider {
 
         let response = tokio::time::timeout(
             self.timeout,
-            client.memory().memories_list(
-                &space_id,
-                Some(request.query.as_str()),
-                None,
-                Some(DEFAULT_MEMORY_TOP_K),
-                Some(false),
+            client.memory().retrievals_create(
+                &sdkwork_memory_app_sdk_generated_rust::models::MemoryRetrievalRequest {
+                    query: request.query.trim().to_string(),
+                    space_ids: vec![space_id],
+                    actor_id: request.actor_id.map(|value| value.to_string()),
+                    retrieval_profile_id: None,
+                    memory_types: None,
+                    filters: None,
+                    top_k: i64::from(DEFAULT_MEMORY_TOP_K),
+                    context_budget_tokens: i64::from(
+                        request.max_tokens.min(DEFAULT_CONTEXT_BUDGET_TOKENS),
+                    ),
+                    show_expired: Some(false),
+                    threshold: None,
+                    explain: None,
+                    include_trace: None,
+                },
+                &format!(
+                    "kb-memory-{}-{}",
+                    request.tenant_id,
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|duration| duration.as_nanos())
+                        .unwrap_or_default()
+                ),
             ),
         )
         .await
@@ -106,7 +127,7 @@ impl KnowledgeMemoryContextProvider for MemoryAppApiContextProvider {
         })?
         .map_err(|error| KnowledgeMemoryContextProviderError::Upstream(error.to_string()))?;
 
-        Ok(map_memory_context(response, &request))
+        Ok(map_retrieval_result(response, &request))
     }
 }
 
@@ -147,24 +168,21 @@ pub fn parse_memory_space_id(reference: &str) -> Option<String> {
     Some(numeric.to_string())
 }
 
-fn map_memory_context(
-    value: serde_json::Value,
+fn map_retrieval_result(
+    result: sdkwork_memory_app_sdk_generated_rust::models::MemoryRetrievalResult,
     request: &KnowledgeMemoryContextRequest,
 ) -> KnowledgeMemoryContextResult {
-    let Ok(page) = serde_json::from_value::<MemoryRecordList>(value) else {
-        return KnowledgeMemoryContextResult {
-            fragments: Vec::new(),
-            truncated: false,
-        };
-    };
     let mut fragments = Vec::new();
     let mut used_tokens = 0_u32;
-    let mut truncated = false;
-    for record in page.items {
+    let mut truncated = result.degraded;
+    for hit in result.hits {
         if fragments.len() >= MAX_MEMORY_FRAGMENTS {
             truncated = true;
             break;
         }
+        let Some(record) = hit.memory else {
+            continue;
+        };
         if !record.status.eq_ignore_ascii_case("active") {
             continue;
         }
@@ -181,7 +199,7 @@ fn map_memory_context(
             memory_id: record.memory_id,
             title: None,
             content,
-            score: Some(record.confidence),
+            score: hit.fused_score.or(Some(record.confidence)),
             rank: (fragments.len() + 1) as u32,
             token_count: Some(tokens),
             source_uri: None,
@@ -194,7 +212,7 @@ fn map_memory_context(
     }
 }
 
-fn memory_content(record: &MemoryRecord) -> Option<String> {
+pub(crate) fn memory_content(record: &MemoryRecord) -> Option<String> {
     record
         .summary_text
         .as_deref()
@@ -207,7 +225,7 @@ fn memory_content(record: &MemoryRecord) -> Option<String> {
         })
 }
 
-fn estimate_tokens(content: &str) -> u32 {
+pub(crate) fn estimate_tokens(content: &str) -> u32 {
     content.split_whitespace().count().max(1) as u32
 }
 
@@ -240,70 +258,82 @@ mod tests {
 
     #[test]
     fn active_memories_become_bounded_fragments() {
-        let page = serde_json::json!({
-            "items": [
-                {
-                    "memoryId": "7001", "spaceId": "4242", "userId": "7",
-                    "scope": "user", "memoryType": "semantic",
-                    "canonicalText": "Prefers refunds within 30 days.",
-                    "summaryText": null, "confidence": 0.9,
-                    "evidenceCount": 1, "contradictionCount": 0, "expiresAt": null,
-                    "status": "active", "sensitivityLevel": "normal", "metadata": null,
-                    "supersedesMemoryId": null, "supersededByMemoryId": null,
-                    "createdAt": "2026-10-01T00:00:00Z", "updatedAt": "2026-10-01T00:00:00Z",
-                    "version": "1"
+        use sdkwork_memory_app_sdk_generated_rust::models::{
+            MemoryRecord, MemoryRetrievalHit, MemoryRetrievalResult,
+        };
+        let record = |memory_id: &str, text: &str, status: &str| MemoryRecord {
+            memory_id: memory_id.to_string(),
+            canonical_text: text.to_string(),
+            confidence: 0.9,
+            status: status.to_string(),
+            ..Default::default()
+        };
+        let result = MemoryRetrievalResult {
+            retrieval_id: "1".to_string(),
+            hits: vec![
+                MemoryRetrievalHit {
+                    hit_id: "h1".to_string(),
+                    memory: Some(record("7001", "Prefers refunds within 30 days.", "active")),
+                    retriever_name: "hybrid".to_string(),
+                    result_rank: 1,
+                    fused_score: Some(0.93),
+                    status: "active".to_string(),
+                    ..Default::default()
                 },
-                {
-                    "memoryId": "7002", "spaceId": "4242", "userId": "7",
-                    "scope": "user", "memoryType": "semantic",
-                    "canonicalText": "Deleted preference", "summaryText": null,
-                    "confidence": 0.5, "evidenceCount": 1, "contradictionCount": 0,
-                    "expiresAt": null, "status": "deleted", "sensitivityLevel": "normal",
-                    "metadata": null, "supersedesMemoryId": null, "supersededByMemoryId": null,
-                    "createdAt": "2026-10-01T00:00:00Z", "updatedAt": "2026-10-01T00:00:00Z",
-                    "version": "1"
-                }
+                MemoryRetrievalHit {
+                    hit_id: "h2".to_string(),
+                    memory: Some(record("7002", "Deleted preference", "deleted")),
+                    retriever_name: "hybrid".to_string(),
+                    result_rank: 2,
+                    status: "deleted".to_string(),
+                    ..Default::default()
+                },
             ],
-            "pageInfo": { "mode": "cursor", "hasMore": false }
-        });
-        let result = map_memory_context(page, &request("space:4242"));
-        assert_eq!(result.fragments.len(), 1);
-        assert_eq!(result.fragments[0].memory_id, "7001");
+            degraded: false,
+            ..Default::default()
+        };
+        let context = map_retrieval_result(result, &request("space:4242"));
+        assert_eq!(context.fragments.len(), 1);
+        assert_eq!(context.fragments[0].memory_id, "7001");
         assert_eq!(
-            result.fragments[0].policy_ref.as_deref(),
+            context.fragments[0].policy_ref.as_deref(),
             Some("space:4242")
         );
-        assert!(!result.truncated);
+        assert!(!context.truncated);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn provider_forwards_dual_tokens_and_query_to_memories_list() {
+    async fn provider_forwards_dual_tokens_and_query_to_retrievals_create() {
         use serde_json::json;
-        use wiremock::matchers::{header, method, path, query_param};
+        use wiremock::matchers::{header, method, path};
         use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let server = MockServer::start().await;
-        Mock::given(method("GET"))
-            .and(path("/app/v3/api/memory/memories"))
-            .and(query_param("space_id", "4242"))
-            .and(query_param("q", "preferred refund window"))
+        Mock::given(method("POST"))
+            .and(path("/app/v3/api/memory/retrievals"))
             .and(header("Authorization", "Bearer auth-token"))
             .and(header("Access-Token", "access-token"))
             .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "code": 0,
                 "data": {
-                    "items": [{
-                        "memoryId": "7001", "spaceId": "4242", "userId": "7",
-                        "scope": "user", "memoryType": "semantic",
-                        "canonicalText": "Prefers refunds within 30 days.",
-                        "summaryText": null, "confidence": 0.9,
-                        "evidenceCount": 1, "contradictionCount": 0, "expiresAt": null,
-                        "status": "active", "sensitivityLevel": "normal", "metadata": null,
-                        "supersedesMemoryId": null, "supersededByMemoryId": null,
-                        "createdAt": "2026-10-01T00:00:00Z",
-                        "updatedAt": "2026-10-01T00:00:00Z", "version": "1"
+                    "retrievalId": "1",
+                    "hits": [{
+                        "hitId": "h1",
+                        "memory": {
+                            "memoryId": "7001", "spaceId": "4242", "userId": "7",
+                            "scope": "user", "memoryType": "semantic",
+                            "canonicalText": "Prefers refunds within 30 days.",
+                            "summaryText": null, "confidence": 0.9,
+                            "evidenceCount": 1, "contradictionCount": 0, "expiresAt": null,
+                            "status": "active", "sensitivityLevel": "normal", "metadata": null,
+                            "supersedesMemoryId": null, "supersededByMemoryId": null,
+                            "createdAt": "2026-10-01T00:00:00Z",
+                            "updatedAt": "2026-10-01T00:00:00Z", "version": "1"
+                        },
+                        "retrieverName": "hybrid", "resultRank": 1,
+                        "fusedScore": 0.93, "status": "active"
                     }],
-                    "pageInfo": { "mode": "cursor", "hasMore": false }
+                    "degraded": false
                 },
                 "traceId": "00000000-0000-4000-8000-000000000000"
             })))
