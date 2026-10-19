@@ -11,7 +11,8 @@
     "capability": "knowledgebase",
     "status": "standardized",
     "languages": [
-      "typescript"
+      "typescript",
+      "rust"
     ],
     "generated": true,
     "private": false,
@@ -103,6 +104,7 @@
     ],
     "sdkClients": [
       "SdkworkKnowledgebaseAppClient",
+      "SdkworkAppClient",
       "SdkworkKnowledgebaseAppClient.knowledge.wikiPublications",
       "SdkworkKnowledgebaseAppClient.knowledge.wikiSourceFiles"
     ],
@@ -115,7 +117,7 @@
     "authority": "Root SDKWork specs remain authoritative. Local specs may extend but must not contradict them.",
     "dependencyPolicy": "Appbase, drive, and memory capabilities are consumed through declared dependency SDKs, not copied into generated knowledgebase transports.",
     "sdkPolicy": "Consumers import the composed TypeScript facade (`createKnowledgebaseAppClient`) from the SDK family workspace root; generated transport under `generated/server-openapi` remains generator-owned and must not be imported directly.",
-    "languagePolicy": "Generated languages (typescript) use the same owner-only OpenAPI input and sdkDependencies."
+    "languagePolicy": "Generated languages (typescript, rust) use the same owner-only OpenAPI input and sdkDependencies."
   },
   "verification": {
     "commands": [

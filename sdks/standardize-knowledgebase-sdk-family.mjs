@@ -121,6 +121,16 @@ const families = [
     generatedPath: "sdkwork-knowledgebase-app-sdk-typescript/generated/server-openapi",
     generatedWorkspace: "sdkwork-knowledgebase-app-sdk-typescript",
     primaryClient: "SdkworkKnowledgebaseAppClient",
+    additionalLanguageTargets: [
+      {
+        language: "rust",
+        workspace: "sdkwork-knowledgebase-app-sdk-rust",
+        generatedPath: "sdkwork-knowledgebase-app-sdk-rust/generated/server-openapi",
+        manifestPath: "sdkwork-knowledgebase-app-sdk-rust/generated/server-openapi/Cargo.toml",
+        packageName: "sdkwork-knowledgebase-app-sdk-generated-rust",
+        primaryClient: "SdkworkAppClient",
+      },
+    ],
     dependencies: [
       dependency("sdkwork-iam-app-sdk", "appbase-identity-and-session-capability", "/app/v3/api", "sdkwork-iam-app-api", appbasePackages),
       dependency("sdkwork-drive-app-sdk", "drive-file-and-media-capability", "/app/v3/api", "sdkwork-drive.app", driveAppPackages),

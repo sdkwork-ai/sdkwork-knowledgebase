@@ -136,6 +136,39 @@ Knowledgebase does not own full chat sessions. Agent runtime exposes:
 
 RPC and HTTP operation semantics must match. RPC is not a bypass for missing app/backend API behavior.
 
+## Agent Memory In Chat
+
+`KnowledgeAgentProfile.memory_policy_ref` is the per-agent memory switch. When it
+is set and a `KnowledgeMemoryContextProvider` is composed into
+`KnowledgeAgentChatService`, the service retrieves a bounded memory context
+(1,024 tokens, at most 8 fragments) before model execution and appends a
+numbered `[M1]`, `[M2]` section to the agent system instruction. The section is
+explicitly labelled untrusted reference data so stored memory can never
+promote itself to an instruction.
+
+Memory is optional: no policy means no retrieval; a missing provider or a
+failing provider logs a warning and answers without memory. Chat availability is
+never coupled to the memory backend.
+
+## Cross-Repository Agent Runtime Consumption
+
+`../sdkwork-agents` executes the same knowledge capability through its turn
+path. Its composition root resolves `knowledge -> knowledgebase` slots and calls
+the Knowledgebase App API through the generated Rust transport SDK, forwarding
+the caller's dual tokens. The Knowledgebase enforces tenant, actor, space ACL,
+and retrieval scope exactly as it does for the caller's own requests; Agents
+never selects an actor or space and never stores knowledge content.
+
+See `../../../../sdkwork-agents/docs/architecture/tech/TECH-2026-1019-turn-knowledge-memory-grounding.md`.
+
+## Generated Rust App SDK
+
+The App API SDK family publishes a generator-owned Rust target in addition to
+TypeScript (`sdks/sdkwork-knowledgebase-app-sdk/sdkwork-knowledgebase-app-sdk-rust`).
+Server-side capability consumers use that public transport instead of raw HTTP.
+The OpenAPI authority declares `KnowledgeAgentBindingList`, which the
+`agentProfiles.bindings.list` response references.
+
 ## Verification
 
 Required checks:

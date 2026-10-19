@@ -11,14 +11,13 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": true,
-  "changeFingerprint": "821de1e075a1499e589b72e6d4c4e0adb874cc2a96549ea2159441115c5ca45b",
+  "hasDestructiveChanges": false,
+  "changeFingerprint": "c946e9c61ed13ae3e7166e711d10105be106703641b54b84e81fcc80b5c1428e",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
-      "models",
-      "documentation"
+      "models"
     ],
     "details": [
       {
@@ -30,36 +29,23 @@
       {
         "area": "models",
         "paths": [
+          "src/types/agent-profiles-bindings-list-response.ts",
           "src/types/index.ts",
-          "src/types/knowledge-wechat-fan-tag-list.ts",
-          "src/types/knowledge-wechat-operation-result.ts",
-          "src/types/wechat-applets-list-response.ts",
-          "src/types/wechat-articles-preview-response.ts",
-          "src/types/wechat-articles-publish-response.ts",
-          "src/types/wechat-official-accounts-fan-tags-list-response.ts",
-          "src/types/wechat-official-accounts-list-response.ts"
-        ]
-      },
-      {
-        "area": "documentation",
-        "paths": [
-          "README.md"
+          "src/types/knowledge-agent-binding-list.ts"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },
@@ -71,7 +57,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -89,7 +75,7 @@
         "id": "verify-build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, documentation.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -108,13 +94,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -132,7 +118,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, documentation.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -162,33 +148,29 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 210,
-    "models": 186,
+    "totalFiles": 211,
+    "models": 187,
     "apis": 1,
-    "types": 188
+    "types": 189
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 9,
+    "writtenFiles": 4,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 199,
-    "deletedGeneratedFiles": 1,
+    "skippedUnchangedGeneratedFiles": 205,
+    "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "821de1e075a1499e589b72e6d4c4e0adb874cc2a96549ea2159441115c5ca45b",
+    "changeFingerprint": "c946e9c61ed13ae3e7166e711d10105be106703641b54b84e81fcc80b5c1428e",
     "changes": {
-      "createdGeneratedFiles": [],
+      "createdGeneratedFiles": [
+        "src/types/knowledge-agent-binding-list.ts"
+      ],
       "updatedGeneratedFiles": [
-        "README.md",
         "src/api/knowledge.ts",
-        "src/types/index.ts",
-        "src/types/knowledge-wechat-operation-result.ts",
-        "src/types/wechat-applets-list-response.ts",
-        "src/types/wechat-articles-preview-response.ts",
-        "src/types/wechat-articles-publish-response.ts",
-        "src/types/wechat-official-accounts-fan-tags-list-response.ts",
-        "src/types/wechat-official-accounts-list-response.ts"
+        "src/types/agent-profiles-bindings-list-response.ts",
+        "src/types/index.ts"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -199,6 +181,7 @@
         "CHANGELOG.md",
         "LICENSE",
         "package.json",
+        "README.md",
         "sdkwork-sdk.json",
         "src/api/base.ts",
         "src/api/index.ts",
@@ -209,7 +192,6 @@
         "src/index.ts",
         "src/sdk.ts",
         "src/types/agent-profiles-bindings-create-response201.ts",
-        "src/types/agent-profiles-bindings-list-response.ts",
         "src/types/agent-profiles-bindings-update-response.ts",
         "src/types/agent-profiles-chat-create-response201.ts",
         "src/types/agent-profiles-create-response201.ts",
@@ -312,6 +294,7 @@
         "src/types/knowledge-wechat-fan-tag.ts",
         "src/types/knowledge-wechat-official-account-list.ts",
         "src/types/knowledge-wechat-official-account.ts",
+        "src/types/knowledge-wechat-operation-result.ts",
         "src/types/knowledge-wechat-replace-applets-request.ts",
         "src/types/knowledge-wechat-replace-official-accounts-request.ts",
         "src/types/knowledge-wiki-index-state.ts",
@@ -380,7 +363,12 @@
         "src/types/spaces-update-response.ts",
         "src/types/update-knowledge-space-context-binding-request.ts",
         "src/types/update-knowledge-space-request.ts",
+        "src/types/wechat-applets-list-response.ts",
         "src/types/wechat-applets-update-response.ts",
+        "src/types/wechat-articles-preview-response.ts",
+        "src/types/wechat-articles-publish-response.ts",
+        "src/types/wechat-official-accounts-fan-tags-list-response.ts",
+        "src/types/wechat-official-accounts-list-response.ts",
         "src/types/wechat-official-accounts-update-response.ts",
         "src/types/wiki-publications-activate-response.ts",
         "src/types/wiki-publications-pause-response.ts",
@@ -391,9 +379,7 @@
         "src/types/wiki-source-files-visibility-update-response.ts",
         "tsconfig.json"
       ],
-      "deletedGeneratedFiles": [
-        "src/types/knowledge-wechat-fan-tag-list.ts"
-      ],
+      "deletedGeneratedFiles": [],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
@@ -405,8 +391,7 @@
       "schemaVersion": 1,
       "areas": [
         "api-surface",
-        "models",
-        "documentation"
+        "models"
       ],
       "details": [
         {
@@ -418,36 +403,25 @@
         {
           "area": "models",
           "paths": [
+            "src/types/agent-profiles-bindings-list-response.ts",
             "src/types/index.ts",
-            "src/types/knowledge-wechat-fan-tag-list.ts",
-            "src/types/knowledge-wechat-operation-result.ts",
-            "src/types/wechat-applets-list-response.ts",
-            "src/types/wechat-articles-preview-response.ts",
-            "src/types/wechat-articles-publish-response.ts",
-            "src/types/wechat-official-accounts-fan-tags-list-response.ts",
-            "src/types/wechat-official-accounts-list-response.ts"
-          ]
-        },
-        {
-          "area": "documentation",
-          "paths": [
-            "README.md"
+            "src/types/knowledge-agent-binding-list.ts"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required."
+      "summary": "Detected impact areas: api-surface, models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models, documentation. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, documentation.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -465,7 +439,7 @@
           "id": "build",
           "title": "Unified package build",
           "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, documentation.",
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -483,14 +457,12 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "deleted-generated-files",
-        "manual-review-required",
         "verification-required"
       ]
     },

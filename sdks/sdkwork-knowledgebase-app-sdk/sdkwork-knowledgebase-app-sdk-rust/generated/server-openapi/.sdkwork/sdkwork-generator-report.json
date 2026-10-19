@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 1,
+  "generator": "@sdkwork/sdk-generator",
+  "artifacts": {
+    "stateDir": ".sdkwork",
+    "manifestPath": ".sdkwork/sdkwork-generator-manifest.json",
+    "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
+    "executionReportPath": ".sdkwork/sdkwork-generator-report.json",
+    "manualBackupDir": ".sdkwork/manual-backups"
+  },
+  "status": "ok",
+  "mode": "apply",
+  "hasChanges": true,
+  "hasDestructiveChanges": false,
+  "changeFingerprint": "f9361716fef16cc187b97cd35adab315e0e1004dc04f9dfc329f17ec94d4b0d0",
+  "changeImpact": {
+    "schemaVersion": 1,
+    "areas": [
+      "api-surface",
+      "models"
+    ],
+    "details": [
+      {
+        "area": "api-surface",
+        "paths": [
+          "src/api/knowledge.rs"
+        ]
+      },
+      {
+        "area": "models",
+        "paths": [
+          "src/models/knowledge_agent_binding_list.rs",
+          "src/models/knowledge_wechat_article.rs",
+          "src/models/mod.rs"
+        ]
+      }
+    ],
+    "requiresVerification": true,
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
+  },
+  "executionDecision": {
+    "schemaVersion": 1,
+    "riskLevel": "medium",
+    "nextAction": "verify",
+    "requiresManualReview": false,
+    "applyRequiresExpectedFingerprint": false,
+    "summary": "Changes have been applied. Run the required verification plan now.",
+    "reasons": [
+      "verification-required"
+    ]
+  },
+  "executionHandoff": {
+    "schemaVersion": 1,
+    "summary": "Run the required verification commands now.",
+    "steps": [
+      {
+        "id": "verify-check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "rust",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
+      },
+      {
+        "id": "verify-build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "rust",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
+      }
+    ]
+  },
+  "verificationPlan": {
+    "shouldRun": true,
+    "runPhase": "now",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "steps": [
+      {
+        "id": "check",
+        "title": "Unified package check",
+        "required": true,
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "rust",
+          "--project-dir",
+          ".",
+          "--action",
+          "check"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
+      },
+      {
+        "id": "build",
+        "title": "Unified package build",
+        "required": true,
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
+        "command": "node",
+        "args": [
+          "./bin/publish-core.mjs",
+          "--language",
+          "rust",
+          "--project-dir",
+          ".",
+          "--action",
+          "build"
+        ],
+        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
+      }
+    ]
+  },
+  "sdk": {
+    "name": "sdkwork-knowledgebase-app-sdk",
+    "version": "0.1.0",
+    "language": "rust",
+    "sdkType": "app",
+    "protocol": "http",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
+    "packageName": "sdkwork-knowledgebase-app-sdk-generated-rust"
+  },
+  "versioning": {
+    "resolvedVersion": "0.1.0",
+    "localVersions": []
+  },
+  "stats": {
+    "totalFiles": 177,
+    "models": 158,
+    "apis": 1,
+    "types": 160
+  },
+  "warnings": [],
+  "syncSummary": {
+    "dryRun": false,
+    "controlPlaneEnabled": true,
+    "writtenFiles": 4,
+    "skippedScaffoldFiles": 1,
+    "skippedUnchangedGeneratedFiles": 172,
+    "deletedGeneratedFiles": 0,
+    "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
+    "changeFingerprint": "f9361716fef16cc187b97cd35adab315e0e1004dc04f9dfc329f17ec94d4b0d0",
+    "changes": {
+      "createdGeneratedFiles": [
+        "src/models/knowledge_agent_binding_list.rs"
+      ],
+      "updatedGeneratedFiles": [
+        "src/api/knowledge.rs",
+        "src/models/knowledge_wechat_article.rs",
+        "src/models/mod.rs"
+      ],
+      "unchangedGeneratedFiles": [
+        "bin/publish-core.mjs",
+        "bin/publish.ps1",
+        "bin/publish.sh",
+        "Cargo.toml",
+        "CHANGELOG.md",
+        "LICENSE",
+        "README.md",
+        "sdkwork-sdk.json",
+        "src/api/base.rs",
+        "src/api/mod.rs",
+        "src/api/paths.rs",
+        "src/client.rs",
+        "src/http/client.rs",
+        "src/http/mod.rs",
+        "src/lib.rs",
+        "src/models/agent_profiles_bindings_create_response201.rs",
+        "src/models/agent_profiles_bindings_list_response.rs",
+        "src/models/agent_profiles_bindings_update_response.rs",
+        "src/models/agent_profiles_chat_create_response201.rs",
+        "src/models/agent_profiles_create_response201.rs",
+        "src/models/agent_profiles_retrieval_preview_create_response201.rs",
+        "src/models/agent_profiles_retrieve_response.rs",
+        "src/models/agent_profiles_update_response.rs",
+        "src/models/change_knowledge_wiki_source_file_visibility_request.rs",
+        "src/models/common.rs",
+        "src/models/consume_group_knowledgebase_launch_ticket_request.rs",
+        "src/models/context_bindings_retrieve_response.rs",
+        "src/models/context_bindings_update_response.rs",
+        "src/models/context_packs_create_response201.rs",
+        "src/models/create_knowledge_document_request.rs",
+        "src/models/create_knowledge_document_version_request.rs",
+        "src/models/create_knowledge_space_context_binding_request.rs",
+        "src/models/create_knowledge_space_request.rs",
+        "src/models/documents_content_list_response.rs",
+        "src/models/documents_create_response201.rs",
+        "src/models/documents_list_response.rs",
+        "src/models/documents_retrieve_response.rs",
+        "src/models/documents_update_response.rs",
+        "src/models/documents_versions_create_response201.rs",
+        "src/models/documents_versions_list_response.rs",
+        "src/models/drive_imports_create_response201.rs",
+        "src/models/field_error.rs",
+        "src/models/git_imports_create_response201.rs",
+        "src/models/git_syncs_create_response201.rs",
+        "src/models/grant_knowledge_space_member_request.rs",
+        "src/models/group_knowledgebase_launch_target.rs",
+        "src/models/group_launches_consume_response.rs",
+        "src/models/ingestion_job.rs",
+        "src/models/ingests_create_response201.rs",
+        "src/models/ingests_retrieve_response.rs",
+        "src/models/knowledge_agent_binding_request.rs",
+        "src/models/knowledge_agent_binding.rs",
+        "src/models/knowledge_agent_chat_citation.rs",
+        "src/models/knowledge_agent_chat_request.rs",
+        "src/models/knowledge_agent_chat_response.rs",
+        "src/models/knowledge_agent_profile_request.rs",
+        "src/models/knowledge_agent_profile.rs",
+        "src/models/knowledge_browser_list_data.rs",
+        "src/models/knowledge_browser_node_permissions.rs",
+        "src/models/knowledge_browser_node.rs",
+        "src/models/knowledge_citation.rs",
+        "src/models/knowledge_context_fragment.rs",
+        "src/models/knowledge_context_pack_request.rs",
+        "src/models/knowledge_context_pack.rs",
+        "src/models/knowledge_document_content.rs",
+        "src/models/knowledge_document_version.rs",
+        "src/models/knowledge_document.rs",
+        "src/models/knowledge_drive_import_request.rs",
+        "src/models/knowledge_drive_import_result.rs",
+        "src/models/knowledge_drive_object_ref.rs",
+        "src/models/knowledge_filter.rs",
+        "src/models/knowledge_git_import_request.rs",
+        "src/models/knowledge_git_import_result.rs",
+        "src/models/knowledge_git_sync_request.rs",
+        "src/models/knowledge_git_sync_result.rs",
+        "src/models/knowledge_ingest_request.rs",
+        "src/models/knowledge_market_catalog_item.rs",
+        "src/models/knowledge_market_subscription_request.rs",
+        "src/models/knowledge_market_subscription_result.rs",
+        "src/models/knowledge_media_task_request.rs",
+        "src/models/knowledge_media_task_result.rs",
+        "src/models/knowledge_memory_context_fragment.rs",
+        "src/models/knowledge_okf_bundle_file.rs",
+        "src/models/knowledge_okf_concept_revision_list.rs",
+        "src/models/knowledge_okf_concept_revision.rs",
+        "src/models/knowledge_retrieval_binding.rs",
+        "src/models/knowledge_retrieval_request.rs",
+        "src/models/knowledge_retrieval_result.rs",
+        "src/models/knowledge_retrieval_trace.rs",
+        "src/models/knowledge_source.rs",
+        "src/models/knowledge_space_context_binding.rs",
+        "src/models/knowledge_space_member.rs",
+        "src/models/knowledge_space.rs",
+        "src/models/knowledge_wechat_applet_list.rs",
+        "src/models/knowledge_wechat_applet.rs",
+        "src/models/knowledge_wechat_articles_preview_request.rs",
+        "src/models/knowledge_wechat_articles_publish_request.rs",
+        "src/models/knowledge_wechat_fan_tag.rs",
+        "src/models/knowledge_wechat_official_account_list.rs",
+        "src/models/knowledge_wechat_official_account.rs",
+        "src/models/knowledge_wechat_operation_result.rs",
+        "src/models/knowledge_wechat_replace_applets_request.rs",
+        "src/models/knowledge_wechat_replace_official_accounts_request.rs",
+        "src/models/knowledge_wiki_publication_version_command_request.rs",
+        "src/models/knowledge_wiki_publication.rs",
+        "src/models/knowledge_wiki_source_file_command_result.rs",
+        "src/models/knowledge_wiki_source_file_version_command_request.rs",
+        "src/models/knowledge_wiki_source_file.rs",
+        "src/models/market_listings_list_response.rs",
+        "src/models/market_subscriptions_create_response201.rs",
+        "src/models/media_tasks_create_response201.rs",
+        "src/models/okf_bundle_export_create_response201.rs",
+        "src/models/okf_bundle_export_request.rs",
+        "src/models/okf_bundle_export_retrieve_response.rs",
+        "src/models/okf_bundle_import_create_response201.rs",
+        "src/models/okf_bundle_import_request.rs",
+        "src/models/okf_bundle_import_result.rs",
+        "src/models/okf_bundle_index_list_response.rs",
+        "src/models/okf_bundle_log_list_response.rs",
+        "src/models/okf_bundle_profile_list_response.rs",
+        "src/models/okf_concept_summary_list.rs",
+        "src/models/okf_concept_summary.rs",
+        "src/models/okf_concept_upsert_request.rs",
+        "src/models/okf_concepts_list_response.rs",
+        "src/models/okf_concepts_retrieve_response.rs",
+        "src/models/okf_concepts_revisions_list_response.rs",
+        "src/models/okf_concepts_update_response.rs",
+        "src/models/okf_context_pack_request.rs",
+        "src/models/okf_context_packs_create_response201.rs",
+        "src/models/okf_file_answer_request.rs",
+        "src/models/okf_index_document.rs",
+        "src/models/okf_lint_runs_create_response201.rs",
+        "src/models/okf_log_document.rs",
+        "src/models/okf_profile_document.rs",
+        "src/models/okf_quality_run_request.rs",
+        "src/models/okf_quality_run.rs",
+        "src/models/okf_queries_create_response201.rs",
+        "src/models/okf_queries_file_answer_response.rs",
+        "src/models/okf_query_request.rs",
+        "src/models/okf_query_result.rs",
+        "src/models/page_info.rs",
+        "src/models/problem_detail.rs",
+        "src/models/problem_details.rs",
+        "src/models/publish_knowledge_wiki_source_file_request.rs",
+        "src/models/retrievals_create_response201.rs",
+        "src/models/retrievals_retrieve_response.rs",
+        "src/models/sdk_work_api_response.rs",
+        "src/models/sdk_work_command_data.rs",
+        "src/models/spaces_browser_list_response.rs",
+        "src/models/spaces_context_bindings_create_response201.rs",
+        "src/models/spaces_context_bindings_list_response.rs",
+        "src/models/spaces_create_response201.rs",
+        "src/models/spaces_members_create_response201.rs",
+        "src/models/spaces_members_list_response.rs",
+        "src/models/spaces_retrieve_response.rs",
+        "src/models/spaces_update_response.rs",
+        "src/models/update_knowledge_space_context_binding_request.rs",
+        "src/models/update_knowledge_space_request.rs",
+        "src/models/wechat_applets_list_response.rs",
+        "src/models/wechat_applets_update_response.rs",
+        "src/models/wechat_articles_preview_response.rs",
+        "src/models/wechat_articles_publish_response.rs",
+        "src/models/wechat_official_accounts_fan_tags_list_response.rs",
+        "src/models/wechat_official_accounts_list_response.rs",
+        "src/models/wechat_official_accounts_update_response.rs",
+        "src/models/wiki_publications_activate_response.rs",
+        "src/models/wiki_publications_pause_response.rs",
+        "src/models/wiki_publications_retrieve_response.rs",
+        "src/models/wiki_source_files_list_response.rs",
+        "src/models/wiki_source_files_publish_response.rs",
+        "src/models/wiki_source_files_unpublish_response.rs",
+        "src/models/wiki_source_files_visibility_update_response.rs"
+      ],
+      "deletedGeneratedFiles": [],
+      "scaffoldedFiles": [],
+      "preservedScaffoldFiles": [
+        "custom/README.md"
+      ],
+      "backedUpFiles": []
+    },
+    "impact": {
+      "schemaVersion": 1,
+      "areas": [
+        "api-surface",
+        "models"
+      ],
+      "details": [
+        {
+          "area": "api-surface",
+          "paths": [
+            "src/api/knowledge.rs"
+          ]
+        },
+        {
+          "area": "models",
+          "paths": [
+            "src/models/knowledge_agent_binding_list.rs",
+            "src/models/knowledge_wechat_article.rs",
+            "src/models/mod.rs"
+          ]
+        }
+      ],
+      "requiresVerification": true,
+      "summary": "Detected impact areas: api-surface, models. Verification is required."
+    },
+    "verificationPlan": {
+      "shouldRun": true,
+      "runPhase": "now",
+      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "steps": [
+        {
+          "id": "check",
+          "title": "Unified package check",
+          "required": true,
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "rust",
+            "--project-dir",
+            ".",
+            "--action",
+            "check"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
+        },
+        {
+          "id": "build",
+          "title": "Unified package build",
+          "required": true,
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+          "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
+          "command": "node",
+          "args": [
+            "./bin/publish-core.mjs",
+            "--language",
+            "rust",
+            "--project-dir",
+            ".",
+            "--action",
+            "build"
+          ],
+          "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
+        }
+      ]
+    },
+    "executionDecision": {
+      "schemaVersion": 1,
+      "riskLevel": "medium",
+      "nextAction": "verify",
+      "requiresManualReview": false,
+      "applyRequiresExpectedFingerprint": false,
+      "summary": "Changes have been applied. Run the required verification plan now.",
+      "reasons": [
+        "verification-required"
+      ]
+    },
+    "backedUpFiles": [],
+    "preservedLegacyFiles": false
+  }
+}

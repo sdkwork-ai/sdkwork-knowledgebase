@@ -15889,6 +15889,20 @@
           }
         }
       },
+      "KnowledgeAgentBindingList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeAgentBinding"
+            }
+          }
+        }
+      },
       "KnowledgeAgentBindingRequest": {
         "type": "object",
         "required": [

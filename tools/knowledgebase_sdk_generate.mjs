@@ -39,6 +39,12 @@ const families = [
         packageName: "@sdkwork/knowledgebase-app-sdk",
         clientName: "SdkworkKnowledgebaseAppClient",
       },
+      {
+        language: "rust",
+        output:
+          "sdks/sdkwork-knowledgebase-app-sdk/sdkwork-knowledgebase-app-sdk-rust/generated/server-openapi",
+        packageName: "sdkwork-knowledgebase-app-sdk-generated-rust",
+      },
     ],
   },
   {

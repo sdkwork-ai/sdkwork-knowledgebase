@@ -1,0 +1,23 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct KnowledgeSource {
+    pub id: String,
+
+    #[serde(rename = "spaceId")]
+    pub space_id: String,
+
+    #[serde(rename = "sourceType")]
+    pub source_type: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+
+    #[serde(rename = "driveBucket")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drive_bucket: Option<String>,
+
+    #[serde(rename = "drivePrefix")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drive_prefix: Option<String>,
+}

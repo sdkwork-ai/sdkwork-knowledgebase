@@ -59,6 +59,7 @@ export type { KnowledgeAgentChatRequest } from './knowledge-agent-chat-request';
 export type { KnowledgeAgentChatCitation } from './knowledge-agent-chat-citation';
 export type { KnowledgeAgentChatResponse } from './knowledge-agent-chat-response';
 export type { KnowledgeAgentBinding } from './knowledge-agent-binding';
+export type { KnowledgeAgentBindingList } from './knowledge-agent-binding-list';
 export type { KnowledgeAgentBindingRequest } from './knowledge-agent-binding-request';
 export type { KnowledgeAgentProfile } from './knowledge-agent-profile';
 export type { KnowledgeAgentProfileRequest } from './knowledge-agent-profile-request';

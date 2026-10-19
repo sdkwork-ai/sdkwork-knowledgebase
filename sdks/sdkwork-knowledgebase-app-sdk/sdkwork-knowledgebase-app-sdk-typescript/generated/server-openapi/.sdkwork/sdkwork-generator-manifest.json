@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/knowledge.ts",
-      "sha256": "a6ec4e41a42d0948a0eddad1012c61dd5d09669b73d1526fb6d0a86cf1ebb3db"
+      "sha256": "96a8ba7b2eedbcd5b9b6ae65fa5a823ea70c7b45cf2305266460ea849492e245"
     },
     {
       "path": "src/api/paths.ts",
@@ -92,7 +92,7 @@
     },
     {
       "path": "src/types/agent-profiles-bindings-list-response.ts",
-      "sha256": "febe9375029bfe9eb7f79b004444d8098cf2417dd3143c8c367e778dffeaa5bf"
+      "sha256": "fdf4f2672a8b6331b9347d2a894a2c166a71361888bbeef1c06c6ff5c6b241eb"
     },
     {
       "path": "src/types/agent-profiles-bindings-update-response.ts",
@@ -220,7 +220,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "18038918a0ecf4c57f8d2eb4a76e15d99c8f9d70407c95983fa00f384a4822f5"
+      "sha256": "b217cd26f54b9078fae98deb10df1623453474d73484c7d64c15a367a453711e"
     },
     {
       "path": "src/types/ingestion-job-state.ts",
@@ -241,6 +241,10 @@
     {
       "path": "src/types/knowledge-access-level.ts",
       "sha256": "770a1690e4da440785d55c1ccf202b01ffee33d47078b160030831aec8852b50"
+    },
+    {
+      "path": "src/types/knowledge-agent-binding-list.ts",
+      "sha256": "d7e296384b84075187999aaac3c913b83da1ab7fc4b4937c901284801a70e4c6"
     },
     {
       "path": "src/types/knowledge-agent-binding-request.ts",

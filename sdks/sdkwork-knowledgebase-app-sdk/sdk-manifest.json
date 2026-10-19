@@ -56,6 +56,21 @@
         "composedEntryPath": "sdkwork-knowledgebase-app-sdk-typescript/src/index.ts",
         "packageName": "@sdkwork/knowledgebase-app-sdk"
       }
+    },
+    {
+      "language": "rust",
+      "workspace": "sdkwork-knowledgebase-app-sdk-rust",
+      "generationState": "materialized",
+      "releaseState": "not_published",
+      "generatedPath": "sdkwork-knowledgebase-app-sdk-rust/generated/server-openapi",
+      "manifestPath": "sdkwork-knowledgebase-app-sdk-rust/generated/server-openapi/Cargo.toml",
+      "name": "sdkwork-knowledgebase-app-sdk-generated-rust",
+      "version": "0.1.0",
+      "description": "Generator-owned Rust transport SDK for sdkwork-knowledgebase-app-api.",
+      "consumerSurface": {
+        "primaryClient": "SdkworkAppClient",
+        "apiPrefix": "/app/v3/api"
+      }
     }
   ],
   "generatedPackages": {
@@ -63,6 +78,11 @@
       "language": "typescript",
       "packageName": "sdkwork-knowledgebase-app-sdk-generated-typescript",
       "generatedOutput": "sdkwork-knowledgebase-app-sdk-typescript/generated/server-openapi"
+    },
+    "rust": {
+      "language": "rust",
+      "packageName": "sdkwork-knowledgebase-app-sdk-generated-rust",
+      "generatedOutput": "sdkwork-knowledgebase-app-sdk-rust/generated/server-openapi"
     }
   },
   "sdkOwner": "sdkwork-knowledgebase",
