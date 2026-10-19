@@ -150,24 +150,20 @@ Memory is optional: no policy means no retrieval; a missing provider or a
 failing provider logs a warning and answers without memory. Chat availability is
 never coupled to the memory backend.
 
-### Production Provider Gate
+### Production Provider
 
-`crates/sdkwork-knowledgebase-memory` already contains the port adapter, and
-`sdkwork-memory` now publishes a generator-owned Rust App API SDK used by the
-Agents turn path (`sdkwork-agents-memory-bridge`). Composing the same provider
-into the Knowledgebase App API runtime still requires caller credentials to
-reach the memory backend:
+`MemoryAppApiContextProvider` (in `crates/sdkwork-knowledgebase-memory`) reads
+durable memory through the generator-owned Memory App API Rust SDK. The chat
+route extracts `Authorization` and `Access-Token`, passes them through
+`AgentChatCredentials` into `KnowledgeAgentChatService::chat_with_credentials`,
+and the provider forwards them unchanged; the memory backend derives actor,
+tenant, and owner scope from the token, so a service token is never substituted.
 
-1. the chat route extracts `Authorization` and `Access-Token` from the request;
-2. the service passes them to the provider (the App API derives actor, tenant,
-   and owner scope from the token, so a service token is not an acceptable
-   substitute);
-3. the provider resolves `memory_policy_ref` to a Memory space and calls
-   `memories.list`.
-
-Until that thread exists, a Knowledgebase profile with `memory_policy_ref`
-degrades to an answer without memory by design. Agents turns already forward the
-dual tokens and therefore have production memory today.
+The runtime composes the provider from
+`SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`. Unset = memory module not mounted
+(profiles with `memory_policy_ref` degrade to an answer without memory); a
+set-but-invalid origin fails bootstrap. `memory_policy_ref` must be a numeric
+Memory space id (`4242` or `space:4242`).
 
 ## Cross-Repository Agent Runtime Consumption
 

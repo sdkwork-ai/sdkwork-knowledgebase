@@ -1,6 +1,6 @@
 # REQ-2026-1019 Agent RAG And Per-Agent Memory
 
-- Status: implemented (knowledge and Agents turn memory); Knowledgebase chat memory adapter pending
+- Status: implemented (knowledge, Agents turn memory, and Knowledgebase chat memory)
 - Owner: sdkwork-knowledgebase
 - Updated: 2026-10-19
 - Related:
@@ -123,10 +123,9 @@ retrieval.
   "no extractable text" error. Legacy binary `.doc`/`.ppt`/`.xls` are not
   decoded yet (they receive the document upload profile but fail with an
   actionable error instead of indexing garbage).
-- A production memory provider for the Knowledgebase App API chat path: Agents
-  turns now resolve memory through the Memory App API Rust SDK and the
-  `MemoryGroundingResolver` port, but the Knowledgebase `KnowledgeAgentChatService`
-  still has no composed `KnowledgeMemoryContextProvider`, so a profile with
-  `memory_policy_ref` answers without memory there.
+- A production memory provider for the Knowledgebase App API chat path is
+  composed from `SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`; unset keeps the
+  documented no-memory degradation, while a set-but-invalid origin fails
+  bootstrap.
 - Live end-to-end evidence with a real Drive upload, worker ingestion, embedding
   provider, and model provider in a release environment.
