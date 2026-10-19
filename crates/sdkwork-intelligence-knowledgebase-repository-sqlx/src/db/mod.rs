@@ -4,6 +4,7 @@
 //! New database modules should be placed directly under this directory.
 
 pub mod bootstrap;
+pub mod pgvector_schema;
 pub mod postgres;
 pub mod postgres_tenant_session;
 pub mod sql_timestamp;
@@ -13,6 +14,9 @@ pub use bootstrap::{
     connect_knowledgebase_pool_from_url, database_config_from_url,
     knowledgebase_database_engine_from_url, knowledgebase_process_pool_budget_from_url,
     KnowledgebaseDatabasePool, KnowledgebaseProcessPoolBudget,
+};
+pub use pgvector_schema::{
+    pgvector_schema, resolve_pgvector_schema, DEFAULT_PGVECTOR_SCHEMA, PGVECTOR_SCHEMA_ENV,
 };
 pub use postgres::{
     connect_postgres_and_install_schema, connect_postgres_pool,

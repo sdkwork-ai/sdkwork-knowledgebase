@@ -55,6 +55,8 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
                 "query embedding contains a non-finite value".to_string(),
             ));
         }
+        let pgvector_schema =
+            crate::db::pgvector_schema().map_err(KnowledgeRetrievalBackendError::Internal)?;
         let vector_literal = format_pgvector_literal(query_embedding);
         let tenant_id = backend_to_i64("tenant_id", self.tenant_id)?;
         let organization_id = backend_to_i64("organization_id", self.organization_id)?;
@@ -62,7 +64,7 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
         let top_k = i64::from(request.top_k.clamp(1, 64));
         let min_score = request.binding.min_score.unwrap_or(0.0);
 
-        let mut query = QueryBuilder::new(
+        let mut query = QueryBuilder::new(format!(
             r#"
             SELECT
                 c.id AS chunk_id,
@@ -72,23 +74,23 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
                 d.title,
                 c.content_text,
                 c.token_count,
-                c.locator #>> '{}' AS locator,
+                c.locator #>> '{{}}' AS locator,
                 'kb://documents/' || c.document_id::text AS source_uri,
-                (1 - (e.embedding_vector OPERATOR(public.<=>) CAST(
-            "#,
-        );
+                (1 - (e.embedding_vector OPERATOR({pgvector_schema}.<=>) CAST(
+            "#
+        ));
         query.push_bind(vector_literal.clone());
-        query.push(
+        query.push(format!(
             r#"
-                 AS public.vector))) AS score
+                 AS {pgvector_schema}.vector))) AS score
             FROM kb_chunk c
             JOIN kb_document d
               ON d.tenant_id = c.tenant_id
              AND d.organization_id = c.organization_id
              AND d.id = c.document_id
              AND d.status =
-            "#,
-        );
+            "#
+        ));
         query.push_bind(ACTIVE_STATUS);
         query.push(
             r#"
@@ -120,9 +122,11 @@ impl KnowledgeRetrievalBackend for PgVectorKnowledgeRetrievalBackend {
             space_id,
             &request.binding,
         )?;
-        query.push(" ORDER BY e.embedding_vector OPERATOR(public.<=>) CAST(");
+        query.push(format!(
+            " ORDER BY e.embedding_vector OPERATOR({pgvector_schema}.<=>) CAST("
+        ));
         query.push_bind(vector_literal);
-        query.push(" AS public.vector) LIMIT ");
+        query.push(format!(" AS {pgvector_schema}.vector) LIMIT "));
         query.push_bind(top_k);
 
         let rows = query

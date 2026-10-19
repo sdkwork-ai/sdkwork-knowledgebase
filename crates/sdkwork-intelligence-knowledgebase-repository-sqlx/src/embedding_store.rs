@@ -101,13 +101,21 @@ impl PostgresKnowledgeEmbeddingStore {
         }
 
         let timestamp_dialect = SqlTimestampDialect::from_database_engine(self.database_engine);
+        let pgvector_schema =
+            crate::db::pgvector_schema().map_err(PostgresKnowledgeEmbeddingStoreError::Internal)?;
         let mut tx = self.pool.begin().await.map_err(sqlx_error)?;
         for request_batch in requests.chunks(EMBEDDING_UPSERT_BATCH_SIZE) {
             let prepared = request_batch
                 .iter()
                 .map(|request| self.prepare_embedding_upsert(request))
                 .collect::<Result<Vec<_>, _>>()?;
-            bulk_upsert_embeddings_postgres(&mut tx, timestamp_dialect, &prepared).await?;
+            bulk_upsert_embeddings_postgres(
+                &mut tx,
+                timestamp_dialect,
+                &pgvector_schema,
+                &prepared,
+            )
+            .await?;
         }
         tx.commit().await.map_err(sqlx_error)?;
         Ok(())
@@ -250,6 +258,7 @@ impl PostgresKnowledgeEmbeddingStore {
 async fn bulk_upsert_embeddings_postgres(
     transaction: &mut Transaction<'_, Postgres>,
     timestamp_dialect: SqlTimestampDialect,
+    pgvector_schema: &str,
     batch: &[PreparedEmbeddingUpsert],
 ) -> Result<(), PostgresKnowledgeEmbeddingStoreError> {
     let mut builder: QueryBuilder<Postgres> = QueryBuilder::new(
@@ -275,7 +284,7 @@ async fn bulk_upsert_embeddings_postgres(
         row.push_bind(item.embedding_hash.as_str());
         row.push("CAST(");
         row.push_bind_unseparated(item.pgvector_literal.as_str());
-        row.push_unseparated(" AS public.vector)");
+        row.push_unseparated(format!(" AS {pgvector_schema}.vector)").as_str());
         row.push_bind(item.dimension)
             .push_bind(item.provider_id.as_str())
             .push_bind(item.model.as_str())

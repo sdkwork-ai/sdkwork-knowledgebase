@@ -111,8 +111,11 @@ driver never rewrites for PostgreSQL; the embedding upsert omitted the
 `vector_ref` NOT NULL column and also used unrewritten placeholders; and the
 pgvector SQL referenced `vector`/`<=>` outside the session search path. The
 retrieval and embedding stores now own the authoritative `PgPool` and build
-`$n` placeholders, and pgvector casts/operators are schema-qualified to the
-extension's `public` install schema.
+`$n` placeholders. pgvector casts and operators are qualified with the extension
+schema resolved from `SDKWORK_KNOWLEDGEBASE_PGVECTOR_SCHEMA` (default
+`public`; blank selects the default, an unsafe identifier fails closed), so a
+deployment that installs the extension outside `public` can still run vector
+retrieval.
 
 ## 5. Remaining Gates
 

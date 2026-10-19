@@ -212,7 +212,8 @@ Required checks:
 - `cargo test -p sdkwork-intelligence-knowledgebase-repository-sqlx --test postgres_optional_integration postgres_ingest_to_retrieval_round_trip`
   with `SDKWORK_DATABASE_URL` and `SDKWORK_KNOWLEDGEBASE_TENANT_ID` set (real
   PostgreSQL ingest → keyword retrieval → embedding write → pgvector ANN round
-  trip).
+  trip). Set `SDKWORK_KNOWLEDGEBASE_PGVECTOR_SCHEMA` when the `vector` extension
+  is installed outside `public`.
 - `cargo test -p sdkwork-intelligence-knowledgebase-repository-sqlx --test postgres_agent_chat_e2e`
   with the same environment (real PostgreSQL ingest, agent binding, kernel RAG
   chat, and citation assertion).
