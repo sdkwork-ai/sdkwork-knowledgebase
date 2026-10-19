@@ -272,6 +272,7 @@ impl KnowledgeAgentAppService for RecordingAgentService {
         _context: KnowledgeAppRequestContext,
         _profile_id: u64,
         request: KnowledgeAgentChatRequest,
+        _credentials: sdkwork_routes_knowledgebase_app_api::AgentChatCredentials,
     ) -> ApiResult<KnowledgeAgentChatResponse> {
         self.chat_requests.lock().unwrap().push(request);
         Ok(KnowledgeAgentChatResponse {

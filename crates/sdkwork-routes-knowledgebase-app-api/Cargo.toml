@@ -33,6 +33,7 @@ sdkwork-intelligence-knowledgebase-repository-sqlx.workspace = true
 sdkwork-database-id.workspace = true
 sdkwork-database-config.workspace = true
 sdkwork-knowledgebase-agent-provider.workspace = true
+sdkwork-knowledgebase-memory.workspace = true
 sdkwork-knowledgebase-engine-dify.workspace = true
 sdkwork-knowledgebase-engine-ragflow.workspace = true
 sdkwork-knowledgebase-engine-onyx.workspace = true

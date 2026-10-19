@@ -5142,6 +5142,7 @@ dependencies = [
  "sdkwork-knowledgebase-engine-qdrant",
  "sdkwork-knowledgebase-engine-ragflow",
  "sdkwork-knowledgebase-engine-weaviate",
+ "sdkwork-knowledgebase-memory",
  "sdkwork-knowledgebase-observability",
  "sdkwork-knowledgebase-provider-secret-adapter",
  "sdkwork-knowledgebase-test-support",

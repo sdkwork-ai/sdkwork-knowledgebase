@@ -1,4 +1,7 @@
 use async_trait::async_trait;
+use sdkwork_intelligence_knowledgebase_service::wechat::{
+    WechatCallbackReceipt, WechatCallbackReceiptRequest, WechatCallbackVerificationRequest,
+};
 use sdkwork_knowledgebase_contract::{
     context_binding::{
         CreateKnowledgeSpaceContextBindingRequest, KnowledgeSpaceContextBinding,
@@ -8,11 +11,11 @@ use sdkwork_knowledgebase_contract::{
     CreateKnowledgeSpaceRequest, GrantKnowledgeSpaceMemberRequest, IngestionJob,
     KnowledgeAgentBinding, KnowledgeAgentBindingRequest, KnowledgeAgentChatRequest,
     KnowledgeAgentChatResponse, KnowledgeAgentProfile, KnowledgeAgentProfileRequest,
-    KnowledgeBrowserListData, KnowledgeContextPack, KnowledgeContextPackRequest,
-    KnowledgeDocument, KnowledgeDocumentContent, KnowledgeDocumentVersion,
-    KnowledgeDriveImportRequest, KnowledgeDriveImportResult, KnowledgeGitImportRequest,
-    KnowledgeGitImportResult, KnowledgeGitSyncRequest, KnowledgeGitSyncResult,
-    KnowledgeIngestRequest, KnowledgeMarketCatalogItem, KnowledgeMarketSubscriptionRequest,
+    KnowledgeBrowserListData, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeDocument,
+    KnowledgeDocumentContent, KnowledgeDocumentVersion, KnowledgeDriveImportRequest,
+    KnowledgeDriveImportResult, KnowledgeGitImportRequest, KnowledgeGitImportResult,
+    KnowledgeGitSyncRequest, KnowledgeGitSyncResult, KnowledgeIngestRequest,
+    KnowledgeMarketCatalogItem, KnowledgeMarketSubscriptionRequest,
     KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult,
     KnowledgeOkfBundleFile, KnowledgeOkfConceptRevision, KnowledgeRetrievalRequest,
     KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceMember,
@@ -20,24 +23,21 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest,
     KnowledgeWechatFanTag, KnowledgeWechatOfficialAccount, KnowledgeWechatOfficialAccountList,
     KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest,
-    KnowledgeWechatReplaceOfficialAccountsRequest,
-    ListKnowledgeBrowserRequest, OkfBundleExportRequest, OkfBundleImportRequest,
-    OkfBundleImportResult, OkfConceptSummary, OkfConceptUpsertRequest, OkfContextPackRequest,
-    OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun,
-    OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, UpdateKnowledgeSpaceRequest,
-};
-use sdkwork_intelligence_knowledgebase_service::wechat::{
-    WechatCallbackReceipt, WechatCallbackReceiptRequest, WechatCallbackVerificationRequest,
+    KnowledgeWechatReplaceOfficialAccountsRequest, ListKnowledgeBrowserRequest,
+    OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfConceptSummary,
+    OkfConceptUpsertRequest, OkfContextPackRequest, OkfFileAnswerRequest, OkfIndexDocument,
+    OkfLogDocument, OkfProfileDocument, OkfQualityRun, OkfQualityRunRequest, OkfQueryRequest,
+    OkfQueryResult, UpdateKnowledgeSpaceRequest,
 };
 use sdkwork_utils_rust::{SdkWorkCommandData, SdkWorkPageData};
 use std::sync::Arc;
 
 use crate::{
-    ApiResult, KnowledgeAgentAppService, KnowledgeAppApi, KnowledgeAppRequestContext,
-    KnowledgeBrowserApi, KnowledgeCommerceAppService, KnowledgeContextBindingAppService,
-    KnowledgeDocumentAppService, KnowledgeDriveImportAppService, KnowledgeGitImportAppService,
-    KnowledgeIngestAppService, KnowledgeOkfAppService, KnowledgeRetrievalAppService,
-    KnowledgeSpaceAppService, KnowledgeWechatAppService,
+    AgentChatCredentials, ApiResult, KnowledgeAgentAppService, KnowledgeAppApi,
+    KnowledgeAppRequestContext, KnowledgeBrowserApi, KnowledgeCommerceAppService,
+    KnowledgeContextBindingAppService, KnowledgeDocumentAppService, KnowledgeDriveImportAppService,
+    KnowledgeGitImportAppService, KnowledgeIngestAppService, KnowledgeOkfAppService,
+    KnowledgeRetrievalAppService, KnowledgeSpaceAppService, KnowledgeWechatAppService,
 };
 
 pub struct BrowserOnlyAppApi {
@@ -206,9 +206,10 @@ impl KnowledgeAppApi for AgentOnlyAppApi {
         context: KnowledgeAppRequestContext,
         profile_id: u64,
         request: KnowledgeAgentChatRequest,
+        credentials: AgentChatCredentials,
     ) -> ApiResult<KnowledgeAgentChatResponse> {
         self.agent
-            .create_agent_chat(context, profile_id, request)
+            .create_agent_chat(context, profile_id, request, credentials)
             .await
     }
 }
@@ -349,9 +350,10 @@ impl KnowledgeAppApi for AgentAndRetrievalAppApi {
         context: KnowledgeAppRequestContext,
         profile_id: u64,
         request: KnowledgeAgentChatRequest,
+        credentials: AgentChatCredentials,
     ) -> ApiResult<KnowledgeAgentChatResponse> {
         self.agent
-            .create_agent_chat(context, profile_id, request)
+            .create_agent_chat(context, profile_id, request, credentials)
             .await
     }
 }
@@ -938,9 +940,10 @@ impl KnowledgeAppApi for FullAppApi {
         context: KnowledgeAppRequestContext,
         profile_id: u64,
         request: KnowledgeAgentChatRequest,
+        credentials: AgentChatCredentials,
     ) -> ApiResult<KnowledgeAgentChatResponse> {
         self.agent
-            .create_agent_chat(context, profile_id, request)
+            .create_agent_chat(context, profile_id, request, credentials)
             .await
     }
 

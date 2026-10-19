@@ -23,6 +23,25 @@ use sdkwork_intelligence_knowledgebase_repository_sqlx::{
     SqlxKnowledgeEngineProviderBindingStore, SqlxKnowledgeEngineProviderMigrationStore,
     SqlxWikiPersistenceStore,
 };
+use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context::KnowledgeMemoryContextProvider;
+use sdkwork_knowledgebase_memory::MemoryAppApiContextProvider;
+
+const MEMORY_BASE_URL_ENV: &str = "SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL";
+
+fn memory_context_provider_from_env(
+) -> Result<Option<Arc<dyn KnowledgeMemoryContextProvider>>, sqlx::Error> {
+    let base_url = std::env::var(MEMORY_BASE_URL_ENV)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    let Some(base_url) = base_url else {
+        return Ok(None);
+    };
+    MemoryAppApiContextProvider::new(base_url)
+        .map(|provider| Some(Arc::new(provider) as Arc<dyn KnowledgeMemoryContextProvider>))
+        .map_err(|error| sqlx::Error::Configuration(error.into()))
+}
+
 use sdkwork_intelligence_knowledgebase_service::{
     agent::KnowledgeAgentService,
     agent_chat::KnowledgeAgentChatService,
@@ -107,8 +126,8 @@ use crate::{
     hosted_open::HostedOpenApi,
     hosted_wechat::HostedWechatService,
     hosted_wiki::HostedWikiPublicationService,
-    ApiError, ApiResult, KnowledgeAgentAppService, KnowledgeAppRequestContext,
-    KnowledgeRetrievalAppService,
+    AgentChatCredentials, ApiError, ApiResult, KnowledgeAgentAppService,
+    KnowledgeAppRequestContext, KnowledgeRetrievalAppService,
 };
 
 const DEFAULT_DRIVE_PROVIDER_ID: &str = "sdkwork-knowledgebase-local";
@@ -187,6 +206,7 @@ pub struct KnowledgebaseRuntime {
     knowledge_engines: Arc<DefaultKnowledgeEngineRegistry>,
     commerce_store: Arc<PostgresCommerceStore>,
     snowflake_node_lease: Option<NodeLease>,
+    memory_context_provider: Option<Arc<dyn KnowledgeMemoryContextProvider>>,
 }
 
 /// Bridges the host's complete runtime dependency check into the shared HTTP readiness route.
@@ -1199,6 +1219,7 @@ impl KnowledgebaseRuntime {
                     .with_database_engine(database_engine),
             ),
             snowflake_node_lease,
+            memory_context_provider: memory_context_provider_from_env()?,
         })
     }
 
@@ -2572,6 +2593,7 @@ impl KnowledgeAgentAppService for HostedAgentService {
         context: KnowledgeAppRequestContext,
         profile_id: u64,
         mut request: KnowledgeAgentChatRequest,
+        credentials: AgentChatCredentials,
     ) -> ApiResult<KnowledgeAgentChatResponse> {
         let retrieval = self.runtime.retrieval_service();
         let service = KnowledgeAgentService::new(self.runtime.agent_store.as_ref(), &retrieval);
@@ -2612,7 +2634,7 @@ impl KnowledgeAgentAppService for HostedAgentService {
             self.runtime.clone(),
             execution_context,
         ));
-        let chat_service = KnowledgeAgentChatService::new(
+        let mut chat_service = KnowledgeAgentChatService::new(
             self.runtime.agent_store.as_ref(),
             &retrieval,
             retrieval_client,
@@ -2622,8 +2644,18 @@ impl KnowledgeAgentAppService for HostedAgentService {
             Some(&space_mode_resolver),
             Some(space_engine_client),
         );
+        if let Some(memory) = self.runtime.memory_context_provider.as_deref() {
+            chat_service = chat_service.with_memory(memory);
+        }
         chat_service
-            .chat(profile_id, request)
+            .chat_with_credentials(
+                profile_id,
+                request,
+                sdkwork_intelligence_knowledgebase_service::agent_chat::KnowledgeAgentChatCredentials {
+                    auth_token: credentials.auth_token.as_deref(),
+                    access_token: credentials.access_token.as_deref(),
+                },
+            )
             .await
             .map_err(Into::into)
     }
@@ -2766,9 +2798,10 @@ impl crate::KnowledgeAppApi for AgentAndRetrievalHostedApi {
         context: KnowledgeAppRequestContext,
         profile_id: u64,
         request: KnowledgeAgentChatRequest,
+        credentials: AgentChatCredentials,
     ) -> ApiResult<KnowledgeAgentChatResponse> {
         self.agent
-            .create_agent_chat(context, profile_id, request)
+            .create_agent_chat(context, profile_id, request, credentials)
             .await
     }
 }

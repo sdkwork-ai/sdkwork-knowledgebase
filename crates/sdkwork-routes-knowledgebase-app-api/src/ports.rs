@@ -1,4 +1,7 @@
 use async_trait::async_trait;
+use sdkwork_intelligence_knowledgebase_service::wechat::{
+    WechatCallbackReceipt, WechatCallbackReceiptRequest, WechatCallbackVerificationRequest,
+};
 use sdkwork_knowledgebase_contract::{
     context_binding::{
         CreateKnowledgeSpaceContextBindingRequest, KnowledgeContextType,
@@ -25,17 +28,13 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest,
     KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest,
     KnowledgeWikiSourceFile, KnowledgeWikiSourceFileCommandResult,
-    KnowledgeWikiSourceFileVersionCommandRequest,
-    ListKnowledgeBrowserRequest, OkfBundleExportRequest, OkfBundleImportRequest,
-    OkfBundleImportResult, OkfConceptSummary, OkfConceptUpsertRequest, OkfContextPackRequest,
-    OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun,
-    OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, PublishKnowledgeWikiSourceFileRequest,
-    UpdateKnowledgeSpaceRequest,
+    KnowledgeWikiSourceFileVersionCommandRequest, ListKnowledgeBrowserRequest,
+    OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfConceptSummary,
+    OkfConceptUpsertRequest, OkfContextPackRequest, OkfFileAnswerRequest, OkfIndexDocument,
+    OkfLogDocument, OkfProfileDocument, OkfQualityRun, OkfQualityRunRequest, OkfQueryRequest,
+    OkfQueryResult, PublishKnowledgeWikiSourceFileRequest, UpdateKnowledgeSpaceRequest,
 };
 use sdkwork_utils_rust::{SdkWorkCommandData, SdkWorkPageData};
-use sdkwork_intelligence_knowledgebase_service::wechat::{
-    WechatCallbackReceipt, WechatCallbackReceiptRequest, WechatCallbackVerificationRequest,
-};
 
 use crate::{ApiError, ApiResult};
 
@@ -520,6 +519,13 @@ pub trait KnowledgeContextBindingAppService: Send + Sync + 'static {
     ) -> ApiResult<()>;
 }
 
+/// Caller credentials forwarded to actor-scoped capability providers.
+#[derive(Debug, Clone, Default)]
+pub struct AgentChatCredentials {
+    pub auth_token: Option<String>,
+    pub access_token: Option<String>,
+}
+
 #[async_trait]
 pub trait KnowledgeAgentAppService: Send + Sync + 'static {
     async fn create_profile(
@@ -587,6 +593,7 @@ pub trait KnowledgeAgentAppService: Send + Sync + 'static {
         context: KnowledgeAppRequestContext,
         profile_id: u64,
         request: KnowledgeAgentChatRequest,
+        credentials: AgentChatCredentials,
     ) -> ApiResult<KnowledgeAgentChatResponse>;
 }
 
@@ -1094,6 +1101,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _context: KnowledgeAppRequestContext,
         _profile_id: u64,
         _request: KnowledgeAgentChatRequest,
+        _credentials: AgentChatCredentials,
     ) -> ApiResult<KnowledgeAgentChatResponse> {
         Err(ApiError::unsupported_operation("agentProfiles.chat.create"))
     }

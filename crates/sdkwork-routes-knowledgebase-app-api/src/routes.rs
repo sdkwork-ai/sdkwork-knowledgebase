@@ -1,7 +1,7 @@
 use axum::{
     body::Bytes,
     extract::{rejection::JsonRejection, FromRequestParts, OriginalUri, Path, Query, State},
-    http::{request::Parts, StatusCode},
+    http::{request::Parts, HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::{delete, get, patch, post, put},
     Json, Router,
@@ -685,9 +685,9 @@ async fn verify_wechat_callback(
     CheckedQuery(query): CheckedQuery<WechatCallbackQuery>,
 ) -> Result<Response, ApiProblem> {
     let signature = require_callback_signature(&query)?;
-    let echostr = query.echostr.ok_or_else(|| {
-        invalid_query_parameter("query parameter echostr is required")
-    })?;
+    let echostr = query
+        .echostr
+        .ok_or_else(|| invalid_query_parameter("query parameter echostr is required"))?;
     let echo = state
         .api
         .verify_wechat_callback(WechatCallbackVerificationRequest {
@@ -743,7 +743,10 @@ fn require_callback_signature(query: &WechatCallbackQuery) -> Result<String, Api
 /// in the route manifest and the app-api OpenAPI contract).
 fn plain_text_response(body: String) -> Response {
     (
-        [(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; charset=utf-8",
+        )],
         body,
     )
         .into_response()
@@ -1325,6 +1328,7 @@ async fn create_agent_profile_retrieval_preview(
 async fn create_agent_profile_chat(
     State(state): State<AppState>,
     context: RequiredAppContext,
+    headers: HeaderMap,
     Path(profile_id): Path<u64>,
     Json(request): Json<KnowledgeAgentChatRequest>,
 ) -> Result<Response, ApiProblem> {
@@ -1333,9 +1337,39 @@ async fn create_agent_profile_chat(
     ok_json(
         state
             .api
-            .create_agent_chat(context, profile_id, request.with_tenant_id(tenant_id))
+            .create_agent_chat(
+                context,
+                profile_id,
+                request.with_tenant_id(tenant_id),
+                agent_chat_credentials(&headers),
+            )
             .await,
     )
+}
+
+fn agent_chat_credentials(headers: &HeaderMap) -> crate::AgentChatCredentials {
+    let auth_token = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .map(str::trim)
+        .and_then(|value| {
+            value
+                .strip_prefix("Bearer ")
+                .or_else(|| value.strip_prefix("bearer "))
+        })
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    let access_token = headers
+        .get("access-token")
+        .and_then(|value| value.to_str().ok())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    crate::AgentChatCredentials {
+        auth_token,
+        access_token,
+    }
 }
 
 async fn list_space_context_bindings(

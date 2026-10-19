@@ -36,11 +36,12 @@ mod web_bootstrap;
 pub use error::{ApiError, ApiProblem, ApiResult};
 pub use http_route_manifest::app_route_manifest;
 pub use ports::{
-    KnowledgeAgentAppService, KnowledgeAppApi, KnowledgeAppRequestContext, KnowledgeBrowserApi,
-    KnowledgeCommerceAppService, KnowledgeContextBindingAppService, KnowledgeDocumentAppService,
-    KnowledgeDriveImportAppService, KnowledgeGitImportAppService, KnowledgeGroupLaunchAppService,
-    KnowledgeIngestAppService, KnowledgeOkfAppService, KnowledgeRetrievalAppService,
-    KnowledgeSpaceAppService, KnowledgeWechatAppService, KnowledgeWikiPublicationAppService,
+    AgentChatCredentials, KnowledgeAgentAppService, KnowledgeAppApi, KnowledgeAppRequestContext,
+    KnowledgeBrowserApi, KnowledgeCommerceAppService, KnowledgeContextBindingAppService,
+    KnowledgeDocumentAppService, KnowledgeDriveImportAppService, KnowledgeGitImportAppService,
+    KnowledgeGroupLaunchAppService, KnowledgeIngestAppService, KnowledgeOkfAppService,
+    KnowledgeRetrievalAppService, KnowledgeSpaceAppService, KnowledgeWechatAppService,
+    KnowledgeWikiPublicationAppService,
 };
 pub use routes::{
     build_router_with_agent_and_retrieval_services, build_router_with_agent_service,
