@@ -295,13 +295,17 @@ pub fn space_supports_mode(
     space_mode == requested_mode
 }
 
+/// Validates the agent's knowledge-mode profile requirements.
+///
+/// RAG works without an explicit retrieval profile: when none is set, the
+/// access gateway uses the platform default hybrid plan (binding `topK`, default
+/// methods). Requiring an administrator-created profile made the product's
+/// default "upload then chat" flow fail before the first answer, so absence is
+/// explicitly supported.
 pub fn validate_rag_profile_requirements(
-    mode: KnowledgeAgentKnowledgeMode,
-    retrieval_profile_id: Option<u64>,
+    _mode: KnowledgeAgentKnowledgeMode,
+    _retrieval_profile_id: Option<u64>,
 ) -> Result<(), String> {
-    if mode == KnowledgeAgentKnowledgeMode::Rag && retrieval_profile_id.is_none() {
-        return Err("rag knowledge mode requires agent profile retrieval_profile_id".to_string());
-    }
     Ok(())
 }
 
@@ -600,10 +604,13 @@ mod tests {
     }
 
     #[test]
-    fn rag_mode_requires_retrieval_profile() {
-        assert!(validate_rag_profile_requirements(KnowledgeAgentKnowledgeMode::Rag, None).is_err());
+    fn rag_mode_uses_the_default_plan_without_a_retrieval_profile() {
+        assert!(validate_rag_profile_requirements(KnowledgeAgentKnowledgeMode::Rag, None).is_ok());
         assert!(
             validate_rag_profile_requirements(KnowledgeAgentKnowledgeMode::Rag, Some(1)).is_ok()
+        );
+        assert!(
+            validate_rag_profile_requirements(KnowledgeAgentKnowledgeMode::OkfBundle, None).is_ok()
         );
     }
 }

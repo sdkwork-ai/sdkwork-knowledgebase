@@ -57,7 +57,7 @@ export async function sendKnowledgeAgentMessage(
   // caller explicitly resolved a session.
   const chatRequest = {
     message: message.trim(),
-    mode: options?.mode ?? profile.knowledgeMode ?? 'okf_bundle',
+    mode: options?.mode ?? profile.knowledgeMode ?? 'rag',
     ...(options?.sessionId !== undefined && options?.sessionId !== null
       ? { sessionId: options.sessionId }
       : {}),

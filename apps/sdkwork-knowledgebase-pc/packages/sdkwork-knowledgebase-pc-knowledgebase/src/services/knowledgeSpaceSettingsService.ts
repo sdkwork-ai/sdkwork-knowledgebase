@@ -116,6 +116,27 @@ export async function ensureSpaceAgentProfile(
 
 const ensureSpaceAgentProfileInFlight = new Map<string, Promise<string>>();
 
+async function resolveSpaceKnowledgeMode(
+  client: ReturnType<typeof getKnowledgebaseAppSdkClient>['client'],
+  spaceId: string,
+): Promise<'okf_bundle' | 'rag' | 'external'> {
+  try {
+    const space = await client.knowledge.spaces.retrieve(spaceId);
+    if (space.knowledgeMode === 'rag' || space.knowledgeMode === 'external') {
+      return space.knowledgeMode;
+    }
+    // The wire default is `okf_bundle`, but only an OKF-initialized space has a
+    // concept bundle to search. A plain space that received uploaded files must
+    // answer from chunk retrieval instead of an empty OKF index.
+    return space.okfBundleInitialized ? 'okf_bundle' : 'rag';
+  } catch {
+    // The space read is advisory. A permission or transport failure must not
+    // block the assistant, and the product default for uploaded files is chunk
+    // retrieval rather than an OKF bundle.
+    return 'rag';
+  }
+}
+
 async function ensureSpaceAgentProfileUncached(
   spaceId: string,
   options: EnsureSpaceAgentProfileOptions,
@@ -125,6 +146,7 @@ async function ensureSpaceAgentProfileUncached(
 
   const cached = persistCache ? readSpaceAgentProfileCache(tenantId, spaceId) : null;
   const client = getKnowledgebaseAppSdkClient().client;
+  const spaceKnowledgeMode = await resolveSpaceKnowledgeMode(client, spaceId);
   if (cached && !isBlank(cached)) {
     try {
       const profile = await client.knowledge.agentProfiles.retrieve(cached);
@@ -147,7 +169,7 @@ async function ensureSpaceAgentProfileUncached(
           memoryPolicyRef: profile.memoryPolicyRef,
           toolPolicyRef: profile.toolPolicyRef,
           answerPolicy: profile.answerPolicy,
-          knowledgeMode: profile.knowledgeMode ?? 'okf_bundle',
+          knowledgeMode: profile.knowledgeMode ?? spaceKnowledgeMode,
           agentImplementationId: KNOWLEDGE_AGENT_RIG_IMPLEMENTATION_ID,
           status: profile.status,
         });
@@ -178,7 +200,7 @@ async function ensureSpaceAgentProfileUncached(
       uiModelName: KNOWLEDGE_AGENT_RIG_DEFAULT_MODEL_ID,
     }),
     agentImplementationId: KNOWLEDGE_AGENT_RIG_IMPLEMENTATION_ID,
-    knowledgeMode: 'okf_bundle',
+    knowledgeMode: spaceKnowledgeMode,
     status: 'active',
   });
 

@@ -24,11 +24,18 @@ be able to carry its own memory policy.
    `sdkwork-agents` composition slots both address the same knowledge capability.
 3. **Binding.** An Agent associates one or more Knowledgebase spaces; each
    binding may set priority, `topK`, minimum score, and source/document filters.
-4. **Memory.** An Agent may set a `memory_policy_ref`. Chat injects bounded
+   A RAG Agent works without an administrator-created retrieval profile: when
+   none is set, the platform default hybrid plan applies.
+4. **Mode resolution.** The PC assistant profile inherits the space mode. A
+   space reports `okf_bundle` as its wire default, but only an OKF-initialized
+   space (`okfBundleInitialized = true`) actually has a concept bundle to
+   search; any other space resolves to RAG so uploaded files are answerable
+   immediately after ingestion.
+5. **Memory.** An Agent may set a `memory_policy_ref`. Chat injects bounded
    memory fragments ahead of the answer, labelled untrusted reference data.
    Missing or failing memory degrades to an ungrounded answer; it never fails
    chat.
-5. **Citations.** Knowledge answers return the document/chunk citations produced
+6. **Citations.** Knowledge answers return the document/chunk citations produced
    by the retrieval trace.
 
 ## 3. Cross-Module Boundary
@@ -47,13 +54,17 @@ schema referenced by `agentProfiles.bindings.list`.
 ## 4. Acceptance Evidence
 
 ```powershell
+cargo test -p sdkwork-knowledgebase-agent-provider
 cargo test -p sdkwork-intelligence-knowledgebase-service --lib agent_chat
+cargo test -p sdkwork-intelligence-knowledgebase-service --test agent_service
 cargo test -p sdkwork-knowledgebase-contract
 cargo check -p sdkwork-knowledgebase-app-sdk-generated-rust # generated crate directory
 node tools/knowledgebase_sdk_generate.mjs --check
 node sdks/standardize-knowledgebase-sdk-family.mjs --check
 node ../sdkwork-specs/tools/check-api-operation-patterns.mjs --workspace .
 node ../sdkwork-specs/tools/check-api-response-envelope.mjs --workspace .
+pnpm --dir apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-knowledgebase test
+pnpm --dir apps/sdkwork-knowledgebase-pc run lint
 ```
 
 Agents-side evidence is recorded in the cross-linked Agents design document.

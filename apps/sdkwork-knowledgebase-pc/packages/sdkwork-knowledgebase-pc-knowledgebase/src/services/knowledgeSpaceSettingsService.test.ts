@@ -70,6 +70,7 @@ describe('knowledge space agent profile defaults', () => {
       modelProviderId: 'provider.model.rig-rust',
       modelId: 'rig.default-chat',
       agentImplementationId: 'plugin.intelligence.rig',
+      knowledgeMode: 'rag',
     });
     const modelParameters = JSON.parse(String(createRequests[0]?.modelParameters));
     expect(modelParameters).toMatchObject({
@@ -77,6 +78,90 @@ describe('knowledge space agent profile defaults', () => {
       uiModelName: 'rig.default-chat',
     });
     expect(bindingRequests).toHaveLength(1);
+  });
+
+  it('uses the space knowledge mode when the space is retrieved', async () => {
+    const storage = new Map<string, string>();
+    const createRequests: Array<Record<string, unknown>> = [];
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => storage.get(key) ?? null,
+          setItem: (key: string, value: string) => storage.set(key, value),
+          removeItem: (key: string) => storage.delete(key),
+        },
+      },
+    });
+    bindKnowledgebaseSessionStore(
+      createStaticSessionStore({ context: { tenantId: 'tenant-1', userId: 'user-1' } }),
+    );
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          spaces: {
+            retrieve: async () => ({ id: '42', knowledgeMode: 'okf_bundle', okfBundleInitialized: true }),
+          },
+          agentProfiles: {
+            create: async (request: Record<string, unknown>) => {
+              createRequests.push(request);
+              return { profileId: 'profile-okf' };
+            },
+            bindings: {
+              create: async () => ({ accepted: true }),
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {},
+    });
+
+    await expect(ensureSpaceAgentProfile('42')).resolves.toBe('profile-okf');
+    expect(createRequests[0]).toMatchObject({ knowledgeMode: 'okf_bundle' });
+  });
+
+  it('treats a non-initialized OKF-default space as RAG over uploaded files', async () => {
+    const storage = new Map<string, string>();
+    const createRequests: Array<Record<string, unknown>> = [];
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => storage.get(key) ?? null,
+          setItem: (key: string, value: string) => storage.set(key, value),
+          removeItem: (key: string) => storage.delete(key),
+        },
+      },
+    });
+    bindKnowledgebaseSessionStore(
+      createStaticSessionStore({ context: { tenantId: 'tenant-1', userId: 'user-1' } }),
+    );
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          spaces: {
+            retrieve: async () => ({
+              id: '42',
+              knowledgeMode: 'okf_bundle',
+              okfBundleInitialized: false,
+            }),
+          },
+          agentProfiles: {
+            create: async (request: Record<string, unknown>) => {
+              createRequests.push(request);
+              return { profileId: 'profile-rag' };
+            },
+            bindings: {
+              create: async () => ({ accepted: true }),
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {},
+    });
+
+    await expect(ensureSpaceAgentProfile('42')).resolves.toBe('profile-rag');
+    expect(createRequests[0]).toMatchObject({ knowledgeMode: 'rag' });
   });
 
   it('upgrades a cached contract profile to the production Rig runtime', async () => {
