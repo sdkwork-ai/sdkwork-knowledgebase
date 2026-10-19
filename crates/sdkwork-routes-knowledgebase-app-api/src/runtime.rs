@@ -38,9 +38,13 @@ enum MemoryMode {
 }
 
 fn resolve_memory_mode() -> Result<MemoryMode, sqlx::Error> {
-    let configured = std::env::var(MEMORY_MODE_ENV)
-        .ok()
-        .map(|value| value.trim().to_ascii_lowercase())
+    resolve_memory_mode_value(std::env::var(MEMORY_MODE_ENV).ok().as_deref())
+}
+
+fn resolve_memory_mode_value(value: Option<&str>) -> Result<MemoryMode, sqlx::Error> {
+    let configured = value
+        .map(str::trim)
+        .map(str::to_ascii_lowercase)
         .filter(|value| !value.is_empty());
     match configured.as_deref() {
         None | Some(MEMORY_MODE_IN_PROCESS) => Ok(MemoryMode::InProcess),
@@ -2856,5 +2860,42 @@ impl crate::KnowledgeAppApi for AgentAndRetrievalHostedApi {
         self.agent
             .create_agent_chat(context, profile_id, request, credentials)
             .await
+    }
+}
+
+#[cfg(test)]
+mod memory_mode_tests {
+    use super::{resolve_memory_mode_value, MemoryMode};
+
+    #[test]
+    fn absent_and_blank_values_default_to_in_process() {
+        assert_eq!(
+            resolve_memory_mode_value(None).expect("default"),
+            MemoryMode::InProcess
+        );
+        assert_eq!(
+            resolve_memory_mode_value(Some("  ")).expect("blank default"),
+            MemoryMode::InProcess
+        );
+    }
+
+    #[test]
+    fn mode_values_are_case_insensitive_and_trimmed() {
+        assert_eq!(
+            resolve_memory_mode_value(Some(" HTTP ")).expect("http"),
+            MemoryMode::Http
+        );
+        assert_eq!(
+            resolve_memory_mode_value(Some("in_process")).expect("in process"),
+            MemoryMode::InProcess
+        );
+    }
+
+    #[test]
+    fn unknown_mode_fails_closed() {
+        let error = resolve_memory_mode_value(Some("grpc")).expect_err("unknown mode");
+        assert!(error
+            .to_string()
+            .contains("SDKWORK_KNOWLEDGEBASE_MEMORY_MODE"));
     }
 }

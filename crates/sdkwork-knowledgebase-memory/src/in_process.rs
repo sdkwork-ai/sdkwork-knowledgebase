@@ -6,6 +6,8 @@
 //! in-process and HTTP delivery share one retrieval contract and one set of
 //! scope rules.
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context::{
     KnowledgeMemoryContextProvider, KnowledgeMemoryContextProviderError,
@@ -18,13 +20,13 @@ use crate::app_api::{estimate_tokens, parse_memory_space_id, MAX_MEMORY_FRAGMENT
 
 /// In-process Memory App API provider.
 pub struct InProcessMemoryContextProvider {
-    runtime: InProcessMemoryRuntime,
+    runtime: Arc<InProcessMemoryRuntime>,
 }
 
 impl InProcessMemoryContextProvider {
     /// Builds the provider over an initialized in-process memory runtime.
     #[must_use]
-    pub fn new(runtime: InProcessMemoryRuntime) -> Self {
+    pub fn new(runtime: Arc<InProcessMemoryRuntime>) -> Self {
         Self { runtime }
     }
 
@@ -33,7 +35,9 @@ impl InProcessMemoryContextProvider {
     /// Returns `Ok(None)` when the memory database is not configured, so hosts
     /// without the memory capability keep their existing no-memory degradation.
     pub async fn from_env() -> Result<Option<Self>, String> {
-        Ok(InProcessMemoryRuntime::from_env().await?.map(Self::new))
+        Ok(InProcessMemoryRuntime::shared_from_env()
+            .await?
+            .map(Self::new))
     }
 }
 

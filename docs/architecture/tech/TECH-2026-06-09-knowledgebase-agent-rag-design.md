@@ -156,7 +156,7 @@ Knowledgebase memory supports two selectable transports. `SDKWORK_KNOWLEDGEBASE_
 accepts `in_process` (default) or `http`; an unknown value fails bootstrap.
 
 **In-process (default).** `InProcessMemoryContextProvider` bootstraps the
-memory data plane from the shared workspace database profile
+process-wide memory runtime from the shared workspace database profile
 (`SDKWORK_DATABASE_*`; the retired `SDKWORK_MEMORY_DATABASE_*` keys are
 rejected by the database config) and calls the same
 `MemoryAppApi::create_retrieval` service method as `retrievals.create`. This

@@ -305,12 +305,18 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn provider_forwards_dual_tokens_and_query_to_retrievals_create() {
         use serde_json::json;
-        use wiremock::matchers::{header, method, path};
+        use wiremock::matchers::{body_partial_json, header, method, path};
         use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/app/v3/api/memory/retrievals"))
+            .and(body_partial_json(json!({
+                "query": "preferred refund window",
+                "spaceIds": ["4242"],
+                "actorId": "7",
+                "topK": 8
+            })))
             .and(header("Authorization", "Bearer auth-token"))
             .and(header("Access-Token", "access-token"))
             .respond_with(ResponseTemplate::new(200).set_body_json(json!({
