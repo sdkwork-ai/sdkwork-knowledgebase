@@ -150,6 +150,25 @@ Memory is optional: no policy means no retrieval; a missing provider or a
 failing provider logs a warning and answers without memory. Chat availability is
 never coupled to the memory backend.
 
+### Production Provider Gate
+
+`crates/sdkwork-knowledgebase-memory` already contains the port adapter, and
+`sdkwork-memory` now publishes a generator-owned Rust App API SDK used by the
+Agents turn path (`sdkwork-agents-memory-bridge`). Composing the same provider
+into the Knowledgebase App API runtime still requires caller credentials to
+reach the memory backend:
+
+1. the chat route extracts `Authorization` and `Access-Token` from the request;
+2. the service passes them to the provider (the App API derives actor, tenant,
+   and owner scope from the token, so a service token is not an acceptable
+   substitute);
+3. the provider resolves `memory_policy_ref` to a Memory space and calls
+   `memories.list`.
+
+Until that thread exists, a Knowledgebase profile with `memory_policy_ref`
+degrades to an answer without memory by design. Agents turns already forward the
+dual tokens and therefore have production memory today.
+
 ## Cross-Repository Agent Runtime Consumption
 
 `../sdkwork-agents` executes the same knowledge capability through its turn
