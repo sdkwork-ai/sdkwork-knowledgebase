@@ -86,6 +86,8 @@ pub mod knowledge_context_pack_request;
 pub use knowledge_context_pack_request::KnowledgeContextPackRequest;
 pub mod knowledge_context_pack;
 pub use knowledge_context_pack::KnowledgeContextPack;
+pub mod knowledge_agent_chat_message;
+pub use knowledge_agent_chat_message::KnowledgeAgentChatMessage;
 pub mod knowledge_agent_chat_request;
 pub use knowledge_agent_chat_request::KnowledgeAgentChatRequest;
 pub mod knowledge_agent_chat_citation;

@@ -55,6 +55,7 @@ export type { KnowledgeRetrievalResult } from './knowledge-retrieval-result';
 export type { KnowledgeContextPackRequest } from './knowledge-context-pack-request';
 export type { KnowledgeContextPack } from './knowledge-context-pack';
 export type { KnowledgeAgentKnowledgeMode } from './knowledge-agent-knowledge-mode';
+export type { KnowledgeAgentChatMessage } from './knowledge-agent-chat-message';
 export type { KnowledgeAgentChatRequest } from './knowledge-agent-chat-request';
 export type { KnowledgeAgentChatCitation } from './knowledge-agent-chat-citation';
 export type { KnowledgeAgentChatResponse } from './knowledge-agent-chat-response';

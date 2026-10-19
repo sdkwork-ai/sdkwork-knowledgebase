@@ -169,6 +169,16 @@ Server-side capability consumers use that public transport instead of raw HTTP.
 The OpenAPI authority declares `KnowledgeAgentBindingList`, which the
 `agentProfiles.bindings.list` response references.
 
+## Conversation History
+
+`KnowledgeAgentChatRequest.history` carries prior user/assistant turns (bounded
+by the service to 20 turns, 8,000 characters each, 24,000 characters total,
+oldest dropped first). The service renders them as a labelled
+`User:`/`Assistant:` transcript ahead of the current message. Retrieval and the
+knowledge query still use the current message only, so history provides
+conversational grounding without widening the retrieval scope. Unknown roles
+and blank turns are ignored rather than failing the request.
+
 ## Binary Document Extraction
 
 `KnowledgeDriveImportPipeline` reads markdown/text as bounded UTF-8 and delegates

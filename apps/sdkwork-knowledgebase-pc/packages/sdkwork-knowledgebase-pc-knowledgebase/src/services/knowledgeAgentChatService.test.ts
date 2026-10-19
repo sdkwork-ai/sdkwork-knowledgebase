@@ -137,8 +137,79 @@ describe('knowledge agent prompt builders', () => {
     });
   });
 
-  it('builds readable editor action prompts without mojibake', () => {
-    const text = 'a'.repeat(4001);
+  it('submits bounded conversation history with the chat request', async () => {
+    const tenantId = 'tenant-1';
+    const chatRequests: Array<Record<string, unknown>> = [];
+    bindTenantContext(tenantId);
+    installRegisteredSpace(tenantId, '42');
+    window.localStorage.setItem(
+      `sdkwork.knowledgebase.spaceAgentProfile.v1.${tenantId}.42`,
+      'profile-1',
+    );
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          agentProfiles: {
+            retrieve: async () => ({ knowledgeMode: 'rag' }),
+            chat: {
+              create: async (_profileId: string, request: Record<string, unknown>) => {
+                chatRequests.push(request);
+                return { answer: 'grounded answer' };
+              },
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {},
+    });
+
+    await sendKnowledgeAgentMessage('follow up', {
+      spaceId: '42',
+      history: [
+        { role: 'user', content: 'first question' },
+        { role: 'assistant', content: 'first answer' },
+        { role: 'user', content: '   ' },
+      ],
+    });
+
+    expect(chatRequests[0]?.history).toEqual([
+      { role: 'user', content: 'first question' },
+      { role: 'assistant', content: 'first answer' },
+    ]);
+  });
+
+  it('omits the history key when no prior turn is supplied', async () => {
+    const tenantId = 'tenant-1';
+    const chatRequests: Array<Record<string, unknown>> = [];
+    bindTenantContext(tenantId);
+    installRegisteredSpace(tenantId, '42');
+    window.localStorage.setItem(
+      `sdkwork.knowledgebase.spaceAgentProfile.v1.${tenantId}.42`,
+      'profile-1',
+    );
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          agentProfiles: {
+            retrieve: async () => ({ knowledgeMode: 'rag' }),
+            chat: {
+              create: async (_profileId: string, request: Record<string, unknown>) => {
+                chatRequests.push(request);
+                return { answer: 'answer' };
+              },
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {},
+    });
+
+    await sendKnowledgeAgentMessage('question', { spaceId: '42' });
+
+    expect(chatRequests[0]).not.toHaveProperty('history');
+  });
+
+  it('builds readable editor action prompts without mojibake', () => {    const text = 'a'.repeat(4001);
 
     const prompt = buildEditorActionPrompt('summary', text, 'workspace context');
 

@@ -94,11 +94,16 @@ export function AiAssistantPanel({
     const generation = ++generationSeqRef.current;
     try {
       const scope = resolveKnowledgebaseWorkspaceAiScope(workspaceMode, activeKbId);
+      const history = messages
+        .filter((entry) => !isBlank(entry.content))
+        .slice(-20)
+        .map((entry) => ({ role: entry.role, content: entry.content }));
       const { result: responseText, toolCalls } = await AIService.generateChatResponse(
         userMessage,
         docContent,
         currentRefs.map((reference) => reference.title).join(','),
         scope,
+        history,
       );
       if (generation !== generationSeqRef.current) {
         return;

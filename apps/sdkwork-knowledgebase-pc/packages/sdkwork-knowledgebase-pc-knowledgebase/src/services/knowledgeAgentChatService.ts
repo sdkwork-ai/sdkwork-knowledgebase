@@ -30,11 +30,37 @@ async function ensureDefaultAgentProfile(
   return ensureSpaceAgentProfile(spaceId, { persistCache: persistSpaceProfileCache });
 }
 
+export interface KnowledgeAgentChatHistoryEntry {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface KnowledgeAgentMessageOptions {
   mode?: KnowledgeAgentKnowledgeMode;
   persistSpaceProfileCache?: boolean;
   sessionId?: string;
   spaceId?: string;
+  /** Prior user/assistant turns, oldest first. Bounded before submission. */
+  history?: KnowledgeAgentChatHistoryEntry[];
+}
+
+const MAX_CHAT_HISTORY_TURNS = 20;
+const MAX_CHAT_HISTORY_CONTENT_CHARS = 8_000;
+
+function sanitizeChatHistory(
+  history: KnowledgeAgentChatHistoryEntry[] | undefined,
+): KnowledgeAgentChatHistoryEntry[] {
+  if (!history || history.length === 0) {
+    return [];
+  }
+  return history
+    .filter((entry) => entry.role === 'user' || entry.role === 'assistant')
+    .map((entry) => ({
+      role: entry.role,
+      content: entry.content.trim().slice(0, MAX_CHAT_HISTORY_CONTENT_CHARS),
+    }))
+    .filter((entry) => entry.content.length > 0)
+    .slice(-MAX_CHAT_HISTORY_TURNS);
 }
 
 export async function sendKnowledgeAgentMessage(
@@ -55,9 +81,11 @@ export async function sendKnowledgeAgentMessage(
   // The gateway rejects client-supplied context selector fields (`sessionId`
   // included) with 40001, so the key must be absent — never null — unless the
   // caller explicitly resolved a session.
+  const history = sanitizeChatHistory(options?.history);
   const chatRequest = {
     message: message.trim(),
     mode: options?.mode ?? profile.knowledgeMode ?? 'rag',
+    ...(history.length > 0 ? { history } : {}),
     ...(options?.sessionId !== undefined && options?.sessionId !== null
       ? { sessionId: options.sessionId }
       : {}),

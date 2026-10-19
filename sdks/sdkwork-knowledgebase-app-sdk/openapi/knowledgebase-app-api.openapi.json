@@ -15591,6 +15591,27 @@
         "default": "okf_bundle",
         "description": "Knowledge execution mode. okf_bundle uses native OKF bundle knowledge, rag uses native RAG retrieval, and external delegates to an external knowledge engine integration."
       },
+      "KnowledgeAgentChatMessage": {
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          }
+        }
+      },
       "KnowledgeAgentChatRequest": {
         "type": "object",
         "required": [
@@ -15612,6 +15633,13 @@
           "message": {
             "type": "string",
             "minLength": 1
+          },
+          "history": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeAgentChatMessage"
+            }
           },
           "mode": {
             "$ref": "#/components/schemas/KnowledgeAgentKnowledgeMode"

@@ -220,7 +220,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "b217cd26f54b9078fae98deb10df1623453474d73484c7d64c15a367a453711e"
+      "sha256": "206662fd263ce8b303477ee6f93afb492c336ea0872bef2d0ffd2348eebe22ed"
     },
     {
       "path": "src/types/ingestion-job-state.ts",
@@ -259,8 +259,12 @@
       "sha256": "55723efba9032a91f2684e5ff5b7bc02b6ce05f6545fb88920d083394e374be0"
     },
     {
+      "path": "src/types/knowledge-agent-chat-message.ts",
+      "sha256": "6b33e89f662a84415f48a7c848e10db8c397395536cf68bc96d0f7eabd61c5f0"
+    },
+    {
       "path": "src/types/knowledge-agent-chat-request.ts",
-      "sha256": "13fb979b7e8bfa2f5ebcf5d304244557dbd6f3c70f007c41fed526c79fb91c6b"
+      "sha256": "06773a3d8745736476a228db8d161e0f59dc5a9d2e437053736641311523f18b"
     },
     {
       "path": "src/types/knowledge-agent-chat-response.ts",

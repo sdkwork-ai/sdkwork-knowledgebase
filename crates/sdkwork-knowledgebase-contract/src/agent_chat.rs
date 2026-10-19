@@ -6,6 +6,17 @@ use serde::{Deserialize, Serialize};
 
 pub use crate::rag::KnowledgeAgentKnowledgeMode;
 
+/// One prior conversation turn supplied to an agent chat request.
+///
+/// `role` is `user` or `assistant`. History is bounded by the service; an
+/// unsupported role is ignored rather than failing the turn.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KnowledgeAgentChatMessage {
+    pub role: String,
+    pub content: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeAgentChatRequest {
@@ -22,6 +33,10 @@ pub struct KnowledgeAgentChatRequest {
     )]
     pub actor_id: Option<u64>,
     pub message: String,
+    /// Prior user/assistant turns, oldest first. Used only for conversational
+    /// context; retrieval still runs against the current `message`.
+    #[serde(default)]
+    pub history: Vec<KnowledgeAgentChatMessage>,
     #[serde(default)]
     pub mode: Option<KnowledgeAgentKnowledgeMode>,
     pub session_id: Option<String>,

@@ -12,31 +12,24 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "f9361716fef16cc187b97cd35adab315e0e1004dc04f9dfc329f17ec94d4b0d0",
+  "changeFingerprint": "851699a7be6f6d87d04099d95bd451b9d943a8f1e07f479a872f311e2ecd71e9",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface",
       "models"
     ],
     "details": [
       {
-        "area": "api-surface",
-        "paths": [
-          "src/api/knowledge.rs"
-        ]
-      },
-      {
         "area": "models",
         "paths": [
-          "src/models/knowledge_agent_binding_list.rs",
-          "src/models/knowledge_wechat_article.rs",
+          "src/models/knowledge_agent_chat_message.rs",
+          "src/models/knowledge_agent_chat_request.rs",
           "src/models/mod.rs"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models. Verification is required."
+    "summary": "Detected impact areas: models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -57,7 +50,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -75,7 +68,7 @@
         "id": "verify-build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -94,13 +87,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -118,7 +111,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -148,28 +141,27 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 177,
-    "models": 158,
+    "totalFiles": 178,
+    "models": 159,
     "apis": 1,
-    "types": 160
+    "types": 161
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 4,
+    "writtenFiles": 3,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 172,
+    "skippedUnchangedGeneratedFiles": 174,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "f9361716fef16cc187b97cd35adab315e0e1004dc04f9dfc329f17ec94d4b0d0",
+    "changeFingerprint": "851699a7be6f6d87d04099d95bd451b9d943a8f1e07f479a872f311e2ecd71e9",
     "changes": {
       "createdGeneratedFiles": [
-        "src/models/knowledge_agent_binding_list.rs"
+        "src/models/knowledge_agent_chat_message.rs"
       ],
       "updatedGeneratedFiles": [
-        "src/api/knowledge.rs",
-        "src/models/knowledge_wechat_article.rs",
+        "src/models/knowledge_agent_chat_request.rs",
         "src/models/mod.rs"
       ],
       "unchangedGeneratedFiles": [
@@ -182,6 +174,7 @@
         "README.md",
         "sdkwork-sdk.json",
         "src/api/base.rs",
+        "src/api/knowledge.rs",
         "src/api/mod.rs",
         "src/api/paths.rs",
         "src/client.rs",
@@ -223,10 +216,10 @@
         "src/models/ingestion_job.rs",
         "src/models/ingests_create_response201.rs",
         "src/models/ingests_retrieve_response.rs",
+        "src/models/knowledge_agent_binding_list.rs",
         "src/models/knowledge_agent_binding_request.rs",
         "src/models/knowledge_agent_binding.rs",
         "src/models/knowledge_agent_chat_citation.rs",
-        "src/models/knowledge_agent_chat_request.rs",
         "src/models/knowledge_agent_chat_response.rs",
         "src/models/knowledge_agent_profile_request.rs",
         "src/models/knowledge_agent_profile.rs",
@@ -268,6 +261,7 @@
         "src/models/knowledge_space.rs",
         "src/models/knowledge_wechat_applet_list.rs",
         "src/models/knowledge_wechat_applet.rs",
+        "src/models/knowledge_wechat_article.rs",
         "src/models/knowledge_wechat_articles_preview_request.rs",
         "src/models/knowledge_wechat_articles_publish_request.rs",
         "src/models/knowledge_wechat_fan_tag.rs",
@@ -356,38 +350,31 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface",
         "models"
       ],
       "details": [
         {
-          "area": "api-surface",
-          "paths": [
-            "src/api/knowledge.rs"
-          ]
-        },
-        {
           "area": "models",
           "paths": [
-            "src/models/knowledge_agent_binding_list.rs",
-            "src/models/knowledge_wechat_article.rs",
+            "src/models/knowledge_agent_chat_message.rs",
+            "src/models/knowledge_agent_chat_request.rs",
             "src/models/mod.rs"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models. Verification is required."
+      "summary": "Detected impact areas: models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -405,7 +392,7 @@
           "id": "build",
           "title": "Unified package build",
           "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
           "command": "node",
           "args": [

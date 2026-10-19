@@ -18,7 +18,8 @@ use sdkwork_knowledgebase_agent_provider::{
     SDKWORK_KNOWLEDGEBASE_PROVIDER_ID,
 };
 use sdkwork_knowledgebase_contract::agent_chat::{
-    KnowledgeAgentChatRequest, KnowledgeAgentChatResponse, KnowledgeAgentKnowledgeMode,
+    KnowledgeAgentChatMessage, KnowledgeAgentChatRequest, KnowledgeAgentChatResponse,
+    KnowledgeAgentKnowledgeMode,
 };
 use sdkwork_knowledgebase_contract::rag::{
     KnowledgeMemoryContextFragment, KnowledgeRetrievalRequest,
@@ -40,6 +41,12 @@ const DEFAULT_AGENT_CHAT_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
 const DEFAULT_AGENT_MEMORY_BUDGET_TOKENS: u32 = 1_024;
 /// Maximum memory fragments injected into one chat turn.
 const MAX_AGENT_MEMORY_FRAGMENTS: usize = 8;
+/// Maximum prior turns included in the conversation prompt.
+const MAX_CHAT_HISTORY_MESSAGES: usize = 20;
+/// Maximum characters kept from one prior turn.
+const MAX_CHAT_HISTORY_MESSAGE_CHARS: usize = 8_000;
+/// Maximum characters across all prior turns.
+const MAX_CHAT_HISTORY_TOTAL_CHARS: usize = 24_000;
 
 pub struct KnowledgeAgentChatService<'a, R, W> {
     profiles: &'a dyn KnowledgeAgentProfileStore,
@@ -337,8 +344,10 @@ where
             .as_deref()
             .unwrap_or_else(|| default_knowledge_provider_id(mode));
 
+        let conversation_prompt =
+            build_conversation_prompt(&request.history, request.message.as_str());
         let mut chat_request =
-            AgentChatRequest::new(chat_id.clone(), vec![request.message.clone()])
+            AgentChatRequest::new(chat_id.clone(), vec![conversation_prompt])
                 .with_provider_id(resolved_model_provider_id.clone())
                 .with_model_id(model_id.clone())
                 .with_knowledge_query(&request.message)
@@ -422,6 +431,78 @@ fn default_knowledge_provider_id(mode: KnowledgeAgentKnowledgeMode) -> &'static 
 /// The memory section is explicitly labelled untrusted reference data, so a
 /// stored memory can never promote itself to an instruction. Empty memory
 /// returns the base instruction unchanged.
+/// Builds the bounded conversational prompt for one agent turn.
+///
+/// Prior turns give the model conversational grounding while retrieval still
+/// runs against the current message only. Unknown roles and blank contents are
+/// skipped; the oldest turns are dropped first when the total budget is
+/// exceeded, so a long conversation never exceeds the model context by
+/// accident.
+fn build_conversation_prompt(
+    history: &[KnowledgeAgentChatMessage],
+    message: &str,
+) -> String {
+    let message = message.trim();
+    let mut turns: Vec<(&'static str, String)> = Vec::new();
+    for entry in history
+        .iter()
+        .rev()
+        .take(MAX_CHAT_HISTORY_MESSAGES)
+        .rev()
+    {
+        let role = match entry.role.trim().to_ascii_lowercase().as_str() {
+            "user" => "User",
+            "assistant" => "Assistant",
+            _ => continue,
+        };
+        let content = entry.content.trim();
+        if content.is_empty() {
+            continue;
+        }
+        turns.push((
+            role,
+            truncate_chars(content, MAX_CHAT_HISTORY_MESSAGE_CHARS),
+        ));
+    }
+
+    let mut selected: Vec<(&'static str, String)> = Vec::new();
+    let mut total_chars = 0usize;
+    for turn in turns.into_iter().rev() {
+        let turn_chars = turn.0.chars().count() + turn.1.chars().count() + 3;
+        if total_chars + turn_chars > MAX_CHAT_HISTORY_TOTAL_CHARS {
+            break;
+        }
+        total_chars += turn_chars;
+        selected.push(turn);
+    }
+    selected.reverse();
+
+    if selected.is_empty() {
+        return message.to_string();
+    }
+
+    let mut prompt =
+        String::from("Prior conversation for context. Retrieval used the current message.\n");
+    for (role, content) in selected {
+        prompt.push_str(role);
+        prompt.push_str(": ");
+        prompt.push_str(&content);
+        prompt.push('\n');
+    }
+    prompt.push_str("\nCurrent user message:\n");
+    prompt.push_str(message);
+    prompt
+}
+
+fn truncate_chars(value: &str, max_chars: usize) -> String {
+    if value.chars().count() <= max_chars {
+        return value.to_string();
+    }
+    let mut truncated = value.chars().take(max_chars).collect::<String>();
+    truncated.push('…');
+    truncated
+}
+
 fn build_system_instruction(base: &str, memory: &[KnowledgeMemoryContextFragment]) -> String {
     let mut instruction = base.trim().to_string();
     if memory.is_empty() {
@@ -539,6 +620,7 @@ mod tests {
                     tenant_id: 100001,
                     actor_id: None,
                     message: "Explain hybrid retrieval".to_string(),
+                    history: Vec::new(),
                     mode: Some(KnowledgeAgentKnowledgeMode::Rag),
                     session_id: Some("session.timeout".to_string()),
                     model_provider_id: Some(CONTRACT_MODEL_PROVIDER_ID.to_string()),
@@ -609,6 +691,7 @@ mod tests {
                     tenant_id: 100001,
                     actor_id: None,
                     message: "Explain hybrid retrieval".to_string(),
+                    history: Vec::new(),
                     mode: Some(KnowledgeAgentKnowledgeMode::Rag),
                     session_id: Some("session.saturated".to_string()),
                     model_provider_id: Some(CONTRACT_MODEL_PROVIDER_ID.to_string()),
@@ -653,6 +736,7 @@ mod tests {
                     tenant_id: 100001,
                     actor_id: None,
                     message: "What is the RAG boundary?".to_string(),
+                    history: Vec::new(),
                     mode: Some(KnowledgeAgentKnowledgeMode::OkfBundle),
                     session_id: Some("session.1".to_string()),
                     model_provider_id: Some(CONTRACT_MODEL_PROVIDER_ID.to_string()),
@@ -707,6 +791,7 @@ mod tests {
                     tenant_id: 100001,
                     actor_id: None,
                     message: "Explain hybrid retrieval".to_string(),
+                    history: Vec::new(),
                     mode: Some(KnowledgeAgentKnowledgeMode::Rag),
                     session_id: None,
                     model_provider_id: Some(CONTRACT_MODEL_PROVIDER_ID.to_string()),
@@ -920,6 +1005,7 @@ mod tests {
                     tenant_id: 100001,
                     actor_id: None,
                     message: "What is in the external knowledge base?".to_string(),
+                    history: Vec::new(),
                     mode: Some(KnowledgeAgentKnowledgeMode::External),
                     session_id: None,
                     model_provider_id: Some(CONTRACT_MODEL_PROVIDER_ID.to_string()),
@@ -1263,6 +1349,7 @@ mod tests {
             tenant_id: 100_001,
             actor_id: Some(7),
             message: "How do refunds work?".to_string(),
+            history: Vec::new(),
             mode: Some(KnowledgeAgentKnowledgeMode::Rag),
             session_id: None,
             model_provider_id: None,
@@ -1310,6 +1397,44 @@ mod tests {
             .resolve_memory_fragments(&memory_profile(None), &memory_request())
             .await;
         assert!(unconfigured.is_empty());
+    }
+
+    #[test]
+    fn conversation_prompt_keeps_recent_turns_and_skips_unknown_roles() {
+        let history = vec![
+            KnowledgeAgentChatMessage {
+                role: "user".to_string(),
+                content: "first question".to_string(),
+            },
+            KnowledgeAgentChatMessage {
+                role: "tool".to_string(),
+                content: "must be ignored".to_string(),
+            },
+            KnowledgeAgentChatMessage {
+                role: "assistant".to_string(),
+                content: "first answer".to_string(),
+            },
+        ];
+        let prompt = build_conversation_prompt(&history, "second question");
+        assert!(prompt.contains("User: first question"));
+        assert!(prompt.contains("Assistant: first answer"));
+        assert!(!prompt.contains("must be ignored"));
+        assert!(prompt.ends_with("Current user message:\nsecond question"));
+    }
+
+    #[test]
+    fn conversation_prompt_without_history_is_the_current_message() {
+        assert_eq!(build_conversation_prompt(&[], "hello"), "hello");
+    }
+
+    #[test]
+    fn conversation_prompt_bounds_each_turn() {
+        let history = vec![KnowledgeAgentChatMessage {
+            role: "user".to_string(),
+            content: "x".repeat(MAX_CHAT_HISTORY_MESSAGE_CHARS + 500),
+        }];
+        let prompt = build_conversation_prompt(&history, "follow up");
+        assert!(prompt.chars().count() < MAX_CHAT_HISTORY_MESSAGE_CHARS + 200);
     }
 
     #[test]

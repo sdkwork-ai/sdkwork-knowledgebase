@@ -11,6 +11,7 @@ import {
   sendKnowledgeAgentMessage,
   synthesizeKnowledgeSearchAnswer,
 } from './knowledgeAgentChatService';
+import type { KnowledgeAgentChatHistoryEntry } from './knowledgeAgentChatService';
 import type { KnowledgebaseWorkspaceAiScope } from '../workspaceMode';
 import { getActiveEphemeralFixedKnowledgebaseWorkspaceSpaceId } from '../workspaceMode';
 import * as KnowledgeMediaTaskService from './knowledgeMediaTaskService';
@@ -49,6 +50,7 @@ export class AIService {
     context?: string,
     references?: string,
     scope?: KnowledgebaseWorkspaceAiScope,
+    history?: KnowledgeAgentChatHistoryEntry[],
   ): Promise<{ result: string; toolCalls?: ChatToolCallPayload[] }> {
     requireAiApi(KnowledgebaseErrorCodes.API_UNAVAILABLE_CHAT, scope);
     const prompt = buildEditorActionPrompt(
@@ -56,7 +58,7 @@ export class AIService {
       message,
       [context, references].filter((entry) => !isBlank(entry)).join('\n'),
     );
-    const result = await sendKnowledgeAgentMessage(prompt, scope);
+    const result = await sendKnowledgeAgentMessage(prompt, { ...scope, history });
     return { result, toolCalls: [] };
   }
 

@@ -42,6 +42,10 @@ be able to carry its own memory policy.
    chat.
 6. **Citations.** Knowledge answers return the document/chunk citations produced
    by the retrieval trace.
+7. **Conversation context.** A chat request may carry up to 20 prior
+   user/assistant turns (8,000 characters each, 24,000 total). History shapes
+   the conversational prompt; retrieval still runs against the current message,
+   so an earlier question can never silently change today's evidence scope.
 
 ## 3. Cross-Module Boundary
 

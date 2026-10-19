@@ -231,8 +231,12 @@
       "sha256": "e94c360ab480b2d743b82c22e86245af884a94cf21244e4b9d4a50c9b2076e80"
     },
     {
+      "path": "src/models/knowledge_agent_chat_message.rs",
+      "sha256": "0f705993d6724cf36a86fc590be155bb1ae6e62f14c396a279076170446a3a25"
+    },
+    {
       "path": "src/models/knowledge_agent_chat_request.rs",
-      "sha256": "c84a88141614a0ca51884436e20d3bfc67ad54422a695e3da2f1dc601c3d3107"
+      "sha256": "498f1112561042b40c03116452a75e8f156c4ce0e7d0b9c4cd8cdef4ce8402a9"
     },
     {
       "path": "src/models/knowledge_agent_chat_response.rs",
@@ -468,7 +472,7 @@
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "641536b39628ddbab5a1015a5362505f8c5aeaa495a35a47105964917a4e01af"
+      "sha256": "dc8388beb40720ec223b4b70d33397f7c4a2101b18198c991555bc9974909099"
     },
     {
       "path": "src/models/okf_bundle_export_create_response201.rs",
