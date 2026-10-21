@@ -4,7 +4,7 @@ use crate::api::base::{RequestHeaders};
 use crate::api::paths::app_path;
 use crate::api::paths::append_query_string;
 use crate::http::{SdkworkError, SdkworkHttpClient};
-use crate::models::{ChangeKnowledgeWikiSourceFileVisibilityRequest, ConsumeGroupKnowledgebaseLaunchTicketRequest, CreateKnowledgeDocumentRequest, CreateKnowledgeDocumentVersionRequest, CreateKnowledgeSpaceContextBindingRequest, CreateKnowledgeSpaceRequest, GrantKnowledgeSpaceMemberRequest, GroupKnowledgebaseLaunchTarget, IngestionJob, KnowledgeAgentBinding, KnowledgeAgentBindingList, KnowledgeAgentBindingRequest, KnowledgeAgentChatRequest, KnowledgeAgentChatResponse, KnowledgeAgentProfile, KnowledgeAgentProfileRequest, KnowledgeBrowserListData, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeDocument, KnowledgeDocumentContent, KnowledgeDocumentVersion, KnowledgeDriveImportRequest, KnowledgeDriveImportResult, KnowledgeGitImportRequest, KnowledgeGitImportResult, KnowledgeGitSyncRequest, KnowledgeGitSyncResult, KnowledgeIngestRequest, KnowledgeMarketSubscriptionRequest, KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult, KnowledgeOkfBundleFile, KnowledgeOkfConceptRevisionList, KnowledgeRetrievalRequest, KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceContextBinding, KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest, KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest, KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest, KnowledgeWikiSourceFileCommandResult, KnowledgeWikiSourceFileVersionCommandRequest, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfConceptSummary, OkfConceptSummaryList, OkfConceptUpsertRequest, OkfContextPackRequest, OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun, OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, PublishKnowledgeWikiSourceFileRequest, SdkWorkCommandData, UpdateKnowledgeSpaceContextBindingRequest, UpdateKnowledgeSpaceRequest};
+use crate::models::{ChangeKnowledgeWikiSourceFileVisibilityRequest, ConsumeGroupKnowledgebaseLaunchTicketRequest, CreateKnowledgeDocumentRequest, CreateKnowledgeDocumentVersionRequest, CreateKnowledgeSpaceContextBindingRequest, CreateKnowledgeSpaceRequest, GrantKnowledgeSpaceMemberRequest, GroupKnowledgebaseLaunchTarget, IngestionJob, KnowledgeAgentBinding, KnowledgeAgentBindingRequest, KnowledgeAgentChatRequest, KnowledgeAgentChatResponse, KnowledgeAgentProfile, KnowledgeAgentProfileRequest, KnowledgeBrowserListData, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeDocument, KnowledgeDocumentContent, KnowledgeDocumentVersion, KnowledgeDriveImportRequest, KnowledgeDriveImportResult, KnowledgeGitImportRequest, KnowledgeGitImportResult, KnowledgeGitSyncRequest, KnowledgeGitSyncResult, KnowledgeIngestRequest, KnowledgeMarketSubscriptionRequest, KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult, KnowledgeOkfBundleFile, KnowledgeOkfConceptRevisionList, KnowledgeRetrievalRequest, KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceContextBinding, KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest, KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest, KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest, KnowledgeWikiSourceFileCommandResult, KnowledgeWikiSourceFileVersionCommandRequest, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfConceptSummary, OkfConceptSummaryList, OkfConceptUpsertRequest, OkfContextPackRequest, OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun, OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, PublishKnowledgeWikiSourceFileRequest, SdkWorkCommandData, UpdateKnowledgeSpaceContextBindingRequest, UpdateKnowledgeSpaceRequest};
 
 #[derive(Clone)]
 pub struct KnowledgeApi {
@@ -167,7 +167,7 @@ impl KnowledgeApi {
     }
 
     /// Retrieve the OKF bundle index
-    pub async fn okf_bundle_index_list(&self, space_id: &str) -> Result<OkfIndexDocument, SdkworkError> {
+    pub async fn okf_bundle_index_retrieve(&self, space_id: &str) -> Result<OkfIndexDocument, SdkworkError> {
         let query = build_query_string(&[
             QueryParameterSpec::new("space_id", space_id, "form", true, false, None),
         ]);
@@ -176,7 +176,7 @@ impl KnowledgeApi {
     }
 
     /// Retrieve the OKF bundle log
-    pub async fn okf_bundle_log_list(&self, space_id: &str) -> Result<OkfLogDocument, SdkworkError> {
+    pub async fn okf_bundle_log_retrieve(&self, space_id: &str) -> Result<OkfLogDocument, SdkworkError> {
         let query = build_query_string(&[
             QueryParameterSpec::new("space_id", space_id, "form", true, false, None),
         ]);
@@ -185,7 +185,7 @@ impl KnowledgeApi {
     }
 
     /// Retrieve the OKF bundle profile
-    pub async fn okf_bundle_profile_list(&self, space_id: &str) -> Result<OkfProfileDocument, SdkworkError> {
+    pub async fn okf_bundle_profile_retrieve(&self, space_id: &str) -> Result<OkfProfileDocument, SdkworkError> {
         let query = build_query_string(&[
             QueryParameterSpec::new("space_id", space_id, "form", true, false, None),
         ]);
@@ -266,8 +266,12 @@ impl KnowledgeApi {
     }
 
     /// List agent profile bindings
-    pub async fn agent_profiles_bindings_list(&self, profile_id: &str) -> Result<KnowledgeAgentBindingList, SdkworkError> {
-        let path = app_path(&format!("/knowledge/agent_profiles/{}/bindings", serialize_path_parameter(profile_id, PathParameterSpec::new("profileId", "simple", false))));
+    pub async fn agent_profiles_bindings_list(&self, profile_id: &str, cursor: Option<&str>, page_size: Option<i64>) -> Result<serde_json::Value, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+        ]);
+        let path = append_query_string(app_path(&format!("/knowledge/agent_profiles/{}/bindings", serialize_path_parameter(profile_id, PathParameterSpec::new("profileId", "simple", false)))), &query);
         self.client.get(&path, None, None).await
     }
 

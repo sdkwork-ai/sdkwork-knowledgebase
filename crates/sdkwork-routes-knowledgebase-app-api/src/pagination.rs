@@ -181,11 +181,27 @@ pub fn parse_opaque_u64_cursor(cursor: Option<&str>) -> Result<Option<u64>, SdkW
         .map_err(|_| SdkWorkResultCode::InvalidParameter)
 }
 
+/// Encode a numeric next-cursor directly. Prefer this over the string wrapper: the
+/// type system proves the position is an id, so no parse can silently fail.
+pub fn encode_u64_next_cursor(next_cursor: Option<u64>) -> Option<String> {
+    next_cursor.map(encode_opaque_u64_cursor)
+}
+
 /// Encode a store-returned numeric next-cursor into the opaque wire form.
+///
+/// Stores should return numeric ids; a non-numeric value is a programming defect and
+/// is logged instead of being silently dropped, so the truncation is observable.
 pub fn encode_opaque_next_cursor(next_cursor: Option<String>) -> Option<String> {
-    next_cursor
-        .and_then(|value| value.parse::<u64>().ok())
-        .map(encode_opaque_u64_cursor)
+    next_cursor.and_then(|value| match value.parse::<u64>() {
+        Ok(value) => Some(encode_opaque_u64_cursor(value)),
+        Err(_) => {
+            tracing::error!(
+                next_cursor = %value,
+                "store returned a non-numeric next cursor; the page cannot be continued"
+            );
+            None
+        }
+    })
 }
 
 /// Build cursor-mode `SdkWorkPageData` from a bounded page window.

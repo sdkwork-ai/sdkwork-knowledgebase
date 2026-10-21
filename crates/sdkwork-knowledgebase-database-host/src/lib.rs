@@ -100,8 +100,8 @@ pub async fn bootstrap_knowledgebase_database_from_env() -> Result<Knowledgebase
 /// Environment-driven bootstrap with a dedicated migration pool: migrations
 /// run on the BASE url (no deployment scope, no statement_timeout guard) so
 /// long-running DDL is not cancelled by the runtime's 30 s guard.
-pub async fn bootstrap_knowledgebase_database_from_env_with_dedicated_migrations()
--> Result<KnowledgebaseDatabaseHost, String> {
+pub async fn bootstrap_knowledgebase_database_from_env_with_dedicated_migrations(
+) -> Result<KnowledgebaseDatabaseHost, String> {
     let _ = dotenvy::dotenv();
     let config = DatabaseConfig::from_env("KNOWLEDGEBASE")
         .map_err(|error| format!("read knowledgebase database config failed: {error}"))?;

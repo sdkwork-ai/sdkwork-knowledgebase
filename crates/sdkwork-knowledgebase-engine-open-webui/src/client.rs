@@ -214,7 +214,7 @@ fn map_row_to_hit(
 
 pub fn chunk_id_from_content(content: &str) -> String {
     let digest = Sha256::digest(content.as_bytes());
-    format!("{:x}", digest)[..16].to_string()
+    sdkwork_utils_rust::encoding::hex_encode(&digest)[..16].to_string()
 }
 
 #[derive(Debug, Deserialize)]

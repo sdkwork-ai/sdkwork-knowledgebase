@@ -222,19 +222,16 @@ impl KnowledgeEngineExecutionHandle {
         // the shared process-level cache; the credential reference version is
         // the freshness token, so rotation produces a fresh bind.
         let engine = match self.bind_cache.as_ref() {
-            Some(cache) => {
-                cache
-                    .get_or_bind(
-                        super::cached_binding_engine::ProviderBindingEngineKey {
-                            implementation_id: binding.implementation_id.clone(),
-                            binding_id: binding.id,
-                            credential_reference_id: reference_id,
-                            credential_reference_version: reference_version,
-                            credential_bound: credential.is_some(),
-                        },
-                        || self.engine.bind_provider(binding, credential),
-                    )?
-            }
+            Some(cache) => cache.get_or_bind(
+                super::cached_binding_engine::ProviderBindingEngineKey {
+                    implementation_id: binding.implementation_id.clone(),
+                    binding_id: binding.id,
+                    credential_reference_id: reference_id,
+                    credential_reference_version: reference_version,
+                    credential_bound: credential.is_some(),
+                },
+                || self.engine.bind_provider(binding, credential),
+            )?,
             None => self.engine.bind_provider(binding, credential)?,
         };
         if !engine.descriptor().supports(capability) {

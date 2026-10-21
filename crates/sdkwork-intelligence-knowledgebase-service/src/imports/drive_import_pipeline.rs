@@ -226,18 +226,23 @@ impl<'a> KnowledgeDriveImportPipelineService<'a> {
             bytes,
         };
         let timeout = self.extraction_timeout;
-        let extraction = tokio::time::timeout(
-            timeout,
-            tokio::task::spawn_blocking(move || extractor.extract(request)),
-        )
-        .await
-        .map_err(|_| KnowledgeDriveImportPipelineServiceError::ExtractionTimedOut { timeout })?
-        .map_err(|error| {
-            KnowledgeDriveImportPipelineServiceError::ExtractionWorkerFailed(format!(
-                "document extraction worker failed: {error}"
-            ))
-        })?
-        .map_err(KnowledgeDriveImportPipelineServiceError::Extraction)?;
+        // Extraction runs on the shared bounded blocking executor: raw `spawn_blocking` here
+        // let a burst of large imports hold one 32 MiB input per task with no admission
+        // control, and `timeout` alone cannot cancel a blocking decode.
+        let extraction =
+            crate::bounded_blocking::run_bounded_blocking_with_timeout(timeout, move || {
+                extractor.extract(request)
+            })
+            .await
+            .map_err(|error| match error {
+                crate::bounded_blocking::BoundedBlockingError::TimedOut { timeout } => {
+                    KnowledgeDriveImportPipelineServiceError::ExtractionTimedOut { timeout }
+                }
+                other => KnowledgeDriveImportPipelineServiceError::ExtractionWorkerFailed(format!(
+                    "document extraction worker failed: {other}"
+                )),
+            })?
+            .map_err(KnowledgeDriveImportPipelineServiceError::Extraction)?;
         let extraction = bound_extracted_text(extraction);
 
         if extraction.truncated {

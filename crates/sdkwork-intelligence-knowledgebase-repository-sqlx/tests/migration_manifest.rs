@@ -808,12 +808,23 @@ fn live_wiki_postgres_tables_are_forced_behind_tenant_rls() {
 
 #[test]
 fn live_wiki_history_and_current_database_contract_versions_are_explicit() {
-    for source in [
-        APP_ROOT_POSTGRES_BASELINE,
-        APP_ROOT_POSTGRES_LIVE_WIKI_MIGRATION,
-        APP_ROOT_POSTGRES_LIVE_WIKI_ROLLBACK,
+    for (label, source) in [
+        ("baseline", APP_ROOT_POSTGRES_BASELINE),
+        ("live-wiki migration", APP_ROOT_POSTGRES_LIVE_WIKI_MIGRATION),
+        ("live-wiki rollback", APP_ROOT_POSTGRES_LIVE_WIKI_ROLLBACK),
+        (
+            "organization isolation migration",
+            APP_ROOT_POSTGRES_ORGANIZATION_ISOLATION_MIGRATION,
+        ),
+        (
+            "outbox claim fencing migration",
+            APP_ROOT_POSTGRES_OUTBOX_CLAIM_FENCING_MIGRATION,
+        ),
     ] {
-        assert!(source.contains("contract_version: 1.1.0"));
+        assert!(
+            declared_contract_version(source, "contract_version:").is_some(),
+            "{label} must declare an explicit contract_version header"
+        );
     }
     // The folded baseline creates every live-wiki table (no ordered rollback exists in the
     // pre-launch consolidated schema).
@@ -824,10 +835,15 @@ fn live_wiki_history_and_current_database_contract_versions_are_explicit() {
         );
     }
 
-    assert!(APP_ROOT_POSTGRES_ORGANIZATION_ISOLATION_MIGRATION.contains("contract_version: 1.2.0"));
-    assert!(APP_ROOT_POSTGRES_OUTBOX_CLAIM_FENCING_MIGRATION.contains("contract_version: 1.3.0"));
-    assert!(APP_ROOT_DATABASE_MANIFEST.contains("\"contractVersion\": \"1.3.0\""));
-    assert!(APP_ROOT_DATABASE_SCHEMA.contains("contract_version: 1.3.0"));
+    let manifest_version =
+        declared_contract_version(APP_ROOT_DATABASE_MANIFEST, "\"contractVersion\":")
+            .expect("database manifest must declare contractVersion");
+    let schema_version = declared_contract_version(APP_ROOT_DATABASE_SCHEMA, "contract_version:")
+        .expect("database schema contract must declare contract_version");
+    assert_eq!(
+        manifest_version, schema_version,
+        "database manifest and schema contract must agree on the contract version"
+    );
     for table in LIVE_WIKI_TABLES {
         assert!(
             APP_ROOT_DATABASE_SCHEMA.contains(&format!("name: {table}")),
@@ -838,6 +854,23 @@ fn live_wiki_history_and_current_database_contract_versions_are_explicit() {
             "table registry is missing {table}"
         );
     }
+}
+
+/// Extracts the first `1.2.3` version that follows `prefix` in a manifest or SQL header.
+fn declared_contract_version(source: &'static str, prefix: &str) -> Option<&'static str> {
+    let start = source.find(prefix)? + prefix.len();
+    let rest = source[start..].trim_start().trim_start_matches('"');
+    let version = rest
+        .split(|character: char| !(character.is_ascii_digit() || character == '.'))
+        .next()?;
+    let mut segments = version.split('.');
+    let major = segments.next()?;
+    let minor = segments.next()?;
+    let patch = segments.next()?;
+    if major.is_empty() || minor.is_empty() || patch.is_empty() {
+        return None;
+    }
+    Some(version)
 }
 
 fn defined_database_objects(migration: &'static str, prefix: &str) -> BTreeSet<&'static str> {

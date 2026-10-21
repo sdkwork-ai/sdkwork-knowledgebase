@@ -1,7 +1,8 @@
+mod support;
+
 use std::time::Duration;
 
 use sdkwork_intelligence_knowledgebase_repository_sqlx::{
-    connect_knowledgebase_and_install_schema, is_postgres_database_url,
     PostgresKnowledgeSpaceStore, SqlxKnowledgeEngineProviderBindingStore,
     SqlxKnowledgeEngineProviderMigrationStore,
 };
@@ -30,12 +31,30 @@ use sdkwork_knowledgebase_contract::{
 use serde_json::json;
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
+async fn clean_migration_scope(pool: &sqlx::AnyPool, tenant_id: u64, organization_id: u64) {
+    for statement in [
+        "DELETE FROM kb_provider_migration_operation WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_provider_binding WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_provider_credential_reference WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_source WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_space WHERE tenant_id = $1 AND organization_id = $2",
+    ] {
+        sqlx::query(statement)
+            .bind(tenant_id as i64)
+            .bind(organization_id as i64)
+            .execute(pool)
+            .await
+            .expect("clean provider migration fixtures");
+    }
+}
+
 #[tokio::test]
 async fn provider_migration_is_idempotent_claimed_versioned_and_reversible() {
-    let Some(pool) = migration_test_pool("provider-migration-lifecycle").await else {
+    let Some(pool) = migration_test_pool(110_001, 71).await else {
         eprintln!("skipping provider postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
     };
+    clean_migration_scope(&pool, 110_001, 71).await;
     let scope = KnowledgeEngineProviderScope {
         tenant_id: 110_001,
         organization_id: 71,
@@ -347,7 +366,7 @@ async fn provider_migration_rejects_stale_claim_token_after_lease_recovery() {
 }
 
 async fn migration_fixture(
-    name: &str,
+    _name: &str,
 ) -> Option<(
     sqlx::AnyPool,
     KnowledgeEngineProviderScope,
@@ -355,11 +374,12 @@ async fn migration_fixture(
     KnowledgeEngineProviderBinding,
     KnowledgeEngineProviderBinding,
 )> {
-    let pool = migration_test_pool(name).await?;
+    let pool = migration_test_pool(120_001, 72).await?;
     let scope = KnowledgeEngineProviderScope {
         tenant_id: 120_001,
         organization_id: 72,
     };
+    clean_migration_scope(&pool, 120_001, 72).await;
     let space_store =
         PostgresKnowledgeSpaceStore::new(pool.clone(), scope.tenant_id, scope.organization_id);
     let space = space_store
@@ -439,13 +459,6 @@ async fn create_tested_binding(
         .expect("record successful test")
 }
 
-async fn migration_test_pool(_test_name: &str) -> Option<sqlx::AnyPool> {
-    let database_url = std::env::var("SDKWORK_DATABASE_URL")
-        .or_else(|_| std::env::var("DATABASE_URL"))
-        .ok()
-        .filter(|url| is_postgres_database_url(url))?;
-    let pool = connect_knowledgebase_and_install_schema(&database_url)
-        .await
-        .expect("install postgres test schema");
-    Some(pool)
+async fn migration_test_pool(tenant_id: u64, organization_id: u64) -> Option<sqlx::AnyPool> {
+    support::scoped_pool(tenant_id, organization_id).await
 }

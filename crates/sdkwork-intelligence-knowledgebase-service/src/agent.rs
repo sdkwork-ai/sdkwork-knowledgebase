@@ -1,5 +1,5 @@
 use crate::ports::knowledge_agent_profile_store::{
-    KnowledgeAgentProfileStore, KnowledgeAgentProfileStoreError,
+    KnowledgeAgentBindingPage, KnowledgeAgentProfileStore, KnowledgeAgentProfileStoreError,
 };
 use crate::retrieval::{KnowledgeRetrievalExecutor, KnowledgeRetrievalServiceError};
 use sdkwork_knowledgebase_agent_provider::{
@@ -81,6 +81,29 @@ impl<'a> KnowledgeAgentService<'a> {
             .list_bindings(profile_id)
             .await
             .map(|items| KnowledgeAgentBindingList { items })
+            .map_err(KnowledgeAgentServiceError::Store)
+    }
+
+    /// Keyset page of bindings. The cursor is the last binding id of the previous page;
+    /// the store must return `page_size + 1` rows to compute `has_more` without a count.
+    pub async fn list_bindings_page(
+        &self,
+        profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
+    ) -> Result<KnowledgeAgentBindingPage, KnowledgeAgentServiceError> {
+        validate_id("profile_id", profile_id)?;
+        if let Some(cursor) = cursor {
+            validate_id("cursor", cursor)?;
+        }
+        if page_size == 0 || page_size > 200 {
+            return Err(KnowledgeAgentServiceError::InvalidRequest(
+                "page_size must be between 1 and 200".to_string(),
+            ));
+        }
+        self.profiles
+            .list_bindings_page(profile_id, cursor, page_size)
+            .await
             .map_err(KnowledgeAgentServiceError::Store)
     }
 

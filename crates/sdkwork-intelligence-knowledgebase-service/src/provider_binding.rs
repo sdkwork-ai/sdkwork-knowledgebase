@@ -513,12 +513,13 @@ fn validate_management_context(
             ),
         );
     }
-    let may_manage = context.permission_scope.iter().any(|permission| {
-        matches!(
-            permission.as_str(),
-            KNOWLEDGE_PLATFORM_MANAGE_PERMISSION | "knowledge.*"
-        )
-    });
+    // Exact permission only. A wildcard grant such as `knowledge.*` must not reach Provider
+    // credential rotation/revocation or binding cutover through any caller that forwards
+    // request scopes directly; the HTTP guard already enforces the exact scope.
+    let may_manage = context
+        .permission_scope
+        .iter()
+        .any(|permission| permission == KNOWLEDGE_PLATFORM_MANAGE_PERMISSION);
     if !may_manage {
         return Err(
             KnowledgeEngineProviderBindingServiceError::PermissionDenied(format!(

@@ -11,7 +11,6 @@ pub enum KnowledgebaseProviderCredentialEnvironment {
     Test,
     Staging,
     Production,
-    Demo,
 }
 
 impl KnowledgebaseProviderCredentialEnvironment {
@@ -23,13 +22,12 @@ impl KnowledgebaseProviderCredentialEnvironment {
             "test" => Ok(Self::Test),
             "staging" => Ok(Self::Staging),
             "production" => Ok(Self::Production),
-            "demo" => Ok(Self::Demo),
             _ => Err(KnowledgebaseProviderCredentialResolverConfigurationError::InvalidEnvironment),
         }
     }
 
     pub fn allows_local_sources(self) -> bool {
-        matches!(self, Self::Development | Self::Test | Self::Demo)
+        matches!(self, Self::Development | Self::Test)
     }
 
     pub fn requires_managed_source(self) -> bool {
@@ -42,7 +40,6 @@ impl KnowledgebaseProviderCredentialEnvironment {
             Self::Test => "test",
             Self::Staging => "staging",
             Self::Production => "production",
-            Self::Demo => "demo",
         }
     }
 }

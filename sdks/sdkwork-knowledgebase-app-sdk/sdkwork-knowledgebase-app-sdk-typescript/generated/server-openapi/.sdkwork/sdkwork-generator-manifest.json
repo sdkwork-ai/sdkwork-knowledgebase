@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/knowledge.ts",
-      "sha256": "96a8ba7b2eedbcd5b9b6ae65fa5a823ea70c7b45cf2305266460ea849492e245"
+      "sha256": "0c49b9fd7df31baddb63a8fa334e44fafeb0fdbe708496b404c1c7bf61c8ffc1"
     },
     {
       "path": "src/api/paths.ts",
@@ -92,7 +92,7 @@
     },
     {
       "path": "src/types/agent-profiles-bindings-list-response.ts",
-      "sha256": "fdf4f2672a8b6331b9347d2a894a2c166a71361888bbeef1c06c6ff5c6b241eb"
+      "sha256": "97b1fe2ceb888b231ef7390c9e92e0463bc54cf78728274ec401925b08fd1c85"
     },
     {
       "path": "src/types/agent-profiles-bindings-update-response.ts",
@@ -220,7 +220,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "206662fd263ce8b303477ee6f93afb492c336ea0872bef2d0ffd2348eebe22ed"
+      "sha256": "7cae0f201bd03dba86f71eccc96a57a7ef527c7b725bb1e366fffc1db477661c"
     },
     {
       "path": "src/types/ingestion-job-state.ts",
@@ -241,10 +241,6 @@
     {
       "path": "src/types/knowledge-access-level.ts",
       "sha256": "770a1690e4da440785d55c1ccf202b01ffee33d47078b160030831aec8852b50"
-    },
-    {
-      "path": "src/types/knowledge-agent-binding-list.ts",
-      "sha256": "d7e296384b84075187999aaac3c913b83da1ab7fc4b4937c901284801a70e4c6"
     },
     {
       "path": "src/types/knowledge-agent-binding-request.ts",
@@ -619,16 +615,16 @@
       "sha256": "8565c829eba1a6ef4ecfbaa4be0445629cfc0433258f25bae5939f340fe679e9"
     },
     {
-      "path": "src/types/okf-bundle-index-list-response.ts",
-      "sha256": "6721f342b675bb18d5066536077ca28cb253be51e7b0c6e227b08ea13e8edc50"
+      "path": "src/types/okf-bundle-index-retrieve-response.ts",
+      "sha256": "9ab9c8a450dc878ab638f358f453bb615b894da7ff6fccd48b9d507d91afa2ab"
     },
     {
-      "path": "src/types/okf-bundle-log-list-response.ts",
-      "sha256": "2b80883acaa17fecb372e15a700885089e5711d793f5b63273d2235152f5e4c1"
+      "path": "src/types/okf-bundle-log-retrieve-response.ts",
+      "sha256": "623ce0bc248e027c41df118ec1c907ddaf245f9d42596b70bfd76d3bc6244ab0"
     },
     {
-      "path": "src/types/okf-bundle-profile-list-response.ts",
-      "sha256": "0b74b4a9c0be81501f1068fdc7551f809912a168d09b5d1583dd08e1117e155f"
+      "path": "src/types/okf-bundle-profile-retrieve-response.ts",
+      "sha256": "18370f3b17c1b4f98ae7ca409a7148c79c70f8fdc7a5825776cba40cfff87463"
     },
     {
       "path": "src/types/okf-concept-summary-list.ts",

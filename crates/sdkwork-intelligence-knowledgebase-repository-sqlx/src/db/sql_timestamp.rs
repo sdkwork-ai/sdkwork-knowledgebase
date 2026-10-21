@@ -20,7 +20,7 @@ impl SqlTimestampDialect {
     }
 
     pub fn sql_timestamp_expr(self, placeholder: &str) -> String {
-        format!("CAST({placeholder} AS TIMESTAMP)")
+        format!("CAST({placeholder} AS TIMESTAMPTZ)")
     }
 
     pub fn sql_json_expr(self, placeholder: &str) -> String {
@@ -28,7 +28,9 @@ impl SqlTimestampDialect {
     }
 
     pub fn sql_timestamp_text_expr(self, column: &str) -> String {
-        format!("TO_CHAR({column}, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')")
+        // `TO_CHAR` on a TIMESTAMPTZ renders in the session time zone; pin UTC so the
+        // RFC 3339 string does not depend on the database server's `TimeZone` setting.
+        format!("TO_CHAR({column} AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')")
     }
 }
 
@@ -49,7 +51,7 @@ pub fn push_sql_timestamp_bind<DB, Sep>(
 {
     row.push("CAST(");
     row.push_bind_unseparated(value.to_owned());
-    row.push_unseparated(" AS TIMESTAMP)");
+    row.push_unseparated(" AS TIMESTAMPTZ)");
 }
 
 #[cfg(test)]
@@ -60,7 +62,7 @@ mod tests {
     fn postgres_dialect_casts_text_bindings_to_database_types() {
         assert_eq!(
             SqlTimestampDialect::Postgres.sql_timestamp_expr("$1"),
-            "CAST($1 AS TIMESTAMP)"
+            "CAST($1 AS TIMESTAMPTZ)"
         );
         assert_eq!(
             SqlTimestampDialect::Postgres.sql_json_expr("$2"),
@@ -68,7 +70,7 @@ mod tests {
         );
         assert_eq!(
             SqlTimestampDialect::Postgres.sql_timestamp_text_expr("created_at"),
-            "TO_CHAR(created_at, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')"
+            "TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')"
         );
     }
 }

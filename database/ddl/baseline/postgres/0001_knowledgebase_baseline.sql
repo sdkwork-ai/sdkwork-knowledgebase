@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS kb_space (
     status INTEGER NOT NULL,
     okf_bundle_initialized INTEGER NOT NULL DEFAULT 0,
     okf_log_sequence_counter BIGINT NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -45,12 +45,12 @@ CREATE TABLE IF NOT EXISTS kb_source (
     drive_bucket VARCHAR(256),
     drive_prefix VARCHAR(1024),
     sync_policy JSONB,
-    last_sync_at TIMESTAMP,
+    last_sync_at TIMESTAMPTZ,
     last_sync_job_id BIGINT,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -89,8 +89,8 @@ CREATE TABLE IF NOT EXISTS kb_drive_object_ref (
     object_role VARCHAR(64) NOT NULL,
     access_mode VARCHAR(64) NOT NULL,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -140,8 +140,8 @@ CREATE TABLE IF NOT EXISTS kb_document (
     index_state INTEGER NOT NULL,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -180,11 +180,11 @@ CREATE TABLE IF NOT EXISTS kb_document_version (
     parse_state INTEGER NOT NULL,
     index_state INTEGER NOT NULL,
     submitted_by BIGINT,
-    submitted_at TIMESTAMP NOT NULL,
+    submitted_at TIMESTAMPTZ NOT NULL,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -208,8 +208,8 @@ CREATE TABLE IF NOT EXISTS kb_chunk (
     locator JSONB,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT ck_kb_chunk_content_text_size
         CHECK (octet_length(content_text) <= 1048576)
@@ -240,8 +240,8 @@ CREATE TABLE IF NOT EXISTS kb_index (
     schema_version VARCHAR(128) NOT NULL,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -263,8 +263,8 @@ CREATE TABLE IF NOT EXISTS kb_embedding (
     model VARCHAR(128),
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -293,8 +293,8 @@ CREATE TABLE IF NOT EXISTS kb_retrieval_profile (
     context_budget_tokens INTEGER NOT NULL,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -318,8 +318,8 @@ CREATE TABLE IF NOT EXISTS kb_retrieval_trace (
     error_code VARCHAR(128),
     error_detail VARCHAR(4000),
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT ck_kb_retrieval_trace_query_text_size
         CHECK (query_text_redacted IS NULL OR octet_length(query_text_redacted) <= 8192),
@@ -350,8 +350,8 @@ CREATE TABLE IF NOT EXISTS kb_retrieval_hit (
     citation JSONB,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -368,6 +368,7 @@ CREATE TABLE IF NOT EXISTS kb_agent_profile (
     id BIGINT PRIMARY KEY,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
+    created_by BIGINT NOT NULL DEFAULT 0,
     name VARCHAR(200) NOT NULL,
     description TEXT,
     system_instruction TEXT NOT NULL,
@@ -381,8 +382,8 @@ CREATE TABLE IF NOT EXISTS kb_agent_profile (
     answer_policy JSONB,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -405,8 +406,8 @@ CREATE TABLE IF NOT EXISTS kb_agent_knowledge_binding (
     min_score DOUBLE PRECISION,
     enabled INTEGER NOT NULL DEFAULT 1,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -434,14 +435,14 @@ CREATE TABLE IF NOT EXISTS kb_ingestion_job (
     error_detail VARCHAR(4000),
     claim_owner VARCHAR(255),
     claim_token VARCHAR(64),
-    lease_expires_at TIMESTAMP,
+    lease_expires_at TIMESTAMPTZ,
     attempt_count INTEGER NOT NULL DEFAULT 0,
-    started_at TIMESTAMP,
-    finished_at TIMESTAMP,
+    started_at TIMESTAMPTZ,
+    finished_at TIMESTAMPTZ,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -464,11 +465,11 @@ CREATE TABLE IF NOT EXISTS kb_ingestion_job_item (
     attempt_count INTEGER NOT NULL DEFAULT 0,
     error_code VARCHAR(128),
     error_detail VARCHAR(4000),
-    started_at TIMESTAMP,
-    finished_at TIMESTAMP,
+    started_at TIMESTAMPTZ,
+    finished_at TIMESTAMPTZ,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -491,8 +492,8 @@ CREATE TABLE IF NOT EXISTS kb_okf_concept (
     publish_state VARCHAR(64) NOT NULL,
     revision_counter BIGINT NOT NULL DEFAULT 0,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -518,8 +519,8 @@ CREATE TABLE IF NOT EXISTS kb_okf_concept_revision (
     content_hash VARCHAR(128) NOT NULL,
     review_state VARCHAR(64) NOT NULL,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -541,8 +542,8 @@ CREATE TABLE IF NOT EXISTS kb_okf_bundle_file (
     drive_object_key VARCHAR(2048) NOT NULL,
     checksum_sha256_hex VARCHAR(128),
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -562,8 +563,8 @@ CREATE TABLE IF NOT EXISTS kb_okf_schema_profile (
     agents_md_object_ref_id BIGINT NOT NULL,
     state VARCHAR(64) NOT NULL,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -577,13 +578,13 @@ CREATE TABLE IF NOT EXISTS kb_okf_log_entry (
     space_id BIGINT NOT NULL,
     sequence_no BIGINT NOT NULL,
     event_type VARCHAR(64) NOT NULL,
-    event_time TIMESTAMP NOT NULL,
+    event_time TIMESTAMPTZ NOT NULL,
     title VARCHAR(512) NOT NULL,
     privacy_level VARCHAR(64) NOT NULL,
     metadata JSONB,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -605,8 +606,8 @@ CREATE TABLE IF NOT EXISTS kb_local_mirror_package (
     checksum_sha256_hex VARCHAR(128) NOT NULL,
     state VARCHAR(64) NOT NULL,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -629,8 +630,8 @@ CREATE TABLE IF NOT EXISTS kb_space_context_binding (
     access_level VARCHAR(32) NOT NULL DEFAULT 'reader',
     status INTEGER NOT NULL DEFAULT 1,
     created_by VARCHAR(128) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     FOREIGN KEY (space_id) REFERENCES kb_space(id)
@@ -665,27 +666,27 @@ CREATE TABLE IF NOT EXISTS kb_group_knowledge_space_binding (
     acl_projection_state VARCHAR(32) NOT NULL DEFAULT 'pending',
     provisioning_idempotency_key_sha256_hex VARCHAR(64) NOT NULL,
     provisioning_lease_token VARCHAR(64),
-    provisioning_lease_until TIMESTAMP,
+    provisioning_lease_until TIMESTAMPTZ,
     membership_epoch BIGINT NOT NULL DEFAULT 0,
     upstream_link_generation BIGINT NOT NULL DEFAULT 0,
     archive_source_event_id VARCHAR(512),
     archive_payload_sha256_hex VARCHAR(64),
     archive_lease_token VARCHAR(64),
-    archive_lease_until TIMESTAMP,
+    archive_lease_until TIMESTAMPTZ,
     archive_acl_cursor VARCHAR(2048),
     archive_acl_pages_processed BIGINT NOT NULL DEFAULT 0,
-    archive_acl_cleanup_completed_at TIMESTAMP,
+    archive_acl_cleanup_completed_at TIMESTAMPTZ,
     last_source_event_id VARCHAR(512),
     last_error_code VARCHAR(64),
-    last_error_at TIMESTAMP,
-    archived_at TIMESTAMP,
+    last_error_at TIMESTAMPTZ,
+    archived_at TIMESTAMPTZ,
     archived_by VARCHAR(256),
-    deleted_at TIMESTAMP,
+    deleted_at TIMESTAMPTZ,
     deleted_by VARCHAR(256),
     created_by VARCHAR(256) NOT NULL,
     updated_by VARCHAR(256) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     CONSTRAINT uk_kb_group_knowledge_space_binding_scope_id
@@ -734,8 +735,8 @@ CREATE TABLE IF NOT EXISTS kb_group_knowledge_space_member (
     access_level VARCHAR(32),
     membership_epoch BIGINT NOT NULL,
     status INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     CONSTRAINT ck_kb_group_knowledge_space_member_role
@@ -785,7 +786,7 @@ CREATE TABLE IF NOT EXISTS kb_group_knowledge_space_event_inbox (
     event_type VARCHAR(64) NOT NULL,
     binding_id BIGINT,
     payload_sha256_hex VARCHAR(64) NOT NULL,
-    applied_at TIMESTAMP NOT NULL,
+    applied_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT ck_kb_group_knowledge_space_event_inbox_tenant
         CHECK (tenant_id > 0),
@@ -815,10 +816,10 @@ CREATE TABLE IF NOT EXISTS kb_group_knowledge_space_membership_projection (
     target_membership_epoch BIGINT NOT NULL,
     projection_state VARCHAR(32) NOT NULL,
     projection_lease_token VARCHAR(64),
-    projection_lease_until TIMESTAMP,
+    projection_lease_until TIMESTAMPTZ,
     last_error_code VARCHAR(64),
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     CONSTRAINT ck_kb_group_knowledge_space_membership_projection_state
@@ -893,8 +894,8 @@ CREATE TABLE IF NOT EXISTS kb_outbox_event (
     event_type VARCHAR(128) NOT NULL,
     payload JSONB NOT NULL,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    published_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL,
+    published_at TIMESTAMPTZ,
     version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT ck_kb_outbox_event_payload_size
         CHECK (octet_length(payload::text) <= 65536)
@@ -916,8 +917,8 @@ CREATE TABLE IF NOT EXISTS kb_okf_concept_link (
     to_concept_id VARCHAR(256) NOT NULL,
     anchor_text VARCHAR(512) NOT NULL DEFAULT '',
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
 );
@@ -946,8 +947,8 @@ CREATE TABLE IF NOT EXISTS kb_okf_candidate (
     reviewer_id BIGINT,
     review_note TEXT,
     status INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
 );
@@ -1012,8 +1013,8 @@ CREATE TABLE IF NOT EXISTS kb_market_listing (
     subscribers_count INTEGER NOT NULL DEFAULT 0,
     documents_count INTEGER NOT NULL DEFAULT 0,
     status INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     FOREIGN KEY (space_id) REFERENCES kb_space(id)
@@ -1031,7 +1032,7 @@ CREATE TABLE IF NOT EXISTS kb_market_subscription (
     tenant_id BIGINT NOT NULL,
     subscriber_actor_id BIGINT NOT NULL,
     listing_id BIGINT NOT NULL,
-    created_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
     status INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY (id),
     FOREIGN KEY (listing_id) REFERENCES kb_market_listing(id)
@@ -1058,7 +1059,7 @@ CREATE TABLE IF NOT EXISTS kb_audit_event (
     ip_hash VARCHAR(128),
     user_agent_hash VARCHAR(128),
     payload JSONB,
-    created_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0
 );
 
@@ -1548,12 +1549,12 @@ CREATE TABLE IF NOT EXISTS kb_provider_credential_reference (
     reference_locator TEXT NOT NULL,
     reference_fingerprint VARCHAR(64) NOT NULL,
     rotation_state VARCHAR(32) NOT NULL DEFAULT 'current',
-    last_rotated_at TIMESTAMP,
+    last_rotated_at TIMESTAMPTZ,
     created_by VARCHAR(128) NOT NULL,
     updated_by VARCHAR(128) NOT NULL,
     status INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     CHECK (tenant_id > 0),
     CHECK (organization_id >= 0),
@@ -1585,15 +1586,15 @@ CREATE TABLE IF NOT EXISTS kb_provider_binding (
     lifecycle_state VARCHAR(32) NOT NULL DEFAULT 'draft',
     capability_snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
     capability_snapshot_version BIGINT NOT NULL DEFAULT 0,
-    last_tested_at TIMESTAMP,
-    activated_at TIMESTAMP,
-    disabled_at TIMESTAMP,
+    last_tested_at TIMESTAMPTZ,
+    activated_at TIMESTAMPTZ,
+    disabled_at TIMESTAMPTZ,
     last_error_category VARCHAR(64),
     created_by VARCHAR(128) NOT NULL,
     updated_by VARCHAR(128) NOT NULL,
     status INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     CHECK (tenant_id > 0),
     CHECK (organization_id >= 0),
@@ -1639,15 +1640,15 @@ CREATE TABLE IF NOT EXISTS kb_provider_migration_operation (
     checkpoint JSONB NOT NULL DEFAULT '{}'::jsonb,
     claim_owner VARCHAR(128),
     claim_token VARCHAR(64),
-    lease_expires_at TIMESTAMP,
+    lease_expires_at TIMESTAMPTZ,
     attempt_count INTEGER NOT NULL DEFAULT 0,
-    cutover_at TIMESTAMP,
-    observation_until TIMESTAMP,
-    completed_at TIMESTAMP,
+    cutover_at TIMESTAMPTZ,
+    observation_until TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
     last_error_category VARCHAR(64),
     status INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     CHECK (tenant_id > 0),
     CHECK (organization_id >= 0),
@@ -1904,7 +1905,7 @@ END $$;
 
 ALTER TABLE kb_ingestion_job ADD COLUMN IF NOT EXISTS claim_owner VARCHAR(255);
 ALTER TABLE kb_ingestion_job ADD COLUMN IF NOT EXISTS claim_token VARCHAR(64);
-ALTER TABLE kb_ingestion_job ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMP;
+ALTER TABLE kb_ingestion_job ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMPTZ;
 ALTER TABLE kb_ingestion_job ADD COLUMN IF NOT EXISTS attempt_count INTEGER NOT NULL DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_kb_ingestion_job_claimable
@@ -2699,7 +2700,8 @@ BEGIN
         'kb_provider_credential_reference', 'kb_provider_binding',
         'kb_provider_migration_operation', 'kb_site_publication',
         'kb_source_file_projection', 'kb_source_file_rendition',
-        'kb_drive_source_checkpoint', 'kb_drive_event_inbox'
+        'kb_drive_source_checkpoint', 'kb_drive_event_inbox',
+        'kb_audit_legal_hold'
     ])
     LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
@@ -2735,7 +2737,7 @@ SET LOCAL statement_timeout = '2min';
 
 ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS claim_owner VARCHAR(128);
 ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS claim_token VARCHAR(64);
-ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS dead_lettered_at TIMESTAMP;
+ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS dead_lettered_at TIMESTAMPTZ;
 
 ALTER TABLE kb_outbox_event DROP CONSTRAINT IF EXISTS ck_kb_outbox_event_claim_pair;
 DO $$
@@ -2794,7 +2796,7 @@ CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_dead_letter
 SET LOCAL lock_timeout = '2s';
 SET LOCAL statement_timeout = '2min';
 
-ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMP;
+ALTER TABLE kb_outbox_event ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ;
 
 -- Serve the worker's requeue scan (status + due-time predicate).
 CREATE INDEX IF NOT EXISTS idx_kb_outbox_event_scope_status_retry
@@ -2857,7 +2859,7 @@ CREATE TABLE IF NOT EXISTS kb_tenant_quota_usage (
     organization_id BIGINT NOT NULL DEFAULT 0,
     document_count BIGINT NOT NULL DEFAULT 0,
     storage_bytes BIGINT NOT NULL DEFAULT 0,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_kb_tenant_quota_usage PRIMARY KEY (tenant_id, organization_id),
     CONSTRAINT ck_kb_tenant_quota_usage_non_negative CHECK (
         document_count >= 0 AND storage_bytes >= 0
@@ -3020,3 +3022,157 @@ BEGIN
     EXECUTE 'DROP POLICY IF EXISTS organization_isolation ON kb_tenant_quota_usage';
     EXECUTE 'CREATE POLICY organization_isolation ON kb_tenant_quota_usage AS PERMISSIVE FOR ALL TO PUBLIC USING (tenant_id = NULLIF(current_setting(''app.current_tenant_id'', true), '''')::bigint AND organization_id = NULLIF(current_setting(''app.current_organization_id'', true), '''')::bigint) WITH CHECK (tenant_id = NULLIF(current_setting(''app.current_tenant_id'', true), '''')::bigint AND organization_id = NULLIF(current_setting(''app.current_organization_id'', true), '''')::bigint)';
 END $$;
+
+-- folded migration: migrations/postgres/0003_agent_profile_owner.up.sql
+-- sdkwork:migration
+-- id: 202610200001_agent_profile_owner
+-- engine: postgres
+-- module: knowledgebase
+-- purpose: Record the creating actor on kb_agent_profile so a profile with no
+--          enabled space binding still has an object-level owner. The column is
+--          already part of the CREATE TABLE above for fresh installs; the
+--          idempotent ALTER below keeps initialized environments convergent.
+-- reversible: false
+-- rollback: forward-fix
+-- transactional: true
+-- lock: lightweight
+-- lock_timeout: 2s
+-- statement_timeout: 30s
+-- contract_version: 1.4.0
+-- rewrite_expectation: nullable-free column addition with a constant default only
+-- cancellation: cancel and rerun the idempotent migration
+-- replication_impact: catalog change only; ADD COLUMN with a constant default
+--          does not rewrite existing rows on supported PostgreSQL versions
+-- recovery: restore the pre-migration snapshot or rerun the idempotent ALTER
+
+ALTER TABLE kb_agent_profile
+    ADD COLUMN IF NOT EXISTS created_by BIGINT NOT NULL DEFAULT 0;
+
+-- folded migration: migrations/postgres/0004_query_indexes.up.sql
+-- sdkwork:migration
+-- id: 202610200002_query_indexes
+-- engine: postgres
+-- module: knowledgebase
+-- purpose: Cover the document list keyset, the durable post-ingest embedding backlog
+--   scan, and the Wiki source-processing claim query.
+-- reversible: false
+-- rollback: forward-fix
+-- transactional: true
+-- lock: lightweight
+-- lock_timeout: 2s
+-- statement_timeout: 30s
+-- contract_version: 1.4.0
+
+CREATE INDEX IF NOT EXISTS idx_kb_document_scope_space_status_id
+    ON kb_document (tenant_id, organization_id, space_id, status, id);
+
+CREATE INDEX IF NOT EXISTS idx_kb_document_scope_index_state
+    ON kb_document (tenant_id, organization_id, status, index_state, updated_at, id);
+
+CREATE INDEX IF NOT EXISTS idx_kb_source_projection_claimable_scope
+    ON kb_source_file_projection (
+        tenant_id,
+        organization_id,
+        site_publication_id,
+        source_state,
+        next_processing_at,
+        id
+    )
+    WHERE status = 1
+      AND source_state IN ('DISCOVERED', 'QUEUED', 'ERROR', 'READY');
+
+-- folded migration: migrations/postgres/0005_timestamptz_normalization.up.sql
+-- id: 202610210001_timestamptz_normalization
+-- engine: postgres
+-- module: knowledgebase
+-- purpose: Normalize every Knowledgebase business instant to TIMESTAMPTZ (interpreted as UTC).
+-- reversible: false
+-- rollback: forward-fix
+-- transactional: true
+-- contract_version: 1.5.0
+
+DO $$
+DECLARE
+    target record;
+BEGIN
+    FOR target IN
+        SELECT table_name, column_name
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name LIKE 'kb\_%'
+          AND data_type = 'timestamp without time zone'
+        ORDER BY table_name, ordinal_position
+    LOOP
+        EXECUTE format(
+            'ALTER TABLE %I ALTER COLUMN %I TYPE TIMESTAMPTZ USING %I AT TIME ZONE ''UTC''',
+            target.table_name,
+            target.column_name,
+            target.column_name
+        );
+    END LOOP;
+END $$;
+
+-- folded migration: migrations/postgres/0006_document_metadata_gin.up.sql
+-- id: 202610210002_document_metadata_gin
+-- engine: postgres
+-- module: knowledgebase
+-- purpose: GIN index for retrieval document metadata containment filters.
+-- reversible: false
+-- rollback: forward-fix
+-- transactional: true
+-- contract_version: 1.5.0
+
+CREATE INDEX IF NOT EXISTS idx_kb_document_metadata_gin
+    ON kb_document USING gin (metadata jsonb_path_ops);
+
+-- folded migration: migrations/postgres/0007_audit_retention_legal_hold.up.sql
+-- id: 202610220001_audit_retention_legal_hold
+-- engine: postgres
+-- module: knowledgebase
+-- purpose: Subject-scoped legal holds and the batched audit retention scan index.
+-- reversible: false
+-- rollback: forward-fix
+-- transactional: true
+-- contract_version: 1.6.0
+
+CREATE TABLE IF NOT EXISTS kb_audit_legal_hold (
+    id BIGINT PRIMARY KEY,
+    uuid VARCHAR(64) NOT NULL,
+    tenant_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL DEFAULT 0,
+    subject_type VARCHAR(32) NOT NULL,
+    subject_id VARCHAR(128) NOT NULL,
+    reason VARCHAR(512) NOT NULL,
+    case_reference VARCHAR(128),
+    status INTEGER NOT NULL DEFAULT 1,
+    created_by VARCHAR(128) NOT NULL,
+    released_by VARCHAR(128),
+    released_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    version BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_kb_audit_legal_hold_uuid
+    ON kb_audit_legal_hold (tenant_id, organization_id, uuid);
+
+CREATE INDEX IF NOT EXISTS idx_kb_audit_legal_hold_subject
+    ON kb_audit_legal_hold (tenant_id, organization_id, status, subject_type, subject_id);
+
+CREATE INDEX IF NOT EXISTS idx_kb_audit_event_scope_created_id
+    ON kb_audit_event (tenant_id, organization_id, created_at, id);
+
+-- New tables are not covered by the earlier RLS loop on initialized environments.
+ALTER TABLE kb_audit_legal_hold ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kb_audit_legal_hold FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON kb_audit_legal_hold;
+DROP POLICY IF EXISTS organization_isolation ON kb_audit_legal_hold;
+CREATE POLICY organization_isolation ON kb_audit_legal_hold AS PERMISSIVE FOR ALL TO PUBLIC
+    USING (
+        tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::bigint
+        AND organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::bigint
+    )
+    WITH CHECK (
+        tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::bigint
+        AND organization_id = NULLIF(current_setting('app.current_organization_id', true), '')::bigint
+    );

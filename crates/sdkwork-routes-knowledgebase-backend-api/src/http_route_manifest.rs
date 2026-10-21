@@ -305,6 +305,24 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "knowledge",
         "compliance.auditEvents.anonymizeActor.create",
     ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/knowledge/compliance/audit_legal_holds",
+        "knowledge",
+        "compliance.auditLegalHolds.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/knowledge/compliance/audit_legal_holds",
+        "knowledge",
+        "compliance.auditLegalHolds.create",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/knowledge/compliance/audit_legal_holds/{holdId}/release",
+        "knowledge",
+        "compliance.auditLegalHolds.release.create",
+    ),
 ];
 
 pub fn backend_route_manifest() -> HttpRouteManifest {

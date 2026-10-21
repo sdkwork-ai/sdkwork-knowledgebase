@@ -67,17 +67,6 @@ pub(crate) fn ensure_runtime_organization(
     Ok(())
 }
 
-/// Effective organization for persistence scopes: `organization_id` absent/zero
-/// normalizes to `0` (tenant-level, personal scope) per the tenant-default policy;
-/// an organization session keeps its own (already validated) context.
-pub(crate) fn effective_organization_id(
-    runtime: &KnowledgebaseRuntime,
-    context: &KnowledgeAppRequestContext,
-) -> u64 {
-    let _ = runtime;
-    context.organization_id.unwrap_or(0)
-}
-
 pub(crate) fn require_actor_id(context: &KnowledgeAppRequestContext) -> ApiResult<String> {
     require_numeric_actor_id(context).map(|value| value.to_string())
 }
@@ -196,14 +185,8 @@ pub(crate) async fn require_space_access_with_role(
             .map_err(|error| {
                 // A definitively missing drive-side anchor is a 404 so clients can
                 // retire the dead space reference; anything else stays fail-closed 503.
-                if matches!(
-                    error,
-                    KnowledgeAccessControlError::NotFound(_)
-                ) {
-                    ApiError::not_found(
-                        "group_knowledge_space_anchor_missing",
-                        error.to_string(),
-                    )
+                if matches!(error, KnowledgeAccessControlError::NotFound(_)) {
+                    ApiError::not_found("group_knowledge_space_anchor_missing", error.to_string())
                 } else {
                     ApiError::new(
                         StatusCode::SERVICE_UNAVAILABLE,
@@ -341,7 +324,7 @@ pub(crate) async fn create_space_with_context(
         .with_wiki_context(
             sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_persistence::WikiPersistenceScope {
                 tenant_id: context.tenant_id,
-                organization_id: effective_organization_id(runtime, context),
+                organization_id: runtime.organization_id(),
             },
             actor_id,
         )
@@ -693,20 +676,6 @@ pub(crate) async fn revoke_space_member_with_context(
     Ok(())
 }
 
-pub(crate) async fn require_enabled_agent_bindings_space_access(
-    runtime: &KnowledgebaseRuntime,
-    context: &KnowledgeAppRequestContext,
-    bindings: &[KnowledgeAgentBinding],
-) -> ApiResult<()> {
-    require_enabled_agent_bindings_space_access_with_role(
-        runtime,
-        context,
-        bindings,
-        KnowledgeAccessRole::Reader,
-    )
-    .await
-}
-
 pub(crate) async fn require_enabled_agent_bindings_space_access_with_role(
     runtime: &KnowledgebaseRuntime,
     context: &KnowledgeAppRequestContext,
@@ -729,13 +698,70 @@ pub(crate) async fn require_enabled_agent_bindings_space_access_with_role(
         .await
 }
 
-pub(crate) async fn require_agent_profile_space_access(
+/// Object-level access decision for an agent profile.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AgentProfileAccess {
+    /// The caller is recorded as the profile creator (`kb_agent_profile.created_by`).
+    Owner,
+    /// The caller is not the owner but shares an enabled space binding with the profile.
+    SpaceBindings,
+    /// No owner match and no enabled binding: there is no ACL to consult.
+    Denied,
+}
+
+fn resolve_agent_profile_access(
+    profile: &KnowledgeAgentProfile,
+    actor_id: Option<u64>,
+) -> AgentProfileAccess {
+    if profile.created_by != 0 && actor_id == Some(profile.created_by) {
+        return AgentProfileAccess::Owner;
+    }
+    if !profile.bindings.iter().any(|binding| binding.enabled) {
+        // A binding-less profile exposes system_instruction, model parameters, and
+        // memory policy without any space ACL to consult, so access must fail closed
+        // instead of iterating zero bindings and returning Ok. This covers both a
+        // legacy row (created_by == 0) and an owned profile that has not been shared
+        // with any space yet.
+        return AgentProfileAccess::Denied;
+    }
+    AgentProfileAccess::SpaceBindings
+}
+
+fn agent_profile_access_denied() -> ApiError {
+    ApiError::new(
+        StatusCode::FORBIDDEN,
+        "agent_profile_access_denied",
+        "agent profile has no enabled space binding and the caller is not its owner",
+    )
+}
+
+/// Authorizes object-level access to an agent profile.
+///
+/// The profile creator always retains access to the profile it created, even
+/// before the first space binding is attached. Every other caller is authorized
+/// only through the profile's enabled space bindings, exactly as before, and a
+/// binding-less profile with no owner match is denied instead of silently
+/// passing the tenant-only check.
+pub(crate) async fn require_agent_profile_manage_access(
     runtime: &KnowledgebaseRuntime,
     context: &KnowledgeAppRequestContext,
     profile: &KnowledgeAgentProfile,
+    required_role: KnowledgeAccessRole,
 ) -> ApiResult<()> {
     ensure_agent_profile_tenant(runtime, context, profile)?;
-    require_enabled_agent_bindings_space_access(runtime, context, &profile.bindings).await
+    match resolve_agent_profile_access(profile, context.actor_id) {
+        AgentProfileAccess::Owner => Ok(()),
+        AgentProfileAccess::Denied => Err(agent_profile_access_denied()),
+        AgentProfileAccess::SpaceBindings => {
+            require_enabled_agent_bindings_space_access_with_role(
+                runtime,
+                context,
+                &profile.bindings,
+                required_role,
+            )
+            .await
+        }
+    }
 }
 
 fn ensure_agent_profile_tenant(
@@ -752,22 +778,6 @@ fn ensure_agent_profile_tenant(
         ));
     }
     Ok(())
-}
-
-pub(crate) async fn require_agent_profile_space_access_with_role(
-    runtime: &KnowledgebaseRuntime,
-    context: &KnowledgeAppRequestContext,
-    profile: &KnowledgeAgentProfile,
-    required_role: KnowledgeAccessRole,
-) -> ApiResult<()> {
-    ensure_agent_profile_tenant(runtime, context, profile)?;
-    require_enabled_agent_bindings_space_access_with_role(
-        runtime,
-        context,
-        &profile.bindings,
-        required_role,
-    )
-    .await
 }
 
 pub(crate) async fn require_agent_binding_space_access_with_role(
@@ -794,5 +804,124 @@ fn member_subject_type_label(subject_type: KnowledgeSpaceMemberSubjectType) -> &
         KnowledgeSpaceMemberSubjectType::Group => "group",
         KnowledgeSpaceMemberSubjectType::Domain => "domain",
         KnowledgeSpaceMemberSubjectType::App => "app",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sdkwork_knowledgebase_contract::rag::{KnowledgeAgentKnowledgeMode, KnowledgeAgentStatus};
+
+    fn binding(space_id: u64, enabled: bool) -> KnowledgeAgentBinding {
+        KnowledgeAgentBinding {
+            binding_id: space_id + 100,
+            profile_id: 501,
+            tenant_id: 100_001,
+            space_id,
+            source_filter: None,
+            document_filter: None,
+            priority: 0,
+            top_k: None,
+            min_score: None,
+            enabled,
+        }
+    }
+
+    fn stub_profile(
+        created_by: u64,
+        bindings: Vec<KnowledgeAgentBinding>,
+    ) -> KnowledgeAgentProfile {
+        KnowledgeAgentProfile {
+            profile_id: 501,
+            tenant_id: 100_001,
+            created_by,
+            name: "Support Agent".to_string(),
+            description: None,
+            system_instruction: "Answer with citations.".to_string(),
+            model_provider_id: "provider.model.openai".to_string(),
+            model_id: "gpt-4.1".to_string(),
+            model_parameters: Some(r#"{"temperature":0.2}"#.to_string()),
+            retrieval_profile_id: None,
+            citation_policy: None,
+            memory_policy_ref: Some("memory.short_term".to_string()),
+            tool_policy_ref: None,
+            answer_policy: None,
+            knowledge_mode: KnowledgeAgentKnowledgeMode::Rag,
+            agent_implementation_id:
+                sdkwork_knowledgebase_contract::default_agent_implementation_id(),
+            status: KnowledgeAgentStatus::Active,
+            bindings,
+        }
+    }
+
+    #[test]
+    fn user_b_cannot_retrieve_update_or_delete_user_a_zero_binding_profile() {
+        // Every profile route (retrieve/list/preview/chat with Reader and
+        // update/delete/binding mutations with Writer) funnels through this same
+        // owner-or-enabled-bindings decision, so a Denied decision covers all of them.
+        let profile = stub_profile(42, Vec::new());
+
+        assert_eq!(
+            resolve_agent_profile_access(&profile, Some(99)),
+            AgentProfileAccess::Denied
+        );
+        assert_eq!(
+            resolve_agent_profile_access(&profile, None),
+            AgentProfileAccess::Denied
+        );
+
+        let denial = agent_profile_access_denied();
+        assert_eq!(denial.status_code(), StatusCode::FORBIDDEN);
+        assert_eq!(denial.error_code(), "agent_profile_access_denied");
+    }
+
+    #[test]
+    fn user_a_can_retrieve_update_or_delete_its_own_zero_binding_profile() {
+        let profile = stub_profile(42, Vec::new());
+
+        assert_eq!(
+            resolve_agent_profile_access(&profile, Some(42)),
+            AgentProfileAccess::Owner
+        );
+    }
+
+    #[test]
+    fn legacy_bindingless_profile_is_denied_for_every_actor() {
+        // Pre-ownership rows (created_by == 0) have no owner to match and no space
+        // ACL to consult, so they must fail closed instead of passing on tenant only.
+        let profile = stub_profile(0, Vec::new());
+
+        assert_eq!(
+            resolve_agent_profile_access(&profile, Some(42)),
+            AgentProfileAccess::Denied
+        );
+        assert_eq!(
+            resolve_agent_profile_access(&profile, None),
+            AgentProfileAccess::Denied
+        );
+    }
+
+    #[test]
+    fn enabled_binding_keeps_a_profile_shared_with_space_members() {
+        let profile = stub_profile(42, vec![binding(7, true)]);
+
+        assert_eq!(
+            resolve_agent_profile_access(&profile, Some(99)),
+            AgentProfileAccess::SpaceBindings
+        );
+        assert_eq!(
+            resolve_agent_profile_access(&profile, Some(42)),
+            AgentProfileAccess::Owner
+        );
+    }
+
+    #[test]
+    fn disabled_bindings_do_not_share_a_profile() {
+        let profile = stub_profile(42, vec![binding(7, false)]);
+
+        assert_eq!(
+            resolve_agent_profile_access(&profile, Some(99)),
+            AgentProfileAccess::Denied
+        );
     }
 }

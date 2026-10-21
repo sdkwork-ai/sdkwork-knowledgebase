@@ -559,6 +559,21 @@ pub trait KnowledgeAgentAppService: Send + Sync + 'static {
         profile_id: u64,
     ) -> ApiResult<KnowledgeAgentBindingList>;
 
+    /// Keyset page of agent bindings. The default implementation keeps fixed-page test
+    /// doubles working; production serves real cursor pages.
+    async fn list_bindings_page(
+        &self,
+        context: KnowledgeAppRequestContext,
+        profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
+    ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
+        let _ = (cursor, page_size);
+        self.list_bindings(context, profile_id)
+            .await
+            .map(|list| crate::pagination::fixed_list_page_data(list.items))
+    }
+
     async fn create_binding(
         &self,
         context: KnowledgeAppRequestContext,
@@ -898,7 +913,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _context: KnowledgeAppRequestContext,
         _space_id: u64,
     ) -> ApiResult<OkfIndexDocument> {
-        Err(ApiError::unsupported_operation("okf.bundle.index.list"))
+        Err(ApiError::unsupported_operation("okf.bundle.index.retrieve"))
     }
 
     async fn retrieve_okf_log(
@@ -906,7 +921,7 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _context: KnowledgeAppRequestContext,
         _space_id: u64,
     ) -> ApiResult<OkfLogDocument> {
-        Err(ApiError::unsupported_operation("okf.bundle.log.list"))
+        Err(ApiError::unsupported_operation("okf.bundle.log.retrieve"))
     }
 
     async fn retrieve_okf_schema(
@@ -914,7 +929,9 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         _context: KnowledgeAppRequestContext,
         _space_id: u64,
     ) -> ApiResult<OkfProfileDocument> {
-        Err(ApiError::unsupported_operation("okf.bundle.profile.list"))
+        Err(ApiError::unsupported_operation(
+            "okf.bundle.profile.retrieve",
+        ))
     }
 
     async fn create_okf_query(
@@ -1045,6 +1062,8 @@ pub trait KnowledgeAppApi: Send + Sync + 'static {
         &self,
         _context: KnowledgeAppRequestContext,
         _profile_id: u64,
+        _cursor: Option<u64>,
+        _page_size: u32,
     ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
         Err(ApiError::unsupported_operation(
             "agentProfiles.bindings.list",

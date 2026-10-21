@@ -82,7 +82,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             )?);
         composed.readiness_check = Arc::new(CompositeReadinessCheck::new(vec![
             composed.readiness_check.clone(),
-            { let readiness: std::sync::Arc<dyn ReadinessCheck> = std::sync::Arc::new(RedisReadinessCheck::new(redis.url())?); readiness },
+            {
+                let readiness: std::sync::Arc<dyn ReadinessCheck> =
+                    std::sync::Arc::new(RedisReadinessCheck::new(redis.url())?);
+                readiness
+            },
         ]));
     } else if requires_hardening {
         return Err(
@@ -152,7 +156,7 @@ fn unify_process_environment() -> String {
     let canonical = match effective.as_str() {
         "dev" => "development",
         "testing" => "test",
-        "development" | "test" | "staging" | "demo" | "production" => effective.as_str(),
+        "development" | "test" | "staging" | "production" => effective.as_str(),
         _ => "production",
     };
     std::env::set_var("SDKWORK_KNOWLEDGEBASE_ENVIRONMENT", canonical);

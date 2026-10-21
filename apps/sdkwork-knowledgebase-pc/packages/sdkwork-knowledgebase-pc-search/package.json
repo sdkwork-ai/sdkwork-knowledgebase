@@ -10,19 +10,19 @@
     "@sdkwork/sdkwork-knowledgebase-pc-commons": "workspace:*",
     "@sdkwork/sdkwork-knowledgebase-pc-knowledgebase": "workspace:*",
     "@sdkwork/utils": "workspace:*",
-    "dompurify": "^3.4.11",
+    "dompurify": "^3.4.17",
     "lucide-react": "^0.546.0",
-    "marked": "^18.0.5",
+    "marked": "^18.1.1",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-i18next": "^17.0.8",
+    "react-i18next": "^17.1.0",
     "sdkwork-knowledgebase-pc-core": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "jsdom": "^26.1.0",
-    "vitest": "^3.2.4"
+    "vitest": "catalog:"
   },
   "exports": {
     ".": {

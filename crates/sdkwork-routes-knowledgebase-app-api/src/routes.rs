@@ -1230,12 +1230,22 @@ async fn list_agent_profile_bindings(
     State(state): State<AppState>,
     context: RequiredAppContext,
     Path(profile_id): Path<u64>,
+    OriginalUri(uri): OriginalUri,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
+    let query = parse_okf_revision_list_query(uri.query())?;
+    let cursor =
+        crate::pagination::parse_opaque_u64_cursor(query.cursor.as_deref()).map_err(|_| {
+            ApiError::invalid_request(
+                "invalid_parameter",
+                "cursor must reference a valid agent binding position",
+            )
+        })?;
+    let page_size = crate::pagination::normalize_api_page_size(query.page_size)?;
     ok_list_json(
         state
             .api
-            .list_agent_profile_bindings(context, profile_id)
+            .list_agent_profile_bindings(context, profile_id, cursor, page_size)
             .await,
     )
 }

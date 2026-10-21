@@ -13,9 +13,9 @@ use sdkwork_intelligence_knowledgebase_service::{
         knowledge_access_control::KnowledgeAccessRole,
         knowledge_wiki_persistence::{
             ListWikiSourceProjectionsRequest, WikiIndexState, WikiPagePublicationState,
-            WikiPersistenceScope, WikiPublicationMode, WikiPublicationStatus,
-            WikiPublicationStore, WikiSourceFileKind, WikiSourceProjection, WikiSourceState,
-            WikiSourceProjectionStore, WikiUpdatePolicy, WikiVisibility,
+            WikiPersistenceScope, WikiPublicationMode, WikiPublicationStatus, WikiPublicationStore,
+            WikiSourceFileKind, WikiSourceProjection, WikiSourceProjectionStore, WikiSourceState,
+            WikiUpdatePolicy, WikiVisibility,
         },
         knowledge_wiki_publication_lifecycle::{
             ChangeWikiPageVisibilityRequest, ChangeWikiPublicationStatusRequest,
@@ -47,10 +47,15 @@ impl HostedWikiPublicationService {
         Self { runtime }
     }
 
+    /// Wiki rows are owned by the deployment organization, exactly like the space row that
+    /// anchors them (`PostgresKnowledgeSpaceStore` is constructed with the runtime
+    /// organization). A personal (organization-less) session must not pick a different
+    /// persistence scope here: that would create publications the space scope cannot see
+    /// and that the organization RLS policy rejects.
     fn scope(&self, context: &KnowledgeAppRequestContext) -> WikiPersistenceScope {
         WikiPersistenceScope {
             tenant_id: context.tenant_id,
-            organization_id: context.organization_id.unwrap_or(0),
+            organization_id: self.runtime.organization_id(),
         }
     }
 
@@ -253,13 +258,12 @@ impl KnowledgeWikiPublicationAppService for HostedWikiPublicationService {
         )
         .await?;
         let normalized_page_size = normalize_api_page_size(page_size)?;
-        let after_projection_id =
-            parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
-                ApiError::invalid_request(
-                    "invalid_parameter",
-                    "cursor must reference a valid Wiki source file position",
-                )
-            })?;
+        let after_projection_id = parse_opaque_u64_cursor(cursor.as_deref()).map_err(|_| {
+            ApiError::invalid_request(
+                "invalid_parameter",
+                "cursor must reference a valid Wiki source file position",
+            )
+        })?;
         let publication = self
             .runtime
             .wiki_store()

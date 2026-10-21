@@ -1,4 +1,4 @@
-//! SDKWork database pool bootstrap via `sdkwork-database`.
+﻿//! SDKWork database pool bootstrap via `sdkwork-database`.
 
 use sdkwork_database_config::{DatabaseConfig, DatabaseEngine, PgSslMode};
 use sdkwork_database_sqlx::{create_pool_from_config, DatabasePool, PoolError};
@@ -16,7 +16,13 @@ use crate::db::postgres_tenant_session::{
 
 pub type KnowledgebaseDatabasePool = DatabasePool;
 
-const DEFAULT_POSTGRES_PROCESS_MAX_CONNECTIONS: u32 = 10;
+/// Default combined per-process connection budget.
+///
+/// The budget is split between the typed `PgPool` and the compatibility `AnyPool`; the
+/// compatibility pool is the one business repositories use, so an undersized default turns
+/// ordinary write concurrency (quota-locked writes, worker claims) into process-wide pool
+/// starvation. Deployments can still override it with `SDKWORK_DATABASE_MAX_CONNECTIONS`.
+const DEFAULT_POSTGRES_PROCESS_MAX_CONNECTIONS: u32 = 20;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KnowledgebaseProcessPoolBudget {
@@ -46,7 +52,7 @@ fn process_pool_budget(
     database_url: &str,
     configured_max_connections: Option<u32>,
 ) -> Result<KnowledgebaseProcessPoolBudget, PoolError> {
-    // 服务端权威持久化仅支持 PostgreSQL（DATABASE_SPEC：authoritative-server）
+    // 鏈嶅姟绔潈濞佹寔涔呭寲浠呮敮鎸?PostgreSQL锛圖ATABASE_SPEC锛歛uthoritative-server锛?
     if engine != DatabaseEngine::Postgres {
         return Err(PoolError::DatabaseConfig(
             "Knowledgebase server persistence requires a PostgreSQL database url".to_string(),
@@ -308,7 +314,7 @@ mod tests {
             .expect("options parameter");
         assert_eq!(
             options,
-            "-c search_path=sdkwork_ai_dev,public -c app.current_tenant_id=42 -c app.current_organization_id=7 -c statement_timeout=30000"
+            "-c search_path=sdkwork_ai_dev,public -c app.current_tenant_id=42 -c app.current_organization_id=7 -c statement_timeout=30000 -c timezone=UTC -c idle_in_transaction_session_timeout=120000"
         );
         assert_eq!(
             resolve_postgres_ssl_mode(&configured).expect("SSL mode"),
@@ -324,7 +330,7 @@ mod tests {
         let parsed = Url::parse(&configured).expect("valid URL");
         assert!(parsed.query_pairs().any(|(key, value)| key == "options"
             && value
-                == "-c app.current_tenant_id=7 -c app.current_organization_id=11 -c statement_timeout=30000"));
+                == "-c app.current_tenant_id=7 -c app.current_organization_id=11 -c statement_timeout=30000 -c timezone=UTC -c idle_in_transaction_session_timeout=120000"));
     }
 
     #[test]

@@ -11,34 +11,48 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "851699a7be6f6d87d04099d95bd451b9d943a8f1e07f479a872f311e2ecd71e9",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "dd49a72f6c7883395f8b0384339cf1d81a3dc98505938b5d63574958b9dab7df",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
+      "api-surface",
       "models"
     ],
     "details": [
       {
+        "area": "api-surface",
+        "paths": [
+          "src/api/knowledge.rs"
+        ]
+      },
+      {
         "area": "models",
         "paths": [
-          "src/models/knowledge_agent_chat_message.rs",
-          "src/models/knowledge_agent_chat_request.rs",
-          "src/models/mod.rs"
+          "src/models/knowledge_agent_binding_list.rs",
+          "src/models/mod.rs",
+          "src/models/okf_bundle_index_list_response.rs",
+          "src/models/okf_bundle_index_retrieve_response.rs",
+          "src/models/okf_bundle_log_list_response.rs",
+          "src/models/okf_bundle_log_retrieve_response.rs",
+          "src/models/okf_bundle_profile_list_response.rs",
+          "src/models/okf_bundle_profile_retrieve_response.rs"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: models. Verification is required."
+    "summary": "Detected impact areas: api-surface, models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -50,7 +64,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -68,7 +82,7 @@
         "id": "verify-build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -87,13 +101,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -111,7 +125,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -141,27 +155,29 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 178,
-    "models": 159,
+    "totalFiles": 177,
+    "models": 158,
     "apis": 1,
-    "types": 161
+    "types": 160
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 3,
+    "writtenFiles": 5,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 174,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 171,
+    "deletedGeneratedFiles": 4,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "851699a7be6f6d87d04099d95bd451b9d943a8f1e07f479a872f311e2ecd71e9",
+    "changeFingerprint": "dd49a72f6c7883395f8b0384339cf1d81a3dc98505938b5d63574958b9dab7df",
     "changes": {
       "createdGeneratedFiles": [
-        "src/models/knowledge_agent_chat_message.rs"
+        "src/models/okf_bundle_index_retrieve_response.rs",
+        "src/models/okf_bundle_log_retrieve_response.rs",
+        "src/models/okf_bundle_profile_retrieve_response.rs"
       ],
       "updatedGeneratedFiles": [
-        "src/models/knowledge_agent_chat_request.rs",
+        "src/api/knowledge.rs",
         "src/models/mod.rs"
       ],
       "unchangedGeneratedFiles": [
@@ -174,7 +190,6 @@
         "README.md",
         "sdkwork-sdk.json",
         "src/api/base.rs",
-        "src/api/knowledge.rs",
         "src/api/mod.rs",
         "src/api/paths.rs",
         "src/client.rs",
@@ -216,10 +231,11 @@
         "src/models/ingestion_job.rs",
         "src/models/ingests_create_response201.rs",
         "src/models/ingests_retrieve_response.rs",
-        "src/models/knowledge_agent_binding_list.rs",
         "src/models/knowledge_agent_binding_request.rs",
         "src/models/knowledge_agent_binding.rs",
         "src/models/knowledge_agent_chat_citation.rs",
+        "src/models/knowledge_agent_chat_message.rs",
+        "src/models/knowledge_agent_chat_request.rs",
         "src/models/knowledge_agent_chat_response.rs",
         "src/models/knowledge_agent_profile_request.rs",
         "src/models/knowledge_agent_profile.rs",
@@ -284,9 +300,6 @@
         "src/models/okf_bundle_import_create_response201.rs",
         "src/models/okf_bundle_import_request.rs",
         "src/models/okf_bundle_import_result.rs",
-        "src/models/okf_bundle_index_list_response.rs",
-        "src/models/okf_bundle_log_list_response.rs",
-        "src/models/okf_bundle_profile_list_response.rs",
         "src/models/okf_concept_summary_list.rs",
         "src/models/okf_concept_summary.rs",
         "src/models/okf_concept_upsert_request.rs",
@@ -340,7 +353,12 @@
         "src/models/wiki_source_files_unpublish_response.rs",
         "src/models/wiki_source_files_visibility_update_response.rs"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/models/knowledge_agent_binding_list.rs",
+        "src/models/okf_bundle_index_list_response.rs",
+        "src/models/okf_bundle_log_list_response.rs",
+        "src/models/okf_bundle_profile_list_response.rs"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/README.md"
@@ -350,31 +368,43 @@
     "impact": {
       "schemaVersion": 1,
       "areas": [
+        "api-surface",
         "models"
       ],
       "details": [
         {
+          "area": "api-surface",
+          "paths": [
+            "src/api/knowledge.rs"
+          ]
+        },
+        {
           "area": "models",
           "paths": [
-            "src/models/knowledge_agent_chat_message.rs",
-            "src/models/knowledge_agent_chat_request.rs",
-            "src/models/mod.rs"
+            "src/models/knowledge_agent_binding_list.rs",
+            "src/models/mod.rs",
+            "src/models/okf_bundle_index_list_response.rs",
+            "src/models/okf_bundle_index_retrieve_response.rs",
+            "src/models/okf_bundle_log_list_response.rs",
+            "src/models/okf_bundle_log_retrieve_response.rs",
+            "src/models/okf_bundle_profile_list_response.rs",
+            "src/models/okf_bundle_profile_retrieve_response.rs"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: models. Verification is required."
+      "summary": "Detected impact areas: api-surface, models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -392,7 +422,7 @@
           "id": "build",
           "title": "Unified package build",
           "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-rust\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -410,12 +440,14 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },

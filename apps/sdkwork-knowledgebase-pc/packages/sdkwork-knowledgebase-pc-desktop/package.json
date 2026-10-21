@@ -9,7 +9,7 @@
     "build:desktop:debug": "node scripts/ensure-desktop-icons.mjs && tauri build --debug"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.2",
+    "@tauri-apps/cli": "^2.12.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:"
   },

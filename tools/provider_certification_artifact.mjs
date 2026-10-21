@@ -24,8 +24,11 @@ export async function readBoundedCertificationArtifact(referenceValue, workspace
   }
 
   const artifactRoot = path.resolve(workspaceRoot, CERTIFICATION_ARTIFACT_PREFIX);
+  // Resolve the root through realpath too: a symlinked workspace/temp directory would
+  // otherwise make the resolved target look like it escaped the lexical root.
+  const resolvedArtifactRoot = await realpath(artifactRoot).catch(() => artifactRoot);
   const target = await realpath(path.resolve(workspaceRoot, reference));
-  const relativeTarget = path.relative(artifactRoot, target);
+  const relativeTarget = path.relative(resolvedArtifactRoot, target);
   if (relativeTarget.startsWith("..") || path.isAbsolute(relativeTarget)) {
     throw new Error("resolved path escapes the certification artifact root");
   }

@@ -5,6 +5,15 @@ use sdkwork_knowledgebase_contract::rag::{
 };
 use thiserror::Error;
 
+/// One keyset page of agent-profile bindings.
+#[derive(Debug, Clone, PartialEq)]
+pub struct KnowledgeAgentBindingPage {
+    pub items: Vec<KnowledgeAgentBinding>,
+    /// Binding id to pass as the next cursor, present only when `has_more` is true.
+    pub next_cursor: Option<u64>,
+    pub has_more: bool,
+}
+
 #[async_trait]
 pub trait KnowledgeAgentProfileStore: Send + Sync {
     async fn create_profile(
@@ -29,6 +38,20 @@ pub trait KnowledgeAgentProfileStore: Send + Sync {
         &self,
         profile_id: u64,
     ) -> Result<Vec<KnowledgeAgentBinding>, KnowledgeAgentProfileStoreError>;
+
+    /// Keyset page of bindings ordered by binding id. Stores that cannot page fail closed;
+    /// callers must not silently fall back to an unbounded or fixed page.
+    async fn list_bindings_page(
+        &self,
+        profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
+    ) -> Result<KnowledgeAgentBindingPage, KnowledgeAgentProfileStoreError> {
+        let _ = (profile_id, cursor, page_size);
+        Err(KnowledgeAgentProfileStoreError::Unsupported(
+            "paged agent binding listing is unsupported by this store".to_string(),
+        ))
+    }
 
     async fn create_binding(
         &self,
@@ -67,6 +90,8 @@ pub trait KnowledgeAgentProfileStore: Send + Sync {
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum KnowledgeAgentProfileStoreError {
+    #[error("knowledge agent profile invalid request: {0}")]
+    InvalidRequest(String),
     #[error("knowledge agent profile not found: {0}")]
     NotFound(u64),
     #[error("knowledge agent profile store conflict: {0}")]

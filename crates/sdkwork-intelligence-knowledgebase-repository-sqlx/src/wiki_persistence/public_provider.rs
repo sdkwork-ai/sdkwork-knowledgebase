@@ -30,7 +30,7 @@ const PUBLIC_PAGE_COLUMNS: &str = r#"
     projection.nav_order AS nav_order,
     projection.public_drive_version_uuid AS public_drive_version_uuid,
     projection.page_public_version AS page_public_version,
-    CAST(projection.updated_at AS TEXT) AS public_updated_at
+    TO_CHAR(projection.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS public_updated_at
 "#;
 
 #[async_trait]

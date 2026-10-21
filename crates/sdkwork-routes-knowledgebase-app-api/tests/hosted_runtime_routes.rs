@@ -177,6 +177,113 @@ async fn hosted_backend_router_serves_provider_health() {
 
 #[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
 #[tokio::test]
+async fn hosted_backend_audit_legal_hold_lifecycle_is_operator_scoped() {
+    let Some(runtime) = test_runtime().await else {
+        eprintln!(
+            "skipping integration test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL"
+        );
+        return;
+    };
+    let backend = dev_auth::with_dev_backend_auth(runtime.build_backend_router(), 1, Some(99));
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock")
+        .as_nanos();
+    let subject_id = format!("http-legal-hold-actor-{nonce}");
+
+    let create_response = backend
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/backend/v3/api/knowledge/compliance/audit_legal_holds")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "subjectType": "actor",
+                        "subjectId": subject_id,
+                        "reason": "HTTP retention drill",
+                        "caseReference": "CASE-HTTP"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(create_response.status(), StatusCode::CREATED);
+    let created = response_body_json(create_response).await;
+    let hold = created.clone();
+    let hold_id = json_u64_field(&hold, "holdId").expect("holdId");
+    assert_eq!(hold["status"], "active");
+    assert_eq!(hold["createdBy"], "99");
+    assert_eq!(hold["subjectId"], subject_id);
+
+    let list_response = backend
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri("/backend/v3/api/knowledge/compliance/audit_legal_holds?page_size=200")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(list_response.status(), StatusCode::OK);
+    let listed = response_body_json(list_response).await;
+    let listed_ids = listed["items"]
+        .as_array()
+        .expect("legal hold items")
+        .iter()
+        .filter_map(|item| json_u64_field(item, "holdId"))
+        .collect::<Vec<_>>();
+    assert!(
+        listed_ids.contains(&hold_id),
+        "created hold must be listed: {listed}"
+    );
+
+    let release_response = backend
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!(
+                    "/backend/v3/api/knowledge/compliance/audit_legal_holds/{hold_id}/release"
+                ))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(release_response.status(), StatusCode::CREATED);
+    let released = response_body_json(release_response).await;
+    assert_eq!(released["status"], "released");
+    assert_eq!(released["releasedBy"], "99");
+
+    let duplicate_release = backend
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!(
+                    "/backend/v3/api/knowledge/compliance/audit_legal_holds/{hold_id}/release"
+                ))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(duplicate_release.status(), StatusCode::CONFLICT);
+
+    sqlx::query("DELETE FROM kb_audit_legal_hold WHERE id = $1")
+        .bind(hold_id as i64)
+        .execute(runtime.pool())
+        .await
+        .expect("cleanup legal hold");
+}
+
+#[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
+#[tokio::test]
 async fn hosted_backend_provider_management_is_scoped_versioned_and_secret_safe() {
     let _env_guard = lock_external_adapter_env().await;
     clear_external_adapter_env();
@@ -2265,6 +2372,161 @@ async fn hosted_external_agent_chat_rejects_unconfigured_external_adapter() {
             || detail.to_ascii_lowercase().contains("dify")
             || detail.to_ascii_lowercase().contains("dataset"),
         "expected unconfigured adapter rejection detail, got: {chat_body}"
+    );
+}
+
+/// F-16 regression: an agent profile with zero enabled space bindings has no
+/// space ACL to consult, so only the authenticated creator may read, update, or
+/// delete it. A second tenant user must receive `403` on every operation, while
+/// the creator keeps full access.
+#[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
+#[tokio::test]
+async fn hosted_agent_profile_without_bindings_is_owner_only() {
+    let Some(runtime) = test_runtime().await else {
+        eprintln!(
+            "skipping integration test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL"
+        );
+        return;
+    };
+    let owner = dev_auth::with_dev_app_auth(runtime.build_full_app_router(), 1, Some(42));
+    let other_user = dev_auth::with_dev_app_auth(runtime.build_full_app_router(), 1, Some(99));
+
+    let profile_body = |name: &str| {
+        format!(
+            r#"{{"tenantId":"1","name":"{name}","systemInstruction":"Answer with citations.","modelProviderId":"provider.model.knowledgebase-contract","modelId":"contract","knowledgeMode":"rag","status":"active"}}"#
+        )
+    };
+
+    let create_response = owner
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/app/v3/api/knowledge/agent_profiles")
+                .header("content-type", "application/json")
+                .body(Body::from(profile_body("Owner Only Agent")))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(create_response.status(), StatusCode::CREATED);
+    let created = response_body_json(create_response).await;
+    let profile_id = json_u64_field(&created, "profileId").expect("created profile id");
+    assert_eq!(
+        created.get("createdBy"),
+        None,
+        "server-side ownership metadata must not be exposed on the wire: {created}"
+    );
+
+    let profile_uri = format!("/app/v3/api/knowledge/agent_profiles/{profile_id}");
+
+    let other_retrieve = other_user
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri(&profile_uri)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        other_retrieve.status(),
+        StatusCode::FORBIDDEN,
+        "user B must not retrieve user A's zero-binding profile"
+    );
+    let problem = response_body_json(other_retrieve).await;
+    assert_eq!(
+        problem["code"], 40301,
+        "denial must be a typed permission problem: {problem}"
+    );
+
+    let other_update = other_user
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::PATCH)
+                .uri(&profile_uri)
+                .header("content-type", "application/json")
+                .body(Body::from(profile_body("Hijacked Agent")))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        other_update.status(),
+        StatusCode::FORBIDDEN,
+        "user B must not update user A's zero-binding profile"
+    );
+
+    let other_delete = other_user
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(&profile_uri)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        other_delete.status(),
+        StatusCode::FORBIDDEN,
+        "user B must not delete user A's zero-binding profile"
+    );
+
+    let owner_retrieve = owner
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri(&profile_uri)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        owner_retrieve.status(),
+        StatusCode::OK,
+        "the creator must retain access to its own zero-binding profile"
+    );
+
+    let owner_update = owner
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::PATCH)
+                .uri(&profile_uri)
+                .header("content-type", "application/json")
+                .body(Body::from(profile_body("Owner Only Agent Updated")))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        owner_update.status(),
+        StatusCode::OK,
+        "the creator must be able to update its own zero-binding profile"
+    );
+
+    let owner_delete = owner
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(&profile_uri)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        owner_delete.status(),
+        StatusCode::NO_CONTENT,
+        "the creator must be able to delete its own zero-binding profile"
     );
 }
 

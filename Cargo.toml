@@ -81,13 +81,13 @@ serde_json = "1"
 serde_urlencoded = "0.7"
 serde_yaml = "0.9"
 pulldown-cmark = "0.13"
-sha2 = "0.10"
-thiserror = "1"
+sha2 = "0.11"
+thiserror = "2"
 time = { version = "0.3", features = ["serde", "formatting", "parsing"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 tower = { version = "0.5", features = ["util"] }
 uuid = { version = "1", features = ["serde", "v4"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls", "webpki-roots"] }
 rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }
 url = "2"
 wiremock = "0.6"

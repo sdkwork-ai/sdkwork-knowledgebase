@@ -1,5 +1,6 @@
+mod support;
+
 use sdkwork_intelligence_knowledgebase_repository_sqlx::{
-    connect_knowledgebase_and_install_schema, is_postgres_database_url,
     PostgresKnowledgeSpaceStore, SqlxKnowledgeEngineProviderBindingStore,
 };
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_provider_binding_store::{
@@ -22,7 +23,7 @@ use sdkwork_knowledgebase_contract::provider_binding::{
 
 #[tokio::test]
 async fn provider_binding_lifecycle_is_scoped_versioned_and_atomically_switchable() {
-    let Some(pool) = provider_test_pool("provider-binding-lifecycle").await else {
+    let Some(pool) = provider_test_pool(100_001, 7_001).await else {
         eprintln!("skipping provider postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
     };
@@ -30,6 +31,7 @@ async fn provider_binding_lifecycle_is_scoped_versioned_and_atomically_switchabl
         tenant_id: 100_001,
         organization_id: 7_001,
     };
+    clean_provider_scope(&pool, scope.tenant_id, scope.organization_id).await;
     let space_store =
         PostgresKnowledgeSpaceStore::new(pool.clone(), scope.tenant_id, scope.organization_id);
     let space = space_store
@@ -143,7 +145,7 @@ async fn provider_binding_lifecycle_is_scoped_versioned_and_atomically_switchabl
 
 #[tokio::test]
 async fn provider_binding_rejects_stale_versions_and_cross_implementation_credentials() {
-    let Some(pool) = provider_test_pool("provider-binding-concurrency").await else {
+    let Some(pool) = provider_test_pool(100_002, 7_002).await else {
         eprintln!("skipping provider postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
     };
@@ -151,6 +153,7 @@ async fn provider_binding_rejects_stale_versions_and_cross_implementation_creden
         tenant_id: 100_002,
         organization_id: 7_002,
     };
+    clean_provider_scope(&pool, scope.tenant_id, scope.organization_id).await;
     let space_store =
         PostgresKnowledgeSpaceStore::new(pool.clone(), scope.tenant_id, scope.organization_id);
     let space = space_store
@@ -248,7 +251,7 @@ async fn provider_binding_rejects_stale_versions_and_cross_implementation_creden
 
 #[tokio::test]
 async fn provider_credential_lifecycle_is_paginated_versioned_and_revocation_fails_closed() {
-    let Some(pool) = provider_test_pool("provider-credential-lifecycle").await else {
+    let Some(pool) = provider_test_pool(100_003, 7_003).await else {
         eprintln!("skipping provider postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
     };
@@ -256,6 +259,7 @@ async fn provider_credential_lifecycle_is_paginated_versioned_and_revocation_fai
         tenant_id: 100_003,
         organization_id: 7_003,
     };
+    clean_provider_scope(&pool, scope.tenant_id, scope.organization_id).await;
     let store = SqlxKnowledgeEngineProviderBindingStore::new(pool);
     let first = store
         .create_credential_reference(
@@ -440,13 +444,22 @@ async fn create_tested_binding(
         .expect("record successful test")
 }
 
-async fn provider_test_pool(_test_name: &str) -> Option<sqlx::AnyPool> {
-    let database_url = std::env::var("SDKWORK_DATABASE_URL")
-        .or_else(|_| std::env::var("DATABASE_URL"))
-        .ok()
-        .filter(|url| is_postgres_database_url(url))?;
-    let pool = connect_knowledgebase_and_install_schema(&database_url)
-        .await
-        .expect("install postgres test schema");
-    Some(pool)
+async fn clean_provider_scope(pool: &sqlx::AnyPool, tenant_id: u64, organization_id: u64) {
+    for statement in [
+        "DELETE FROM kb_provider_binding WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_provider_credential_reference WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_source WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_space WHERE tenant_id = $1 AND organization_id = $2",
+    ] {
+        sqlx::query(statement)
+            .bind(tenant_id as i64)
+            .bind(organization_id as i64)
+            .execute(pool)
+            .await
+            .expect("clean provider binding fixtures");
+    }
+}
+
+async fn provider_test_pool(tenant_id: u64, organization_id: u64) -> Option<sqlx::AnyPool> {
+    support::scoped_pool(tenant_id, organization_id).await
 }

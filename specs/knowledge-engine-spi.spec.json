@@ -264,7 +264,7 @@
       "response_too_large",
       "internal"
     ],
-    "managedProviderStatus": "Injection, context propagation, bounded results, sanitized failures, and no-cache rotation semantics are implemented. A concrete production Vault/KMS backend, transport timeout/TLS proof, audit retention, and rotation/revocation drill evidence remain release gates.",
+    "managedProviderStatus": "Injection, context propagation, bounded results, sanitized failures, and no-cache rotation semantics are implemented. A concrete production Vault/KMS backend, transport timeout/TLS proof, production audit-retention evidence, and rotation/revocation drill evidence remain release gates.",
     "requiredCredentialProviders": [
       "dify",
       "ragflow",

@@ -280,10 +280,8 @@ fn consumed_ticket_from_response(
     let space_id = parse_response_u64("space_id", &response.space_id)?;
     // Epochs and link generations are nonnegative fences (0 is a valid initial value), unlike
     // resource ids, which must stay positive.
-    let membership_epoch = parse_response_nonnegative_u64(
-        "membership_epoch",
-        &response.membership_epoch,
-    )?;
+    let membership_epoch =
+        parse_response_nonnegative_u64("membership_epoch", &response.membership_epoch)?;
     let upstream_link_generation = parse_response_nonnegative_u64(
         "upstream_link_generation",
         &response.upstream_link_generation,

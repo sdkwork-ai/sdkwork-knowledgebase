@@ -3,8 +3,7 @@ use crate::ports::group_launch_ticket_consumer::{
     GroupLaunchTicketConsumer, GroupLaunchTicketConsumerError,
 };
 use crate::ports::knowledge_group_space_binding_store::{
-    GroupKnowledgeSpaceScope, KnowledgeGroupSpaceBindingStore,
-    KnowledgeGroupSpaceBindingStoreError,
+    GroupKnowledgeSpaceScope, KnowledgeGroupSpaceBindingStore, KnowledgeGroupSpaceBindingStoreError,
 };
 use sdkwork_knowledgebase_contract::group_space::{
     is_valid_group_knowledgebase_launch_ticket, ConsumeGroupKnowledgebaseLaunchTicketRequest,
@@ -161,7 +160,9 @@ pub enum GroupKnowledgebaseLaunchResolverError {
     InvalidRequest(String),
     /// A post-consumption failure. The one-time ticket is burned and this exact ticket can
     /// never succeed again; clients must request a fresh launch ticket from IM and retry.
-    #[error("group launch ticket was consumed but the launch failed and a new ticket is required: {0}")]
+    #[error(
+        "group launch ticket was consumed but the launch failed and a new ticket is required: {0}"
+    )]
     TicketConsumed(String),
     #[error(transparent)]
     Ticket(#[from] GroupLaunchTicketConsumerError),

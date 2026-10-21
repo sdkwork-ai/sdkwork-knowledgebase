@@ -7,6 +7,9 @@ void (path.dirname(fileURLToPath(import.meta.url)));
 
 export default defineConfig({
   resolve: {
+    // One React instance per test graph: sibling workspace packages can resolve their own
+    // copy, which breaks hooks with "Invalid hook call".
+    dedupe: ['react', 'react-dom'],
     alias: {
       ...vitestSharedAliases}},
   test: {

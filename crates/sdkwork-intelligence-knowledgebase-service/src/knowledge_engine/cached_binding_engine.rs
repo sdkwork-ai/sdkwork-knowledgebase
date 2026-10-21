@@ -179,13 +179,27 @@ mod tests {
             }
         };
 
-        let first = cache.get_or_bind(key(7, Some(1)), bind.clone()).expect("first bind");
-        let second = cache.get_or_bind(key(7, Some(1)), bind.clone()).expect("second bind");
-        assert_eq!(binds.load(Ordering::SeqCst), 1, "cache hit must not re-bind");
+        let first = cache
+            .get_or_bind(key(7, Some(1)), bind.clone())
+            .expect("first bind");
+        let second = cache
+            .get_or_bind(key(7, Some(1)), bind.clone())
+            .expect("second bind");
+        assert_eq!(
+            binds.load(Ordering::SeqCst),
+            1,
+            "cache hit must not re-bind"
+        );
         assert!(Arc::ptr_eq(&first, &second));
 
-        let rotated = cache.get_or_bind(key(7, Some(2)), bind.clone()).expect("rotated bind");
-        assert_eq!(binds.load(Ordering::SeqCst), 2, "credential rotation must re-bind");
+        let rotated = cache
+            .get_or_bind(key(7, Some(2)), bind.clone())
+            .expect("rotated bind");
+        assert_eq!(
+            binds.load(Ordering::SeqCst),
+            2,
+            "credential rotation must re-bind"
+        );
         assert!(!Arc::ptr_eq(&first, &rotated));
     }
 
@@ -203,17 +217,27 @@ mod tests {
             }
         };
 
-        cache.get_or_bind(key(1, None), bind.clone()).expect("bind 1");
-        cache.get_or_bind(key(2, None), bind.clone()).expect("bind 2");
-        cache.get_or_bind(key(3, None), bind.clone()).expect("bind 3");
+        cache
+            .get_or_bind(key(1, None), bind.clone())
+            .expect("bind 1");
+        cache
+            .get_or_bind(key(2, None), bind.clone())
+            .expect("bind 2");
+        cache
+            .get_or_bind(key(3, None), bind.clone())
+            .expect("bind 3");
         assert_eq!(binds.load(Ordering::SeqCst), 3);
 
         // Binding 1 was evicted (FIFO); asking again must re-bind.
-        cache.get_or_bind(key(1, None), bind.clone()).expect("rebind 1");
+        cache
+            .get_or_bind(key(1, None), bind.clone())
+            .expect("rebind 1");
         assert_eq!(binds.load(Ordering::SeqCst), 4);
 
         // Binding 3 is still cached.
-        cache.get_or_bind(key(3, None), bind.clone()).expect("cached 3");
+        cache
+            .get_or_bind(key(3, None), bind.clone())
+            .expect("cached 3");
         assert_eq!(binds.load(Ordering::SeqCst), 4);
     }
 
@@ -234,6 +258,10 @@ mod tests {
 
         assert!(cache.get_or_bind(key(5, None), failing.clone()).is_err());
         assert!(cache.get_or_bind(key(5, None), failing.clone()).is_err());
-        assert_eq!(attempts.load(Ordering::SeqCst), 2, "errors must retry, not cache");
+        assert_eq!(
+            attempts.load(Ordering::SeqCst),
+            2,
+            "errors must retry, not cache"
+        );
     }
 }

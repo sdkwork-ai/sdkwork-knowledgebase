@@ -41,7 +41,7 @@
     }
   ],
   "contracts": {
-    "layerRole": "ingestion-adapter",
+    "layerRole": "backend-provider",
     "publicExports": ["."],
     "runtimeEntrypoints": [],
     "routeManifest": null,

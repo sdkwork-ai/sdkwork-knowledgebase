@@ -15,6 +15,7 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context:
 };
 use sdkwork_knowledgebase_contract::rag::KnowledgeMemoryContextFragment;
 use sdkwork_memory_inprocess::{InProcessMemoryRuntime, DEFAULT_CONTEXT_BUDGET_TOKENS};
+use sdkwork_utils_rust::is_blank;
 
 use crate::app_api::{estimate_tokens, parse_memory_space_id, MAX_MEMORY_FRAGMENTS};
 
@@ -98,12 +99,12 @@ fn validate_request(
             "tenant_id is required".to_string(),
         ));
     }
-    if request.query.trim().is_empty() {
+    if is_blank(Some(request.query.as_str())) {
         return Err(KnowledgeMemoryContextProviderError::InvalidRequest(
             "query is required".to_string(),
         ));
     }
-    if request.memory_policy_ref.trim().is_empty() {
+    if is_blank(Some(request.memory_policy_ref.as_str())) {
         return Err(KnowledgeMemoryContextProviderError::InvalidRequest(
             "memory_policy_ref is required".to_string(),
         ));

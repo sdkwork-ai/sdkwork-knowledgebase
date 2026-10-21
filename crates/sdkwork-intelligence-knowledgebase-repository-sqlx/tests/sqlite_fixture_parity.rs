@@ -6,11 +6,17 @@
 //! (`tests/fixtures/database/sqlite/`) follows the baseline-plus-migrations convention:
 //! its effective schema is the baseline plus every `migrations/*.up.sql`.
 //!
-//! This test locks the contract the application actually relies on: any table and column
-//! the PostgreSQL repository stores must exist in the SQLite fixture with a compatible
-//! type, so the deterministic in-memory fixture can execute the same repository SQL.
+//! Scope of this guard: the server runtime is **PostgreSQL-only** (`db/bootstrap.rs`
+//! rejects every other engine and no crate enables a SQLite runtime driver). The SQLite
+//! fixture is therefore a schema reference, not a second runtime backend. This test keeps
+//! the reference honest in two ways:
+//!
+//! 1. table/column/index-name parity against the PostgreSQL baseline, and
+//! 2. actual execution of the fixture DDL in an in-memory SQLite database (test-only
+//!    `sqlite` driver feature), so the fixture cannot rot into invalid SQL.
+//!
 //! Organization isolation, outbox claim fencing/retry, keyword search, and the audit
-//! scope-actor index are asserted explicitly because repository code binds them.
+//! scope-actor index are asserted explicitly because the PostgreSQL schema depends on them.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -112,7 +118,11 @@ fn sql_statements(sql: &str) -> Vec<String> {
                     has_dollar_quote = !has_dollar_quote;
                     masked.push_str("$$");
                 } else {
-                    masked.push(if has_dollar_quote && ch == ';' { ' ' } else { ch });
+                    masked.push(if has_dollar_quote && ch == ';' {
+                        ' '
+                    } else {
+                        ch
+                    });
                 }
             }
             masked
@@ -384,4 +394,56 @@ fn sqlite_indexes_cover_postgres_functional_indexes() {
         missing.is_empty(),
         "SQLite fixture is missing PostgreSQL functional indexes: {missing:?}"
     );
+}
+
+/// Executes the SQLite fixture DDL (baseline + every migration) against an in-memory
+/// database. This is a test-only use of the `sqlite` sqlx driver — the server runtime
+/// remains PostgreSQL-only — and it fails the build when the fixture contains SQL that
+/// SQLite cannot parse or apply.
+#[tokio::test]
+async fn sqlite_fixture_ddl_executes_in_memory() {
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect("sqlite::memory:")
+        .await
+        .expect("open in-memory sqlite fixture database");
+
+    sqlx::raw_sql(sqlx::AssertSqlSafe(read_repo_file(SQLITE_BASELINE)))
+        .execute(&pool)
+        .await
+        .expect("execute sqlite fixture baseline");
+
+    for migration in migration_files() {
+        let sql = fs::read_to_string(&migration)
+            .unwrap_or_else(|error| panic!("read migration {}: {error}", migration.display()));
+        sqlx::raw_sql(sqlx::AssertSqlSafe(sql))
+            .execute(&pool)
+            .await
+            .unwrap_or_else(|error| {
+                panic!(
+                    "execute sqlite fixture migration {}: {error}",
+                    migration.display()
+                )
+            });
+    }
+
+    let objects: Vec<String> =
+        sqlx::query_scalar("SELECT name FROM sqlite_master WHERE type IN ('table', 'index')")
+            .fetch_all(&pool)
+            .await
+            .expect("list sqlite schema objects");
+    for required in [
+        "kb_space",
+        "kb_document",
+        "kb_document_version",
+        "kb_outbox_event",
+        "kb_tenant_quota_usage",
+    ] {
+        assert!(
+            objects.iter().any(|name| name == required),
+            "executed sqlite fixture must create {required}"
+        );
+    }
 }

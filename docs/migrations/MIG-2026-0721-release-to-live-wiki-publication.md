@@ -44,7 +44,7 @@ Generated SDK transports are changed only by editing owner OpenAPI/route sources
 ## 3. Target Additive Schema
 
 Add `kb_site_publication`, `kb_source_file_projection`, and `kb_source_file_rendition` in PostgreSQL
-and SQLite with the target contract in `TECH-live-wiki-resource-provider.md`. Add indexes,
+with the target contract in `TECH-live-wiki-resource-provider.md`. Add indexes,
 constraints, RLS/tenant filtering, worker leases/checkpoints/outbox integration, schema manifest
 coverage, and repository adapters. Rendition rows reference stable Drive-generated artifacts and
 must not store object keys, presigned URLs, or process-local paths.

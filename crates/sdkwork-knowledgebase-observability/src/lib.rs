@@ -57,10 +57,11 @@ static REQUEST_DURATION_BUCKETS: [AtomicU64; 11] = [const { AtomicU64::new(0) };
 static HEALTH_STATUS: AtomicU64 = AtomicU64::new(1);
 static OUTBOX_REQUEUED_TOTAL: AtomicU64 = AtomicU64::new(0);
 static OUTBOX_PUBLISHED_TOTAL: AtomicU64 = AtomicU64::new(0);
+static AUDIT_EVENTS_PURGED_TOTAL: AtomicU64 = AtomicU64::new(0);
 static OUTBOX_FAILED_TOTAL: AtomicU64 = AtomicU64::new(0);
 static OUTBOX_DEAD_LETTERED_TOTAL: AtomicU64 = AtomicU64::new(0);
 static WORKER_MAINTENANCE_FAILURES_TOTAL: AtomicU64 = AtomicU64::new(0);
-static WORKER_PHASE_FAILURES_TOTAL: [AtomicU64; 9] = [
+static WORKER_PHASE_FAILURES_TOTAL: [AtomicU64; 10] = [
     AtomicU64::new(0), // outbox
     AtomicU64::new(0), // ingestion
     AtomicU64::new(0), // provider_migration
@@ -70,10 +71,11 @@ static WORKER_PHASE_FAILURES_TOTAL: [AtomicU64; 9] = [
     AtomicU64::new(0), // wiki_drive_events
     AtomicU64::new(0), // wiki_sources
     AtomicU64::new(0), // wiki_delivery_renewal
+    AtomicU64::new(0), // audit_retention
 ];
 
 /// Canonical worker phase names, index-aligned with [`WORKER_PHASE_FAILURES_TOTAL`].
-pub const WORKER_PHASE_NAMES: [&str; 9] = [
+pub const WORKER_PHASE_NAMES: [&str; 10] = [
     "outbox",
     "ingestion",
     "provider_migration",
@@ -83,11 +85,17 @@ pub const WORKER_PHASE_NAMES: [&str; 9] = [
     "wiki_drive_events",
     "wiki_sources",
     "wiki_delivery_renewal",
+    "audit_retention",
 ];
 
 /// Update the exported readiness gauge (`1` = dependencies ready, `0` = not ready).
 pub fn set_readiness_status(ready: bool) {
     HEALTH_STATUS.store(u64::from(ready), Ordering::Relaxed);
+}
+
+/// Records audit events deleted by the retention phase.
+pub fn record_audit_retention_purged(count: u64) {
+    AUDIT_EVENTS_PURGED_TOTAL.fetch_add(count, Ordering::Relaxed);
 }
 
 pub fn record_outbox_maintenance_batch(
@@ -211,6 +219,9 @@ pub async fn metrics_handler() -> impl IntoResponse {
          # HELP knowledgebase_worker_maintenance_failures_total Knowledgebase worker maintenance ticks that failed.\n\
          # TYPE knowledgebase_worker_maintenance_failures_total counter\n\
          knowledgebase_worker_maintenance_failures_total {}\n\
+         # HELP knowledgebase_audit_events_purged_total Audit events deleted by the retention phase.\n\
+         # TYPE knowledgebase_audit_events_purged_total counter\n\
+         knowledgebase_audit_events_purged_total {}\n\
          # HELP knowledgebase_worker_phase_failures_total Knowledgebase worker maintenance phases that errored, panicked, or exceeded their time budget.\n\
          # TYPE knowledgebase_worker_phase_failures_total counter\n\
          {}{}{}{}{}",
@@ -226,6 +237,7 @@ pub async fn metrics_handler() -> impl IntoResponse {
         OUTBOX_FAILED_TOTAL.load(Ordering::Relaxed),
         OUTBOX_DEAD_LETTERED_TOTAL.load(Ordering::Relaxed),
         WORKER_MAINTENANCE_FAILURES_TOTAL.load(Ordering::Relaxed),
+        AUDIT_EVENTS_PURGED_TOTAL.load(Ordering::Relaxed),
         render_worker_phase_failure_metrics(),
         render_okf_prometheus_metrics(),
         audit::render_audit_prometheus_metrics(),

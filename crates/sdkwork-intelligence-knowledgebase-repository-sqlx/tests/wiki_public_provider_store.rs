@@ -1,6 +1,14 @@
-use sdkwork_intelligence_knowledgebase_repository_sqlx::{
-    connect_postgres_and_install_schema, is_postgres_database_url, SqlxWikiPersistenceStore,
-};
+mod support;
+
+static WIKI_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn wiki_test_guard() -> std::sync::MutexGuard<'static, ()> {
+    WIKI_TEST_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+use sdkwork_intelligence_knowledgebase_repository_sqlx::SqlxWikiPersistenceStore;
 use sdkwork_intelligence_knowledgebase_service::ports::{
     knowledge_wiki_persistence::WikiPersistenceScope,
     knowledge_wiki_public_provider::{
@@ -16,6 +24,7 @@ const PUBLICATION_UUID: &str = "11111111-1111-4111-8111-111111111501";
 
 #[tokio::test]
 async fn active_publication_and_route_resolution_are_scope_isolated_and_non_disclosing() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -78,6 +87,7 @@ async fn active_publication_and_route_resolution_are_scope_isolated_and_non_disc
 
 #[tokio::test]
 async fn content_lookup_revalidates_exact_public_version() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -93,7 +103,7 @@ async fn content_lookup_revalidates_exact_public_version() {
         drive_version_uuid(601)
     );
     assert_eq!(projection.page_public_version, 1);
-    assert_eq!(projection.public_updated_at, "2026-07-21T00:00:00Z");
+    assert_eq!(projection.public_updated_at, "2026-07-21T00:00:00.000000Z");
 
     assert!(store
         .get_public_content_projection(SCOPE, 501, &projection_uuid(601), 2)
@@ -115,6 +125,7 @@ async fn content_lookup_revalidates_exact_public_version() {
 
 #[tokio::test]
 async fn navigation_and_search_use_bounded_keyset_windows_and_public_filters() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -181,18 +192,9 @@ async fn navigation_and_search_use_bounded_keyset_windows_and_public_filters() {
         .is_empty());
 }
 
-fn optional_postgres_database_url() -> Option<String> {
-    std::env::var("SDKWORK_DATABASE_URL")
-        .or_else(|_| std::env::var("DATABASE_URL"))
-        .ok()
-        .filter(|url| is_postgres_database_url(url))
-}
-
 async fn test_store() -> Option<(sqlx::AnyPool, SqlxWikiPersistenceStore)> {
-    let database_url = optional_postgres_database_url()?;
-    let pool = connect_postgres_and_install_schema(&database_url)
-        .await
-        .expect("install postgres test schema");
+    let pool = support::scoped_pool(101, 202).await?;
+    support::clean_wiki_scope(&pool, 101, 202).await;
     Some((pool.clone(), SqlxWikiPersistenceStore::new(pool)))
 }
 
@@ -202,7 +204,8 @@ async fn seed_public_wiki(pool: &sqlx::AnyPool) {
         INSERT INTO kb_space (
             id, uuid, tenant_id, organization_id, name, drive_space_id,
             status, created_at, updated_at
-        ) VALUES (501, $1, 101, 202, 'Wiki Space', $2, 1, $3, $3)
+        ) VALUES (501, $1, 101, 202, 'Wiki Space', $2, 1, $3::timestamptz, $3::timestamptz)
+        ON CONFLICT DO NOTHING
         "#,
     )
     .bind("11111111-1111-4111-8111-111111111401")
@@ -219,8 +222,9 @@ async fn seed_public_wiki(pool: &sqlx::AnyPool) {
             supported_locales_json, created_by, updated_by, created_at, updated_at
         ) VALUES (
             501, $1, 101, 202, 501, $2, $3, $4, 'ACTIVE', 'SDKWork Wiki',
-            '["zh-CN"]', 9001, 9001, $5, $5
+            '["zh-CN"]', 9001, 9001, $5::timestamptz, $5::timestamptz
         )
+        ON CONFLICT DO NOTHING
         "#,
     )
     .bind(PUBLICATION_UUID)
@@ -289,8 +293,9 @@ async fn insert_projection(
             $7, 'PAGE', 'text/markdown', 6,
             'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             'READY', 'PUBLISHED', $8, $9, $10, 'zh-CN',
-            $11, $5, 1, 9001, 9001, $12, $12
+            $11, $5, 1, 9001, 9001, $12::timestamptz, $12::timestamptz
         )
+        ON CONFLICT DO NOTHING
         "#,
     )
     .bind(i64::try_from(id).expect("projection id"))

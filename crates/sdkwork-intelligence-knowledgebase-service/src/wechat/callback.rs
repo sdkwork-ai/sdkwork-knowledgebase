@@ -21,7 +21,7 @@ use std::collections::VecDeque;
 use aes::Aes256;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
-use cbc::cipher::{BlockDecryptMut, KeyIvInit};
+use cbc::cipher::{BlockModeDecrypt, KeyIvInit};
 use sdkwork_utils_rust::secure_compare;
 use sha1::Digest as Sha1Digest;
 use thiserror::Error;
@@ -173,10 +173,9 @@ pub fn decrypt_wechat_message(
     if encrypt_b64.is_empty() || encrypt_b64.len() > MAX_ENCRYPT_B64_CHARS {
         return Err(WechatCallbackCryptoError::PayloadTooLarge);
     }
-    let mut ciphertext =
-        BASE64_STANDARD
-            .decode(encrypt_b64)
-            .map_err(|_| WechatCallbackCryptoError::InvalidEncoding)?;
+    let mut ciphertext = BASE64_STANDARD
+        .decode(encrypt_b64)
+        .map_err(|_| WechatCallbackCryptoError::InvalidEncoding)?;
     if ciphertext.is_empty() || ciphertext.len() % 16 != 0 {
         return Err(WechatCallbackCryptoError::MalformedPayload(
             "ciphertext is not a multiple of the AES block size".to_string(),
@@ -184,12 +183,14 @@ pub fn decrypt_wechat_message(
     }
     let plain = Aes256CbcDec::new_from_slices(&key, &key[..16])
         .map_err(|_| WechatCallbackCryptoError::InvalidAesKey("bad key or iv length".to_string()))?
-        .decrypt_padded_mut::<cbc::cipher::block_padding::Pkcs7>(&mut ciphertext)
+        .decrypt_padded::<cbc::cipher::block_padding::Pkcs7>(&mut ciphertext)
         .map_err(|_| WechatCallbackCryptoError::Decrypt)?;
     split_wechat_plain(plain)
 }
 
-fn decode_encoding_aes_key(encoding_aes_key_b64: &str) -> Result<Vec<u8>, WechatCallbackCryptoError> {
+fn decode_encoding_aes_key(
+    encoding_aes_key_b64: &str,
+) -> Result<Vec<u8>, WechatCallbackCryptoError> {
     let trimmed = encoding_aes_key_b64.trim();
     // WeChat issues a 43-char key; the standard encoding needs one "=" pad char.
     let padded: String = match trimmed.chars().count() {
@@ -201,9 +202,9 @@ fn decode_encoding_aes_key(encoding_aes_key_b64: &str) -> Result<Vec<u8>, Wechat
             ))
         }
     };
-    let key = BASE64_STANDARD
-        .decode(padded.as_bytes())
-        .map_err(|_| WechatCallbackCryptoError::InvalidAesKey("key is not valid base64".to_string()))?;
+    let key = BASE64_STANDARD.decode(padded.as_bytes()).map_err(|_| {
+        WechatCallbackCryptoError::InvalidAesKey("key is not valid base64".to_string())
+    })?;
     if key.len() != 32 {
         return Err(WechatCallbackCryptoError::InvalidAesKey(
             "key must decode to 32 bytes".to_string(),
@@ -377,7 +378,11 @@ pub fn callback_remember_seen(key: &str) {
 /// collide after bounded-field truncation).
 fn replay_key_hash(raw: &str) -> String {
     use sha2::Digest;
-    format!("wechat-replay-{:x}", sha2::Sha256::digest(raw.as_bytes()))
+    let digest = sha2::Sha256::digest(raw.as_bytes());
+    format!(
+        "wechat-replay-{}",
+        sdkwork_utils_rust::encoding::hex_encode(&digest)
+    )
 }
 
 fn truncate_char_bound(value: &str, max_chars: usize) -> String {
@@ -483,36 +488,40 @@ impl<'a> WechatCallbackService<'a> {
         // can each be up to 256 bytes, so truncating the concatenation could
         // collide distinct deliveries sharing a long prefix. A fixed-length
         // SHA-256 digest cannot.
-        let replay_key = replay_key_hash(&fields
-            .msg_id
-            .as_deref()
-            .map(|msg_id| format!("{}:{msg_id}", self.tenant_id))
-            .unwrap_or_else(|| {
-                format!(
-                    "{}:{}:{}:{}:{}",
-                    self.tenant_id,
-                    fields.msg_type,
-                    fields.from_user_name,
-                    fields.event_key.as_deref().unwrap_or_default(),
-                    fields.create_time
-                )
-            }));
+        let replay_key = replay_key_hash(
+            &fields
+                .msg_id
+                .as_deref()
+                .map(|msg_id| format!("{}:{msg_id}", self.tenant_id))
+                .unwrap_or_else(|| {
+                    format!(
+                        "{}:{}:{}:{}:{}",
+                        self.tenant_id,
+                        fields.msg_type,
+                        fields.from_user_name,
+                        fields.event_key.as_deref().unwrap_or_default(),
+                        fields.create_time
+                    )
+                }),
+        );
         let duplicate = callback_seen_contains(&replay_key);
         let artifact_path = if duplicate {
             None
         } else {
             let path = Some(
                 self.config_store
-                    .store_callback_receipt(&crate::wechat::config_store::WechatCallbackReceiptArtifact {
-                        account_id: request.account_id.clone(),
-                        signature: request.signature.clone(),
-                        timestamp: request.timestamp.clone(),
-                        nonce: request.nonce.clone(),
-                        encrypt,
-                        msg_type: fields.msg_type.clone(),
-                        from_user_name: fields.from_user_name.clone(),
-                        create_time: fields.create_time,
-                    })
+                    .store_callback_receipt(
+                        &crate::wechat::config_store::WechatCallbackReceiptArtifact {
+                            account_id: request.account_id.clone(),
+                            signature: request.signature.clone(),
+                            timestamp: request.timestamp.clone(),
+                            nonce: request.nonce.clone(),
+                            encrypt,
+                            msg_type: fields.msg_type.clone(),
+                            from_user_name: fields.from_user_name.clone(),
+                            create_time: fields.create_time,
+                        },
+                    )
                     .await?,
             );
             // Mark seen only after the receipt persisted: a transient storage
@@ -533,8 +542,10 @@ impl<'a> WechatCallbackService<'a> {
     async fn resolve_callback_account(
         &self,
         account_id: &str,
-    ) -> Result<sdkwork_knowledgebase_contract::wechat::KnowledgeWechatOfficialAccount, WechatCallbackError>
-    {
+    ) -> Result<
+        sdkwork_knowledgebase_contract::wechat::KnowledgeWechatOfficialAccount,
+        WechatCallbackError,
+    > {
         let account = self
             .config_store
             .find_official_account(account_id)
@@ -595,9 +606,9 @@ fn validate_timestamp_param(timestamp: &str) -> Result<(), WechatCallbackError> 
             "timestamp must be epoch seconds".to_string(),
         ));
     }
-    timestamp
-        .parse::<i64>()
-        .map_err(|_| WechatCallbackError::InvalidRequest("timestamp must be epoch seconds".to_string()))?;
+    timestamp.parse::<i64>().map_err(|_| {
+        WechatCallbackError::InvalidRequest("timestamp must be epoch seconds".to_string())
+    })?;
     Ok(())
 }
 
@@ -624,7 +635,10 @@ fn ensure_receive_id_matches(receive_id: &str, app_id: &str) -> Result<(), Wecha
 /// Callback callers are unauthenticated, so the tenant query parameter is the only
 /// scope key until the signature passes; both the hosted adapter and this service
 /// reject a mismatch before any account lookup or Drive IO.
-fn ensure_request_tenant(request_tenant: u64, service_tenant: &str) -> Result<(), WechatCallbackError> {
+fn ensure_request_tenant(
+    request_tenant: u64,
+    service_tenant: &str,
+) -> Result<(), WechatCallbackError> {
     if request_tenant.to_string() != service_tenant {
         return Err(WechatCallbackError::InvalidRequest(
             "callback tenant is not served by this runtime".to_string(),
@@ -636,7 +650,7 @@ fn ensure_request_tenant(request_tenant: u64, service_tenant: &str) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cbc::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
+    use cbc::cipher::{block_padding::Pkcs7, BlockModeEncrypt, KeyIvInit};
     type Aes256CbcEnc = cbc::Encryptor<Aes256>;
 
     const TEST_AES_KEY_43: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ";
@@ -664,7 +678,7 @@ mod tests {
         padded[..plain.len()].copy_from_slice(&plain);
         Aes256CbcEnc::new_from_slices(key, &key[..16])
             .expect("test cipher key")
-            .encrypt_padded_mut::<Pkcs7>(&mut padded, plain.len())
+            .encrypt_padded::<Pkcs7>(&mut padded, plain.len())
             .expect("test padding")
             .to_vec()
     }
@@ -682,11 +696,7 @@ mod tests {
             expected
         );
         assert!(verify_callback_signature(
-            token,
-            timestamp,
-            nonce,
-            encrypt,
-            expected
+            token, timestamp, nonce, encrypt, expected
         ));
         assert!(verify_callback_signature(
             token,
@@ -769,7 +779,7 @@ mod tests {
         padded[..plain.len()].copy_from_slice(&plain);
         let ciphertext = Aes256CbcEnc::new_from_slices(&key_bytes, &key_bytes[..16])
             .expect("test cipher key")
-            .encrypt_padded_mut::<Pkcs7>(&mut padded, plain.len())
+            .encrypt_padded::<Pkcs7>(&mut padded, plain.len())
             .expect("test padding")
             .to_vec();
         let blob = encode_b64(&ciphertext);
@@ -781,7 +791,10 @@ mod tests {
 
     #[test]
     fn timestamp_window_mirrors_the_drive_webhook_window() {
-        assert!(!timestamp_outside_window(1_700_000_000, 1_700_000_000 + 300));
+        assert!(!timestamp_outside_window(
+            1_700_000_000,
+            1_700_000_000 + 300
+        ));
         assert!(timestamp_outside_window(1_700_000_000, 1_700_000_000 + 301));
         assert!(timestamp_outside_window(1_700_000_000 + 301, 1_700_000_000));
     }
@@ -829,7 +842,10 @@ mod tests {
             "aGVsbG8="
         );
         assert!(extract_encrypted_payload("<xml></xml>").is_err());
-        let oversize_body = format!("<Encrypt>{}</Encrypt>", "e".repeat(MAX_CALLBACK_BODY_BYTES + 1));
+        let oversize_body = format!(
+            "<Encrypt>{}</Encrypt>",
+            "e".repeat(MAX_CALLBACK_BODY_BYTES + 1)
+        );
         assert!(matches!(
             extract_encrypted_payload(&oversize_body),
             Err(WechatCallbackCryptoError::PayloadTooLarge)
@@ -900,9 +916,11 @@ mod tests {
             let size = objects.get(&logical_path).map(Vec::len).unwrap_or(0) as u64;
             drop(objects);
             if size == 0 {
-                return Err(crate::ports::knowledge_drive_storage::KnowledgeStorageError::NotFound(
-                    "absent".to_string(),
-                ));
+                return Err(
+                    crate::ports::knowledge_drive_storage::KnowledgeStorageError::NotFound(
+                        "absent".to_string(),
+                    ),
+                );
             }
             Ok(crate::ports::knowledge_drive_storage::KnowledgeObjectRef {
                 storage_provider_id: "test".to_string(),
@@ -938,7 +956,9 @@ mod tests {
         }
     }
 
-    fn safe_official_account(id: &str) -> sdkwork_knowledgebase_contract::wechat::KnowledgeWechatOfficialAccount {
+    fn safe_official_account(
+        id: &str,
+    ) -> sdkwork_knowledgebase_contract::wechat::KnowledgeWechatOfficialAccount {
         sdkwork_knowledgebase_contract::wechat::KnowledgeWechatOfficialAccount {
             id: id.to_string(),
             name: "Callback Account".to_string(),
@@ -947,7 +967,10 @@ mod tests {
             description: None,
             app_id: "wx-callback-appid".to_string(),
             app_secret: None,
-            server_url: Some("https://knowledgebase.example.com/app/v3/api/knowledge/wechat/callback".to_string()),
+            server_url: Some(
+                "https://knowledgebase.example.com/app/v3/api/knowledge/wechat/callback"
+                    .to_string(),
+            ),
             token: Some("know-callback-token".to_string()),
             encoding_aes_key: Some(TEST_AES_KEY_43.to_string()),
             encrypt_mode: Some("safe".to_string()),
@@ -984,7 +1007,11 @@ mod tests {
         // URL verification: signature + encrypted echo must round-trip. The GET
         // signature covers the encrypted echostr, exactly like the real wire.
         let echo = "random-echo-7381";
-        let echostr = encode_b64(&encrypt_wechat_blob(&test_aes_key32(), echo, "wx-callback-appid"));
+        let echostr = encode_b64(&encrypt_wechat_blob(
+            &test_aes_key32(),
+            echo,
+            "wx-callback-appid",
+        ));
         let (signature, timestamp, nonce) = signed_params(token, &echostr, "verify-nonce");
         let verified = service
             .verify_url(&WechatCallbackVerificationRequest {
@@ -1005,8 +1032,11 @@ mod tests {
 <CreateTime>1700000000</CreateTime>\
 <MsgType><![CDATA[text]]></MsgType>\
 <MsgId>9007199254740993</MsgId></xml>";
-        let encrypt =
-            encode_b64(&encrypt_wechat_blob(&test_aes_key32(), message_xml, "wx-callback-appid"));
+        let encrypt = encode_b64(&encrypt_wechat_blob(
+            &test_aes_key32(),
+            message_xml,
+            "wx-callback-appid",
+        ));
         let body = format!("<xml><Encrypt><![CDATA[{encrypt}]]></Encrypt></xml>");
         let (signature, timestamp, nonce) = signed_params(token, &encrypt, "receipt-nonce");
         let receipt = service
@@ -1028,8 +1058,11 @@ mod tests {
         assert!(artifact_path.starts_with("wechat/v1/callback/acct-callback/"));
 
         // Retransmission: ack stays successful, no second artifact is written.
-        let encrypt_again =
-            encode_b64(&encrypt_wechat_blob(&test_aes_key32(), message_xml, "wx-callback-appid"));
+        let encrypt_again = encode_b64(&encrypt_wechat_blob(
+            &test_aes_key32(),
+            message_xml,
+            "wx-callback-appid",
+        ));
         let body_again = format!("<xml><Encrypt><![CDATA[{encrypt_again}]]></Encrypt></xml>");
         let (signature_again, timestamp_again, nonce_again) =
             signed_params(token, &encrypt_again, "receipt-nonce-2");

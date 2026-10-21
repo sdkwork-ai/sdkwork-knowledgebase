@@ -13,12 +13,10 @@
       "standalone.development",
       "standalone.test",
       "standalone.staging",
-      "standalone.demo",
       "standalone.production",
       "cloud.development",
       "cloud.test",
       "cloud.staging",
-      "cloud.demo",
       "cloud.production"
     ],
     "output": "../public/runtime-env.json"
@@ -33,9 +31,6 @@
     "standalone.staging": {
       "source": "../config/browser/runtime-env.standalone.staging.json"
     },
-    "standalone.demo": {
-      "source": "../config/browser/runtime-env.standalone.demo.json"
-    },
     "standalone.production": {
       "source": "../config/browser/runtime-env.standalone.production.json"
     },
@@ -47,9 +42,6 @@
     },
     "cloud.staging": {
       "source": "../config/browser/runtime-env.cloud.staging.json"
-    },
-    "cloud.demo": {
-      "source": "../config/browser/runtime-env.cloud.demo.json"
     },
     "cloud.production": {
       "source": "../config/browser/runtime-env.cloud.production.json"

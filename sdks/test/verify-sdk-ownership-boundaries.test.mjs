@@ -38,7 +38,7 @@ const families = [
       "sdkwork-knowledgebase-app-sdk-typescript/generated/server-openapi/sdkwork-sdk.json",
     generatedPackage:
       "sdkwork-knowledgebase-app-sdk-typescript/generated/server-openapi/package.json",
-    languages: ["typescript"],
+    languages: ["typescript", "rust"],
     dependencies: [
       ["sdkwork-iam-app-sdk", "sdkwork-iam-app-api"],
       ["sdkwork-drive-app-sdk", "sdkwork-drive.app"],

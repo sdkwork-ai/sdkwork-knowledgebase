@@ -18,19 +18,19 @@
   },
   "dependencies": {
     "@sdkwork/utils": "workspace:*",
-    "i18next": "^26.3.1",
+    "i18next": "^26.5.3",
     "lucide-react": "^0.546.0",
     "react": "catalog:",
-    "react-i18next": "^17.0.8",
-    "react-router-dom": "^7.18.2",
+    "react-i18next": "^17.1.0",
+    "react-router-dom": "^7.18.4",
     "sdkwork-knowledgebase-pc-admin-core": "workspace:*",
     "sdkwork-knowledgebase-pc-core": "workspace:*"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.3.2",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "jsdom": "^29.1.1",
-    "vitest": "^3.2.4"
+    "vitest": "catalog:"
   }
 }

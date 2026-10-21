@@ -28,8 +28,7 @@ import {
 import { canAccessKnowledgebaseAdminConsole } from 'sdkwork-knowledgebase-pc-admin-core';
 import { SettingsModal } from './SettingsModal';
 import { GlobalNav } from './GlobalNav';
-import { UserProfileModal, DEFAULT_USER_PROFILE, type UserProfile } from './UserProfileModal';
-import { createKnowledgebaseAvatarUploadService } from './avatarUpload';
+import { UserProfileModal } from './UserProfileModal';
 import { DEFAULT_ACCENT_COLOR, SETTINGS_STORAGE_KEYS, type StartupModule } from './settingsModalConstants';
 import { readStoredDesktopPreferences, syncDesktopPreferences } from './settingsDesktopBridge';
 import { useDesktopHostIntegration } from './useDesktopHostIntegration';
@@ -184,13 +183,6 @@ export function AppShell() {
     () => createKnowledgebaseAccountViewModel(sessionSnapshot),
     [sessionSnapshot],
   );
-  // Shared Drive image-upload capability for the profile modal's avatar: the
-  // declared avatar intent (`KNOWLEDGEBASE_PC_AVATAR_UPLOAD`) binds to the
-  // runtime's composed drive client, so the modal never touches the SDK.
-  const avatarUploadService = useMemo(
-    () => createKnowledgebaseAvatarUploadService(runtime.sdk.drive.client),
-    [runtime.sdk.drive.client],
-  );
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('appearance');
@@ -205,7 +197,6 @@ export function AppShell() {
     SETTINGS_STORAGE_KEYS.fontSize,
     'normal',
   );
-  const [profile, setProfile] = useLocalStorage<UserProfile>('app-user-profile', DEFAULT_USER_PROFILE);
 
   useHydrateKnowledgebaseAccount(runtime);
 
@@ -268,24 +259,6 @@ export function AppShell() {
 
     void syncDesktopPreferences(readStoredDesktopPreferences());
   }, [runtime.config.runtimeTarget]);
-
-  useEffect(() => {
-    if (!account.displayName && !account.email) {
-      return;
-    }
-
-    const shouldSyncName = profile.name === DEFAULT_USER_PROFILE.name;
-    const shouldSyncEmail = profile.email === DEFAULT_USER_PROFILE.email;
-    if (!shouldSyncName && !shouldSyncEmail) {
-      return;
-    }
-
-    setProfile({
-      ...profile,
-      name: shouldSyncName ? account.displayName : profile.name,
-      email: shouldSyncEmail ? (account.email ?? profile.email) : profile.email,
-    });
-  }, [account.displayName, account.email, profile, setProfile]);
 
   const handleSignOut = useCallback(() => {
     void signOutKnowledgebaseSession(runtime);
@@ -417,7 +390,6 @@ export function AppShell() {
     >
       <GlobalNav
         account={account}
-        profile={profile}
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab as 'kb' | 'market' | 'notes' | 'search')}
         onOpenSettings={() => openSettings('appearance')}
@@ -487,7 +459,6 @@ export function AppShell() {
 
       <UserProfileModal
         account={account}
-        avatarUploadService={avatarUploadService}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
       />

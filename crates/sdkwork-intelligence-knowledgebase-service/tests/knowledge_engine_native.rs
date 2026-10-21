@@ -44,10 +44,37 @@ use sdkwork_knowledgebase_contract::provider_binding::{
 };
 use sdkwork_knowledgebase_contract::rag::KnowledgeAgentKnowledgeMode;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
+/// Bounded fallback scan cap for the concept-store default implementations
+/// (`MAX_OKF_SEARCH_SCAN_ROWS` in the port module).
+const DEFAULT_SEARCH_SCAN_ROW_BOUND: usize = 2_000;
+/// Engine candidate cap (`OKF_SEARCH_MAX_CANDIDATES` in the native engine).
+const ENGINE_CANDIDATE_BOUND: usize = 200;
+/// Engine response cap (`OKF_SEARCH_MAX_TOP_K` in the native engine).
+const ENGINE_TOP_K_BOUND: u32 = 100;
+
+#[derive(Default)]
+struct ConceptStoreProbe {
+    page_calls: AtomicUsize,
+    page_rows_served: AtomicUsize,
+}
+
+impl ConceptStoreProbe {
+    fn page_calls(&self) -> usize {
+        self.page_calls.load(Ordering::Relaxed)
+    }
+
+    fn page_rows_served(&self) -> usize {
+        self.page_rows_served.load(Ordering::Relaxed)
+    }
+}
+
+#[derive(Default)]
 struct MockOkfConceptStore {
     summaries: HashMap<u64, Vec<OkfConceptSummary>>,
+    probe: Option<Arc<ConceptStoreProbe>>,
 }
 
 #[async_trait]
@@ -106,6 +133,9 @@ impl KnowledgeOkfConceptStore for MockOkfConceptStore {
         cursor: Option<String>,
         page_size: u32,
     ) -> Result<(Vec<OkfConceptSummary>, Option<String>, bool), KnowledgeOkfConceptStoreError> {
+        if let Some(probe) = &self.probe {
+            probe.page_calls.fetch_add(1, Ordering::Relaxed);
+        }
         let page_size = validated_okf_test_page_size(page_size)?;
         let fetch_size = page_size + 1;
         let mut summaries = Vec::with_capacity(fetch_size);
@@ -130,6 +160,11 @@ impl KnowledgeOkfConceptStore for MockOkfConceptStore {
 
         let has_more = summaries.len() > page_size;
         summaries.truncate(page_size);
+        if let Some(probe) = &self.probe {
+            probe
+                .page_rows_served
+                .fetch_add(summaries.len(), Ordering::Relaxed);
+        }
         let next_cursor = if has_more {
             summaries.last().map(|item| item.concept_id.clone())
         } else {
@@ -184,8 +219,10 @@ impl KnowledgeOkfConceptStore for MockOkfConceptStore {
     }
 }
 
+#[derive(Default)]
 struct MockDriveStorage {
     objects: HashMap<String, String>,
+    reads: Option<Arc<AtomicUsize>>,
 }
 
 #[async_trait]
@@ -238,6 +275,9 @@ impl KnowledgeDriveStorage for MockDriveStorage {
         &self,
         object_ref: &KnowledgeObjectRef,
     ) -> Result<String, KnowledgeStorageError> {
+        if let Some(reads) = &self.reads {
+            reads.fetch_add(1, Ordering::Relaxed);
+        }
         self.objects
             .get(&object_ref.logical_path)
             .cloned()
@@ -359,9 +399,11 @@ async fn default_registry_registers_native_engines() {
         okf: okf_test_deps(
             Arc::new(MockOkfConceptStore {
                 summaries: HashMap::new(),
+                ..Default::default()
             }),
             Arc::new(MockDriveStorage {
                 objects: HashMap::new(),
+                ..Default::default()
             }),
         ),
         rag_documents: Arc::new(MockDocumentStore {
@@ -410,9 +452,11 @@ async fn runtime_registers_explicit_ragflow_adapter() {
         okf: okf_test_deps(
             Arc::new(MockOkfConceptStore {
                 summaries: HashMap::new(),
+                ..Default::default()
             }),
             Arc::new(MockDriveStorage {
                 objects: HashMap::new(),
+                ..Default::default()
             }),
         ),
         rag_documents: Arc::new(MockDocumentStore {
@@ -451,9 +495,11 @@ async fn runtime_registers_explicit_dify_adapter() {
         okf: okf_test_deps(
             Arc::new(MockOkfConceptStore {
                 summaries: HashMap::new(),
+                ..Default::default()
             }),
             Arc::new(MockDriveStorage {
                 objects: HashMap::new(),
+                ..Default::default()
             }),
         ),
         rag_documents: Arc::new(MockDocumentStore {
@@ -503,8 +549,12 @@ async fn okf_native_engine_search_and_read() {
     let engine = OkfNativeKnowledgeEngine::from_deps(okf_test_deps(
         Arc::new(MockOkfConceptStore {
             summaries: HashMap::from([(7, summaries)]),
+            ..Default::default()
         }),
-        Arc::new(MockDriveStorage { objects }),
+        Arc::new(MockDriveStorage {
+            objects,
+            ..Default::default()
+        }),
     ));
 
     let health = engine.health().await.expect("health");
@@ -552,14 +602,209 @@ async fn okf_native_engine_search_and_read() {
     assert_eq!(listed.items.len(), 1);
 }
 
+fn indexed_summary(index: usize, title: &str) -> OkfConceptSummary {
+    let concept_id = format!("concepts/doc-{index:05}");
+    OkfConceptSummary {
+        title: title.to_string(),
+        logical_path: format!("okf/{concept_id}.md"),
+        bundle_relative_path: format!("{concept_id}.md"),
+        concept_id,
+        concept_type: "concept".to_string(),
+        description: "indexed concept".to_string(),
+        source_count: 1,
+        updated_at: "2026-01-01T00:00:00Z".to_string(),
+        tags: Vec::new(),
+    }
+}
+
+fn search_request(space_id: u64, query: &str, top_k: u32) -> KnowledgeEngineSearchRequest {
+    KnowledgeEngineSearchRequest {
+        tenant_id: 1,
+        space_id,
+        query: query.to_string(),
+        top_k,
+    }
+}
+
+/// Managed markdown objects for the first `count` indexed concepts, so the
+/// engine's per-candidate body read reaches `get_object_text` and is counted.
+fn indexed_drive_objects(count: usize) -> HashMap<String, String> {
+    (0..count)
+        .map(|index| {
+            (
+                format!("okf/concepts/doc-{index:05}.md"),
+                "# Document".to_string(),
+            )
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn okf_native_search_requests_bounded_candidates() {
+    // Every one of the 10 000 concepts matches, so an unbounded engine would
+    // materialize and body-read the whole space.
+    let summaries = (0..10_000)
+        .map(|index| indexed_summary(index, "Ownership concept"))
+        .collect::<Vec<_>>();
+    let reads = Arc::new(AtomicUsize::new(0));
+    let engine = OkfNativeKnowledgeEngine::from_deps(okf_test_deps(
+        Arc::new(MockOkfConceptStore {
+            summaries: HashMap::from([(7, summaries)]),
+            ..Default::default()
+        }),
+        Arc::new(MockDriveStorage {
+            objects: indexed_drive_objects(20),
+            reads: Some(Arc::clone(&reads)),
+            ..Default::default()
+        }),
+    ));
+
+    let result = engine
+        .search(
+            &native_execution_context(7),
+            search_request(7, "ownership", 5),
+        )
+        .await
+        .expect("search");
+
+    // top_k * 4 == 20 candidates, and the engine body-reads exactly the
+    // candidate set it asked the store for.
+    assert_eq!(reads.load(Ordering::Relaxed), 20);
+    assert!(result.hits.len() <= 5);
+}
+
+#[tokio::test]
+async fn okf_native_search_does_not_materialize_ten_thousand_concepts() {
+    let mut summaries = (0..10_000)
+        .map(|index| indexed_summary(index, "Filler concept"))
+        .collect::<Vec<_>>();
+    summaries[0] = indexed_summary(0, "Ownership concept");
+    let probe = Arc::new(ConceptStoreProbe::default());
+    let reads = Arc::new(AtomicUsize::new(0));
+    let engine = OkfNativeKnowledgeEngine::from_deps(okf_test_deps(
+        Arc::new(MockOkfConceptStore {
+            summaries: HashMap::from([(7, summaries)]),
+            probe: Some(Arc::clone(&probe)),
+            ..Default::default()
+        }),
+        Arc::new(MockDriveStorage {
+            objects: indexed_drive_objects(1),
+            reads: Some(Arc::clone(&reads)),
+            ..Default::default()
+        }),
+    ));
+
+    let result = engine
+        .search(
+            &native_execution_context(7),
+            search_request(7, "ownership", 5),
+        )
+        .await
+        .expect("search");
+
+    assert_eq!(result.hits.len(), 1);
+    assert_eq!(result.hits[0].document.document_id, "concepts/doc-00000");
+    // The bounded fallback scan stops at its row cap instead of walking all
+    // 10 000 published concepts.
+    assert!(probe.page_rows_served() <= DEFAULT_SEARCH_SCAN_ROW_BOUND);
+    assert!(probe.page_rows_served() < 10_000);
+    assert!(reads.load(Ordering::Relaxed) <= ENGINE_CANDIDATE_BOUND);
+}
+
+#[tokio::test]
+async fn okf_native_read_document_uses_single_bounded_lookup() {
+    let mut summaries = (0..300)
+        .map(|index| indexed_summary(index, "Filler concept"))
+        .collect::<Vec<_>>();
+    summaries[2] = indexed_summary(2, "Ownership concept");
+    let probe = Arc::new(ConceptStoreProbe::default());
+    let mut objects = HashMap::new();
+    objects.insert(summaries[2].logical_path.clone(), "# Document".to_string());
+    let engine = OkfNativeKnowledgeEngine::from_deps(okf_test_deps(
+        Arc::new(MockOkfConceptStore {
+            summaries: HashMap::from([(7, summaries)]),
+            probe: Some(Arc::clone(&probe)),
+            ..Default::default()
+        }),
+        Arc::new(MockDriveStorage {
+            objects,
+            ..Default::default()
+        }),
+    ));
+
+    let document = engine
+        .read_document(
+            &native_execution_context(7),
+            KnowledgeEngineReadRequest {
+                tenant_id: 1,
+                space_id: 7,
+                document_id: "concepts/doc-00002".to_string(),
+            },
+        )
+        .await
+        .expect("read");
+
+    assert_eq!(document.document_id, "concepts/doc-00002");
+    assert_eq!(document.content, "# Document");
+    // A single bounded lookup: the first page containing the match, not a scan
+    // over all 300 published concepts.
+    assert_eq!(probe.page_calls(), 1);
+    assert!(probe.page_rows_served() <= 200);
+}
+
+#[tokio::test]
+async fn okf_native_search_clamps_oversized_top_k() {
+    let summaries = (0..10_000)
+        .map(|index| indexed_summary(index, "Ownership concept"))
+        .collect::<Vec<_>>();
+    let reads = Arc::new(AtomicUsize::new(0));
+    let engine = OkfNativeKnowledgeEngine::from_deps(okf_test_deps(
+        Arc::new(MockOkfConceptStore {
+            summaries: HashMap::from([(7, summaries)]),
+            ..Default::default()
+        }),
+        Arc::new(MockDriveStorage {
+            objects: indexed_drive_objects(ENGINE_CANDIDATE_BOUND),
+            reads: Some(Arc::clone(&reads)),
+            ..Default::default()
+        }),
+    ));
+
+    let result = engine
+        .search(
+            &native_execution_context(7),
+            search_request(7, "ownership", 10_000),
+        )
+        .await
+        .expect("search");
+
+    assert_eq!(result.hits.len(), ENGINE_TOP_K_BOUND as usize);
+    assert_eq!(reads.load(Ordering::Relaxed), ENGINE_CANDIDATE_BOUND);
+}
+
 #[tokio::test]
 async fn okf_native_search_propagates_link_store_failure() {
+    let summaries = vec![OkfConceptSummary {
+        title: "Rust Ownership".to_string(),
+        concept_id: "concept-ownership".to_string(),
+        concept_type: "concept".to_string(),
+        logical_path: "concepts/ownership.md".to_string(),
+        bundle_relative_path: "concepts/ownership.md".to_string(),
+        description: "Explains ownership rules".to_string(),
+        source_count: 1,
+        updated_at: "2026-01-01T00:00:00Z".to_string(),
+        tags: vec!["rust".to_string()],
+    }];
+    // A matching candidate is required: with an empty candidate set the engine
+    // has nothing to expand and never touches the link store.
     let mut deps = okf_test_deps(
         Arc::new(MockOkfConceptStore {
-            summaries: HashMap::new(),
+            summaries: HashMap::from([(7, summaries)]),
+            ..Default::default()
         }),
         Arc::new(MockDriveStorage {
             objects: HashMap::new(),
+            ..Default::default()
         }),
     );
     deps.link_store = Arc::new(UnavailableLinkStore);
@@ -586,9 +831,11 @@ async fn okf_native_search_propagates_space_store_failure() {
     let mut deps = okf_test_deps(
         Arc::new(MockOkfConceptStore {
             summaries: HashMap::new(),
+            ..Default::default()
         }),
         Arc::new(MockDriveStorage {
             objects: HashMap::new(),
+            ..Default::default()
         }),
     );
     deps.space_store = Arc::new(UnavailableSpaceStore);

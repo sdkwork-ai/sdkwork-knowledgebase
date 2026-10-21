@@ -23,6 +23,7 @@ sdkwork-routes-knowledgebase-backend-api.workspace = true
 sdkwork-knowledgebase-observability.workspace = true
 sdkwork-web-axum.workspace = true
 sdkwork-web-core.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true

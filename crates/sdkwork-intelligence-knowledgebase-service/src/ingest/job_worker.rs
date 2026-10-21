@@ -81,6 +81,8 @@ impl<'a> KnowledgeIngestionJobWorkerService<'a> {
 
         let mut failed = 0usize;
 
+        let mut ingested_document_version_ids = Vec::new();
+
         for claimed in jobs {
             let job = &claimed.job;
             if job.source_type != KnowledgeSourceType::DriveObject.as_str() {
@@ -118,8 +120,12 @@ impl<'a> KnowledgeIngestionJobWorkerService<'a> {
                 .process_claimed_drive_import_result(&import, &claimed, lease_duration)
                 .await
             {
-                Ok(_) => processed += 1,
-
+                Ok(result) => {
+                    processed += 1;
+                    if let Some(index_result) = result.index_result.as_ref() {
+                        ingested_document_version_ids.push(index_result.document_version_id);
+                    }
+                }
                 Err(error) => {
                     tracing::warn!(
 
@@ -142,6 +148,8 @@ impl<'a> KnowledgeIngestionJobWorkerService<'a> {
             skipped,
 
             failed,
+
+            ingested_document_version_ids,
         })
     }
 
@@ -306,6 +314,11 @@ pub struct IngestionJobWorkerBatchResult {
     pub skipped: usize,
 
     pub failed: usize,
+
+    /// Document versions whose chunks were replaced by this batch. The caller persists
+    /// `parse_state = succeeded` / `index_state = running` for each so the durable
+    /// embedding backlog can pick them up.
+    pub ingested_document_version_ids: Vec<u64>,
 }
 
 #[derive(Debug, Error)]

@@ -1,7 +1,6 @@
-use sdkwork_intelligence_knowledgebase_repository_sqlx::{
-    connect_knowledgebase_and_install_schema, is_postgres_database_url,
-    SqlxKnowledgeEngineProviderBindingReadinessStore,
-};
+mod support;
+
+use sdkwork_intelligence_knowledgebase_repository_sqlx::SqlxKnowledgeEngineProviderBindingReadinessStore;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_provider_binding_readiness_store::{
     KnowledgeEngineProviderBindingReadinessStore,
     KnowledgeEngineProviderBindingReadinessStoreError,
@@ -21,8 +20,28 @@ async fn readiness_report_is_scoped_bounded_and_never_infers_from_sources() {
         return;
     };
 
+    for statement in [
+        "DELETE FROM kb_provider_binding WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_source WHERE tenant_id = $1 AND organization_id = $2",
+        "DELETE FROM kb_space WHERE tenant_id = $1 AND organization_id = $2",
+    ] {
+        sqlx::query(statement)
+            .bind(TENANT_ID)
+            .bind(ORGANIZATION_ID)
+            .execute(&pool)
+            .await
+            .expect("clean readiness fixtures");
+    }
+
     insert_space(&pool, TENANT_ID, ORGANIZATION_ID, 900, "external", 1).await;
-    insert_source_with_provider(&pool, TENANT_ID, 900, "engine.knowledge.external.dify").await;
+    insert_source_with_provider(
+        &pool,
+        TENANT_ID,
+        ORGANIZATION_ID,
+        900,
+        "engine.knowledge.external.dify",
+    )
+    .await;
 
     insert_space(&pool, TENANT_ID, ORGANIZATION_ID, 800, "external", 1).await;
     for (index, lifecycle_state) in ["draft", "testing", "failed", "disabled"]
@@ -53,8 +72,34 @@ async fn readiness_report_is_scoped_bounded_and_never_infers_from_sources() {
     insert_space(&pool, TENANT_ID, ORGANIZATION_ID, 300, "external", 1).await;
     insert_binding(&pool, TENANT_ID, ORGANIZATION_ID, 3_000, 300, "active", 0).await;
 
-    insert_space(&pool, TENANT_ID + 1, ORGANIZATION_ID, 1_100, "external", 1).await;
-    insert_space(&pool, TENANT_ID, ORGANIZATION_ID + 1, 1_000, "external", 1).await;
+    // Cross-scope fixtures must be written through a pool that carries that scope: a
+    // production-scoped session cannot create rows for another tenant/organization under
+    // FORCE ROW LEVEL SECURITY, which is exactly the isolation being asserted.
+    let cross_tenant_pool = support::scoped_pool((TENANT_ID + 1) as u64, ORGANIZATION_ID as u64)
+        .await
+        .expect("connect cross-tenant readiness pool");
+    let cross_organization_pool =
+        support::scoped_pool(TENANT_ID as u64, (ORGANIZATION_ID + 1) as u64)
+            .await
+            .expect("connect cross-organization readiness pool");
+    insert_space(
+        &cross_tenant_pool,
+        TENANT_ID + 1,
+        ORGANIZATION_ID,
+        1_100,
+        "external",
+        1,
+    )
+    .await;
+    insert_space(
+        &cross_organization_pool,
+        TENANT_ID,
+        ORGANIZATION_ID + 1,
+        1_000,
+        "external",
+        1,
+    )
+    .await;
 
     let scope = KnowledgeEngineProviderScope {
         tenant_id: TENANT_ID as u64,
@@ -183,7 +228,8 @@ async fn insert_space(
             id, uuid, tenant_id, organization_id, name, status,
             okf_bundle_initialized, okf_log_sequence_counter, knowledge_mode,
             created_at, updated_at, version
-        ) VALUES ($1, $2, $3, $4, $5, $6, 0, 0, $7, $8, $8, 0)
+        ) VALUES ($1, $2, $3, $4, $5, $6, 0, 0, $7, $8::timestamptz, $8::timestamptz, 0)
+        ON CONFLICT (id) DO NOTHING
         "#,
     )
     .bind(id)
@@ -217,8 +263,9 @@ async fn insert_binding(
             status, created_at, updated_at, version
         ) VALUES (
             $1, $2, $3, $4, $5, 'engine.knowledge.external.dify',
-            'dataset', $6, $7, '[]', 0, 'test', 'test', $8, $9, $9, 0
+            'dataset', $6, $7, '[]', 0, 'test', 'test', $8, $9::timestamptz, $9::timestamptz, 0
         )
+        ON CONFLICT (id) DO NOTHING
         "#,
     )
     .bind(id)
@@ -238,20 +285,23 @@ async fn insert_binding(
 async fn insert_source_with_provider(
     pool: &AnyPool,
     tenant_id: i64,
+    organization_id: i64,
     space_id: i64,
     provider: &str,
 ) {
     sqlx::query(
         r#"
         INSERT INTO kb_source (
-            id, uuid, tenant_id, space_id, source_type, provider, status,
+            id, uuid, tenant_id, organization_id, space_id, source_type, provider, status,
             created_at, updated_at, version
-        ) VALUES ($1, $2, $3, $4, 'connector', $5, 1, $6, $6, 0)
+        ) VALUES ($1, $2, $3, $4, $5, 'connector', $6, 1, $7::timestamptz, $7::timestamptz, 0)
+        ON CONFLICT (id) DO NOTHING
         "#,
     )
     .bind(90_000 + space_id)
     .bind(format!("source-{tenant_id}-{space_id}"))
     .bind(tenant_id)
+    .bind(organization_id)
     .bind(space_id)
     .bind(provider)
     .bind(NOW)
@@ -261,12 +311,5 @@ async fn insert_source_with_provider(
 }
 
 async fn readiness_test_pool(_test_name: &str) -> Option<AnyPool> {
-    let database_url = std::env::var("SDKWORK_DATABASE_URL")
-        .or_else(|_| std::env::var("DATABASE_URL"))
-        .ok()
-        .filter(|url| is_postgres_database_url(url))?;
-    let pool = connect_knowledgebase_and_install_schema(&database_url)
-        .await
-        .expect("install postgres test schema");
-    Some(pool)
+    support::scoped_pool(TENANT_ID as u64, ORGANIZATION_ID as u64).await
 }

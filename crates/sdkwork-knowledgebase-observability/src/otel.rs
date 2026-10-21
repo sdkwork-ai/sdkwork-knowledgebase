@@ -6,7 +6,7 @@ pub fn init_otel_tracing(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     use opentelemetry::trace::TracerProvider as _;
     use opentelemetry_otlp::WithExportConfig;
-    use opentelemetry_sdk::trace::TracerProvider;
+    use opentelemetry_sdk::trace::SdkTracerProvider;
     use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
     let endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
@@ -15,8 +15,8 @@ pub fn init_otel_tracing(
         .with_http()
         .with_endpoint(endpoint)
         .build()?;
-    let provider = TracerProvider::builder()
-        .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
+    let provider = SdkTracerProvider::builder()
+        .with_batch_exporter(exporter)
         .build();
     let tracer = provider.tracer(service_name.to_owned());
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);

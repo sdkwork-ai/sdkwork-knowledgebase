@@ -189,9 +189,9 @@ impl KnowledgeAccessControl for KnowledgebaseKnowledgeAccessControlAdapter {
             // Unmapped subject types or roles are skipped loudly instead of being
             // silently dropped by a filter_map, so drift between the Drive and
             // Knowledge vocabularies is observable in logs.
-            let Some(subject_type) = KnowledgeSubjectType::from_drive_subject_type(
-                &item.subject_type,
-            ) else {
+            let Some(subject_type) =
+                KnowledgeSubjectType::from_drive_subject_type(&item.subject_type)
+            else {
                 tracing::warn!(
                     subject_id = %item.subject_id,
                     subject_type = %item.subject_type,

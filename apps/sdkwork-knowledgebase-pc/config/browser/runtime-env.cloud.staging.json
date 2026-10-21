@@ -4,8 +4,8 @@
   "profileId": "cloud.staging",
   "runtimeTarget": "browser",
   "browserOriginMode": "cross-origin",
-  "configProfile": "dev",
-  "buildMode": "development",
+  "configProfile": "staging",
+  "buildMode": "staging",
   "appKey": "sdkwork-knowledgebase-pc",
   "sdkBaseUrls": {
     "appApiBaseUrl": "http://127.0.0.1:18081",
@@ -13,9 +13,9 @@
     "platformApiGatewayBaseUrl": "http://127.0.0.1:3900"
   },
   "featureFlags": {
-    "enableDemoMode": true
+    "enableDemoMode": false
   },
-  "notes": "Safe checked-in browser runtime example for local development. Production/staging examples disable demo mode.",
+  "notes": "Checked-in browser runtime example for the staging environment; demo/mock data is disabled.",
   "auth": {
     "tokenStorage": "browser-local"
   },

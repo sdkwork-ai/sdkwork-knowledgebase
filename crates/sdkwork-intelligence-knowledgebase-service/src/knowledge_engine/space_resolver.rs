@@ -4,8 +4,8 @@ use sdkwork_knowledgebase_contract::knowledge_engine::{
 use sdkwork_knowledgebase_contract::rag::KnowledgeAgentKnowledgeMode;
 use std::sync::Arc;
 
-use crate::knowledge_engine::KnowledgeEngineExecutionHandle;
 use crate::knowledge_engine::cached_binding_engine::ProviderBindingEngineCache;
+use crate::knowledge_engine::KnowledgeEngineExecutionHandle;
 use crate::ports::knowledge_engine::{KnowledgeEngineRegistry, KnowledgeEngineSpaceRegistry};
 use crate::ports::knowledge_provider_binding_store::{
     KnowledgeEngineProviderBindingStore, KnowledgeEngineProviderScope,

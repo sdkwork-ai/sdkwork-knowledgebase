@@ -3,8 +3,8 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use sdkwork_intelligence_knowledgebase_service::wechat::{
-    KnowledgeWechatService, WechatApiClient, WechatCallbackReceipt,
-    WechatCallbackReceiptRequest, WechatCallbackService, WechatCallbackVerificationRequest,
+    KnowledgeWechatService, WechatApiClient, WechatCallbackReceipt, WechatCallbackReceiptRequest,
+    WechatCallbackService, WechatCallbackVerificationRequest,
 };
 use sdkwork_knowledgebase_contract::wechat::{
     KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest,
@@ -25,13 +25,47 @@ pub(crate) struct HostedWechatService {
     /// router, so this is where the process-wide WeChat access token cache actually lives; a
     /// per-request client would re-fetch a token for every call and exhaust the WeChat quota.
     api_client: Arc<WechatApiClient>,
+    /// External publication is release-gated and stays disabled unless the deployment opts in.
+    publish_enabled: bool,
+    /// Cross-replica write lock for the Drive-backed tenant configuration document.
+    config_lock: Arc<crate::wechat_config_lock::PostgresWechatConfigLock>,
+}
+
+const WECHAT_PUBLISH_ENABLED_ENV: &str = "SDKWORK_KNOWLEDGEBASE_WECHAT_PUBLISH_ENABLED";
+
+/// Resolves the external-publication switch. The default is disabled because the remaining
+/// release gates (durable idempotency, per-target outcome records, partial-failure recovery)
+/// are tracked as open product requirements; an explicit opt-in is an operator decision.
+fn resolve_publish_enabled() -> bool {
+    let enabled = std::env::var(WECHAT_PUBLISH_ENABLED_ENV)
+        .ok()
+        .map(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes"
+            )
+        })
+        .unwrap_or(false);
+    if enabled && sdkwork_knowledgebase_observability::is_production_like_environment() {
+        tracing::warn!(
+            variable = WECHAT_PUBLISH_ENABLED_ENV,
+            "WeChat external publication is enabled in a production-like environment while \
+             durable idempotency and per-target outcome records are still outstanding"
+        );
+    }
+    enabled
 }
 
 impl HostedWechatService {
     pub fn new(runtime: KnowledgebaseRuntime) -> Self {
+        let config_lock = Arc::new(crate::wechat_config_lock::PostgresWechatConfigLock::new(
+            runtime.drive_pool().clone(),
+        ));
         Self {
             runtime,
             api_client: Arc::new(WechatApiClient::new()),
+            publish_enabled: resolve_publish_enabled(),
+            config_lock,
         }
     }
 
@@ -41,6 +75,8 @@ impl HostedWechatService {
             self.runtime.tenant_id_str(),
             Arc::clone(&self.api_client),
         )
+        .with_config_lock(self.config_lock.as_ref())
+        .with_publish_enabled(self.publish_enabled)
     }
 
     fn callback_service(&self) -> WechatCallbackService<'_> {

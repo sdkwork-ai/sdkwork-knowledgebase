@@ -373,7 +373,7 @@ async fn assert_persisted_space(runtime: &KnowledgebaseRuntime, space_id: u64) {
 
     let binding_store = PostgresGroupKnowledgeSpaceBindingStore::new(runtime.pool().clone());
     assert!(binding_store
-        .find_group_space_for_space_in_tenant(TENANT_ID, space_id)
+        .find_group_space_for_space_in_tenant(TENANT_ID, ORGANIZATION_ID, space_id)
         .await
         .expect("query group binding for newly created ordinary space")
         .is_none());

@@ -345,7 +345,7 @@ describe('knowledgebase security standard alignment', () => {
     const hostedAccess = readRepoFile(
       'crates/sdkwork-routes-knowledgebase-app-api/src/hosted_access.rs',
     );
-    assert.match(hostedAccess, /require_agent_profile_space_access/);
+    assert.match(hostedAccess, /require_agent_profile_manage_access/);
     assert.match(hostedAccess, /require_enabled_agent_bindings_space_access/);
   });
 
@@ -414,12 +414,19 @@ describe('knowledgebase security standard alignment', () => {
     }
   });
 
-  it('requires manifest permissions on knowledge app-api spaces.create route', () => {
+  it('rate-limits knowledge app-api spaces.create without domain permission scopes', () => {
     const routeManifest = readRepoFile(
       'crates/sdkwork-routes-knowledgebase-app-api/src/http_route_manifest.rs',
     );
-    assert.match(routeManifest, /"spaces\.create"[\s\S]*?"knowledge\.spaces\.write"/u);
-    assert.match(routeManifest, /with_required_permission\(permission\)/u);
+    // PERMISSION_STANDARD_SPEC: app-api is a first-party consumer surface; tier 2
+    // authorization belongs to service-layer space ACL checks, never OAuth-style
+    // per-route permission codes. Creators are still authenticated and the abuse
+    // tier bounds creation cost.
+    assert.match(
+      routeManifest,
+      /knowledge_abuse_route\(\s*HttpMethod::Post,\s*"\/app\/v3\/api\/knowledge\/spaces",\s*"spaces\.create",/u,
+    );
+    assert.doesNotMatch(routeManifest, /with_required_permission\(/u);
   });
 
   it('wires hosted WeChat service in full app runtime instead of stub ports', () => {

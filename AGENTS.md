@@ -179,7 +179,6 @@ bin/docker-image.sh build --image-tag <version>
 bin/docker-deploy.sh install --environment development
 bin/docker-deploy.sh install --environment test
 bin/docker-deploy.sh install --environment staging
-bin/docker-deploy.sh install --environment demo
 bin/docker-deploy.sh install --environment production --yes
 # 3. Verify after each environment: containers healthy + healthz probe + status.
 bin/docker-deploy.sh status --environment <env>
@@ -455,7 +454,8 @@ go through them. See `bin/README.md` for the usage card and
 canonical repository command fail fast with guidance).
 
 - App types declared: see `SDKWORK_APP_TYPES` in `bin/lib/module.sh`;
-  environments: `development`, `test`, `staging`, `demo`, `production`.
+  environments: `development`, `test`, `staging`, `production` (the retired `demo`
+  deployment profile is not deployable).
 - Image reference: `registry.sdkwork.com/apps/<docker-name>:<version>`
   (`DOCKER_SPEC.md` §2.1; no `latest`, no env-suffixed tags).
 - Authoritative specs: `MODULE_BIN_SPEC.md`, `DOCKER_SPEC.md`,

@@ -96,17 +96,15 @@ impl PostgresGroupKnowledgeSpaceBindingStore {
     async fn list_resumable_group_space_archives_for_scope(
         &self,
         tenant_id: u64,
-        organization_id: Option<u64>,
+        organization_id: u64,
         limit: u32,
     ) -> Result<Vec<ArchiveGroupKnowledgeSpaceCommand>, KnowledgeGroupSpaceBindingStoreError> {
         const MAX_ARCHIVE_WORK_BATCH: u32 = 200;
         validate_tenant_id(tenant_id)?;
-        if let Some(organization_id) = organization_id {
-            validate_scope(GroupKnowledgeSpaceScope {
-                tenant_id,
-                organization_id,
-            })?;
-        }
+        validate_scope(GroupKnowledgeSpaceScope {
+            tenant_id,
+            organization_id,
+        })?;
         if limit == 0 || limit > MAX_ARCHIVE_WORK_BATCH {
             return Err(KnowledgeGroupSpaceBindingStoreError::InvalidRequest(
                 format!("archive work limit must be between 1 and {MAX_ARCHIVE_WORK_BATCH}"),
@@ -114,7 +112,7 @@ impl PostgresGroupKnowledgeSpaceBindingStore {
         }
 
         let now = group_now()?;
-        let rows = if let Some(organization_id) = organization_id {
+        let rows = {
             let lease_expiry_expr = self.timestamp_dialect.sql_timestamp_expr("$3");
             let query = format!(
                 r#"
@@ -141,37 +139,6 @@ impl PostgresGroupKnowledgeSpaceBindingStore {
             sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
                 .bind(group_to_i64("tenant_id", tenant_id)?)
                 .bind(group_to_i64("organization_id", organization_id)?)
-                .bind(&now)
-                .bind(i64::from(limit))
-                .fetch_all(&self.pool)
-                .await
-                .map_err(group_sqlx_error)?
-        } else {
-            let lease_expiry_expr = self.timestamp_dialect.sql_timestamp_expr("$2");
-            let query = format!(
-                r#"
-                SELECT id, uuid, tenant_id, organization_id, conversation_id, space_id, space_uuid,
-                       group_name, lifecycle_state, acl_projection_state,
-                       provisioning_idempotency_key_sha256_hex, membership_epoch,
-                       upstream_link_generation, version, archive_source_event_id,
-                       archive_payload_sha256_hex, archive_lease_token, archive_lease_until,
-                       archive_acl_cursor, archive_acl_pages_processed,
-                       archive_acl_cleanup_completed_at,
-                       last_source_event_id, last_error_code, created_by, updated_by,
-                       created_at, updated_at, archived_at, archived_by, deleted_at
-                FROM kb_group_knowledge_space_binding
-                WHERE tenant_id = $1
-                  AND lifecycle_state = 'archiving'
-                  AND archive_source_event_id IS NOT NULL
-                  AND archive_payload_sha256_hex IS NOT NULL
-                  AND archived_by IS NOT NULL
-                  AND (archive_lease_token IS NULL OR archive_lease_until < {lease_expiry_expr})
-                ORDER BY updated_at ASC, id ASC
-                LIMIT $3
-                "#,
-            );
-            sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
-                .bind(group_to_i64("tenant_id", tenant_id)?)
                 .bind(&now)
                 .bind(i64::from(limit))
                 .fetch_all(&self.pool)
@@ -534,6 +501,7 @@ impl KnowledgeGroupSpaceBindingStore for PostgresGroupKnowledgeSpaceBindingStore
     async fn find_group_space_for_space_in_tenant(
         &self,
         tenant_id: u64,
+        organization_id: u64,
         space_id: u64,
     ) -> Result<Option<GroupKnowledgeSpaceBinding>, KnowledgeGroupSpaceBindingStoreError> {
         if tenant_id == 0 {
@@ -542,6 +510,7 @@ impl KnowledgeGroupSpaceBindingStore for PostgresGroupKnowledgeSpaceBindingStore
             ));
         }
         let tenant_id = group_to_i64("tenant_id", tenant_id)?;
+        let organization_id = group_to_i64("organization_id", organization_id)?;
         let space_id = group_to_i64("space_id", space_id)?;
         let row = sqlx::query(
             r#"
@@ -555,10 +524,11 @@ impl KnowledgeGroupSpaceBindingStore for PostgresGroupKnowledgeSpaceBindingStore
                    last_source_event_id, last_error_code, created_by, updated_by,
                    created_at, updated_at, archived_at, archived_by, deleted_at
             FROM kb_group_knowledge_space_binding
-            WHERE tenant_id = $1 AND space_id = $2
+            WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3
             "#,
         )
         .bind(tenant_id)
+        .bind(organization_id)
         .bind(space_id)
         .fetch_optional(&self.pool)
         .await
@@ -1685,7 +1655,7 @@ impl KnowledgeGroupSpaceBindingStore for PostgresGroupKnowledgeSpaceBindingStore
     ) -> Result<Vec<ArchiveGroupKnowledgeSpaceCommand>, KnowledgeGroupSpaceBindingStoreError> {
         self.list_resumable_group_space_archives_for_scope(
             scope.tenant_id,
-            Some(scope.organization_id),
+            scope.organization_id,
             limit,
         )
         .await
@@ -1694,9 +1664,10 @@ impl KnowledgeGroupSpaceBindingStore for PostgresGroupKnowledgeSpaceBindingStore
     async fn list_resumable_group_space_archives_for_tenant(
         &self,
         tenant_id: u64,
+        organization_id: u64,
         limit: u32,
     ) -> Result<Vec<ArchiveGroupKnowledgeSpaceCommand>, KnowledgeGroupSpaceBindingStoreError> {
-        self.list_resumable_group_space_archives_for_scope(tenant_id, None, limit)
+        self.list_resumable_group_space_archives_for_scope(tenant_id, organization_id, limit)
             .await
     }
 

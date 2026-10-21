@@ -160,7 +160,7 @@ fn sign_webhook_payload(
     timestamp: &str,
     body: &[u8],
 ) -> Result<String, KnowledgeOutboxDispatchError> {
-    use hmac::{Hmac, Mac};
+    use hmac::{Hmac, KeyInit, Mac};
     use sha2::Sha256;
 
     type HmacSha256 = Hmac<Sha256>;
@@ -352,12 +352,9 @@ mod tests {
         let event_time = request.headers[EVENT_TIME_HEADER]
             .to_str()
             .expect("event time header");
-        let expected = sign_webhook_payload(
-            &dispatcher.webhook_secret,
-            event_time,
-            payload.as_bytes(),
-        )
-        .expect("webhook signing accepts the configured secret");
+        let expected =
+            sign_webhook_payload(&dispatcher.webhook_secret, event_time, payload.as_bytes())
+                .expect("webhook signing accepts the configured secret");
         assert_eq!(request.headers[EVENT_SIGNATURE_HEADER], expected);
     }
 }

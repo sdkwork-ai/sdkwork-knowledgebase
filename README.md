@@ -20,7 +20,8 @@ crates/
   sdkwork-intelligence-knowledgebase-service
                                              Business services, ports, and pure use cases.
   sdkwork-intelligence-knowledgebase-repository-sqlx
-                                             SQL migration registry and SQLite/Postgres SQLx repositories via sdkwork-database.
+                                             PostgreSQL SQLx repositories and migration registry via sdkwork-database;
+                                             the SQLite tree under tests/fixtures is a schema-parity fixture only.
   sdkwork-routes-knowledgebase-app-api     App HTTP route boundary for generated App SDK operations.
   sdkwork-routes-knowledgebase-backend-api Backend HTTP route boundary for generated Backend SDK operations.
   sdkwork-routes-knowledgebase-open-api    Open HTTP route boundary for generated Open SDK operations.
@@ -187,7 +188,7 @@ Valid values are `0` through `1023`. Local and test runs may omit the variable a
 - The SQLite schema fixture (`tests/fixtures/database/sqlite/`) is a deterministic in-memory test schema kept in column-level parity with the PostgreSQL folded baseline; server runtimes are PostgreSQL-only (`database.manifest.json` engines: postgres).
 - OKF concept revision numbers and `okf/log.md` sequence numbers are reserved with database-backed counters to avoid `MAX + 1` races under concurrent writes.
 - Local mirror snapshot and delta manifest services create OKF-compatible export artifacts, compute SHA-256 checksums, reject unsafe path segments, and persist those manifests only through `KnowledgeDriveStorage`.
-- App and Backend OpenAPI authority files use SDKWork dotted operation IDs, including `okf.bundle.index.list`, `okf.bundle.log.list`, `driveImports.create`, `documents.versions.versions`, and `sources.create`.
+- App and Backend OpenAPI authority files use SDKWork dotted operation IDs, including `okf.bundle.index.retrieve`, `okf.bundle.log.retrieve`, `driveImports.create`, `documents.versions.versions`, and `sources.create`.
 - Generated App and Backend TypeScript SDKs are produced with the canonical `sdkwork-sdk-generator` using the SDKWork v3 standard profile.
 - App and Backend SDK families declare Appbase, Drive, and Memory dependency SDKs; dependency-owned Appbase, Drive, and Memory APIs are not generated into knowledgebase transports.
 - App and Backend Rust API crates mount every generated OpenAPI operation path. The hosted SQLx runtime (`KnowledgebaseRuntime`) wires all **109** HTTP operations (69 app + 32 backend + 8 open) to concrete service implementations; test doubles are confined to test modules and are never mounted by a deployable runtime.

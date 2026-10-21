@@ -11,14 +11,15 @@ use sdkwork_knowledgebase_contract::provider_binding::{
 };
 use sdkwork_knowledgebase_contract::{
     AnonymizeKnowledgeAuditSubjectRequest, AnonymizeKnowledgeAuditSubjectResult,
-    CreateKnowledgeSourceRequest, ExportKnowledgeAuditEventsRequest,
-    GroupKnowledgebaseLaunchCapability, IngestionJob, KnowledgeAuditEventExport, KnowledgeIndex,
-    KnowledgeIndexList, KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfBundleFileList,
+    CreateKnowledgeAuditLegalHoldRequest, CreateKnowledgeSourceRequest,
+    ExportKnowledgeAuditEventsRequest, GroupKnowledgebaseLaunchCapability, IngestionJob,
+    KnowledgeAuditEventExport, KnowledgeAuditLegalHoldItem, KnowledgeIndex, KnowledgeIndexList,
+    KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfBundleFileList,
     KnowledgeOkfProfileRequest, KnowledgeProviderHealth, KnowledgeRetrievalProfile,
     KnowledgeRetrievalProfileRequest, KnowledgeRetrievalTrace, KnowledgeRetrievalTraceList,
-    KnowledgeSource, KnowledgeSourceList, KnowledgeSpace, KnowledgeSpaceMember,
-    KnowledgeTenantStatus, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult,
-    OkfCandidateResult, OkfCandidateResultList, OkfCandidateReviewRequest, OkfCompileJobRequest,
+    KnowledgeSource, KnowledgeSpace, KnowledgeSpaceMember, KnowledgeTenantStatus,
+    OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfCandidateResult,
+    OkfCandidateResultList, OkfCandidateReviewRequest, OkfCompileJobRequest,
     OkfConceptPublishRequest, OkfConceptSummary, OkfIndexDocument, OkfIndexRebuildRequest,
     OkfLogEntry, OkfQualityRun, OkfQualityRunRequest,
 };
@@ -43,10 +44,6 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
         Err(BackendApiError::unsupported_operation(
             "group.launch.capability",
         ))
-    }
-
-    async fn list_sources(&self) -> BackendApiResult<KnowledgeSourceList> {
-        Err(BackendApiError::unsupported_operation("sources.list"))
     }
 
     async fn list_sources_page(
@@ -553,6 +550,36 @@ pub trait KnowledgeBackendApi: Send + Sync + 'static {
     ) -> BackendApiResult<AnonymizeKnowledgeAuditSubjectResult> {
         Err(BackendApiError::unsupported_operation(
             "compliance.auditEvents.anonymizeActor.create",
+        ))
+    }
+
+    async fn create_audit_legal_hold(
+        &self,
+        _request: CreateKnowledgeAuditLegalHoldRequest,
+        _created_by: String,
+    ) -> BackendApiResult<KnowledgeAuditLegalHoldItem> {
+        Err(BackendApiError::unsupported_operation(
+            "compliance.auditLegalHolds.create",
+        ))
+    }
+
+    async fn list_audit_legal_holds(
+        &self,
+        _cursor: Option<String>,
+        _page_size: Option<u32>,
+    ) -> BackendApiResult<SdkWorkPageData<KnowledgeAuditLegalHoldItem>> {
+        Err(BackendApiError::unsupported_operation(
+            "compliance.auditLegalHolds.list",
+        ))
+    }
+
+    async fn release_audit_legal_hold(
+        &self,
+        _hold_id: u64,
+        _released_by: String,
+    ) -> BackendApiResult<KnowledgeAuditLegalHoldItem> {
+        Err(BackendApiError::unsupported_operation(
+            "compliance.auditLegalHolds.release.create",
         ))
     }
 }

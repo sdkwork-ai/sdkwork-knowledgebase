@@ -57,7 +57,7 @@ release. Generated SDK output changes only through authored OpenAPI and the stan
    resource must already exist and have a successful Binding test. The Worker claims one phase with
    an expiring owner/token lease, revalidates versions/capabilities, atomically switches Bindings,
    defers observation completion until its deadline, and retains the predecessor for rollback.
-7. Run SQLite/PostgreSQL isolation, migration, API/SDK, provider certification, quality, load,
+7. Run PostgreSQL isolation, migration, API/SDK, provider certification, quality, load,
    outage, cutover, and rollback gates before release.
 
 ## Rollback

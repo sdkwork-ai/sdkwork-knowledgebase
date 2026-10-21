@@ -167,8 +167,12 @@ $legacyForbiddenPackages = @(
     "sdkwork-knowledgebase-backend-api"
 )
 
-$cargoTomls = Get-ChildItem -Path . -Recurse -Filter Cargo.toml -File |
-    Where-Object { $_.FullName -notmatch "\\target\\" } |
+# Enumerate tracked manifests through git so generated `target/`, `node_modules/`,
+# `.sdkwork/manual-backups/` and broken junctions cannot break the recursive walk
+# (Windows long-path and symlink failures abort `Get-ChildItem -Recurse` mid-tree).
+$cargoTomls = git ls-files -- '*Cargo.toml' |
+    ForEach-Object { Get-Item -LiteralPath $_ -ErrorAction SilentlyContinue } |
+    Where-Object { $_ -and $_.FullName -notmatch "\\(target|node_modules|\.sdkwork)\\" } |
     Sort-Object FullName
 
 $packageNames = New-Object System.Collections.Generic.List[string]
@@ -211,8 +215,9 @@ foreach ($memberMatch in [regex]::Matches($rootCargo, '"([^"]+)"')) {
     }
 }
 
-$componentSpecs = Get-ChildItem -Path . -Recurse -Filter component.spec.json -File |
-    Where-Object { $_.FullName -notmatch "\\target\\" } |
+$componentSpecs = git ls-files -- '*component.spec.json' |
+    ForEach-Object { Get-Item -LiteralPath $_ -ErrorAction SilentlyContinue } |
+    Where-Object { $_ -and $_.FullName -notmatch "\\(target|node_modules)\\" } |
     Sort-Object FullName
 
 foreach ($componentSpec in $componentSpecs) {

@@ -8,9 +8,9 @@ pub use api_client::{
     WechatApiClient, WechatApiClientError, WechatDraftArticle, WechatUploadedMaterial,
 };
 pub use callback::{
-    callback_already_seen, callback_signature, extract_bounded_message_fields,
-    extract_encrypted_payload, decrypt_wechat_message, timestamp_outside_window, unix_now_secs,
-    verify_callback_signature, BoundedWechatMessageFields, DecryptedWechatMessage,
+    callback_already_seen, callback_signature, decrypt_wechat_message,
+    extract_bounded_message_fields, extract_encrypted_payload, timestamp_outside_window,
+    unix_now_secs, verify_callback_signature, BoundedWechatMessageFields, DecryptedWechatMessage,
     WechatCallbackCryptoError, WechatCallbackError, WechatCallbackReceipt,
     WechatCallbackReceiptRequest, WechatCallbackService, WechatCallbackVerificationRequest,
 };

@@ -44,8 +44,8 @@ mod quota_transaction;
 
 pub use agent_profile_store::PostgresKnowledgeAgentProfileStore;
 pub use audit_event_store::{
-    KnowledgeAuditEventRecord, KnowledgeAuditEventStore, KnowledgeAuditEventStoreError,
-    PostgresKnowledgeAuditEventStore,
+    CreateKnowledgeAuditLegalHold, KnowledgeAuditEventRecord, KnowledgeAuditEventStore,
+    KnowledgeAuditEventStoreError, KnowledgeAuditLegalHold, PostgresKnowledgeAuditEventStore,
 };
 pub use browser_projection_store::PostgresKnowledgeBrowserProjectionStore;
 pub use db::{

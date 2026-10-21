@@ -1,33 +1,81 @@
-# Audit Event Retention and GDPR Operations
+# Audit Event Retention, Legal Hold, and GDPR Operations
 
-Status: prelaunch; retention automation pending
-Owner: SDKWork Knowledgebase operators  
-Related: [tenant-isolation.md](tenant-isolation.md), [backup-restore.md](../../deployments/runbooks/backup-restore.md)
+Status: active — retention automation, legal hold enforcement, and purge drill are implemented
+Owner: SDKWork Knowledgebase operators
+Related: [tenant-isolation.md](tenant-isolation.md), [audit-investigation.md](audit-investigation.md),
+[backup-restore.md](../../deployments/runbooks/backup-restore.md)
 
 ## Scope
 
-Tables:
-
-- `kb_audit_event` — domain audit trail (visibility, members, admin mutations)
-- `framework_audit_event` — framework HTTP audit persistence
-
-## Retention targets
-
-| Environment | Retention | Action |
+| Table | Owner | Retention |
 | --- | --- | --- |
-| Production | 365 days | Automated purge required before launch; not implemented |
-| Staging | 90 days | Automated purge required before launch; not implemented |
-| Development | 30 days | Operator-managed cleanup only |
+| `kb_audit_event` | this module | automated purge by the worker `audit_retention` phase |
+| `framework_audit_event` | `sdkwork-web-framework` | framework-owned; this module does not purge it |
 
-These values are policy targets, not evidence of enforcement. This repository does not currently
-ship a canonical purge operation, scheduler, retention metrics, or purge drill. Do not represent
-audit retention as automated until the purge implementation, legal-hold behavior, bounded batch
-deletion, PostgreSQL execution evidence, monitoring, and recovery drill are checked in and attached
-to the release candidate. This remains a commercial launch blocker.
+`framework_audit_event` is created by the framework lifecycle and is not part of the Knowledgebase
+baseline. Its retention must be configured and evidenced in the framework deployment; this runbook
+covers only `kb_audit_event`.
+
+## Retention policy
+
+| Environment | Default retention | Configuration |
+| --- | --- | --- |
+| Production | 365 days | `SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_DAYS=365` |
+| Staging | 90 days | `SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_DAYS=90` |
+| Development | 30 days | `SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_DAYS=30` |
+
+Retention days are bounded to `30..=3650`; the batch size is bounded to `1..=1000` and defaults to
+500. The worker binary always configures the phase; an invalid value fails worker startup instead of
+silently disabling retention.
+
+## Enforcement
+
+- Phase: `audit_retention` in `sdkwork-knowledgebase-worker`, run on every maintenance tick under the
+  per-phase time budget.
+- Query: one `DELETE` over `(tenant_id, organization_id, created_at, id)` ordered by the oldest
+  `created_at, id`, limited to the batch size. A crash cannot leave a half-selected batch; a rerun
+  continues with the next oldest window.
+- Legal hold: events whose `actor_id` matches an active `actor` hold, or whose `resource_id` matches
+  an active `resource` hold, are skipped by the same statement.
+- Observability: `knowledgebase_audit_events_purged_total` counter and a structured
+  `audit retention purge deleted expired events` log line with `purged`, `cutoff`, and
+  `retention_days`.
+- Recovery: the purge is forward-only. If an operator needs evidence after deletion, restore the
+  database snapshot (backup-restore runbook) and place a legal hold before the next worker tick.
+
+## Legal hold operations
+
+Backend admin API (requires `knowledge.platform.manage`, dual-token, mutation-audited):
+
+```http
+POST /backend/v3/api/knowledge/compliance/audit_legal_holds
+Content-Type: application/json
+
+{ "subjectType": "actor", "subjectId": "<iam_subject_id>", "reason": "<case reason>", "caseReference": "CASE-123" }
+```
+
+- `subjectType` is `actor` or `resource`; `subjectId` is the actor id or numeric resource id.
+- Response: HTTP `201`, `data.item` is the created hold (`status = "active"`).
+
+```http
+GET /backend/v3/api/knowledge/compliance/audit_legal_holds?page_size=50&cursor=<opaque>
+```
+
+- Opaque cursor pagination, `page_size` 1..=200; `data.items` + `data.pageInfo.nextCursor`.
+
+```http
+POST /backend/v3/api/knowledge/compliance/audit_legal_holds/{holdId}/release
+```
+
+- Response: HTTP `201` with the released hold (`status = "released"`, `releasedBy`, `releasedAt`).
+- Releasing an unknown or already released hold returns HTTP `409 audit_legal_hold_conflict`; no
+  silent success.
+
+OpenAPI operations: `compliance.auditLegalHolds.create`, `.list`, `.release.create`. Generated
+backend SDKs expose the same operations. Holds are scoped to the deployment tenant and organization;
+they never cross the RLS boundary.
 
 ## GDPR export (tenant data subject request)
-
-Use the backend compliance API (requires `knowledge.platform.manage`):
 
 ```http
 POST /backend/v3/api/knowledge/compliance/audit_events/export
@@ -37,21 +85,16 @@ Content-Type: application/json
 ```
 
 - OpenAPI operation: `compliance.auditEvents.export.create`
-- Backend SDK: `client.knowledge.compliance.auditEvents.export.create({ actorId })`
 - Response envelope: `SdkWorkApiResponse` with `data.item.items[]` (`KnowledgeAuditEventItem`)
 - Tenant scope is derived from the authenticated principal; do not pass `tenant_id` in the body.
 - A synchronous export is complete only when the actor has at most 5,000 matching domain audit
   events. The store probes one additional row and returns HTTP `413` with
   `audit_export_limit_exceeded` instead of silently truncating a larger result.
 - No paginated or asynchronous audit-export contract exists today. Subjects above the bound require
-  a future cursor-based or job-based export API, generated SDK support, bounded archive storage, and
-  expiry/audit controls before the DPO workflow can be completed.
-
-Deliver the exported archive through the platform DPO workflow.
+  a cursor-based or job-based export API, generated SDK support, bounded archive storage, and
+  expiry/audit controls.
 
 ## GDPR delete (right to erasure)
-
-Use the backend compliance API to anonymize actor identifiers while retaining event type and timestamps:
 
 ```http
 POST /backend/v3/api/knowledge/compliance/audit_events/anonymize_actor
@@ -61,26 +104,22 @@ Content-Type: application/json
 ```
 
 - OpenAPI operation: `compliance.auditEvents.anonymizeActor.create`
-- Backend SDK: `client.knowledge.compliance.auditEvents.anonymizeActor.create({ actorId })`
-- Response envelope: `SdkWorkApiResponse` with `data.item.anonymizedCount`
-- Rows are updated to `actor_id = 'gdpr-redacted'`, `actor_type = 'system'`
-- The current operation targets `kb_audit_event`; `framework_audit_event` lifecycle handling remains part
-  of the pending retention/legal-hold implementation.
-
-Before invoking anonymization:
-
-1. Verify legal basis and scope with platform legal.
-2. Do not delete aggregate billing counters; redact PII in structured logs per log retention policy.
+- `data.item.anonymizedCount` reports the number of redacted rows.
+- Rows become `actor_id = 'gdpr-redacted'`, `actor_type = 'system'`; event type, resource, and
+  timestamps are retained.
+- Place a legal hold **before** erasure when retention obligations conflict; otherwise anonymization
+  removes the actor linkage the hold would match.
+- `framework_audit_event` erasure remains a framework-owned operation.
 
 ## Verification
 
-- Security tests assert durable `kb_audit_event` persistence, fail-closed decoding, and explicit
-  synchronous export overflow behavior.
-- `pnpm test:tenant-quota` asserts OpenAPI, SDK, and runbook alignment for quota and GDPR compliance APIs.
-- Production topology uses `SDKWORK_KNOWLEDGEBASE_LOG_FORMAT=json` for log pipeline correlation with `x-request-id`.
-- Release evidence must include the PostgreSQL non-owner/RLS export and anonymization paths; SQLite
-  tests alone are not production evidence.
-- PostgreSQL still lacks the SQLite-equivalent composite index on
-  `(tenant_id, organization_id, actor_id, created_at DESC, id DESC)`. A reviewed migration,
-  `EXPLAIN (ANALYZE, BUFFERS)` evidence, and concurrent export/anonymization load evidence are
-  required before these operations are commercial-production ready.
+- `cargo test -p sdkwork-intelligence-knowledgebase-repository-sqlx --test postgres_optional_integration`
+  covers the retention/legal-hold drill: an expired unheld event is deleted, an equally old held
+  event survives, and release restores normal retention.
+- `hosted_backend_audit_legal_hold_lifecycle_is_operator_scoped` covers the HTTP lifecycle
+  (create/list/release/duplicate-release conflict) against PostgreSQL.
+- The audit subject composite index `idx_kb_audit_event_scope_actor_created`
+  `(tenant_id, organization_id, actor_id, created_at DESC, id DESC)` and the purge index
+  `idx_kb_audit_event_scope_created_id` are part of the baseline and migrations.
+- Release evidence must include a production-like retention run and the counter/log line; SQLite
+  fixture tests are schema-parity evidence, not production evidence.

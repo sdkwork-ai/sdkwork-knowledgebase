@@ -162,6 +162,17 @@ impl ApiError {
     }
 }
 
+#[cfg(test)]
+impl ApiError {
+    pub(crate) fn status_code(&self) -> StatusCode {
+        self.status
+    }
+
+    pub(crate) fn error_code(&self) -> &str {
+        &self.code
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ApiProblem {
     status: StatusCode,
@@ -261,6 +272,9 @@ impl From<KnowledgeAgentServiceError> for ApiError {
             KnowledgeAgentServiceError::InvalidRequest(detail) => {
                 Self::invalid_request("invalid_knowledge_agent_request", detail)
             }
+            KnowledgeAgentServiceError::Store(KnowledgeAgentProfileStoreError::InvalidRequest(
+                detail,
+            )) => Self::invalid_request("invalid_knowledge_agent_request", detail),
             KnowledgeAgentServiceError::Store(KnowledgeAgentProfileStoreError::NotFound(id)) => {
                 Self::not_found(
                     "knowledge_agent_profile_not_found",
@@ -432,6 +446,9 @@ impl From<KnowledgeWechatServiceError> for ApiError {
             }
             KnowledgeWechatServiceError::UnsupportedOperation(operation_id) => {
                 Self::unsupported_operation(operation_id)
+            }
+            KnowledgeWechatServiceError::Disabled(detail) => {
+                Self::new(StatusCode::FORBIDDEN, "wechat_publish_disabled", detail)
             }
             KnowledgeWechatServiceError::Storage(error) => error.into(),
             KnowledgeWechatServiceError::Api(error) => {

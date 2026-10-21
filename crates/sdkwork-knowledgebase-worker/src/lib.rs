@@ -29,6 +29,14 @@ pub struct WikiBackfillMaintenanceConfig {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AuditRetentionMaintenanceConfig {
+    /// Events older than this many days are purge candidates.
+    pub retention_days: u32,
+    /// Maximum events deleted per maintenance tick.
+    pub batch_size: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WikiDriveEventMaintenanceConfig {
     pub tenant_id: u64,
     pub organization_id: u64,
@@ -57,6 +65,9 @@ pub struct MaintenanceConfig {
     pub ingestion_max_attempts: u32,
     pub wiki_backfill: Option<WikiBackfillMaintenanceConfig>,
     pub wiki_drive_events: WikiDriveEventMaintenanceConfig,
+    /// Automated audit-event retention. `None` disables purging; the worker binary always
+    /// configures it, while tests can opt out.
+    pub audit_retention: Option<AuditRetentionMaintenanceConfig>,
     /// Per-phase time budget. A phase that exceeds its budget keeps running in
     /// the background and is reaped by later ticks; it never blocks or starves
     /// the other maintenance domains.
@@ -114,6 +125,7 @@ pub struct MaintenanceTickResult {
     pub wiki_drive_event_delivery_relays_verified: usize,
     pub wiki_drive_event_delivery_failures: usize,
     pub wiki_drive_next_after_event_delivery_checkpoint_id: Option<u64>,
+    pub audit_events_purged: u64,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -130,6 +142,8 @@ pub enum MaintenanceTickError {
     WikiDriveEvents(String),
     #[error("Wiki source processing batch failed: {0}")]
     WikiSourceProcessing(String),
+    #[error("audit retention purge failed: {0}")]
+    AuditRetention(String),
 }
 
 /// Per-phase result of a maintenance tick.
@@ -145,6 +159,7 @@ enum PhaseResult {
     WikiDelivery(
         sdkwork_intelligence_knowledgebase_service::wiki_event_delivery::WikiDriveEventDeliveryRenewalPageResult,
     ),
+    AuditRetention(u64),
 }
 
 type PhaseHandle = tokio::task::JoinHandle<Result<PhaseResult, MaintenanceTickError>>;
@@ -185,6 +200,7 @@ struct PhaseSlots {
     wiki_drive_events: Option<PhaseHandle>,
     wiki_sources: Option<PhaseHandle>,
     wiki_delivery_renewal: Option<PhaseHandle>,
+    audit_retention: Option<PhaseHandle>,
 }
 
 /// Drives one maintenance phase under a bounded time budget with panic and
@@ -260,7 +276,7 @@ async fn run_ingestion_phase(
     runtime: &KnowledgebaseRuntime,
     config: &MaintenanceConfig,
 ) -> Result<usize, MaintenanceTickError> {
-    runtime
+    let processed = runtime
         .process_queued_ingestion_jobs(
             &config.worker_id,
             config.ingestion_job_lease,
@@ -268,7 +284,21 @@ async fn run_ingestion_phase(
             config.ingestion_max_attempts,
         )
         .await
-        .map_err(MaintenanceTickError::Ingestion)
+        .map_err(MaintenanceTickError::Ingestion)?;
+    // Durable post-ingest embedding shares the ingestion batch budget. The API surfaces never
+    // call the model provider; the worker drains pending documents here and records the
+    // indexed state, so a restart or provider outage cannot lose embedding work.
+    let embedded = runtime
+        .process_pending_embeddings(config.ingestion_job_limit)
+        .await;
+    if embedded > 0 {
+        tracing::info!(
+            target: "sdkwork.knowledgebase.worker",
+            embedded_documents = embedded,
+            "post-ingest embedding backlog advanced"
+        );
+    }
+    Ok(processed)
 }
 
 async fn run_provider_migration_phase(
@@ -292,6 +322,41 @@ async fn run_group_archive_phase(
     runtime
         .process_resumable_group_space_archives(config.group_archive_limit)
         .await
+}
+
+/// Deletes one bounded window of audit events older than the configured retention period.
+/// Events under an active legal hold are skipped by the SQL predicate, and an empty tick is a
+/// no-op, so the phase is safe to run on every maintenance cycle.
+async fn run_audit_retention_phase(
+    runtime: &KnowledgebaseRuntime,
+    config: &MaintenanceConfig,
+) -> Result<u64, MaintenanceTickError> {
+    let Some(retention) = config.audit_retention else {
+        return Ok(0);
+    };
+    if retention.retention_days == 0 || retention.batch_size == 0 {
+        return Ok(0);
+    }
+    let cutoff =
+        time::OffsetDateTime::now_utc() - time::Duration::days(i64::from(retention.retention_days));
+    let cutoff = cutoff
+        .format(&time::format_description::well_known::Rfc3339)
+        .map_err(|error| MaintenanceTickError::AuditRetention(error.to_string()))?;
+    let purged = runtime
+        .purge_expired_audit_events(&cutoff, retention.batch_size)
+        .await
+        .map_err(MaintenanceTickError::AuditRetention)?;
+    if purged > 0 {
+        tracing::info!(
+            target: "sdkwork.knowledgebase.worker",
+            purged,
+            cutoff = %cutoff,
+            retention_days = retention.retention_days,
+            "audit retention purge deleted expired events; legal holds were skipped"
+        );
+        sdkwork_knowledgebase_observability::record_audit_retention_purged(purged);
+    }
+    Ok(purged)
 }
 
 async fn run_wiki_backfill_phase(
@@ -572,6 +637,7 @@ pub async fn run_maintenance_tick(
     let ingestion_jobs_processed = run_ingestion_phase(runtime, config).await?;
     let provider_migrations = run_provider_migration_phase(runtime, config).await?;
     let group_archives_processed = run_group_archive_phase(runtime, config).await;
+    let audit_events_purged = run_audit_retention_phase(runtime, config).await?;
     let wiki_backfill = run_wiki_backfill_phase(runtime, config, None, Vec::new()).await?;
     let wiki_drive_relay_result = run_wiki_drive_relay_phase(runtime).await?;
     let wiki_drive_result = run_wiki_drive_phase(
@@ -607,6 +673,7 @@ pub async fn run_maintenance_tick(
         provider_migrations_rolled_back: provider_migrations.rolled_back,
         provider_migrations_failed: provider_migrations.failed,
         group_archives_processed,
+        audit_events_purged,
         wiki_publications_initialized: wiki_backfill.initialized,
         wiki_publications_failed: wiki_backfill.failed,
         wiki_backfill_next_after_space_id: wiki_backfill.next_after_space_id,
@@ -826,6 +893,17 @@ pub async fn run_polling_loop(runtime: KnowledgebaseRuntime, config: Maintenance
                     }
                 }
 
+                // 9. audit retention
+                if let Some(PhaseResult::AuditRetention(purged)) = drive_phase(9, phase_budget, &mut phases.audit_retention, {
+                    let runtime = runtime.clone();
+                    let maintenance = maintenance.clone();
+                    || tokio::spawn(async move {
+                        run_audit_retention_phase(&runtime, &maintenance).await.map(PhaseResult::AuditRetention)
+                    })
+                }).await {
+                    result.audit_events_purged = purged;
+                }
+
                 if let Some(blocked) = result.wiki_drive_blocked_checkpoint_id {
                     // A checkpoint with retried head events is not caught up; the exclusive
                     // cursor must restart at it so its RETRY events are repicked at deadline.
@@ -912,6 +990,7 @@ fn maintenance_tick_has_activity(result: &MaintenanceTickResult) -> bool {
         || result.ingestion_jobs_processed > 0
         || result.provider_migration_phases_processed > 0
         || result.group_archives_processed > 0
+        || result.audit_events_purged > 0
         || result.wiki_publications_initialized > 0
         || result.wiki_publications_failed > 0
         || result.wiki_drive_outbox_events_processed > 0
@@ -1039,6 +1118,7 @@ mod tests {
             wiki_drive_event_delivery_relays_verified: 0,
             wiki_drive_event_delivery_failures: 0,
             wiki_drive_next_after_event_delivery_checkpoint_id: Some(10),
+            audit_events_purged: 7,
         };
         assert_eq!(result.outbox_requeued, 1);
         assert_eq!(result.outbox_published, 2);

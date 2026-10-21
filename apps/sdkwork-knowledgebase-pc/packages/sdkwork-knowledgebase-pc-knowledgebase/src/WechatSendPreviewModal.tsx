@@ -14,12 +14,17 @@ export interface WechatSendPreviewModalProps {
   onClose: () => void;
   previewWechatId: string;
   setPreviewWechatId: (id: string) => void;
+  /**
+   * Runs the backend preview command. That command is a local dry run: it
+   * validates the payload and the configured account and makes no outbound
+   * WeChat call, so the success copy below must never claim a delivery.
+   */
   onConfirmSend: (recipients: string[]) => Promise<void>;
   isSending?: boolean;
 }
 
 export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPreviewWechatId, onConfirmSend, isSending }: WechatSendPreviewModalProps) {
-  const { t } = useTranslation(['common', 'officialAccount', 'editor']);
+  const { t } = useTranslation(['common', 'editor']);
   const { t: tErrors } = useTranslation('errors');
   const [recipients, setRecipients] = useState<string[]>([]);
   const [newIdInput, setNewIdInput] = useState('');
@@ -138,6 +143,9 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
 
       setPreviewWechatId(currentRecipients.join(', '));
       onClose();
+      // The backend preview command is a local dry run (`status: "validated"`);
+      // it never contacts WeChat. The copy states exactly that instead of
+      // claiming a delivery that did not happen.
       toast.success(
         t('wechatPreviewSentSuccess', {
           ns: 'editor',
@@ -156,29 +164,45 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
 
   return createPortal(
     <div className="fixed inset-0 z-[300] bg-zinc-950/60 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
-       <div className="bg-white dark:bg-[var(--color-kb-editor)] w-[480px] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+       <div
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="wechat-preview-modal-title"
+         className="bg-white dark:bg-[var(--color-kb-editor)] w-[480px] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50 animate-in fade-in zoom-in-95 duration-200"
+         onClick={e => e.stopPropagation()}
+       >
           
           <div className="flex justify-between items-center px-6 py-5 bg-[#fafafa] dark:bg-[var(--color-kb-panel)]/50 border-b border-zinc-200/50 dark:border-[var(--color-kb-panel-border)]/80">
-            <h3 className="text-[16px] font-bold text-zinc-900 dark:text-[var(--color-kb-text-heading)] flex items-center gap-2">
+            <h3 id="wechat-preview-modal-title" className="text-[16px] font-bold text-zinc-900 dark:text-[var(--color-kb-text-heading)] flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-[#07c160]/10 flex items-center justify-center">
-                <Send size={16} className="text-[#07c160]" />
+                <Send size={16} className="text-[#07c160]" aria-hidden="true" />
               </div>
-              发送至手机预览
+              {t('wechatPreviewModalTitle', { ns: 'editor' })}
             </h3>
-            <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 dark:text-[var(--color-kb-text-muted)] dark:hover:text-[var(--color-kb-text-heading)] hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors">
-                <X size={18} />
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('wechatPreviewClose', { ns: 'editor' })}
+              title={t('wechatPreviewClose', { ns: 'editor' })}
+              className="p-2 text-zinc-400 hover:text-zinc-600 dark:text-[var(--color-kb-text-muted)] dark:hover:text-[var(--color-kb-text-heading)] hover:bg-zinc-100 dark:hover:bg-zinc-800/50 rounded-xl transition-colors"
+            >
+                <X size={18} aria-hidden="true" />
             </button>
           </div>
 
           <div className="p-6">
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
-                <p className="text-[13px] font-bold text-zinc-700 dark:text-[var(--color-kb-text-heading)]">
-                  输入微信号/手机号
-                </p>
+                <label
+                  htmlFor="wechat-preview-recipient-input"
+                  className="text-[13px] font-bold text-zinc-700 dark:text-[var(--color-kb-text-heading)]"
+                >
+                  {t('wechatPreviewRecipientInputLabel', { ns: 'editor' })}
+                </label>
               </div>
               <div className="flex items-center border border-zinc-200/80 dark:border-[var(--color-kb-panel-border)]/80 rounded-xl bg-white dark:bg-[var(--color-kb-input-bg)] focus-within:ring-2 focus-within:ring-[#07c160]/20 focus-within:border-[#07c160] transition-all p-1">
                 <input 
+                  id="wechat-preview-recipient-input"
                   type="text" 
                   value={newIdInput} 
                   onChange={e => setNewIdInput(e.target.value)} 
@@ -188,10 +212,11 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
                       handleAddRecipient(newIdInput);
                     }
                   }}
-                  placeholder="如: wx_123456" 
+                  placeholder={t('wechatPreviewRecipientPlaceholder', { ns: 'editor' })}
                   className="flex-1 bg-transparent px-3 py-2 text-[14px] text-zinc-900 dark:text-[var(--color-kb-text-heading)] focus:outline-none placeholder:text-zinc-400"
                 />
                 <button
+                  type="button"
                   onClick={() => handleAddRecipient(newIdInput)}
                   className={`px-4 py-2 rounded-lg font-bold text-[13px] transition-colors ${
                     !isBlank(newIdInput)
@@ -200,21 +225,21 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
                   }`}
                   disabled={isBlank(newIdInput)}
                 >
-                  添加
+                  {t('wechatPreviewAddRecipient', { ns: 'editor' })}
                 </button>
               </div>
             </div>
 
             <div className="mb-6">
               <p className="text-[13px] font-bold text-zinc-700 dark:text-[var(--color-kb-text-heading)] mb-2 flex items-center gap-2">
-                已选接收人 
+                {t('wechatPreviewSelectedRecipients', { ns: 'editor' })}
                 <span className="text-[11px] font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">{recipients.length}</span>
               </p>
               
               <div className="min-h-[60px] p-2 border border-zinc-200/50 dark:border-[var(--color-kb-panel-border)]/50 rounded-xl bg-[#fafafa] dark:bg-[var(--color-kb-panel)]/30 flex flex-wrap gap-2 items-start">
                 {recipients.length === 0 ? (
                   <div className="w-full h-[40px] flex items-center justify-center text-[12.5px] text-zinc-400">
-                    输入微信号并点击添加
+                    {t('wechatPreviewRecipientsEmpty', { ns: 'editor' })}
                   </div>
                 ) : (
                   recipients.map((recipient, index) => (
@@ -222,13 +247,16 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
                       key={recipient + '-' + index}
                       className="group flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 rounded-lg text-[13px] text-zinc-800 dark:text-zinc-200 shadow-sm animate-in zoom-in-95 duration-150"
                     >
-                      <UserPlus size={14} className="text-[#07c160]" />
+                      <UserPlus size={14} className="text-[#07c160]" aria-hidden="true" />
                       <span className="font-medium">{recipient}</span>
                       <button 
+                        type="button"
                         onClick={() => handleRemoveRecipient(index)} 
+                        aria-label={t('wechatPreviewRemoveRecipient', { ns: 'editor' })}
+                        title={t('wechatPreviewRemoveRecipient', { ns: 'editor' })}
                         className="text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md p-1 transition-colors"
                       >
-                        <X size={12} strokeWidth={2.5} />
+                        <X size={12} strokeWidth={2.5} aria-hidden="true" />
                       </button>
                     </div>
                   ))
@@ -239,8 +267,8 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
             {history.length > 0 && (
               <div>
                 <p className="text-[11px] font-bold text-zinc-500 dark:text-[var(--color-kb-text-muted)] mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                  <History size={12} />
-                  历史记录
+                  <History size={12} aria-hidden="true" />
+                  {t('wechatPreviewHistoryLabel', { ns: 'editor' })}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {history.map((id) => {
@@ -248,21 +276,33 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
                     return (
                       <div 
                         key={'history-' + id}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
                         onClick={() => handleToggleHistory(id)}
-                        className={`group flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-lg text-[13px] border cursor-pointer transition-all ${
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleToggleHistory(id);
+                          }
+                        }}
+                        className={`group flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-lg text-[13px] border cursor-pointer transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#07c160] ${
                           isSelected 
                             ? 'bg-[#07c160]/10 border-[#07c160]/30 text-[#07c160]' 
                             : 'bg-white dark:bg-[var(--color-kb-editor)] border-zinc-200/80 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-[#07c160]/50 hover:text-[#07c160]'
                         }`}
                       >
-                        {isSelected && <Check size={14} strokeWidth={2.5} />}
+                        {isSelected && <Check size={14} strokeWidth={2.5} aria-hidden="true" />}
                         <span className="font-medium">{id}</span>
                         <div className="w-[1px] h-3 bg-zinc-200 dark:bg-zinc-700 mx-0.5"></div>
                         <button 
+                          type="button"
                           onClick={(e) => handleDeleteHistory(e, id)}
+                          aria-label={t('wechatPreviewDeleteHistory', { ns: 'editor' })}
+                          title={t('wechatPreviewDeleteHistory', { ns: 'editor' })}
                           className="text-zinc-400 hover:text-red-500 rounded p-1 opacity-60 group-hover:opacity-100 transition-all hover:bg-red-50 dark:hover:bg-red-500/10"
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={12} aria-hidden="true" />
                         </button>
                       </div>
                     );
@@ -279,12 +319,20 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
           </div>
 
           <div className="flex items-center justify-between px-6 py-4 bg-[#fafafa] dark:bg-[var(--color-kb-panel)]/50 border-t border-zinc-200/50 dark:border-[var(--color-kb-panel-border)]/80">
-            <span className="text-[12px] text-zinc-400 font-medium">预览文章无水印限制</span>
+            <span className="text-[12px] text-zinc-400 font-medium">
+              {t('wechatPreviewDryRunNotice', { ns: 'editor' })}
+            </span>
              <div className="flex gap-3">
-               <button className="px-5 py-2.5 text-[13.5px] font-bold rounded-xl bg-white dark:bg-transparent border border-zinc-200/80 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors" onClick={onClose}>
-                 取消
+               <button
+                 type="button"
+                 className="px-5 py-2.5 text-[13.5px] font-bold rounded-xl bg-white dark:bg-transparent border border-zinc-200/80 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                 onClick={onClose}
+               >
+                  {t('cancel', { ns: 'common' })}
                </button>
                <button 
+                 type="button"
+                 id="wechat-preview-validate"
                  className={`px-6 py-2.5 text-[13.5px] font-extrabold rounded-xl transition-all shadow-sm flex items-center gap-2 ${
                     recipients.length > 0 || !isBlank(newIdInput)
                       ? 'bg-[#07c160] hover:bg-[#06ad56] text-white hover:shadow-md'
@@ -295,13 +343,13 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
                >
                  {isSending ? (
                    <>
-                     <Loader2 size={15} className="animate-spin" strokeWidth={2.5} />
-                     正在发送...
+                     <Loader2 size={15} className="animate-spin" strokeWidth={2.5} aria-hidden="true" />
+                     {t('wechatPreviewValidating', { ns: 'editor' })}
                    </>
                  ) : (
                    <>
-                     <Send size={15} strokeWidth={2.5} />
-                     开始发送
+                     <Send size={15} strokeWidth={2.5} aria-hidden="true" />
+                     {t('wechatPreviewValidateAction', { ns: 'editor' })}
                    </>
                  )}
                </button>

@@ -15,6 +15,7 @@ use sdkwork_knowledgebase_contract::provider_binding::KnowledgeEngineExecutionCo
 use sdkwork_knowledgebase_contract::rag::KnowledgeAgentKnowledgeMode;
 use sdkwork_knowledgebase_contract::OkfBundleFileKind;
 use sdkwork_utils_rust::is_blank;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::okf::{
@@ -47,6 +48,19 @@ use crate::ports::knowledge_engine::OkfBundleEngine;
 
 const SPI_ACTOR: &str = "knowledge-engine-spi";
 const OKF_DRIVE_READ_CONCURRENCY: usize = 8;
+/// Response cap owned by the engine boundary. Callers may request more, but a
+/// single search never returns or materializes more hits than this.
+const OKF_SEARCH_MAX_TOP_K: u32 = 100;
+/// Candidate fan-out factor: fetch a few more rows than requested so body and
+/// link signal can reorder them, then cap the candidate set absolutely.
+const OKF_SEARCH_CANDIDATE_MULTIPLIER: u32 = 4;
+const OKF_SEARCH_MIN_CANDIDATES: usize = 8;
+const OKF_SEARCH_MAX_CANDIDATES: usize = 200;
+/// Incident link edges fetched for the candidate set, proportional to the
+/// candidate count with a hard cap.
+const OKF_SEARCH_LINK_EDGE_MULTIPLIER: usize = 8;
+const OKF_SEARCH_MIN_LINK_EDGES: u32 = 64;
+const OKF_SEARCH_MAX_LINK_EDGES: u32 = 1_000;
 
 #[derive(Clone)]
 pub struct OkfNativeKnowledgeEngineDeps {
@@ -184,43 +198,66 @@ impl KnowledgeEngine for OkfNativeKnowledgeEngine {
         _context: &KnowledgeEngineExecutionContext,
         request: KnowledgeEngineSearchRequest,
     ) -> Result<KnowledgeEngineSearchResult, KnowledgeEngineError> {
-        let pages =
-            crate::ports::knowledge_okf_concept_store::list_all_published_concept_summaries(
-                self.deps.concepts.as_ref(),
-                request.space_id,
-            )
+        // The engine boundary owns the result cap: a caller-supplied `top_k`
+        // can never make search materialize or return an unbounded result.
+        let top_k = request.top_k.clamp(1, OKF_SEARCH_MAX_TOP_K);
+        let candidate_limit = ((top_k as usize) * (OKF_SEARCH_CANDIDATE_MULTIPLIER as usize))
+            .clamp(OKF_SEARCH_MIN_CANDIDATES, OKF_SEARCH_MAX_CANDIDATES);
+        let tokens = normalize_query(&request.query);
+
+        // Ask the store for a bounded, ranked candidate set. The PostgreSQL
+        // store pushes filtering and LIMIT into SQL; the fallback pages a
+        // bounded scan. Either way the service never receives a whole space.
+        let candidate_summaries = self
+            .deps
+            .concepts
+            .search_published_concept_summaries(request.space_id, &tokens, candidate_limit as u32)
             .await
             .map_err(map_okf_store_error)?;
 
-        let summaries_by_id = pages
+        let summaries_by_id = candidate_summaries
             .iter()
-            .map(|page| (page.concept_id.clone(), page.clone()))
-            .collect::<std::collections::HashMap<_, _>>();
-        let tokens = normalize_query(&request.query);
-        let candidate_limit = request.top_k.saturating_mul(4).max(8) as usize;
-        let mut ranked = rank_okf_concepts_with_tokens(pages, &tokens);
+            .map(|summary| (summary.concept_id.clone(), summary.clone()))
+            .collect::<HashMap<_, _>>();
+        let mut ranked = rank_okf_concepts_with_tokens(candidate_summaries, &tokens);
 
-        // Page through the whole active link graph so link-edge expansion never
-        // silently truncates on large spaces (bounded aggregate, see
-        // MAX_OKF_LINK_SCAN_ROWS).
-        let edges = crate::ports::knowledge_okf_concept_link_store::list_all_active_link_edges(
-            self.deps.link_store.as_ref(),
-            request.space_id,
-        )
-        .await
-        .map_err(|error| KnowledgeEngineError::Internal(error.to_string()))?;
-        ranked = expand_ranked_with_link_edges(
-            ranked,
-            &edges,
-            &summaries_by_id,
-            &tokens,
-            candidate_limit,
-        );
+        if !ranked.is_empty() {
+            // Expand link signal only for the bounded candidate set: no
+            // space-wide edge graph and no all-pairs scoring loop.
+            let candidate_ids = ranked
+                .iter()
+                .map(|(_, concept)| concept.concept_id.clone())
+                .collect::<Vec<_>>();
+            let edge_limit = candidate_ids
+                .len()
+                .saturating_mul(OKF_SEARCH_LINK_EDGE_MULTIPLIER)
+                .clamp(
+                    OKF_SEARCH_MIN_LINK_EDGES as usize,
+                    OKF_SEARCH_MAX_LINK_EDGES as usize,
+                );
+            let edges = self
+                .deps
+                .link_store
+                .list_active_link_edges_incident_to(
+                    request.space_id,
+                    &candidate_ids,
+                    edge_limit as u32,
+                )
+                .await
+                .map_err(|error| KnowledgeEngineError::Internal(error.to_string()))?;
+            ranked = expand_ranked_with_link_edges(
+                ranked,
+                &edges,
+                &summaries_by_id,
+                &tokens,
+                candidate_limit,
+            );
+        }
 
         let drive_space_id = self.drive_space_id(request.space_id).await?;
         let candidates: Vec<_> = ranked.into_iter().take(candidate_limit).collect();
         let drive = Arc::clone(&self.deps.drive);
-        let mut hits = Vec::with_capacity(candidates.len().min(request.top_k as usize));
+        let mut hits = Vec::with_capacity(candidates.len().min(top_k as usize));
 
         for chunk in candidates.chunks(OKF_DRIVE_READ_CONCURRENCY) {
             let mut handles = Vec::with_capacity(chunk.len());
@@ -287,7 +324,7 @@ impl KnowledgeEngine for OkfNativeKnowledgeEngine {
                 .unwrap_or(std::cmp::Ordering::Equal)
                 .then_with(|| left.document.document_id.cmp(&right.document.document_id))
         });
-        hits.truncate(request.top_k.max(1) as usize);
+        hits.truncate(top_k as usize);
 
         Ok(KnowledgeEngineSearchResult {
             implementation_id: KnowledgeEngineId::OKF_NATIVE.to_string(),
@@ -300,19 +337,15 @@ impl KnowledgeEngine for OkfNativeKnowledgeEngine {
         _context: &KnowledgeEngineExecutionContext,
         request: KnowledgeEngineReadRequest,
     ) -> Result<KnowledgeEngineDocument, KnowledgeEngineError> {
-        let pages =
-            crate::ports::knowledge_okf_concept_store::list_all_published_concept_summaries(
-                self.deps.concepts.as_ref(),
-                request.space_id,
-            )
+        // Single-concept resolution: the store answers with one bounded lookup
+        // (SQL `LIMIT 1` in PostgreSQL) instead of materializing every published
+        // concept in the space to find one.
+        let concept = self
+            .deps
+            .concepts
+            .get_published_concept_summary(request.space_id, &request.document_id)
             .await
-            .map_err(map_okf_store_error)?;
-
-        let concept = pages
-            .into_iter()
-            .find(|page| {
-                page.concept_id == request.document_id || page.logical_path == request.document_id
-            })
+            .map_err(map_okf_store_error)?
             .ok_or_else(|| {
                 KnowledgeEngineError::NotFound(format!(
                     "okf concept not found: {}",

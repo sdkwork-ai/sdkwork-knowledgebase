@@ -2,7 +2,10 @@ use crate::ports::knowledge_drive_storage::{
     HeadKnowledgeObjectRequest, KnowledgeDriveStorage, KnowledgeStorageError,
     PutKnowledgeObjectRequest,
 };
-use crate::wechat::secret_cipher::{decrypt_optional_secret, encrypt_optional_secret, ENCRYPTED_VALUE_PREFIX};
+use crate::ports::knowledge_wechat_config_lock::KnowledgeWechatConfigLock;
+use crate::wechat::secret_cipher::{
+    decrypt_optional_secret, encrypt_optional_secret, ENCRYPTED_VALUE_PREFIX,
+};
 use sdkwork_knowledgebase_contract::wechat::{
     KnowledgeWechatApplet, KnowledgeWechatOfficialAccount,
 };
@@ -38,10 +41,9 @@ const WECHAT_ACCOUNT_TYPES: &[&str] = &["subscription", "service"];
 const WECHAT_ENCRYPT_MODES: &[&str] = &["plain", "compatible", "safe"];
 const WECHAT_MESSAGE_DATA_FORMATS: &[&str] = &["json", "xml"];
 
-/// Serializes the load-merge-save critical section for every tenant and config kind. One
-/// process-wide async lock is intentionally coarse: wechat config writes are rare tenant-admin
-/// operations, so per-tenant lock maps would add complexity for no real contention win, while
-/// two concurrent replacements without the lock would silently drop one side's entries.
+/// Serializes the load-merge-save critical section inside one process. Cross-replica safety
+/// comes from the injected [`KnowledgeWechatConfigLock`]; this local lock only avoids needless
+/// distributed-lock round trips when one process serves the tenant.
 static CONFIG_WRITE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -56,6 +58,7 @@ struct TenantWechatConfig {
 pub struct WechatConfigStore<'a> {
     drive: &'a dyn KnowledgeDriveStorage,
     tenant_space_uuid: String,
+    config_lock: Option<&'a dyn KnowledgeWechatConfigLock>,
 }
 
 /// A verified WeChat callback delivery, persisted verbatim (the encrypted payload is
@@ -79,7 +82,38 @@ impl<'a> WechatConfigStore<'a> {
         Self {
             drive,
             tenant_space_uuid: tenant_config_space_uuid(tenant_id),
+            config_lock: None,
         }
+    }
+
+    /// Injects a cross-process write lock. Without one, concurrent replicas can lose an
+    /// update because the Drive `put_object` path has no compare-and-swap precondition.
+    #[must_use]
+    pub fn with_config_lock(mut self, lock: &'a dyn KnowledgeWechatConfigLock) -> Self {
+        self.config_lock = Some(lock);
+        self
+    }
+
+    async fn with_config_write_lock<T>(
+        &self,
+        key: &str,
+        operation: impl std::future::Future<Output = Result<T, KnowledgeStorageError>>,
+    ) -> Result<T, KnowledgeStorageError> {
+        let Some(lock) = self.config_lock else {
+            return operation.await;
+        };
+        let guard = lock.acquire(key).await?;
+        let outcome = operation.await;
+        let release = guard.release().await;
+        match (outcome, release) {
+            (Ok(value), Ok(())) => Ok(value),
+            (Ok(_), Err(error)) => Err(error),
+            (Err(error), _) => Err(error),
+        }
+    }
+
+    fn config_lock_key(&self, kind: &str) -> String {
+        format!("wechat:{kind}:{}", self.tenant_space_uuid)
     }
 
     pub async fn load_official_accounts(
@@ -99,16 +133,19 @@ impl<'a> WechatConfigStore<'a> {
     ) -> Result<Vec<KnowledgeWechatOfficialAccount>, KnowledgeStorageError> {
         validate_official_accounts(&accounts)?;
         let _config_write_guard = CONFIG_WRITE_LOCK.lock().await;
-        let existing = self.load_config().await?;
-        let mut config = existing;
-        config.official_accounts =
-            merge_official_account_secrets(accounts, &config.official_accounts);
-        self.save_config(&config).await?;
-        Ok(config
-            .official_accounts
-            .into_iter()
-            .map(redact_official_account)
-            .collect())
+        self.with_config_write_lock(&self.config_lock_key("official_accounts"), async {
+            let existing = self.load_config().await?;
+            let mut config = existing;
+            config.official_accounts =
+                merge_official_account_secrets(accounts, &config.official_accounts);
+            self.save_config(&config).await?;
+            Ok(config
+                .official_accounts
+                .into_iter()
+                .map(redact_official_account)
+                .collect())
+        })
+        .await
     }
 
     pub async fn load_applets(&self) -> Result<Vec<KnowledgeWechatApplet>, KnowledgeStorageError> {
@@ -122,11 +159,14 @@ impl<'a> WechatConfigStore<'a> {
     ) -> Result<Vec<KnowledgeWechatApplet>, KnowledgeStorageError> {
         validate_applets(&applets)?;
         let _config_write_guard = CONFIG_WRITE_LOCK.lock().await;
-        let existing = self.load_config().await?;
-        let mut config = existing;
-        config.applets = merge_applet_secrets(applets, &config.applets);
-        self.save_config(&config).await?;
-        Ok(config.applets.into_iter().map(redact_applet).collect())
+        self.with_config_write_lock(&self.config_lock_key("applets"), async {
+            let existing = self.load_config().await?;
+            let mut config = existing;
+            config.applets = merge_applet_secrets(applets, &config.applets);
+            self.save_config(&config).await?;
+            Ok(config.applets.into_iter().map(redact_applet).collect())
+        })
+        .await
     }
 
     pub async fn find_official_account(
@@ -158,10 +198,7 @@ impl<'a> WechatConfigStore<'a> {
                 "official account id cannot be used in a callback artifact path".to_string(),
             ));
         }
-        if !artifact
-            .timestamp
-            .bytes()
-            .all(|byte| byte.is_ascii_digit())
+        if !artifact.timestamp.bytes().all(|byte| byte.is_ascii_digit())
             || artifact.timestamp.is_empty()
         {
             return Err(KnowledgeStorageError::InvalidRequest(
@@ -169,7 +206,9 @@ impl<'a> WechatConfigStore<'a> {
             ));
         }
         let body = serde_json::to_vec(artifact).map_err(|error| {
-            KnowledgeStorageError::Internal(format!("failed to encode wechat callback receipt: {error}"))
+            KnowledgeStorageError::Internal(format!(
+                "failed to encode wechat callback receipt: {error}"
+            ))
         })?;
         if body.len() as u64 > MAX_WECHAT_CALLBACK_RECEIPT_BYTES {
             return Err(KnowledgeStorageError::InvalidRequest(format!(
@@ -680,8 +719,10 @@ fn cipher_storage_error(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::knowledge_wechat_config_lock::KnowledgeWechatConfigLockGuard;
     use async_trait::async_trait;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     struct FailingHeadDrive {
         put_calls: AtomicUsize,
@@ -1154,6 +1195,89 @@ mod tests {
             config.official_accounts[0].app_secret.as_deref(),
             Some("secret")
         );
+    }
+
+    #[derive(Default)]
+    struct CountingConfigLock {
+        acquires: Arc<AtomicUsize>,
+        releases: Arc<AtomicUsize>,
+        fail_acquire: bool,
+    }
+
+    struct CountingConfigLockGuard {
+        releases: Arc<AtomicUsize>,
+    }
+
+    #[async_trait]
+    impl KnowledgeWechatConfigLock for CountingConfigLock {
+        async fn acquire(
+            &self,
+            key: &str,
+        ) -> Result<Box<dyn KnowledgeWechatConfigLockGuard>, KnowledgeStorageError> {
+            assert!(
+                key.starts_with("wechat:applets:"),
+                "unexpected lock key: {key}"
+            );
+            self.acquires.fetch_add(1, Ordering::SeqCst);
+            if self.fail_acquire {
+                return Err(KnowledgeStorageError::Conflict(
+                    "config lock unavailable".to_string(),
+                ));
+            }
+            Ok(Box::new(CountingConfigLockGuard {
+                releases: Arc::clone(&self.releases),
+            }))
+        }
+    }
+
+    #[async_trait]
+    impl KnowledgeWechatConfigLockGuard for CountingConfigLockGuard {
+        async fn release(&self) -> Result<(), KnowledgeStorageError> {
+            self.releases.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn config_write_lock_is_released_when_the_save_fails() {
+        let drive = NoIoDrive {
+            head_calls: AtomicUsize::new(0),
+            put_calls: AtomicUsize::new(0),
+        };
+        let lock = CountingConfigLock::default();
+        let store = WechatConfigStore::new(&drive, "tenant-lock").with_config_lock(&lock);
+
+        let error = store
+            .replace_applets(vec![applet("applet-lock")])
+            .await
+            .unwrap_err();
+
+        assert!(matches!(error, KnowledgeStorageError::Internal(_)));
+        assert_eq!(lock.acquires.load(Ordering::SeqCst), 1);
+        assert_eq!(lock.releases.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn config_write_lock_failure_prevents_the_read_modify_write() {
+        let drive = NoIoDrive {
+            head_calls: AtomicUsize::new(0),
+            put_calls: AtomicUsize::new(0),
+        };
+        let lock = CountingConfigLock {
+            fail_acquire: true,
+            ..CountingConfigLock::default()
+        };
+        let store = WechatConfigStore::new(&drive, "tenant-lock").with_config_lock(&lock);
+
+        let error = store
+            .replace_applets(vec![applet("applet-lock")])
+            .await
+            .unwrap_err();
+
+        assert!(matches!(error, KnowledgeStorageError::Conflict(_)));
+        assert_eq!(drive.head_calls.load(Ordering::SeqCst), 0);
+        assert_eq!(drive.put_calls.load(Ordering::SeqCst), 0);
+        assert_eq!(lock.releases.load(Ordering::SeqCst), 0);
     }
 
     #[test]

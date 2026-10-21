@@ -23,6 +23,7 @@ use sdkwork_intelligence_knowledgebase_service::document_extraction::{
     file_extension, DocumentExtractionError, DocumentExtractionRequest, DocumentTextExtractor,
     ExtractedDocument, MAX_DOCUMENT_EXTRACTION_INPUT_BYTES, MAX_DOCUMENT_EXTRACTION_PAGES,
 };
+use sdkwork_utils_rust::is_blank;
 use zip::ZipArchive;
 
 /// Maximum decompressed bytes read from one OOXML entry.
@@ -113,7 +114,7 @@ fn extract_pdf(bytes: &[u8]) -> Result<ExtractedDocument, DocumentExtractionErro
         .map_err(|_| DocumentExtractionError::Corrupt("pdf parser aborted".to_string()))?;
     let text = parsed.map_err(DocumentExtractionError::corrupt)?;
     let text = normalize_text(&text);
-    if text.trim().is_empty() {
+    if is_blank(Some(text.as_str())) {
         return Err(DocumentExtractionError::Corrupt(
             "pdf contains no extractable text (scanned or encrypted PDF?)".to_string(),
         ));
@@ -129,7 +130,7 @@ fn extract_pdf(bytes: &[u8]) -> Result<ExtractedDocument, DocumentExtractionErro
 fn extract_docx(bytes: &[u8]) -> Result<ExtractedDocument, DocumentExtractionError> {
     let xml = read_zip_entry(bytes, "word/document.xml")?;
     let text = normalize_text(&extract_ooxml_text(&xml)?);
-    if text.trim().is_empty() {
+    if is_blank(Some(text.as_str())) {
         return Err(DocumentExtractionError::Corrupt(
             "docx document contains no text".to_string(),
         ));
@@ -163,7 +164,7 @@ fn extract_pptx(bytes: &[u8]) -> Result<ExtractedDocument, DocumentExtractionErr
             DocumentExtractionError::Corrupt(format!("pptx slide {index}: {error}"))
         })?;
         let text = normalize_text(&extract_ooxml_text(&xml)?);
-        if !text.trim().is_empty() {
+        if !is_blank(Some(text.as_str())) {
             sections.push(text);
             slides += 1;
         }
@@ -258,22 +259,19 @@ fn parse_shared_strings(xml: &str) -> Result<Vec<String>, DocumentExtractionErro
     loop {
         match reader.read_event() {
             Ok(Event::Start(element)) => match element.local_name().as_ref() {
-                b"si" => {
+                "si" => {
                     in_si = true;
                     current.clear();
                 }
-                b"t" if in_si => in_text = true,
+                "t" if in_si => in_text = true,
                 _ => {}
             },
             Ok(Event::Text(text)) if in_text => {
-                let decoded = text.unescape().map_err(|error| {
-                    DocumentExtractionError::Corrupt(format!("xlsx shared string: {error}"))
-                })?;
-                current.push_str(&decoded);
+                current.push_str(&text.xml10_content());
             }
             Ok(Event::End(element)) => match element.local_name().as_ref() {
-                b"t" => in_text = false,
-                b"si" if in_si => {
+                "t" => in_text = false,
+                "si" if in_si => {
                     strings.push(std::mem::take(&mut current));
                     in_si = false;
                 }
@@ -310,11 +308,11 @@ fn parse_worksheet_rows(
     loop {
         match reader.read_event() {
             Ok(Event::Start(element)) => match element.local_name().as_ref() {
-                b"row" => {
+                "row" => {
                     in_row = true;
                     cells.clear();
                 }
-                b"c" if in_row => {
+                "c" if in_row => {
                     in_cell = true;
                     in_value = false;
                     in_inline_text = false;
@@ -324,9 +322,9 @@ fn parse_worksheet_rows(
                         let attribute = attribute.map_err(|error| {
                             DocumentExtractionError::Corrupt(format!("xlsx cell: {error}"))
                         })?;
-                        if attribute.key.local_name().as_ref() == b"t" {
+                        if attribute.key.local_name().as_ref() == "t" {
                             cell_type = attribute
-                                .unescape_value()
+                                .normalized_value(quick_xml::XmlVersion::Implicit1_0)
                                 .map_err(|error| {
                                     DocumentExtractionError::Corrupt(format!(
                                         "xlsx cell type: {error}"
@@ -336,20 +334,17 @@ fn parse_worksheet_rows(
                         }
                     }
                 }
-                b"v" if in_cell => in_value = true,
-                b"t" if in_cell => in_inline_text = true,
+                "v" if in_cell => in_value = true,
+                "t" if in_cell => in_inline_text = true,
                 _ => {}
             },
             Ok(Event::Text(text)) if in_cell && (in_value || in_inline_text) => {
-                let decoded = text.unescape().map_err(|error| {
-                    DocumentExtractionError::Corrupt(format!("xlsx cell text: {error}"))
-                })?;
-                cell_value.push_str(&decoded);
+                cell_value.push_str(&text.xml10_content());
             }
             Ok(Event::End(element)) => match element.local_name().as_ref() {
-                b"v" => in_value = false,
-                b"t" => in_inline_text = false,
-                b"c" if in_cell => {
+                "v" => in_value = false,
+                "t" => in_inline_text = false,
+                "c" if in_cell => {
                     let raw = cell_value.trim();
                     let value = if cell_type == "s" {
                         raw.parse::<usize>()
@@ -363,8 +358,8 @@ fn parse_worksheet_rows(
                     cells.push(value);
                     in_cell = false;
                 }
-                b"row" => {
-                    if cells.iter().any(|value| !value.trim().is_empty()) {
+                "row" => {
+                    if cells.iter().any(|value| !is_blank(Some(value.as_str()))) {
                         if rows.len() >= MAX_XLSX_ROWS {
                             return Err(DocumentExtractionError::Corrupt(format!(
                                 "xlsx worksheet exceeds the {MAX_XLSX_ROWS} row limit"
@@ -421,27 +416,24 @@ fn extract_ooxml_text(xml: &str) -> Result<String, DocumentExtractionError> {
     loop {
         match reader.read_event() {
             Ok(Event::Start(element)) => match element.local_name().as_ref() {
-                b"t" => in_text = true,
-                b"tab" => output.push('\t'),
-                b"br" => output.push('\n'),
+                "t" => in_text = true,
+                "ta" => output.push('\t'),
+                "br" => output.push('\n'),
                 _ => {}
             },
             Ok(Event::Empty(element)) => match element.local_name().as_ref() {
-                b"tab" => output.push('\t'),
-                b"br" => output.push('\n'),
+                "ta" => output.push('\t'),
+                "br" => output.push('\n'),
                 _ => {}
             },
             Ok(Event::Text(text)) => {
                 if in_text {
-                    let decoded = text.unescape().map_err(|error| {
-                        DocumentExtractionError::Corrupt(format!("ooxml text: {error}"))
-                    })?;
-                    output.push_str(&decoded);
+                    output.push_str(&text.xml10_content());
                 }
             }
             Ok(Event::End(element)) => match element.local_name().as_ref() {
-                b"t" => in_text = false,
-                b"p" => output.push('\n'),
+                "t" => in_text = false,
+                "p" => output.push('\n'),
                 _ => {}
             },
             Ok(Event::Eof) => break,
@@ -461,7 +453,7 @@ fn normalize_text(text: &str) -> String {
     let mut blank_run = 0usize;
     for line in text.replace('\r', "\n").split('\n') {
         let line = line.trim_end();
-        if line.trim().is_empty() {
+        if is_blank(Some(line)) {
             blank_run += 1;
             if blank_run > 1 {
                 continue;

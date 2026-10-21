@@ -1,12 +1,10 @@
 import { useMemo } from 'react';
-import { BookOpen, Shield, StickyNote, Store, Settings, Search } from 'lucide-react';
+import { BookOpen, Shield, StickyNote, Store, Settings, Search, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useKnowledgebaseRuntime, type KnowledgebaseAccountViewModel } from 'sdkwork-knowledgebase-pc-core';
-import { UserProfile, DEFAULT_USER_PROFILE, EMOTE_PRESETS } from './UserProfileModal';
 
 export interface GlobalNavProps {
   account?: KnowledgebaseAccountViewModel;
-  profile?: UserProfile;
   activeTab: string;
   onTabChange: (tab: string) => void;
   onOpenSettings: () => void;
@@ -17,7 +15,6 @@ export interface GlobalNavProps {
 
 export function GlobalNav({
   account,
-  profile = DEFAULT_USER_PROFILE,
   activeTab,
   onTabChange,
   onOpenSettings,
@@ -44,38 +41,29 @@ export function GlobalNav({
     return items;
   }, [config.featureFlags.knowledgeMarketCatalog, t]);
 
-  const statusMap = {
-    online: 'bg-emerald-500',
-    busy: 'bg-rose-500',
-    away: 'bg-amber-500',
-    offline: 'bg-zinc-400'
-  };
-
-  const userAvatar = account?.avatarUrl || profile?.avatar || 'https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=f0d9b5';
-  // ZWJ emoji presets (👩‍💻) span several UTF-16 code units, so a raw
-  // `length <= 2` check misclassifies them as URLs and renders a broken image.
-  const isEmojiAvatar = EMOTE_PRESETS.includes(userAvatar)
-    || (userAvatar.length <= 2 && !/^https?:|^data:/i.test(userAvatar));
+  const userAvatar = account?.avatarUrl?.trim();
+  const userInitials = account?.initials?.trim();
 
   return (
     <div className="w-[64px] min-w-[64px] h-full flex flex-col items-center py-4 space-y-6 bg-[var(--color-kb-nav)] z-10 border-r border-[var(--color-kb-panel-border)]/70">
-      <div 
+      <button
+        type="button"
         onClick={onOpenProfile}
-        className="relative w-10 h-10 rounded-xl overflow-hidden cursor-pointer shrink-0 mt-2 hover:ring-2 hover:ring-indigo-500/55 dark:hover:ring-indigo-400/55 hover:scale-105 active:scale-95 transition-all shadow-md bg-white dark:bg-zinc-800 flex items-center justify-center group" 
-        title={account?.displayName || t('viewEditProfile')}
+        className="relative w-10 h-10 rounded-xl overflow-hidden cursor-pointer shrink-0 mt-2 hover:ring-2 hover:ring-indigo-500/55 dark:hover:ring-indigo-400/55 hover:scale-105 active:scale-95 transition-all shadow-md bg-white dark:bg-zinc-800 flex items-center justify-center group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        title={account?.displayName || t('viewProfile')}
+        aria-label={account?.displayName || t('viewProfile')}
       >
-        {isEmojiAvatar ? (
-          <span className="text-xl leading-none select-none">{userAvatar}</span>
+        {userAvatar ? (
+          <img src={userAvatar} alt="" className="w-full h-full object-cover" />
         ) : (
-          <img src={userAvatar} alt="User Avatar" className="w-full h-full object-cover" />
+          <span aria-hidden="true" className="text-sm font-bold text-[var(--color-kb-accent)]">
+            {userInitials || <UserRound size={18} />}
+          </span>
         )}
         
         {/* Hover overlay indicator */}
         <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-        {/* Small active status indicator in bottom right */}
-        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white dark:border-zinc-700 ${statusMap[profile?.status || 'online']}`} />
-      </div>
+      </button>
 
       <div className="flex-1 w-full flex flex-col items-center space-y-4 pt-4">
         {navItems.map(item => {

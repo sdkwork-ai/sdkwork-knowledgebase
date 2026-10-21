@@ -435,25 +435,45 @@ pub(crate) async fn bind_document_current_version_in_transaction(
     let version_no = to_i64("version_no", version_no)?;
     let now = now_rfc3339()?;
     let updated_at_expr = timestamp_dialect.sql_timestamp_expr("$2");
+    // Monotonic guard on the document version's own `version_no`: a stale version (or a
+    // version of another document) must never become current, and the caller must observe a
+    // conflict instead of an in-memory success that the database never applied.
     let query = format!(
         r#"
-        UPDATE kb_document
-        SET current_version_id = $1, updated_at = {updated_at_expr}, version = version + 1
-        WHERE tenant_id = $3 AND organization_id = $4 AND id = $5 AND status = $6
-          AND (current_version_id IS NULL OR current_version_id <= $1)
+        UPDATE kb_document AS target
+        SET current_version_id = $1, updated_at = {updated_at_expr}, version = target.version + 1
+        FROM kb_document_version AS candidate
+        WHERE target.tenant_id = $3 AND target.organization_id = $4
+          AND target.id = $5 AND target.status = $6
+          AND candidate.tenant_id = target.tenant_id
+          AND candidate.organization_id = target.organization_id
+          AND candidate.id = $1 AND candidate.document_id = target.id
+          AND candidate.version_no = $7 AND candidate.status = $6
+          AND NOT EXISTS (
+              SELECT 1 FROM kb_document_version AS current
+              WHERE current.tenant_id = target.tenant_id
+                AND current.organization_id = target.organization_id
+                AND current.id = target.current_version_id
+                AND current.version_no > candidate.version_no
+          )
         "#,
     );
-    sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
+    let result = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
         .bind(version_id)
         .bind(now)
         .bind(tenant_id)
         .bind(organization_id)
         .bind(document_id)
         .bind(METADATA_ACTIVE_STATUS)
+        .bind(version_no)
         .execute(&mut **transaction)
         .await
         .map_err(sqlx_error)?;
-    let _ = version_no;
+    if result.rows_affected() == 0 {
+        return Err(DriveImportMetadataStoreError::Conflict(format!(
+            "document {document_id} current version was not advanced to version {version_id} (version_no {version_no})"
+        )));
+    }
     Ok(())
 }
 

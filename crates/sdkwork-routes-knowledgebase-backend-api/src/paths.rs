@@ -60,3 +60,7 @@ pub const COMPLIANCE_AUDIT_EVENTS_EXPORT: &str =
     "/backend/v3/api/knowledge/compliance/audit_events/export";
 pub const COMPLIANCE_AUDIT_EVENTS_ANONYMIZE: &str =
     "/backend/v3/api/knowledge/compliance/audit_events/anonymize_actor";
+pub const COMPLIANCE_AUDIT_LEGAL_HOLDS: &str =
+    "/backend/v3/api/knowledge/compliance/audit_legal_holds";
+pub const COMPLIANCE_AUDIT_LEGAL_HOLD_RELEASE: &str =
+    "/backend/v3/api/knowledge/compliance/audit_legal_holds/{hold_id}/release";

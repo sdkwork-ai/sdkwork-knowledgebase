@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use sdkwork_database_config::DatabaseEngine;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_agent_profile_store::{
-    KnowledgeAgentProfileStore, KnowledgeAgentProfileStoreError,
+    KnowledgeAgentBindingPage, KnowledgeAgentProfileStore, KnowledgeAgentProfileStoreError,
 };
 use sdkwork_knowledgebase_contract::rag::{
     KnowledgeAgentBinding, KnowledgeAgentBindingRequest, KnowledgeAgentKnowledgeMode,
@@ -23,7 +23,8 @@ const DELETED_ROW_STATUS: i64 = 0;
 const INITIAL_VERSION: i64 = 0;
 
 fn profile_json_returning_columns() -> &'static str {
-    r#"CAST(model_parameters AS TEXT) AS model_parameters,
+    r#"created_by,
+                CAST(model_parameters AS TEXT) AS model_parameters,
                 retrieval_profile_id,
                 CAST(citation_policy AS TEXT) AS citation_policy,
                 memory_policy_ref,
@@ -91,6 +92,7 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
             .retrieval_profile_id
             .map(|value| to_i64("retrieval_profile_id", value))
             .transpose()?;
+        let created_by = to_i64("created_by", request.created_by.unwrap_or(0))?;
         let now = utc_sql_timestamp_text().map_err(agent_internal_error)?;
 
         let model_parameters_expr = self.timestamp_dialect.sql_json_expr("$10");
@@ -122,9 +124,10 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
                 status,
                 created_at,
                 updated_at,
-                version
+                version,
+                created_by
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, {model_parameters_expr}, $11, {citation_policy_expr}, $13, $14, {answer_policy_expr}, $16, $17, $18, {created_at_expr}, {updated_at_expr}, $21)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, {model_parameters_expr}, $11, {citation_policy_expr}, $13, $14, {answer_policy_expr}, $16, $17, $18, {created_at_expr}, {updated_at_expr}, $21, $22)
             RETURNING
                 id,
                 tenant_id,
@@ -163,6 +166,7 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
         .bind(now.clone())
         .bind(now)
         .bind(INITIAL_VERSION)
+        .bind(created_by)
         .fetch_one(&self.pool)
         .await
         .map_err(agent_sqlx_error)?;
@@ -365,6 +369,79 @@ impl KnowledgeAgentProfileStore for PostgresKnowledgeAgentProfileStore {
         .map_err(agent_sqlx_error)?;
 
         rows.into_iter().map(binding_from_row).collect()
+    }
+
+    async fn list_bindings_page(
+        &self,
+        profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
+    ) -> Result<KnowledgeAgentBindingPage, KnowledgeAgentProfileStoreError> {
+        if page_size == 0 || page_size > MAX_AGENT_BINDING_LIST_ROWS as u32 {
+            return Err(KnowledgeAgentProfileStoreError::InvalidRequest(format!(
+                "page_size must be between 1 and {MAX_AGENT_BINDING_LIST_ROWS}"
+            )));
+        }
+        let tenant_id = to_i64("tenant_id", self.tenant_id)?;
+        let organization_id = to_i64("organization_id", self.organization_id)?;
+        let profile_id_i64 = to_i64("profile_id", profile_id)?;
+        let after_id = cursor
+            .map(|value| to_i64("cursor", value))
+            .transpose()?
+            .unwrap_or(0);
+        let fetch_limit = i64::from(page_size) + 1;
+
+        let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
+            r#"
+            SELECT
+                id,
+                tenant_id,
+                profile_id,
+                space_id,
+                {},
+                priority,
+                top_k,
+                min_score,
+                enabled
+            FROM kb_agent_knowledge_binding
+            WHERE tenant_id = $1
+              AND organization_id = $2
+              AND profile_id = $3
+              AND status = $4
+              AND id > $5
+            ORDER BY id ASC
+            LIMIT $6
+            "#,
+            binding_json_returning_columns(),
+        )))
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(profile_id_i64)
+        .bind(ACTIVE_ROW_STATUS)
+        .bind(after_id)
+        .bind(fetch_limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(agent_sqlx_error)?;
+
+        let mut items = rows
+            .into_iter()
+            .map(binding_from_row)
+            .collect::<Result<Vec<_>, _>>()?;
+        let has_more = items.len() > page_size as usize;
+        if has_more {
+            items.truncate(page_size as usize);
+        }
+        let next_cursor = if has_more {
+            items.last().map(|binding| binding.binding_id)
+        } else {
+            None
+        };
+        Ok(KnowledgeAgentBindingPage {
+            items,
+            next_cursor,
+            has_more,
+        })
     }
 
     async fn create_binding(
@@ -641,6 +718,7 @@ fn profile_from_row(
     Ok(KnowledgeAgentProfile {
         profile_id: u64_from_row(row, "id")?,
         tenant_id: u64_from_row(row, "tenant_id")?,
+        created_by: u64_from_row(row, "created_by")?,
         name: row.try_get("name").map_err(agent_sqlx_error)?,
         description: row.try_get("description").map_err(agent_sqlx_error)?,
         system_instruction: row

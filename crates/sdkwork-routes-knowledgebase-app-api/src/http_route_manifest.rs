@@ -27,8 +27,7 @@ const fn knowledge_abuse_route(
     path: &'static str,
     operation_id: &'static str,
 ) -> HttpRoute {
-    knowledge_route(method, path, operation_id)
-        .with_rate_limit_tier(RateLimitTier::AuthCritical)
+    knowledge_route(method, path, operation_id).with_rate_limit_tier(RateLimitTier::AuthCritical)
 }
 
 /// WeChat public-platform servers call the callback routes directly and cannot
@@ -59,7 +58,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     // Any authenticated principal may create a knowledge space: dual-token
     // authentication only, no RBAC permission point (platform app-api
     // pattern; the service layer grants the creator owner access).
-    knowledge_read_route(
+    knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces",
         "spaces.create",
@@ -196,7 +195,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/knowledge/documents",
         "documents.list",
     ),
-    knowledge_route(
+    knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/documents",
         "documents.create",
@@ -226,7 +225,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/knowledge/documents/{documentId}/versions",
         "documents.versions.list",
     ),
-    knowledge_route(
+    knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/documents/{documentId}/versions",
         "documents.versions.create",
@@ -236,7 +235,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/knowledge/okf/concepts",
         "okf.concepts.list",
     ),
-    knowledge_route(
+    knowledge_abuse_route(
         HttpMethod::Put,
         "/app/v3/api/knowledge/okf/concepts/upsert",
         "okf.concepts.update",
@@ -259,17 +258,17 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     knowledge_read_route(
         HttpMethod::Get,
         "/app/v3/api/knowledge/okf/index",
-        "okf.bundle.index.list",
+        "okf.bundle.index.retrieve",
     ),
     knowledge_read_route(
         HttpMethod::Get,
         "/app/v3/api/knowledge/okf/log",
-        "okf.bundle.log.list",
+        "okf.bundle.log.retrieve",
     ),
     knowledge_read_route(
         HttpMethod::Get,
         "/app/v3/api/knowledge/okf/profile",
-        "okf.bundle.profile.list",
+        "okf.bundle.profile.retrieve",
     ),
     knowledge_route(
         HttpMethod::Post,
@@ -381,7 +380,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/knowledge/spaces/{spaceId}/context_bindings",
         "spaces.contextBindings.list",
     ),
-    knowledge_route(
+    knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/context_bindings",
         "spaces.contextBindings.create",
@@ -391,7 +390,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/knowledge/spaces/{spaceId}/members",
         "spaces.members.list",
     ),
-    knowledge_route(
+    knowledge_abuse_route(
         HttpMethod::Post,
         "/app/v3/api/knowledge/spaces/{spaceId}/members",
         "spaces.members.create",
@@ -406,12 +405,12 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/knowledge/context_bindings/{bindingId}",
         "contextBindings.retrieve",
     ),
-    knowledge_route(
+    knowledge_abuse_route(
         HttpMethod::Patch,
         "/app/v3/api/knowledge/context_bindings/{bindingId}",
         "contextBindings.update",
     ),
-    knowledge_route(
+    knowledge_abuse_route(
         HttpMethod::Delete,
         "/app/v3/api/knowledge/context_bindings/{bindingId}",
         "contextBindings.delete",

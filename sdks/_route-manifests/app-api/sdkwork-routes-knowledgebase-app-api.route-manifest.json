@@ -876,7 +876,7 @@
     {
       "method": "GET",
       "path": "/app/v3/api/knowledge/okf/index",
-      "operationId": "okf.bundle.index.list",
+      "operationId": "okf.bundle.index.retrieve",
       "tags": [
         "knowledge"
       ],
@@ -898,7 +898,7 @@
     {
       "method": "GET",
       "path": "/app/v3/api/knowledge/okf/log",
-      "operationId": "okf.bundle.log.list",
+      "operationId": "okf.bundle.log.retrieve",
       "tags": [
         "knowledge"
       ],
@@ -920,7 +920,7 @@
     {
       "method": "GET",
       "path": "/app/v3/api/knowledge/okf/profile",
-      "operationId": "okf.bundle.profile.list",
+      "operationId": "okf.bundle.profile.retrieve",
       "tags": [
         "knowledge"
       ],

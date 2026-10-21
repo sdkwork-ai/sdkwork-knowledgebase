@@ -37,3 +37,6 @@ thiserror.workspace = true
 [dev-dependencies]
 sdkwork-agent-kernel.workspace = true
 sdkwork-knowledgebase-test-support.workspace = true
+# The SQLite parity fixture is executed in memory by `tests/sqlite_fixture_parity.rs`.
+# The server runtime remains PostgreSQL-only; the `sqlite` driver is a test-only feature.
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "sqlite", "any", "migrate"] }

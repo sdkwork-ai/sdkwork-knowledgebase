@@ -40,9 +40,9 @@ Initial API surface for the SDKWork Knowledgebase App API.
 - `GET /app/v3/api/knowledge/okf/concepts/{conceptId}` — `okf.concepts.retrieve`
 - `DELETE /app/v3/api/knowledge/okf/concepts/{conceptId}` — `okf.concepts.delete`
 - `GET /app/v3/api/knowledge/okf/concepts/{conceptId}/revisions` — `okf.concepts.revisions.list`
-- `GET /app/v3/api/knowledge/okf/index` — `okf.bundle.index.list`
-- `GET /app/v3/api/knowledge/okf/log` — `okf.bundle.log.list`
-- `GET /app/v3/api/knowledge/okf/profile` — `okf.bundle.profile.list`
+- `GET /app/v3/api/knowledge/okf/index` — `okf.bundle.index.retrieve`
+- `GET /app/v3/api/knowledge/okf/log` — `okf.bundle.log.retrieve`
+- `GET /app/v3/api/knowledge/okf/profile` — `okf.bundle.profile.retrieve`
 - `POST /app/v3/api/knowledge/okf/queries` — `okf.queries.create`
 - `POST /app/v3/api/knowledge/okf/queries/{queryId}/file_answer` — `okf.queries.fileAnswer`
 - `POST /app/v3/api/knowledge/okf/context_packs` — `okf.contextPacks.create`

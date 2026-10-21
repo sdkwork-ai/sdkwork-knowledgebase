@@ -36,11 +36,11 @@ use sdkwork_knowledgebase_contract::{
     KnowledgeIndexList, KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfBundleFileList,
     KnowledgeOkfProfileRequest, KnowledgeProviderHealth, KnowledgeRetrievalProfile,
     KnowledgeRetrievalProfileRequest, KnowledgeRetrievalTrace, KnowledgeRetrievalTraceList,
-    KnowledgeSource, KnowledgeSourceList, KnowledgeSpace, KnowledgeSpaceMember,
-    KnowledgeTenantStatus, KnowledgeTenantStatusEnum, OkfBundleExportRequest,
-    OkfBundleImportRequest, OkfBundleImportResult, OkfCandidateResult, OkfCandidateResultList,
-    OkfCandidateReviewRequest, OkfCompileJobRequest, OkfConceptPublishRequest, OkfConceptSummary,
-    OkfIndexDocument, OkfIndexRebuildRequest, OkfLogEntry, OkfQualityRun, OkfQualityRunRequest,
+    KnowledgeSource, KnowledgeSpace, KnowledgeSpaceMember, KnowledgeTenantStatus,
+    KnowledgeTenantStatusEnum, OkfBundleExportRequest, OkfBundleImportRequest,
+    OkfBundleImportResult, OkfCandidateResult, OkfCandidateResultList, OkfCandidateReviewRequest,
+    OkfCompileJobRequest, OkfConceptPublishRequest, OkfConceptSummary, OkfIndexDocument,
+    OkfIndexRebuildRequest, OkfLogEntry, OkfQualityRun, OkfQualityRunRequest,
 };
 use sdkwork_routes_knowledgebase_backend_api::{
     BackendApiError, BackendApiResult, KnowledgeBackendApi, KnowledgeBackendRequestContext,
@@ -225,16 +225,6 @@ impl KnowledgeBackendApi for HostedBackendApi {
         &self,
     ) -> BackendApiResult<GroupKnowledgebaseLaunchCapability> {
         Ok(self.runtime.group_launch_capability())
-    }
-
-    async fn list_sources(&self) -> BackendApiResult<KnowledgeSourceList> {
-        let items = self
-            .runtime
-            .source_store()
-            .list_active_sources()
-            .await
-            .map_err(|error| map_internal(error.to_string()))?;
-        Ok(KnowledgeSourceList { items })
     }
 
     async fn list_sources_page(
@@ -1652,6 +1642,119 @@ impl KnowledgeBackendApi for HostedBackendApi {
             },
         )
     }
+
+    async fn create_audit_legal_hold(
+        &self,
+        request: sdkwork_knowledgebase_contract::CreateKnowledgeAuditLegalHoldRequest,
+        created_by: String,
+    ) -> BackendApiResult<sdkwork_knowledgebase_contract::KnowledgeAuditLegalHoldItem> {
+        use sdkwork_intelligence_knowledgebase_repository_sqlx::CreateKnowledgeAuditLegalHold;
+
+        let hold = self
+            .runtime
+            .audit_event_store()
+            .create_legal_hold(CreateKnowledgeAuditLegalHold {
+                subject_type: request.subject_type.as_str().to_string(),
+                subject_id: request.subject_id,
+                reason: request.reason,
+                case_reference: request.case_reference,
+                created_by,
+            })
+            .await
+            .map_err(|error| {
+                map_audit_event_store_error(error, "invalid_audit_legal_hold_request")
+            })?;
+        audit_legal_hold_item(hold)
+    }
+
+    async fn list_audit_legal_holds(
+        &self,
+        cursor: Option<String>,
+        page_size: Option<u32>,
+    ) -> BackendApiResult<
+        sdkwork_utils_rust::SdkWorkPageData<
+            sdkwork_knowledgebase_contract::KnowledgeAuditLegalHoldItem,
+        >,
+    > {
+        use sdkwork_routes_knowledgebase_backend_api::pagination;
+
+        let page_size = pagination::normalize_page_size(page_size).map_err(|_| {
+            BackendApiError::new(
+                axum::http::StatusCode::BAD_REQUEST,
+                "invalid_parameter",
+                "page_size must be between 1 and 200",
+            )
+        })?;
+        let cursor = parse_backend_cursor(cursor)?;
+        let (holds, next_cursor) = self
+            .runtime
+            .audit_event_store()
+            .list_active_legal_holds_page(cursor, page_size)
+            .await
+            .map_err(|error| {
+                map_audit_event_store_error(error, "invalid_audit_legal_hold_request")
+            })?;
+        let has_more = next_cursor.is_some();
+        let items = holds
+            .into_iter()
+            .map(audit_legal_hold_item)
+            .collect::<BackendApiResult<Vec<_>>>()?;
+        Ok(pagination::cursor_page_data(
+            items,
+            pagination::encode_opaque_next_cursor(next_cursor.map(|value| value.to_string())),
+            has_more,
+            page_size,
+        ))
+    }
+
+    async fn release_audit_legal_hold(
+        &self,
+        hold_id: u64,
+        released_by: String,
+    ) -> BackendApiResult<sdkwork_knowledgebase_contract::KnowledgeAuditLegalHoldItem> {
+        let hold = self
+            .runtime
+            .audit_event_store()
+            .release_legal_hold(hold_id, &released_by)
+            .await
+            .map_err(|error| {
+                map_audit_event_store_error(error, "invalid_audit_legal_hold_request")
+            })?;
+        audit_legal_hold_item(hold)
+    }
+}
+
+fn audit_legal_hold_item(
+    hold: sdkwork_intelligence_knowledgebase_repository_sqlx::KnowledgeAuditLegalHold,
+) -> BackendApiResult<sdkwork_knowledgebase_contract::KnowledgeAuditLegalHoldItem> {
+    use sdkwork_knowledgebase_contract::{
+        KnowledgeAuditLegalHoldItem, KnowledgeAuditLegalHoldStatus,
+        KnowledgeAuditLegalHoldSubjectType,
+    };
+
+    let subject_type = match hold.subject_type.as_str() {
+        "actor" => KnowledgeAuditLegalHoldSubjectType::Actor,
+        "resource" => KnowledgeAuditLegalHoldSubjectType::Resource,
+        other => {
+            return Err(BackendApiError::sanitized_internal(
+                "knowledgebase_store_failed",
+                format!("unknown audit legal hold subject type: {other}"),
+            ));
+        }
+    };
+    Ok(KnowledgeAuditLegalHoldItem {
+        hold_id: hold.hold_id,
+        uuid: hold.uuid,
+        subject_type,
+        subject_id: hold.subject_id,
+        reason: hold.reason,
+        case_reference: hold.case_reference,
+        status: KnowledgeAuditLegalHoldStatus::from_persisted(hold.status),
+        created_by: hold.created_by,
+        released_by: hold.released_by,
+        released_at: hold.released_at,
+        created_at: hold.created_at,
+    })
 }
 
 fn parse_backend_cursor(cursor: Option<String>) -> BackendApiResult<Option<u64>> {
@@ -1689,6 +1792,16 @@ fn map_audit_event_store_error(
             format!(
                 "audit export exceeds {max_events} events; use an approved paginated or asynchronous export workflow"
             ),
+        ),
+        KnowledgeAuditEventStoreError::NotFound(detail) => BackendApiError::new(
+            axum::http::StatusCode::NOT_FOUND,
+            "audit_legal_hold_not_found",
+            detail,
+        ),
+        KnowledgeAuditEventStoreError::Conflict(detail) => BackendApiError::new(
+            axum::http::StatusCode::CONFLICT,
+            "audit_legal_hold_conflict",
+            detail,
         ),
         internal_error => BackendApiError::sanitized_internal(
             "knowledgebase_store_failed",

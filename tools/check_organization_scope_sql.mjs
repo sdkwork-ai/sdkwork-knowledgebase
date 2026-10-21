@@ -47,14 +47,26 @@ function sqlLiterals(source) {
 }
 
 const violations = new Set();
+
+/**
+ * Removes the outer SELECT projection list so a column that merely appears in the
+ * result set (`SELECT organization_id ... WHERE tenant_id = $1`) cannot satisfy the
+ * predicate check. Everything from the first `FROM` onward (joins, ON, WHERE,
+ * subqueries, RETURNING) is retained and must carry both scope predicates.
+ */
+function predicateBody(sql) {
+  if (!sql.startsWith('select')) {
+    return sql;
+  }
+  const fromIndex = sql.indexOf(' from ');
+  return fromIndex === -1 ? sql : sql.slice(fromIndex);
+}
+
 for (const file of listRustFiles(sourceRoot)) {
   const source = readFileSync(file, 'utf8');
   for (const literal of sqlLiterals(source)) {
-    const sql = literal.text.toLowerCase();
+    const sql = literal.text.toLowerCase().trim();
     if (!/\b(select|insert\s+into|update|delete\s+from)\b/.test(sql)) {
-      continue;
-    }
-    if (!sql.includes('tenant_id') || sql.includes('organization_id')) {
       continue;
     }
     const touchedTables = [...tables].filter((table) =>
@@ -63,10 +75,17 @@ for (const file of listRustFiles(sourceRoot)) {
     if (touchedTables.length === 0) {
       continue;
     }
+    const body = predicateBody(sql);
+    const scoped =
+      /\btenant_id\b/.test(body) && /\borganization_id\b/.test(body);
+    if (scoped) {
+      continue;
+    }
     const line = source.slice(0, literal.offset).split('\n').length;
     violations.add(
       `${path.relative(repoRoot, file).replaceAll('\\', '/')}:${line} `
-      + `uses ${touchedTables.join(',')} with tenant_id but without organization_id`,
+      + `uses ${touchedTables.join(',')} without both tenant_id and organization_id `
+      + `scope predicates (projection columns do not count)`,
     );
   }
 }

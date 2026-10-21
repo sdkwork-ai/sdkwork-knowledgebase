@@ -1,6 +1,7 @@
 # Runbook — sdkwork-knowledgebase deploy / upgrade / rollback (EN)
 
-Environments: `development|test|staging|demo|production`. Commands run on the
+Environments: `development|test|staging|production` (the retired `demo` profile is
+not deployable). Commands run on the
 local WSL host by default; append `--host ssh://[user@]host[:port]` for remote
 targets. Image reference: `registry.sdkwork.com/apps/sdkwork-knowledgebase-standalone:0.1.0`
 (tag from `sdkwork.app.config.json` → `release.currentVersion`).
@@ -10,7 +11,7 @@ targets. Image reference: `registry.sdkwork.com/apps/sdkwork-knowledgebase-stand
 ## 1. Install (first time)
 
 ```bash
-bin/docker-deploy.sh install --environment <development|test|staging|demo|production>
+bin/docker-deploy.sh install --environment <development|test|staging|production>
 bin/docker-deploy.sh install --environment production --yes   # --yes is mandatory in production
 ```
 
@@ -19,7 +20,7 @@ instances and waits on the health gate (`/healthz`).
 
 ## 2. Upgrade
 
-staging/demo/production capture a pre-change backup automatically (skip with
+staging/production capture a pre-change backup automatically (skip with
 `--skip-backup`; the skip is recorded as evidence):
 
 ```bash

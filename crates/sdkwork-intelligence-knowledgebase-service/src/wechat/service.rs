@@ -53,11 +53,18 @@ struct PreparedDraftArticle {
 pub struct KnowledgeWechatService<'a> {
     config_store: WechatConfigStore<'a>,
     api_client: Arc<WechatApiClient>,
+    publish_enabled: bool,
 }
 
 impl<'a> KnowledgeWechatService<'a> {
     /// Callers must inject a long-lived shared client: the api client owns the 7,000 s access
     /// token cache, so a per-request instance would re-fetch a token for every operation.
+    ///
+    /// Publishing is **disabled by default**. The release gates for external publication
+    /// (durable idempotency, per-target outcome records, partial-failure recovery, managed
+    /// cover identity) are tracked in `docs/product/prd/PRD.md`; until they are evidenced the
+    /// only safe default is fail-closed. Hosts opt in explicitly with
+    /// [`KnowledgeWechatService::with_publish_enabled`].
     pub fn new(
         drive: &'a dyn KnowledgeDriveStorage,
         tenant_id: &str,
@@ -66,7 +73,32 @@ impl<'a> KnowledgeWechatService<'a> {
         Self {
             config_store: WechatConfigStore::new(drive, tenant_id),
             api_client,
+            publish_enabled: false,
         }
+    }
+
+    /// Enables the external `draft/add` + `freepublish/submit` path.
+    #[must_use]
+    pub fn with_publish_enabled(mut self, enabled: bool) -> Self {
+        self.publish_enabled = enabled;
+        self
+    }
+
+    /// Injects the cross-replica configuration write lock. Hosts that can serve the same
+    /// tenant from more than one process must call this with a database-backed lock.
+    #[must_use]
+    pub fn with_config_lock(
+        mut self,
+        lock: &'a dyn crate::ports::knowledge_wechat_config_lock::KnowledgeWechatConfigLock,
+    ) -> Self {
+        self.config_store = self.config_store.with_config_lock(lock);
+        self
+    }
+
+    /// Reports whether external WeChat publication is enabled for this service.
+    #[must_use]
+    pub fn publish_enabled(&self) -> bool {
+        self.publish_enabled
     }
 
     pub async fn list_official_accounts(
@@ -144,6 +176,13 @@ impl<'a> KnowledgeWechatService<'a> {
         &self,
         request: KnowledgeWechatArticlesPublishRequest,
     ) -> Result<KnowledgeWechatOperationResult, KnowledgeWechatServiceError> {
+        if !self.publish_enabled {
+            return Err(KnowledgeWechatServiceError::Disabled(
+                "WeChat publication is disabled for this deployment; enabling it requires the \
+                 idempotency, per-target outcome, partial-failure recovery, and managed cover \
+                 gates recorded in the product requirements",
+            ));
+        }
         validate_publish_request(&request)?;
         if !is_blank(request.schedule_time.as_deref()) {
             return Err(KnowledgeWechatServiceError::InvalidRequest(
@@ -423,14 +462,14 @@ fn classify_article_cover(
         ));
     }
     match cover.strip_prefix(WECHAT_ARTICLE_COVER_DATA_URI_PREFIX) {
-        Some(payload) => parse_embedded_cover(payload).map(|cover| Some(CoverSource::Embedded(cover))),
+        Some(payload) => {
+            parse_embedded_cover(payload).map(|cover| Some(CoverSource::Embedded(cover)))
+        }
         None => Ok(Some(CoverSource::MediaId(cover.to_string()))),
     }
 }
 
-fn parse_embedded_cover(
-    payload: &str,
-) -> Result<EmbeddedCoverImage, KnowledgeWechatServiceError> {
+fn parse_embedded_cover(payload: &str) -> Result<EmbeddedCoverImage, KnowledgeWechatServiceError> {
     let (subtype, encoded) = payload.split_once(";base64,").ok_or_else(|| {
         KnowledgeWechatServiceError::InvalidRequest(
             "article cover data URI must carry base64 image data (data:image/...;base64,...)"
@@ -503,6 +542,8 @@ pub enum KnowledgeWechatServiceError {
     InvalidRequest(String),
     #[error("unsupported wechat operation: {0}")]
     UnsupportedOperation(&'static str),
+    #[error("wechat operation is disabled: {0}")]
+    Disabled(&'static str),
     #[error(transparent)]
     Storage(#[from] crate::ports::knowledge_drive_storage::KnowledgeStorageError),
     #[error(transparent)]
@@ -642,7 +683,8 @@ mod tests {
             let object_role = request.object_role.clone();
             let content_type = request.content_type.clone();
             let size_bytes = request.body.len() as u64;
-            self.locked_objects().insert(object_key.clone(), request.body);
+            self.locked_objects()
+                .insert(object_key.clone(), request.body);
             Ok(KnowledgeObjectRef {
                 storage_provider_id: "in-memory".to_string(),
                 bucket: "in-memory".to_string(),
@@ -687,11 +729,9 @@ mod tests {
             object_ref: &KnowledgeObjectRef,
         ) -> Result<String, KnowledgeStorageError> {
             let objects = self.locked_objects();
-            let body = objects
-                .get(&object_ref.object_key)
-                .ok_or_else(|| {
-                    KnowledgeStorageError::NotFound("test object is absent".to_string())
-                })?;
+            let body = objects.get(&object_ref.object_key).ok_or_else(|| {
+                KnowledgeStorageError::NotFound("test object is absent".to_string())
+            })?;
             String::from_utf8(body.clone())
                 .map_err(|error| KnowledgeStorageError::Internal(error.to_string()))
         }
@@ -719,7 +759,9 @@ mod tests {
         }
     }
 
-    fn publish_request(articles: Vec<KnowledgeWechatArticle>) -> KnowledgeWechatArticlesPublishRequest {
+    fn publish_request(
+        articles: Vec<KnowledgeWechatArticle>,
+    ) -> KnowledgeWechatArticlesPublishRequest {
         KnowledgeWechatArticlesPublishRequest {
             account_ids: vec!["acct-1".to_string()],
             articles,
@@ -730,7 +772,9 @@ mod tests {
         }
     }
 
-    fn preview_request(articles: Vec<KnowledgeWechatArticle>) -> KnowledgeWechatArticlesPreviewRequest {
+    fn preview_request(
+        articles: Vec<KnowledgeWechatArticle>,
+    ) -> KnowledgeWechatArticlesPreviewRequest {
         KnowledgeWechatArticlesPreviewRequest {
             account_id: "acct-1".to_string(),
             wechat_ids: vec!["openid-1".to_string()],
@@ -746,7 +790,8 @@ mod tests {
         drive: &'a InMemoryWechatConfigDrive,
         api_client: Arc<WechatApiClient>,
     ) -> KnowledgeWechatService<'a> {
-        let service = KnowledgeWechatService::new(drive, "tenant-1", api_client);
+        let service =
+            KnowledgeWechatService::new(drive, "tenant-1", api_client).with_publish_enabled(true);
         service
             .replace_official_accounts(vec![configured_account("acct-1")])
             .await
@@ -949,6 +994,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn publish_is_disabled_by_default_before_any_upstream_io() {
+        let server = MockServer::start().await;
+        Mock::given(any())
+            .respond_with(ResponseTemplate::new(200))
+            .expect(0)
+            .mount(&server)
+            .await;
+        let drive = InMemoryWechatConfigDrive::new();
+        let service = KnowledgeWechatService::new(
+            &drive,
+            "tenant-1",
+            Arc::new(mock_api_client(&server.uri())),
+        );
+
+        assert!(!service.publish_enabled());
+        let error = service
+            .publish_articles(publish_request(vec![article()]))
+            .await
+            .expect_err("publish must fail closed while disabled");
+        assert!(matches!(error, KnowledgeWechatServiceError::Disabled(_)));
+    }
+
+    #[tokio::test]
     async fn publish_rejects_account_without_app_secret_before_upstream_io() {
         let _cipher_guard =
             crate::wechat::secret_cipher::test_support::TestEncryptionKeyGuard::with_key(
@@ -965,7 +1033,8 @@ mod tests {
             &drive,
             "tenant-1",
             Arc::new(mock_api_client(&server.uri())),
-        );
+        )
+        .with_publish_enabled(true);
         let mut account = configured_account("acct-1");
         account.app_secret = None;
         service

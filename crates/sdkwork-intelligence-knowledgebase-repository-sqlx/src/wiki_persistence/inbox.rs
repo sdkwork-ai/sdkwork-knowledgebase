@@ -19,7 +19,8 @@ use super::{
 pub(super) const INBOX_COLUMNS: &str = r#"
     id, uuid, tenant_id, organization_id, site_publication_id, checkpoint_id,
     source_event_id, event_type, sequence_no, drive_node_uuid, drive_version_uuid,
-    payload_sha256, CAST(payload_json AS TEXT) AS payload_json, source_event_time,
+    payload_sha256, CAST(payload_json AS TEXT) AS payload_json,
+    TO_CHAR(source_event_time AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS source_event_time,
     processing_state, attempt_count, lease_token, version
 "#;
 
@@ -591,8 +592,35 @@ fn event_matches_replay(
         && event.drive_version_uuid.as_deref()
             == request.drive_version_uuid.as_deref().map(str::trim)
         && event.payload_sha256 == request.payload_sha256
-        && event.payload_json == request.payload_json
-        && event.source_event_time == request.source_event_time
+        && json_payloads_match(&event.payload_json, &request.payload_json)
+        && timestamps_match(&event.source_event_time, request.source_event_time.trim())
+}
+
+/// JSONB round-trips reorder object keys and drop insignificant whitespace, so compare the
+/// decoded values rather than the serialized text. The SHA-256 hash still binds the exact bytes.
+fn json_payloads_match(left: &str, right: &str) -> bool {
+    match (
+        serde_json::from_str::<serde_json::Value>(left),
+        serde_json::from_str::<serde_json::Value>(right),
+    ) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => left == right,
+    }
+}
+
+/// Compares two RFC 3339 instants by value: the database round-trip renders microseconds
+/// (`.000000Z`) while callers may send the same instant without a fractional part.
+fn timestamps_match(left: &str, right: &str) -> bool {
+    use time::format_description::well_known::Rfc3339;
+    use time::OffsetDateTime;
+
+    match (
+        OffsetDateTime::parse(left, &Rfc3339),
+        OffsetDateTime::parse(right, &Rfc3339),
+    ) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => left == right,
+    }
 }
 
 pub(super) fn inbox_from_row(row: &AnyRow) -> Result<WikiDriveInboxEvent, WikiPersistenceError> {

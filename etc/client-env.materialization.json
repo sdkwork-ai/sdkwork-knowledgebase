@@ -4,9 +4,18 @@
   "application": "sdkwork-knowledgebase",
   "command": "pnpm workflow:materialize-client-env",
   "sourceIdentity": {
-    "deploymentProfileKeys": ["SDKWORK_DEPLOYMENT_PROFILE", "SDKWORK_KNOWLEDGEBASE_DEPLOYMENT_PROFILE"],
-    "environmentKeys": ["SDKWORK_ENVIRONMENT", "SDKWORK_KNOWLEDGEBASE_ENVIRONMENT"],
-    "profileIdKeys": ["SDKWORK_PROFILE_ID", "SDKWORK_KNOWLEDGEBASE_PROFILE_ID"]
+    "deploymentProfileKeys": [
+      "SDKWORK_DEPLOYMENT_PROFILE",
+      "SDKWORK_KNOWLEDGEBASE_DEPLOYMENT_PROFILE"
+    ],
+    "environmentKeys": [
+      "SDKWORK_ENVIRONMENT",
+      "SDKWORK_KNOWLEDGEBASE_ENVIRONMENT"
+    ],
+    "profileIdKeys": [
+      "SDKWORK_PROFILE_ID",
+      "SDKWORK_KNOWLEDGEBASE_PROFILE_ID"
+    ]
   },
   "surfaces": [
     {
@@ -14,12 +23,26 @@
       "root": "apps/sdkwork-knowledgebase-pc",
       "format": "vite",
       "runtimeTarget": "browser",
-      "identityPrefixes": ["VITE_SDKWORK_KNOWLEDGEBASE"],
-      "includePrefixes": ["VITE_SDKWORK_"],
+      "identityPrefixes": [
+        "VITE_SDKWORK_KNOWLEDGEBASE"
+      ],
+      "includePrefixes": [
+        "VITE_SDKWORK_"
+      ],
       "requiredOutputKeys": [
         "VITE_SDKWORK_KNOWLEDGEBASE_APPLICATION_PUBLIC_HTTP_URL",
         "VITE_SDKWORK_KNOWLEDGEBASE_PLATFORM_API_GATEWAY_HTTP_URL"
       ]
     }
+  ],
+  "profiles": [
+    "standalone.development",
+    "standalone.test",
+    "standalone.staging",
+    "standalone.production",
+    "cloud.development",
+    "cloud.test",
+    "cloud.staging",
+    "cloud.production"
   ]
 }

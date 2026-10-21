@@ -8,12 +8,26 @@ use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 const KNOWLEDGEBASE_QUOTA_LOCK_NAMESPACE: i64 = 0x4B42_5155_4F54_4100;
 
+/// Maximum time a quota-enforcing transaction waits for the per-tenant advisory lock.
+///
+/// The lock exists so document/storage/ingest quotas stay exact while the trigger-maintained
+/// counters are read and the write is applied. A writer that cannot get the lock must fail
+/// its own request quickly instead of occupying a pooled connection until the 30 s statement
+/// timeout: with a fixed per-process pool budget, long lock waits for one hot tenant starve
+/// every unrelated query in the process.
+const QUOTA_LOCK_TIMEOUT: &str = "3s";
+
 pub(crate) async fn begin_tenant_quota_transaction(
     pool: &AnyPool,
     tenant_id: i64,
     organization_id: i64,
 ) -> Result<Transaction<'static, Any>, sqlx::Error> {
     let mut transaction = pool.begin().await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SET LOCAL lock_timeout = '{QUOTA_LOCK_TIMEOUT}'"
+    )))
+    .execute(&mut *transaction)
+    .await?;
     sqlx::query(
         "SELECT pg_advisory_xact_lock(hashtextextended(CAST($1 AS TEXT) || ':' || CAST($2 AS TEXT), $3))",
     )
@@ -158,8 +172,7 @@ pub(crate) async fn enforce_tenant_quotas_after_write(
         .into());
     }
 
-    let storage_bytes =
-        tenant_active_storage_bytes(connection, tenant_id, organization_id).await?;
+    let storage_bytes = tenant_active_storage_bytes(connection, tenant_id, organization_id).await?;
     if storage_bytes > limits.max_storage_bytes {
         return Err(TenantQuotaExceeded {
             kind: TenantQuotaKind::StorageBytes,

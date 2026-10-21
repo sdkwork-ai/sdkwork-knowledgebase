@@ -120,13 +120,15 @@ where
             query.push(" AND d.visibility = ");
             query.push_bind(visibility);
         }
-        // PostgreSQL JSON 语义：按顶层 key 提取文本后比较。
+        // PostgreSQL JSON 语义：container containment 可由 `jsonb_path_ops` GIN 索引
+        // （`idx_kb_document_metadata_gin`）直接支持，避免 `->>` 表达式导致全表扫描。
         // 绑定裸 key（而非 "$.path" 路径前缀），与 pgvector 检索后端行为一致。
         DocumentFilterKey::Metadata(path) => {
-            query.push(" AND d.metadata::jsonb ->> ");
+            query.push(" AND d.metadata::jsonb @> jsonb_build_object(");
             query.push_bind(path);
-            query.push(" = ");
+            query.push("::text, ");
             query.push_bind(filter.value.clone());
+            query.push("::text)");
         }
         DocumentFilterKey::Unsupported(key) => {
             return Err(unsupported_binding_filter_key(key));
@@ -215,7 +217,9 @@ mod tests {
     }
 
     fn built_sql(binding: &KnowledgeRetrievalBinding) -> String {
-        let mut query = QueryBuilder::<Any>::new("SELECT 1 FROM kb_document d WHERE 1 = 1");
+        let mut query = QueryBuilder::<Any>::new(
+            "SELECT 1 FROM kb_document d WHERE d.tenant_id = 1 AND d.organization_id = 1",
+        );
         push_binding_scope_filters(&mut query, 1, 1, 1, binding).expect("filters");
         query.into_sql().as_str().to_string()
     }
@@ -236,7 +240,8 @@ mod tests {
         ));
     }
 
-    /// 回归测试（P0）：Any 兼容池路径必须生成 PostgreSQL JSON 语法。
+    /// 回归测试（P0）：Any 兼容池路径必须生成 PostgreSQL JSON 语法，并且使用
+    /// `@> jsonb_build_object(...)` 让 `jsonb_path_ops` GIN 索引可用。
     /// 历史缺陷：该路径曾生成 SQLite 方言 `json_extract(...)`，在 PostgreSQL 上
     /// 对带 metadata 过滤的检索产生确定性 `function json_extract(...) does not exist`。
     #[test]
@@ -244,14 +249,21 @@ mod tests {
         let binding = binding_with_document_filter("metadata.locale", "zh-CN");
         let sql = built_sql(&binding);
         assert!(
-            sql.contains("d.metadata::jsonb ->> "),
-            "expected PostgreSQL jsonb extraction, got: {sql}"
+            sql.contains("d.metadata::jsonb @> jsonb_build_object("),
+            "expected PostgreSQL jsonb containment, got: {sql}"
+        );
+        assert!(
+            sql.contains("::text"),
+            "containment bind parameters must be typed text, got: {sql}"
         );
         assert!(
             !sql.contains("json_extract"),
             "SQLite/MySQL dialect leaked into retrieval SQL: {sql}"
         );
-        assert!(!sql.contains("$."), "JSON path prefix leaked into binds: {sql}");
+        assert!(
+            !sql.contains("$."),
+            "JSON path prefix leaked into binds: {sql}"
+        );
     }
 
     #[test]

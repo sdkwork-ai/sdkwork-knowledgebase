@@ -1,7 +1,5 @@
-use aes_gcm::aead::generic_array::GenericArray;
-use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::{
-    aead::{Aead, KeyInit, OsRng},
+    aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
 };
 use hkdf::Hkdf;
@@ -59,15 +57,16 @@ pub fn encrypt_secret(plaintext: &str) -> Result<String, SecretCipherError> {
     };
 
     let mut salt = [0u8; V2_SALT_LEN];
-    OsRng.fill_bytes(&mut salt);
-    let data_key = derive_v2_key(&key_material, &salt)
-        .map_err(SecretCipherError::Encrypt)?;
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(&data_key));
+    getrandom::fill(&mut salt).map_err(|error| SecretCipherError::Encrypt(error.to_string()))?;
+    let data_key = derive_v2_key(&key_material, &salt).map_err(SecretCipherError::Encrypt)?;
+    let cipher = Aes256Gcm::new_from_slice(&data_key)
+        .map_err(|error| SecretCipherError::Encrypt(error.to_string()))?;
     let mut nonce_bytes = [0u8; NONCE_LEN];
-    OsRng.fill_bytes(&mut nonce_bytes);
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    getrandom::fill(&mut nonce_bytes)
+        .map_err(|error| SecretCipherError::Encrypt(error.to_string()))?;
+    let nonce = Nonce::from(nonce_bytes);
     let ciphertext = cipher
-        .encrypt(nonce, plaintext.as_bytes())
+        .encrypt(&nonce, plaintext.as_bytes())
         .map_err(|error| SecretCipherError::Encrypt(error.to_string()))?;
 
     Ok(format!(
@@ -104,9 +103,12 @@ pub fn decrypt_secret(value: &str) -> Result<String, SecretCipherError> {
     }
 
     let (nonce_bytes, ciphertext) = packed.split_at(NONCE_LEN);
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(&derive_v1_key(&key_material)));
+    let cipher = Aes256Gcm::new_from_slice(&derive_v1_key(&key_material))
+        .map_err(|error| SecretCipherError::Decrypt(error.to_string()))?;
+    let nonce = Nonce::try_from(nonce_bytes)
+        .map_err(|error| SecretCipherError::Decrypt(error.to_string()))?;
     let plaintext = cipher
-        .decrypt(Nonce::from_slice(nonce_bytes), ciphertext)
+        .decrypt(&nonce, ciphertext)
         .map_err(|error| SecretCipherError::Decrypt(error.to_string()))?;
     String::from_utf8(plaintext).map_err(|error| SecretCipherError::Decrypt(error.to_string()))
 }
@@ -136,11 +138,13 @@ fn decrypt_v2(payload: &str) -> Result<String, SecretCipherError> {
         ));
     }
 
-    let data_key =
-        derive_v2_key(&key_material, &salt).map_err(SecretCipherError::Decrypt)?;
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(&data_key));
+    let data_key = derive_v2_key(&key_material, &salt).map_err(SecretCipherError::Decrypt)?;
+    let cipher = Aes256Gcm::new_from_slice(&data_key)
+        .map_err(|error| SecretCipherError::Decrypt(error.to_string()))?;
+    let nonce = Nonce::try_from(nonce_bytes.as_slice())
+        .map_err(|error| SecretCipherError::Decrypt(error.to_string()))?;
     let plaintext = cipher
-        .decrypt(Nonce::from_slice(&nonce_bytes), ciphertext.as_slice())
+        .decrypt(&nonce, ciphertext.as_slice())
         .map_err(|error| SecretCipherError::Decrypt(error.to_string()))?;
     String::from_utf8(plaintext).map_err(|error| SecretCipherError::Decrypt(error.to_string()))
 }
@@ -301,7 +305,10 @@ mod tests {
         let _guard = TestEncryptionKeyGuard::with_key("salt-uniqueness-master-key");
         let first = encrypt_secret("same-secret").expect("first encrypt");
         let second = encrypt_secret("same-secret").expect("second encrypt");
-        assert_ne!(first, second, "random salt and nonce must change the envelope");
+        assert_ne!(
+            first, second,
+            "random salt and nonce must change the envelope"
+        );
 
         assert_eq!(
             decrypt_secret(&first).expect("first decrypt"),
@@ -316,12 +323,12 @@ mod tests {
     #[test]
     fn legacy_v1_envelopes_still_decrypt_with_unsalted_key() {
         let _guard = TestEncryptionKeyGuard::with_key("v1-compat-master-key");
-        let cipher = Aes256Gcm::new(GenericArray::from_slice(&derive_v1_key(
-            b"v1-compat-master-key",
-        )));
+        let cipher = Aes256Gcm::new_from_slice(&derive_v1_key(b"v1-compat-master-key"))
+            .expect("v1 test key");
         let nonce_bytes = [7u8; NONCE_LEN];
+        let nonce = Nonce::from(nonce_bytes);
         let ciphertext = cipher
-            .encrypt(Nonce::from_slice(&nonce_bytes), b"v1-secret".as_slice())
+            .encrypt(&nonce, b"v1-secret".as_slice())
             .expect("v1 encrypt");
         let mut packed = nonce_bytes.to_vec();
         packed.extend(ciphertext);

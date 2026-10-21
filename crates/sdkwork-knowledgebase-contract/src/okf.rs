@@ -3,10 +3,8 @@ use std::collections::BTreeMap;
 
 pub use crate::enums::{OkfBundleFileKind, OkfCandidateType, OkfLogEventType};
 use crate::serde_int64::{
-    deserialize_option_u64_from_string_or_number,
-    deserialize_u64_from_string_or_number,
-    serialize_option_u64_as_string,
-    serialize_u64_as_string,
+    deserialize_option_u64_from_string_or_number, deserialize_u64_from_string_or_number,
+    serialize_option_u64_as_string, serialize_u64_as_string,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

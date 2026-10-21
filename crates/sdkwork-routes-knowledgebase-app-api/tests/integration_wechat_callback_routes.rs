@@ -1,17 +1,19 @@
-use async_trait::async_trait;
 use aes::Aes256;
+use async_trait::async_trait;
 use axum::body::Body;
 use axum::http::{header, Method, Request, StatusCode};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
-use cbc::cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit};
+use cbc::cipher::{block_padding::Pkcs7, BlockModeEncrypt, KeyIvInit};
 use sdkwork_intelligence_knowledgebase_service::wechat::{
-    KnowledgeWechatService, WechatApiClient, WechatCallbackReceipt, WechatCallbackReceiptRequest,
-    WechatCallbackService, WechatCallbackVerificationRequest, callback_signature,
+    callback_signature, KnowledgeWechatService, WechatApiClient, WechatCallbackReceipt,
+    WechatCallbackReceiptRequest, WechatCallbackService, WechatCallbackVerificationRequest,
 };
 use sdkwork_knowledgebase_contract::wechat::KnowledgeWechatOfficialAccount;
 use sdkwork_knowledgebase_test_support::fake_drive::FakeKnowledgeDriveStorage;
-use sdkwork_routes_knowledgebase_app_api::{build_router_with_app_api, paths, ApiError, ApiResult, KnowledgeAppApi};
+use sdkwork_routes_knowledgebase_app_api::{
+    build_router_with_app_api, paths, ApiError, ApiResult, KnowledgeAppApi,
+};
 use std::sync::Arc;
 use tower::util::ServiceExt;
 
@@ -67,7 +69,9 @@ fn safe_official_account() -> KnowledgeWechatOfficialAccount {
         description: None,
         app_id: TEST_APP_ID.to_string(),
         app_secret: None,
-        server_url: Some("https://knowledgebase.example.com/app/v3/api/knowledge/wechat/callback".to_string()),
+        server_url: Some(
+            "https://knowledgebase.example.com/app/v3/api/knowledge/wechat/callback".to_string(),
+        ),
         token: Some(TEST_TOKEN.to_string()),
         encoding_aes_key: Some(TEST_AES_KEY_43.to_string()),
         encrypt_mode: Some("safe".to_string()),
@@ -101,7 +105,7 @@ fn encrypt_wechat_blob(message: &str, receive_id: &str) -> String {
     padded[..plain.len()].copy_from_slice(&plain);
     let ciphertext = Aes256CbcEnc::new_from_slices(&key, &key[..16])
         .expect("test cipher key")
-        .encrypt_padded_mut::<Pkcs7>(&mut padded, plain.len())
+        .encrypt_padded::<Pkcs7>(&mut padded, plain.len())
         .expect("test padding")
         .to_vec();
     BASE64_STANDARD.encode(ciphertext)

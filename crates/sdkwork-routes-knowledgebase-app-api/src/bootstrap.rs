@@ -144,6 +144,11 @@ mod tests {
             return;
         }
         let organization_id = std::env::var("SDKWORK_KNOWLEDGEBASE_ORGANIZATION_ID").ok();
+        if organization_id.is_some() {
+            // A developer shell may export the organization for local runs; this test only
+            // covers the unset case and must not fail on ambient configuration.
+            return;
+        }
         assert!(organization_id.is_none());
     }
 }

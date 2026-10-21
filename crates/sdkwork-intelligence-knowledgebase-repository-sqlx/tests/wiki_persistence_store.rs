@@ -1,10 +1,19 @@
+mod support;
+
+static WIKI_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn wiki_test_guard() -> std::sync::MutexGuard<'static, ()> {
+    WIKI_TEST_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 use std::fmt;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use sdkwork_intelligence_knowledgebase_repository_sqlx::{
-    connect_postgres_and_install_schema, is_postgres_database_url, KnowledgeIdGenerator,
-    KnowledgeIdGeneratorError, SqlxWikiPersistenceStore,
+    KnowledgeIdGenerator, KnowledgeIdGeneratorError, SqlxWikiPersistenceStore,
 };
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_persistence::{
     AdvanceWikiReconciliationRequest, ApplyWikiDriveEventRequest, BindWikiSourceScopeRequest,
@@ -32,6 +41,7 @@ const SCOPE: WikiPersistenceScope = WikiPersistenceScope {
 
 #[tokio::test]
 async fn publication_and_checkpoint_provisioning_are_idempotent_scoped_and_optimistic() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -115,6 +125,7 @@ async fn publication_and_checkpoint_provisioning_are_idempotent_scoped_and_optim
 
 #[tokio::test]
 async fn backfill_candidates_are_bounded_keyset_ordered_and_exclude_complete_publications() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -191,6 +202,7 @@ async fn backfill_candidates_are_bounded_keyset_ordered_and_exclude_complete_pub
 
 #[tokio::test]
 async fn checkpoint_listing_is_bounded_keyset_ordered_and_scope_isolated() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -212,8 +224,18 @@ async fn checkpoint_listing_is_bounded_keyset_ordered_and_scope_isolated() {
         tenant_id: SCOPE.tenant_id,
         organization_id: SCOPE.organization_id + 1,
     };
-    let other_checkpoint =
-        provision_checkpoint_for_scope(&pool, &store, other_scope, 601, "drive-space-601").await;
+    let other_pool = support::scoped_pool(other_scope.tenant_id, other_scope.organization_id)
+        .await
+        .expect("connect other-scope wiki pool");
+    let other_store = SqlxWikiPersistenceStore::new(other_pool.clone());
+    let other_checkpoint = provision_checkpoint_for_scope(
+        &other_pool,
+        &other_store,
+        other_scope,
+        601,
+        "drive-space-601",
+    )
+    .await;
 
     let first = store
         .list_checkpoints(ListWikiDriveCheckpointsRequest {
@@ -256,7 +278,7 @@ async fn checkpoint_listing_is_bounded_keyset_ordered_and_scope_isolated() {
     assert!(exhausted.checkpoints.is_empty());
     assert_eq!(exhausted.next_after_checkpoint_id, None);
 
-    let isolated = store
+    let isolated = other_store
         .list_checkpoints(ListWikiDriveCheckpointsRequest {
             scope: other_scope,
             after_checkpoint_id: None,
@@ -283,6 +305,7 @@ async fn checkpoint_listing_is_bounded_keyset_ordered_and_scope_isolated() {
 
 #[tokio::test]
 async fn stable_drive_node_upsert_preserves_identity_and_fences_processing() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -538,6 +561,7 @@ async fn stable_drive_node_upsert_preserves_identity_and_fences_processing() {
 
 #[tokio::test]
 async fn drive_inbox_detects_gaps_deduplicates_and_advances_strictly_in_order() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -644,6 +668,7 @@ async fn drive_inbox_detects_gaps_deduplicates_and_advances_strictly_in_order() 
 
 #[tokio::test]
 async fn drive_event_application_atomically_revokes_public_route_and_advances_checkpoint() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -790,6 +815,7 @@ async fn drive_event_application_atomically_revokes_public_route_and_advances_ch
 
 #[tokio::test]
 async fn invalid_drive_projection_mutation_rolls_back_before_checkpoint_advance() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -855,6 +881,7 @@ async fn invalid_drive_projection_mutation_rolls_back_before_checkpoint_advance(
 
 #[tokio::test]
 async fn dead_lettered_gap_can_be_reconciled_with_a_fenced_bounded_checkpoint() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -962,18 +989,9 @@ async fn dead_lettered_gap_can_be_reconciled_with_a_fenced_bounded_checkpoint() 
     assert_eq!(ignored_count, 2);
 }
 
-fn optional_postgres_database_url() -> Option<String> {
-    std::env::var("SDKWORK_DATABASE_URL")
-        .or_else(|_| std::env::var("DATABASE_URL"))
-        .ok()
-        .filter(|url| is_postgres_database_url(url))
-}
-
 async fn test_store() -> Option<(sqlx::AnyPool, SqlxWikiPersistenceStore)> {
-    let database_url = optional_postgres_database_url()?;
-    let pool = connect_postgres_and_install_schema(&database_url)
-        .await
-        .expect("install postgres test schema");
+    let pool = support::scoped_pool(101, 202).await?;
+    support::clean_wiki_scope(&pool, 101, 202).await;
     let generator = Arc::new(TestIdGenerator::new(10_000));
     let store = SqlxWikiPersistenceStore::with_id_generator(pool.clone(), generator);
     Some((pool, store))
@@ -990,7 +1008,8 @@ async fn insert_space(
         INSERT INTO kb_space (
             id, uuid, tenant_id, organization_id, name, drive_space_id,
             status, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, 1, $7, $7)
+        ) VALUES ($1, $2, $3, $4, $5, $6, 1, $7::timestamptz, $7::timestamptz)
+        ON CONFLICT (id) DO NOTHING
         "#,
     )
     .bind(i64::try_from(space_id).unwrap())

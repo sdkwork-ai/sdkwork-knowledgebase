@@ -329,17 +329,17 @@ describe('WeChat async failure UI', () => {
     });
     await click(findButton('sendPreview'));
     const recipientInput = document.querySelector<HTMLInputElement>(
-      'input[placeholder="如: wx_123456"]',
+      '#wechat-preview-recipient-input',
     );
     expect(recipientInput).not.toBeNull();
     await act(async () => {
       setInputValue(recipientInput!, 'wx-preview-user');
     });
-    await click(findButton('开始发送'));
+    await click(document.querySelector<HTMLButtonElement>('#wechat-preview-validate')!);
 
     expect(WechatService.sendPreview).toHaveBeenCalledOnce();
     expect(toastSpies.success).not.toHaveBeenCalled();
-    expect(document.querySelector('input[placeholder="如: wx_123456"]')).not.toBeNull();
+    expect(document.querySelector('#wechat-preview-recipient-input')).not.toBeNull();
     expect(document.querySelector('[role="alert"]')?.textContent).toBeTruthy();
   });
 

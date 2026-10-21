@@ -17,6 +17,15 @@ use crate::id::{default_knowledge_id_generator, next_i64_id, KnowledgeIdGenerato
 const ACTIVE_STATUS: i64 = 1;
 const INITIAL_VERSION: i64 = 0;
 const MAX_LINK_SCAN_PAGE_SIZE: u32 = 2_000;
+/// Upper bound accepted by the bounded incident-edge expansion; mirrors the
+/// service port bound.
+const MAX_OKF_INCIDENT_LINK_EDGES: u32 = 2_000;
+/// Concept ids folded into one incident-edge statement.
+const MAX_OKF_INCIDENT_CONCEPT_IDS: usize = 256;
+/// Delimiter used to carry the concept-id list as one text parameter. Concept
+/// ids are validated paths over `[A-Za-z0-9_-]`, `.`, and `/`, so `|` cannot
+/// occur inside one.
+const OKF_INCIDENT_ID_DELIMITER: &str = "|";
 
 #[derive(Debug, Clone)]
 pub struct PostgresKnowledgeOkfConceptLinkStore {
@@ -277,6 +286,91 @@ impl KnowledgeOkfConceptLinkStore for PostgresKnowledgeOkfConceptLinkStore {
             next_cursor,
             has_more,
         })
+    }
+
+    async fn list_active_link_edges_incident_to(
+        &self,
+        space_id: u64,
+        concept_ids: &[String],
+        limit: u32,
+    ) -> Result<Vec<KnowledgeOkfConceptLinkEdge>, KnowledgeOkfConceptLinkStoreError> {
+        let limit = i64::from(limit.clamp(1, MAX_OKF_INCIDENT_LINK_EDGES));
+        let Some(concept_id_filter) = incident_concept_id_filter(concept_ids) else {
+            return Ok(Vec::new());
+        };
+        let tenant_id = to_i64("tenant_id", self.tenant_id)?;
+        let organization_id = to_i64("organization_id", self.organization_id)?;
+        let space_id = to_i64("space_id", space_id)?;
+
+        // SQLx's `Any` driver cannot encode a PostgreSQL text array, so the
+        // concept-id list travels as one delimited text parameter and is turned
+        // back into an array server-side. Both endpoints are matched so edge
+        // expansion sees outbound and inbound links of the candidate set.
+        let rows = sqlx::query(
+            r#"
+            SELECT from_concept_id, to_concept_id, anchor_text
+            FROM kb_okf_concept_link
+            WHERE tenant_id = $1
+              AND organization_id = $2
+              AND space_id = $3
+              AND status = $4
+              AND (
+                  from_concept_id = ANY(string_to_array($5, '|'))
+                  OR to_concept_id = ANY(string_to_array($5, '|'))
+              )
+            ORDER BY from_concept_id ASC, to_concept_id ASC, anchor_text ASC
+            LIMIT $6
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(space_id)
+        .bind(ACTIVE_STATUS)
+        .bind(concept_id_filter)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|error| KnowledgeOkfConceptLinkStoreError::Internal(error.to_string()))?;
+
+        rows.into_iter()
+            .map(|row| {
+                Ok(KnowledgeOkfConceptLinkEdge {
+                    from_concept_id: row.try_get("from_concept_id").map_err(|error| {
+                        KnowledgeOkfConceptLinkStoreError::Internal(error.to_string())
+                    })?,
+                    to_concept_id: row.try_get("to_concept_id").map_err(|error| {
+                        KnowledgeOkfConceptLinkStoreError::Internal(error.to_string())
+                    })?,
+                    anchor_text: row.try_get("anchor_text").map_err(|error| {
+                        KnowledgeOkfConceptLinkStoreError::Internal(error.to_string())
+                    })?,
+                })
+            })
+            .collect()
+    }
+}
+
+/// Joins the concept-id filter into one delimited text parameter, dropping
+/// empty ids, delimiter-bearing ids, and duplicates so the server-side
+/// `string_to_array` split can never fabricate a concept id.
+fn incident_concept_id_filter(concept_ids: &[String]) -> Option<String> {
+    let mut ids: Vec<&str> = Vec::new();
+    for concept_id in concept_ids {
+        if concept_id.is_empty() || concept_id.contains(OKF_INCIDENT_ID_DELIMITER) {
+            continue;
+        }
+        if ids.iter().any(|existing| *existing == concept_id.as_str()) {
+            continue;
+        }
+        ids.push(concept_id.as_str());
+        if ids.len() >= MAX_OKF_INCIDENT_CONCEPT_IDS {
+            break;
+        }
+    }
+    if ids.is_empty() {
+        None
+    } else {
+        Some(ids.join(OKF_INCIDENT_ID_DELIMITER))
     }
 }
 

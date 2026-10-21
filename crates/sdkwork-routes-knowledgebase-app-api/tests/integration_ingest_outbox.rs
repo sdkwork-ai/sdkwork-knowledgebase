@@ -226,6 +226,7 @@ fn maintenance_config() -> MaintenanceConfig {
         ingestion_max_attempts: 20,
         wiki_backfill: None,
         wiki_drive_events: wiki_drive_event_config(),
+        audit_retention: None,
         phase_timeout: std::time::Duration::from_secs(60),
     }
 }

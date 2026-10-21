@@ -1619,3 +1619,4 @@ CREATE INDEX IF NOT EXISTS idx_kb_provider_migration_operation_claimable
     ON kb_provider_migration_operation (
         tenant_id, organization_id, operation_state, lease_expires_at, updated_at, id
     );
+

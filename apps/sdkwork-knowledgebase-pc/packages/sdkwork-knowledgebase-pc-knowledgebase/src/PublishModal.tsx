@@ -52,13 +52,7 @@ export function PublishModal({ documents, onClose, onWechatFlow }: PublishModalP
           </button>
         </div>
         
-        <div className="flex flex-1 overflow-hidden relative">
-          {apiMode && (
-            <div className="absolute top-[72px] left-6 right-6 z-20 flex items-start gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50 px-4 py-3 text-[12px] text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
-              <AlertCircle size={16} className="shrink-0 mt-0.5" />
-              <span>API 模式下微信公众号预览与发布已接入 Knowledgebase SDK；其他第三方平台请使用网站托管部署。</span>
-            </div>
-          )}
+        <div className="flex flex-1 overflow-hidden">
           {/* Left panel: selected docs */}
           <div className="w-[32%] border-r border-[var(--color-kb-panel-border)]/80 bg-[var(--color-kb-panel)]/30 flex flex-col">
             <div className="px-5 py-4 border-b border-[var(--color-kb-panel-border)]/50 text-[13px] font-bold text-[var(--color-kb-text-heading)] uppercase tracking-wider">
@@ -75,11 +69,17 @@ export function PublishModal({ documents, onClose, onWechatFlow }: PublishModalP
           </div>
           
           {/* Right panel: platforms */}
-          <div className="flex-1 flex flex-col bg-[var(--color-kb-editor)]">
+          <div className="flex-1 flex flex-col min-w-0 bg-[var(--color-kb-editor)]">
             <div className="px-6 py-4 border-b border-[var(--color-kb-panel-border)]/50 text-[13px] font-bold text-[var(--color-kb-text-heading)] uppercase tracking-wider flex items-center justify-between">
               <span>选择发布平台</span>
               <span className="text-[11px] font-medium text-[var(--color-kb-accent)] bg-[var(--color-kb-accent)]/10 px-2.5 py-1 rounded-md">多选发布尚未开启</span>
             </div>
+            {apiMode && (
+              <div className="mx-5 mt-4 flex shrink-0 items-start gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50 px-4 py-3 text-[12px] text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">
+                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                <span>API 模式下微信公众号预览与发布已接入 Knowledgebase SDK；其他第三方平台请使用网站托管部署。</span>
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto p-5 grid grid-cols-2 gap-4 auto-rows-max">
               {PUBLISH_PLATFORMS.map(platform => {
                 const isSelected = selectedPlatform === platform.id;

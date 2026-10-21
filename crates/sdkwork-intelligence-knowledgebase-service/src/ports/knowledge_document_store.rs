@@ -48,6 +48,58 @@ pub trait KnowledgeDocumentStore: Send + Sync {
             "list_documents_page is unsupported by this knowledge document store".to_string(),
         ))
     }
+
+    /// Marks a document version as parsed and its owning document as being indexed.
+    ///
+    /// The ingestion worker calls this after replacing the version's chunks, so the
+    /// document state machine (`pending -> running -> indexed/failed`) is persisted instead of
+    /// staying `pending` forever.
+    async fn mark_document_version_ingested(
+        &self,
+        document_version_id: u64,
+    ) -> Result<(), KnowledgeDocumentStoreError> {
+        let _ = document_version_id;
+        Err(KnowledgeDocumentStoreError::Unsupported(
+            "mark_document_version_ingested is unsupported by this knowledge document store"
+                .to_string(),
+        ))
+    }
+
+    /// Marks the document whose current version is `document_version_id` as indexed.
+    ///
+    /// A version that is no longer current is a no-op: its embeddings still exist, but they
+    /// must not move a newer document version back to a completed state.
+    async fn mark_document_version_indexed(
+        &self,
+        document_version_id: u64,
+    ) -> Result<(), KnowledgeDocumentStoreError> {
+        let _ = document_version_id;
+        Err(KnowledgeDocumentStoreError::Unsupported(
+            "mark_document_version_indexed is unsupported by this knowledge document store"
+                .to_string(),
+        ))
+    }
+
+    /// Returns documents whose current version has chunks but no active embeddings.
+    ///
+    /// This is the durable reconciliation source for post-ingest embedding: the API only
+    /// persists content and the worker embeds from this backlog, so a process restart or a
+    /// provider outage cannot silently leave a document unindexed.
+    async fn list_documents_pending_embedding(
+        &self,
+        limit: u32,
+    ) -> Result<Vec<PendingDocumentEmbedding>, KnowledgeDocumentStoreError> {
+        let _ = limit;
+        Ok(Vec::new())
+    }
+}
+
+/// One document whose current version still needs embeddings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PendingDocumentEmbedding {
+    pub space_id: u64,
+    pub document_id: u64,
+    pub document_version_id: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

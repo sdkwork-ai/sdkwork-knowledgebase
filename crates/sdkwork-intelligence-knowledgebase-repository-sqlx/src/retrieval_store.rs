@@ -480,6 +480,39 @@ impl KnowledgeRetrievalTraceStore for PostgresKnowledgeChunkRetrievalStore {
         records: Vec<CreateKnowledgeRetrievalHitRecord>,
     ) -> Result<(), KnowledgeRetrievalTraceStoreError> {
         let mut transaction = self.pool.begin().await.map_err(trace_sqlx_error)?;
+        if records.is_empty() {
+            transaction.commit().await.map_err(trace_sqlx_error)?;
+            return Ok(());
+        }
+
+        // Replace-on-retry semantics: recording the same trace twice must not append a
+        // second set of ranks. Delete this trace's existing hits and re-insert inside the
+        // same transaction so the operation is idempotent.
+        let mut trace_ids = records
+            .iter()
+            .map(|record| trace_to_i64("retrieval_trace_id", record.retrieval_trace_id))
+            .collect::<Result<Vec<_>, _>>()?;
+        trace_ids.sort_unstable();
+        trace_ids.dedup();
+        let placeholders = (0..trace_ids.len())
+            .map(|index| format!("${}", index + 3))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let delete_query = format!(
+            "DELETE FROM kb_retrieval_hit \
+             WHERE tenant_id = $1 AND organization_id = $2 AND retrieval_trace_id IN ({placeholders})"
+        );
+        let mut delete = sqlx::query(sqlx::AssertSqlSafe(delete_query.as_str()))
+            .bind(trace_to_i64("tenant_id", self.tenant_id)?)
+            .bind(trace_to_i64("organization_id", self.organization_id)?);
+        for trace_id in trace_ids {
+            delete = delete.bind(trace_id);
+        }
+        delete
+            .execute(&mut *transaction)
+            .await
+            .map_err(trace_sqlx_error)?;
+
         for record in records {
             if record.tenant_id != self.tenant_id {
                 return Err(KnowledgeRetrievalTraceStoreError::Internal(

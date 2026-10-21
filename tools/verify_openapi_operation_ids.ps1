@@ -33,23 +33,23 @@ $required = @(
     "agentProfiles.update",
     "agentProfiles.delete",
     "agentProfiles.bindings.list",
-    "agentProfiles.bindings.bindings",
+    "agentProfiles.bindings.create",
     "agentProfiles.bindings.update",
     "agentProfiles.bindings.delete",
-    "agentProfiles.retrievalPreview.retrievalPreview",
+    "agentProfiles.retrievalPreview.create",
     "sources.list",
     "sources.create",
     "documents.list",
     "documents.create",
     "documents.retrieve",
     "documents.content.list",
-    "documents.versions.versions",
+    "documents.versions.create",
     "documents.versions.list",
-    "okf.bundle.index.list",
+    "okf.bundle.index.retrieve",
     "okf.bundle.index.rebuild",
-    "okf.bundle.log.list",
+    "okf.bundle.log.retrieve",
     "okf.log.entries.create",
-    "okf.bundle.profile.list",
+    "okf.bundle.profile.retrieve",
     "okf.profile.create",
     "okf.queries.fileAnswer",
     "indexes.create",
@@ -106,16 +106,27 @@ foreach ($specPath in $specPaths) {
                 }
 
                 $operationSecurity = $operation.security
-                if (!$operationSecurity -or $operationSecurity.Count -eq 0) {
-                    throw "OpenAPI operation must declare SDKWork v3 security or explicit anonymous security: $operationId"
-                }
+                # API_SPEC §4.5.2: operations that mirror a third-party wire protocol may declare
+                # explicit anonymous security (`security: []`) when the upstream caller cannot
+                # present SDKWork tokens; the route must also carry the external wire marker.
+                $externalWireProtocol = $operation.'x-sdkwork-wire-protocol'
+                $declaresSecurity = $operation.PSObject.Properties['security'] -ne $null
+                $isExternalAnonymous = $declaresSecurity `
+                    -and $operationSecurity.Count -eq 0 `
+                    -and $externalWireProtocol -eq "external"
 
-                $firstSecurity = $operationSecurity[0]
-                if (
-                    !$firstSecurity.PSObject.Properties["AuthToken"] `
-                    -or !$firstSecurity.PSObject.Properties["AccessToken"]
-                ) {
-                    throw "OpenAPI operation must require both AuthToken and AccessToken: $operationId"
+                if (-not $isExternalAnonymous) {
+                    if (!$operationSecurity -or $operationSecurity.Count -eq 0) {
+                        throw "OpenAPI operation must declare SDKWork v3 security or explicit anonymous security: $operationId"
+                    }
+
+                    $firstSecurity = $operationSecurity[0]
+                    if (
+                        !$firstSecurity.PSObject.Properties["AuthToken"] `
+                        -or !$firstSecurity.PSObject.Properties["AccessToken"]
+                    ) {
+                        throw "OpenAPI operation must require both AuthToken and AccessToken: $operationId"
+                    }
                 }
 
                 foreach ($errorStatus in @("400", "404")) {

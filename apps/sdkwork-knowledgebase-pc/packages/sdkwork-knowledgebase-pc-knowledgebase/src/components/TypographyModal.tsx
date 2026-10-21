@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { isKnowledgebaseApiAvailable } from 'sdkwork-knowledgebase-pc-core';
 import { AIService } from '../services/ai';
 import { sanitizePreviewHtml } from '../utils/htmlSanitizer';
+import { toast } from './ui/toast-manager';
 
 export interface TypographyModalProps {
   isOpen: boolean;
@@ -348,12 +349,12 @@ export function TypographyModal({ isOpen, onClose, originalContent, onConfirm, a
         return;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      const rewritten = activeContent.replace(/<p[^>]*>([\s\S]*?)<\/p>/g, (_match, p1) => {
-        return `<p>${p1}${t('aiRewrittenFeedback', { defaultValue: '【此段内容已通过微信金句引擎优化润色】' })}</p>`;
-      });
-      setActiveContent(rewritten);
-      triggerAutoStyle(selectedTemplateId, activeColor.value, rewritten);
+      // Fail closed: when no API is connected there is no rewrite. The previous
+      // fallback waited 1.2 s and appended a fabricated "optimized by AI" sentence to
+      // every paragraph, so users saw content no model ever produced.
+      toast.error(t('aiRewriteUnavailable', {
+        defaultValue: '知识库 API 不可用，无法执行 AI 润色。请登录并连接后端后重试。',
+      }));
     } catch (error) {
       console.error(error);
     } finally {

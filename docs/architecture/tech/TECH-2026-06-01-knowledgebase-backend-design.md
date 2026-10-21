@@ -319,7 +319,7 @@ OKF HTTP operations use the `okf.*` prefix. Examples:
 okf.concepts.list
 okf.concepts.retrieve
 okf.concepts.revisions.list
-okf.bundle.index.list
+okf.bundle.index.retrieve
 okf.bundle.export.create
 okf.lintRuns.create
 okf.evalRuns.create

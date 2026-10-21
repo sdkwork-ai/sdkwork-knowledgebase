@@ -36,29 +36,20 @@ impl BoundedBlockingExecutor {
             .map_err(|_| BoundedBlockingError::QueueSaturated {
                 capacity: self.capacity,
             })?;
-        // The permit lives on the caller side of the JoinHandle: dropping it on timeout
-        // returns capacity immediately even though the blocking task keeps running
-        // (`spawn_blocking` cannot be cancelled). Normal completions hold the permit for
-        // the whole task duration, so the concurrency cap stays strict except for
-        // evicted (zombie) tasks, which is exactly the intended eviction semantics.
-        let task = tokio::task::spawn_blocking(operation);
+        // The permit is owned by the blocking closure, not by the caller: `spawn_blocking`
+        // cannot be cancelled, so a timed-out task keeps running and must keep consuming its
+        // admission slot. Releasing the slot on timeout would let a slow backend accumulate
+        // an unbounded number of zombie tasks and buffers while the executor reports a strict
+        // concurrency cap.
+        let task = tokio::task::spawn_blocking(move || {
+            let _permit = permit;
+            operation()
+        });
         match tokio::time::timeout(timeout, task).await {
-            Ok(Ok(result)) => {
-                drop(permit);
-                Ok(result)
-            }
-            Ok(Err(error)) if error.is_panic() => {
-                drop(permit);
-                Err(BoundedBlockingError::TaskPanicked)
-            }
-            Ok(Err(_)) => {
-                drop(permit);
-                Err(BoundedBlockingError::TaskCancelled)
-            }
-            Err(_) => {
-                drop(permit);
-                Err(BoundedBlockingError::TimedOut { timeout })
-            }
+            Ok(Ok(result)) => Ok(result),
+            Ok(Err(error)) if error.is_panic() => Err(BoundedBlockingError::TaskPanicked),
+            Ok(Err(_)) => Err(BoundedBlockingError::TaskCancelled),
+            Err(_) => Err(BoundedBlockingError::TimedOut { timeout }),
         }
     }
 }
@@ -138,7 +129,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn timeout_evicts_permit_so_queue_recovers_without_overcapacity() {
+    async fn timeout_keeps_the_admission_slot_until_the_blocking_task_finishes() {
         let executor = BoundedBlockingExecutor::new(1).expect("create executor");
         let (started_tx, started_rx) = tokio::sync::oneshot::channel();
         let (release_tx, release_rx) = mpsc::sync_channel(1);
@@ -161,15 +152,14 @@ mod tests {
             timed.await.expect("join timed caller"),
             Err(BoundedBlockingError::TimedOut { timeout })
         );
-        // The timed-out call evicted its permit, so fresh work is admitted immediately
-        // even though the stuck task is still running in the background.
+        // The timed-out task is still running and still owns its admission slot, so capacity
+        // stays exhausted instead of admitting unbounded zombie work.
         assert_eq!(
             executor.run(Duration::from_secs(1), || 2_u8).await,
-            Ok(2_u8)
+            Err(BoundedBlockingError::QueueSaturated { capacity: 1 })
         );
 
-        // Releasing the stuck task lets the executor return to a quiescent state where
-        // exactly one permit is available and a new call still succeeds.
+        // Releasing the stuck task returns the slot and the executor recovers to full capacity.
         release_tx.send(()).expect("release timed out task");
         finished_rx.await.expect("timed out task finished");
         assert_eq!(

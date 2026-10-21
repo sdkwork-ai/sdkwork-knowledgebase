@@ -43,16 +43,28 @@ function readBooleanEnv(value: string | undefined): boolean | undefined {
 /** Demo/offline UX requires the explicit `VITE_SDKWORK_KNOWLEDGEBASE_ENABLE_DEMO_MODE`
  * flag in every environment. Demo mode fabricates content (search answers, imported
  * notes/chat records, media previews) that must never reach real users, so it is never
- * enabled by default — not even in development. */
+ * enabled by default — not even in development — and a production bundle can never
+ * enable it: `PROD` wins over any deployment-supplied flag. */
 export function isKnowledgebaseDemoModeEnabled(
-  env: Record<string, string | undefined> = import.meta.env as Record<string, string | undefined>,
+  env: Record<string, string | boolean | undefined> = import.meta.env as Record<
+    string,
+    string | boolean | undefined
+  >,
 ): boolean {
-  const explicit = readBooleanEnv(env.VITE_SDKWORK_KNOWLEDGEBASE_ENABLE_DEMO_MODE);
+  if (env.PROD === true) {
+    return false;
+  }
+  const explicit = readBooleanEnv(typeof env.VITE_SDKWORK_KNOWLEDGEBASE_ENABLE_DEMO_MODE === 'string'
+    ? env.VITE_SDKWORK_KNOWLEDGEBASE_ENABLE_DEMO_MODE
+    : undefined);
   return explicit === true;
 }
 
 export function shouldUseKnowledgebaseDemoFallback(
-  env: Record<string, string | undefined> = import.meta.env as Record<string, string | undefined>,
+  env: Record<string, string | boolean | undefined> = import.meta.env as Record<
+    string,
+    string | boolean | undefined
+  >,
 ): boolean {
   return !isKnowledgebaseApiAvailable() && isKnowledgebaseDemoModeEnabled(env);
 }

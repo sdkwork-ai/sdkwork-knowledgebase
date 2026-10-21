@@ -85,11 +85,9 @@ impl KnowledgeGroupLaunchAppService for HostedGroupLaunchService {
         require_space_access(&self.runtime, &context, target.space_id)
             .await
             .map_err(|_| {
-                map_group_launch_error(
-                    GroupKnowledgebaseLaunchResolverError::TicketConsumed(
-                        "post-launch space access re-check failed".to_string(),
-                    ),
-                )
+                map_group_launch_error(GroupKnowledgebaseLaunchResolverError::TicketConsumed(
+                    "post-launch space access re-check failed".to_string(),
+                ))
             })?;
         Ok(target)
     }

@@ -8,7 +8,9 @@ Owner: SDKWork Knowledgebase security operators
 - Structured logs with `audit_event = knowledge.*`
 - Prometheus counters: `knowledge_audit_*`
 - Durable table: `kb_audit_event`
-- Framework HTTP audit: `framework_audit_event` when Postgres or WEB_STORE sqlite adapters are enabled
+- Framework HTTP audit: `framework_audit_event`, created by the framework lifecycle; the
+  authoritative server deployment uses the PostgreSQL adapter (the framework's client-local SQLite
+  adapter is not a Knowledgebase server profile).
 
 ## Framework HTTP audit query
 

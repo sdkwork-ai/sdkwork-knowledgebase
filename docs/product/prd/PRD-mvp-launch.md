@@ -21,21 +21,23 @@ Decision: SDKWork Knowledgebase remains prelaunch and must not be treated as a p
 - [x] Reproducible frontend dependency installation restored: `pnpm install --frozen-lockfile`
   passes with the updated `pnpm-lock.yaml` (workspace `@sdkwork/utils` links added for the
   `sdkwork-base-data-backend-sdk` and IAM SDK families; reviewed supply-chain diff).
-- [x] Full Rust workspace compilation restored. `sdkwork-database-id` `node_allocator.rs`
-  handles `DatabasePool::Sqlite(_, _)`; `cargo check --workspace` passes for the Knowledgebase
-  workspace.
+- [x] Full Rust workspace compilation restored: `cargo check --workspace` passes for the
+  Knowledgebase workspace.
 - [ ] Align profile-specific deploy argument forwarding between sibling `sdkwork-app-topology` and
   `sdkwork-specs/deployctl`: the generated `deploy:validate:cloud` facade passes
   `--deployment-profile cloud`, while `deployctl` currently accepts only `--profile`. The generic
   `deploy:validate` path successfully validates the declared `cloud.production` default, but that
   does not prove the profile-specific lifecycle contract is repaired.
-- [ ] Run and record release-environment PostgreSQL verification with `SDKWORK_DATABASE_URL` pointing at the target PostgreSQL service; local SQLite and contract gates are not enough for a commercial cutover claim.
-- [ ] Implement and prove bounded automated retention for `kb_audit_event` and `framework_audit_event`, including legal hold, metrics/alerts, PostgreSQL batch purge, failure recovery, and a purge drill. The documented 365/90/30-day values are targets, not active automation.
+- [ ] Run and record release-environment PostgreSQL verification with `SDKWORK_DATABASE_URL` pointing at the target PostgreSQL service; local fixture and contract gates are not enough for a commercial cutover claim.
+- [x] Automated audit retention with legal hold: `kb_audit_legal_hold` holds by actor/resource, the batched PostgreSQL delete skips held events, worker phase `audit_retention` defaults to 365 days / 500 events and records `knowledgebase_audit_events_purged_total`; backend admin operations `compliance.auditLegalHolds.{create,list,release.create}` manage holds (dual-token, `knowledge.platform.manage`, mutation-audited), and a live drill proved unheld events are purged and held events survive.
 - [ ] Add a cursor-based or asynchronous audit export contract and generated SDK support for subjects above 5,000 events. The current synchronous export fails explicitly with HTTP `413` instead of returning a partial result.
-- [ ] Add and review the PostgreSQL audit subject composite index equivalent to SQLite's `(tenant_id, organization_id, actor_id, created_at DESC, id DESC)` index, then attach query-plan and concurrent export/anonymization load evidence.
-- [ ] Replace the WeChat article `cover` URL field with a managed Drive object reference, resolve bounded cover bytes through the Drive server-side boundary, and attach real WeChat cover publish/preview evidence. Publish and preview currently fail closed before upstream mutation; URL-only and placeholder covers are forbidden.
-- [ ] Add durable idempotency, per-account/per-recipient outcome records, retry/reconciliation, and partial-failure recovery before enabling multi-account WeChat publishing or multi-recipient preview.
-- [ ] Add Drive version/checksum preconditions to WeChat configuration replacement and return conflicts for concurrent writers; the current bounded read-modify-write storage does not prevent lost updates.
+- [x] PostgreSQL audit subject composite index `idx_kb_audit_event_scope_actor_created`
+  `(tenant_id, organization_id, actor_id, created_at DESC, id DESC)` exists in the baseline and in
+  migration `202608040002_audit_event_scope_actor_index` (folded section). Release-environment
+  query-plan and concurrent export/anonymization load evidence remains a cutover item.
+- [ ] Replace the WeChat article `cover` URL field with a managed Drive object reference, resolve bounded cover bytes through the Drive server-side boundary, and attach real WeChat cover publish/preview evidence. External publication is disabled by default (`SDKWORK_KNOWLEDGEBASE_WECHAT_PUBLISH_ENABLED`); preview is a local dry run that sends nothing. URL-only and placeholder covers are forbidden.
+- [ ] Add durable idempotency, per-account/per-recipient outcome records, retry/reconciliation, and partial-failure recovery before enabling multi-account WeChat publishing or multi-recipient preview (the default-off publication gate is the current control).
+- [x] Serialize WeChat configuration replacement across writers: a transaction-scoped PostgreSQL advisory lock (namespace `KBWC`, 3 s `lock_timeout`) wraps the read-modify-write, so a second writer receives a conflict instead of silently losing an update. The Drive object still has no compare-and-swap precondition (upstream limitation).
 - [ ] Add an end-to-end managed Drive object-reference contract before offering custom Knowledgebase,
   Official Account, or Applet avatar images. Browser Data URLs and client-local registry values are
   not valid commercial media identity; the current product surface deliberately offers bounded
@@ -136,7 +138,7 @@ pnpm lint
 - [x] Open API scenario contract: api-key `context_packs` and `retrievals` (`scripts/smoke-knowledgebase-open-api.test.mjs`; live probe optional via `SDKWORK_KNOWLEDGEBASE_SMOKE_OPEN_URL`)
 - [x] WeChat publish modal uses API-backed account selection and fan tag groups load from WeChat `tags/get` through `wechat.officialAccounts.fanTags.list`; article/account/recipient request sizes are bounded.
 - [x] WeChat publish path blocks demo fallback in production builds (`shouldUseKnowledgebaseDemoFallback`; hosted API smoke optional before cutover)
-- [ ] WeChat publish and preview are enabled end to end only after the managed Drive cover contract, generated SDKs, durable idempotency, partial-failure recovery, configuration concurrency control, and live upstream evidence exist. The service currently rejects the operation before external publishing and contains no fallback thumbnail.
+- [ ] WeChat publish and preview are enabled end to end only after the managed Drive cover contract, generated SDKs, durable idempotency, partial-failure recovery, configuration concurrency control, and live upstream evidence exist. External publication is currently disabled by default and rejects with `403 wechat_publish_disabled`; preview validates the payload locally and sends nothing.
 
 ### Operations
 
@@ -146,7 +148,7 @@ pnpm lint
 - [x] Backup/restore runbook documented (`deployments/runbooks/backup-restore.md`) and referenced by launch runbook
 - [x] Application public-ingress smoke script: public `SDKWORK_KNOWLEDGEBASE_SMOKE_BASE_URL=... pnpm test:smoke` probes `/livez` and `/readyz`; optional internal `SDKWORK_KNOWLEDGEBASE_SMOKE_METRICS_URLS=... pnpm test:smoke` probes `/metrics` through in-cluster Service URLs only.
 - [x] JSON logging enabled in production topology; OTEL documented when collector is available (`SDKWORK_KNOWLEDGEBASE_LOG_FORMAT=json`)
-- [ ] Audit retention is enforced automatically and supported by purge/recovery evidence; the current runbook deliberately records this as unimplemented.
+- [x] Audit retention is enforced automatically: worker phase `audit_retention` purges expired `kb_audit_event` rows in bounded batches, active legal holds are skipped by the delete predicate, `knowledgebase_audit_events_purged_total` is exported, and a PostgreSQL drill proved purge-plus-hold behavior.
 - [ ] GDPR audit export supports more than 5,000 events through a bounded paginated or asynchronous workflow; the synchronous endpoint must never be treated as an unbounded archive download.
 
 ### Release
@@ -185,4 +187,8 @@ pnpm test:e2e:playwright
 
 ## Database migration authority
 
-Canonical lifecycle assets live under `database/`. The repository crate still embeds SQLite bootstrap SQL mirrored from historical migrations; do not add new schema files under `crates/.../migrations/` - use `database/migrations/{engine}/` and `pnpm db:materialize:contract`.
+Canonical lifecycle assets live under `database/` (PostgreSQL-only baseline plus ordered
+migrations). The repository crate's `migrations/` directory is a deprecated, unreferenced mirror of
+historical migrations and is scheduled for removal under the destructive-change policy; do not add
+files there. New schema changes go to `database/migrations/postgres/` and the baseline, then
+`pnpm db:validate`.

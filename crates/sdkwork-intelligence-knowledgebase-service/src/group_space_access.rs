@@ -40,7 +40,7 @@ impl<'a> GroupKnowledgeSpaceAccessAuthorizer<'a> {
 
         let Some(binding) = self
             .binding_store
-            .find_group_space_for_space_in_tenant(scope.tenant_id, space_id)
+            .find_group_space_for_space_in_tenant(scope.tenant_id, scope.organization_id, space_id)
             .await
             .map_err(GroupKnowledgeSpaceAccessAuthorizerError::Store)?
         else {

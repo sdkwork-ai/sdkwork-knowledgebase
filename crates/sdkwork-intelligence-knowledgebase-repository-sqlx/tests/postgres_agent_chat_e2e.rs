@@ -263,6 +263,7 @@ async fn postgres_agent_chat_answers_from_ingested_knowledge_with_citations() {
     let profile = profiles
         .create_profile(KnowledgeAgentProfileRequest {
             tenant_id,
+            created_by: None,
             name: format!("postgres chat agent {nonce}"),
             description: Some("agent chat e2e".to_string()),
             system_instruction: "Answer from the knowledge base and cite sources.".to_string(),

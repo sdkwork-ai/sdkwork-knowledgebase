@@ -145,9 +145,18 @@ $generatedSdkBuildArtifacts = @()
 foreach ($sdkRoot in $requiredGeneratedSdkRoots) {
     foreach ($artifactName in @("node_modules", "dist", "package-lock.json")) {
         $artifactPath = Join-Path $sdkRoot $artifactName
-        if (Test-Path $artifactPath) {
-            $generatedSdkBuildArtifacts += $artifactPath
+        if (-not (Test-Path $artifactPath)) {
+            continue
         }
+        if ($artifactName -eq "node_modules") {
+            # An empty directory carries no build artifacts; a corrupted NTFS index entry can
+            # leave one behind after a partial cleanup and must not fail the structure gate.
+            $visibleFiles = @(Get-ChildItem -LiteralPath $artifactPath -Recurse -File -Force -ErrorAction SilentlyContinue)
+            if ($visibleFiles.Count -eq 0) {
+                continue
+            }
+        }
+        $generatedSdkBuildArtifacts += $artifactPath
     }
 }
 

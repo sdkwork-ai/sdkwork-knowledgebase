@@ -1,10 +1,19 @@
+mod support;
+
+static WIKI_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn wiki_test_guard() -> std::sync::MutexGuard<'static, ()> {
+    WIKI_TEST_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 use std::fmt;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use sdkwork_intelligence_knowledgebase_repository_sqlx::{
-    connect_postgres_and_install_schema, is_postgres_database_url, KnowledgeIdGenerator,
-    KnowledgeIdGeneratorError, SqlxWikiPersistenceStore,
+    KnowledgeIdGenerator, KnowledgeIdGeneratorError, SqlxWikiPersistenceStore,
 };
 use sdkwork_intelligence_knowledgebase_service::ports::{
     knowledge_wiki_persistence::{
@@ -36,6 +45,7 @@ fn audit_context(request_id: &str) -> WikiLifecycleAuditContext {
 
 #[tokio::test]
 async fn activation_and_pause_are_optimistic_and_emit_provider_events() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -103,8 +113,8 @@ async fn activation_and_pause_are_optimistic_and_emit_provider_events() {
             "knowledgebase.wiki.provider.changed.v1"
         ]
     );
-    assert!(events[0].1.contains("\"operation\":\"ACTIVATE\""));
-    assert!(events[1].1.contains("\"operation\":\"PAUSE\""));
+    assert_eq!(payload_field(&events[0].1, "data")["operation"], "ACTIVATE");
+    assert_eq!(payload_field(&events[1].1, "data")["operation"], "PAUSE");
     assert!(!events[1].1.contains("actorId"));
     assert!(!events[1].1.contains("objectKey"));
     assert_provider_event_envelopes(&pool).await;
@@ -114,7 +124,7 @@ async fn activation_and_pause_are_optimistic_and_emit_provider_events() {
     assert_eq!(audits[0].0, "knowledge.wiki.publication.activated");
     assert_eq!(audits[0].1, "9001");
     assert_eq!(audits[0].2, "activate-1");
-    assert!(audits[0].3.contains("\"disposition\":\"CHANGED\""));
+    assert_eq!(payload_field(&audits[0].3, "disposition"), "CHANGED");
     assert_eq!(audits[1].0, "knowledge.wiki.publication.paused");
     assert_eq!(audits[1].1, "9002");
     assert_eq!(audits[1].2, "pause-1");
@@ -123,6 +133,7 @@ async fn activation_and_pause_are_optimistic_and_emit_provider_events() {
 
 #[tokio::test]
 async fn publish_visibility_and_unpublish_advance_only_the_required_generations() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -240,13 +251,14 @@ async fn publish_visibility_and_unpublish_advance_only_the_required_generations(
     assert_eq!(audits.len(), 4);
     assert_eq!(audits[0].0, "knowledge.wiki.source_file.published");
     assert_eq!(audits[1].0, "knowledge.wiki.source_file.published");
-    assert!(audits[1].3.contains("\"disposition\":\"UNCHANGED\""));
+    assert_eq!(payload_field(&audits[1].3, "disposition"), "UNCHANGED");
     assert_eq!(audits[2].0, "knowledge.wiki.source_file.visibility_changed");
     assert_eq!(audits[3].0, "knowledge.wiki.source_file.unpublished");
 }
 
 #[tokio::test]
 async fn invalid_private_publish_cross_scope_and_stale_commands_leave_state_unchanged() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
@@ -314,17 +326,22 @@ async fn invalid_private_publish_cross_scope_and_stale_commands_leave_state_unch
     assert!(audit_events(&pool).await.is_empty());
 }
 
+/// Destructive: renames a shared table, so it requires exclusive access to the PostgreSQL
+/// schema. The default suite shares one schema across parallel test binaries; run this test
+/// with `--ignored` against an isolated database.
 #[tokio::test]
+#[ignore = "destructive: requires exclusive PostgreSQL schema access"]
 async fn audit_persistence_failure_rolls_back_publication_and_outbox() {
+    let _guard = wiki_test_guard();
     let Some((pool, store)) = test_store().await else {
         eprintln!("skipping wiki postgres test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL");
         return;
     };
     seed_wiki(&pool, "READY", "DRAFT", "PRIVATE", "READY").await;
-    sqlx::query("DROP TABLE kb_audit_event")
+    sqlx::query("ALTER TABLE kb_audit_event RENAME TO kb_audit_event_audit_failure")
         .execute(&pool)
         .await
-        .expect("drop audit table to simulate persistence failure");
+        .expect("rename audit table to simulate persistence failure");
 
     let error = store
         .change_publication_status(ChangeWikiPublicationStatusRequest {
@@ -347,20 +364,16 @@ async fn audit_persistence_failure_rolls_back_publication_and_outbox() {
             .expect("read rolled back publication");
     assert_eq!(state, ("READY".to_string(), 0));
     assert!(outbox_events(&pool).await.is_empty());
-}
 
-fn optional_postgres_database_url() -> Option<String> {
-    std::env::var("SDKWORK_DATABASE_URL")
-        .or_else(|_| std::env::var("DATABASE_URL"))
-        .ok()
-        .filter(|url| is_postgres_database_url(url))
+    sqlx::query("ALTER TABLE kb_audit_event_audit_failure RENAME TO kb_audit_event")
+        .execute(&pool)
+        .await
+        .expect("restore audit table");
 }
 
 async fn test_store() -> Option<(sqlx::AnyPool, SqlxWikiPersistenceStore)> {
-    let database_url = optional_postgres_database_url()?;
-    let pool = connect_postgres_and_install_schema(&database_url)
-        .await
-        .expect("install postgres test schema");
+    let pool = support::scoped_pool(101, 202).await?;
+    support::clean_wiki_scope(&pool, 101, 202).await;
     let generator = Arc::new(TestIdGenerator::new(10_000));
     let store = SqlxWikiPersistenceStore::with_id_generator(pool.clone(), generator);
     Some((pool, store))
@@ -378,7 +391,8 @@ async fn seed_wiki(
         INSERT INTO kb_space (
             id, uuid, tenant_id, organization_id, name, drive_space_id,
             status, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, 'Lifecycle Wiki', $5, 1, $6, $6)
+        ) VALUES ($1, $2, $3, $4, 'Lifecycle Wiki', $5, 1, $6::timestamptz, $6::timestamptz)
+        ON CONFLICT DO NOTHING
         "#,
     )
     .bind(i64::try_from(SPACE_ID).expect("space id"))
@@ -396,7 +410,8 @@ async fn seed_wiki(
             id, uuid, tenant_id, organization_id, space_id, drive_space_uuid,
             source_root_node_uuid, source_scope_uuid, wiki_status, title,
             created_by, updated_by, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lifecycle Wiki', 9001, 9001, $10, $10)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lifecycle Wiki', 9001, 9001, $10::timestamptz, $10::timestamptz)
+        ON CONFLICT DO NOTHING
         "#,
     )
     .bind(i64::try_from(PUBLICATION_ID).expect("publication id"))
@@ -426,8 +441,9 @@ async fn seed_wiki(
             $1, $2, $3, $4, $5, $6, 'drive-space-501', 'drive-node-701',
             'drive-version-701', 'guide.md', '/guide/', 'PAGE', 'text/markdown', 128,
             'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-            $7, $8, $9, 'READY', $10, $11, 9001, 9001, $12, $12
+            $7, $8, $9, 'READY', $10, $11, 9001, 9001, $12::timestamptz, $12::timestamptz
         )
+        ON CONFLICT DO NOTHING
         "#,
     )
     .bind(i64::try_from(PAGE_ID).expect("page id"))
@@ -492,6 +508,11 @@ async fn audit_events(pool: &sqlx::AnyPool) -> Vec<(String, String, String, Stri
     .fetch_all(pool)
     .await
     .expect("list lifecycle audit events")
+}
+
+/// Reads one field from a JSONB payload rendered as text (JSONB output includes spaces).
+fn payload_field(payload: &str, field: &str) -> serde_json::Value {
+    serde_json::from_str::<serde_json::Value>(payload).expect("payload json")[field].clone()
 }
 
 struct TestIdGenerator {

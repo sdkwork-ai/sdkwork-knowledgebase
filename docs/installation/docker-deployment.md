@@ -5,7 +5,7 @@ container image** (`runtimeTarget = "container"`, `deploymentProfile =
 "standalone"`). The image is a single application unit: it ships the gateway
 and worker release binaries, the PC portal bundle, and the federated database
 modules, and the docker compose composition brings up the gateway, the
-outbox/ingestion worker, PostgreSQL 16 and Redis 7.
+outbox/ingestion worker, PostgreSQL 16+ (verified on 18.3) and Redis 7.
 
 For the cloud orchestration layout (Kubernetes), see
 `deployments/kubernetes/`. For the host package layout, see

@@ -32,6 +32,7 @@ mod routes;
 pub mod runtime;
 mod tenant_quota_enforcement;
 mod web_bootstrap;
+mod wechat_config_lock;
 
 pub use error::{ApiError, ApiProblem, ApiResult};
 pub use http_route_manifest::app_route_manifest;

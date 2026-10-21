@@ -1,8 +1,9 @@
 use sdkwork_knowledgebase_contract::{
-    KnowledgeAgentBinding, KnowledgeAgentProfile, KnowledgeAgentStatus, KnowledgeCitation,
-    KnowledgeContextFragment, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeFilter,
-    KnowledgeMemoryContextFragment, KnowledgeRetrievalBinding, KnowledgeRetrievalMethod,
-    KnowledgeRetrievalRequest, KnowledgeRetrievalResult, KnowledgeRetrievalTrace,
+    KnowledgeAgentBinding, KnowledgeAgentProfile, KnowledgeAgentProfileRequest,
+    KnowledgeAgentStatus, KnowledgeCitation, KnowledgeContextFragment, KnowledgeContextPack,
+    KnowledgeContextPackRequest, KnowledgeFilter, KnowledgeMemoryContextFragment,
+    KnowledgeRetrievalBinding, KnowledgeRetrievalMethod, KnowledgeRetrievalRequest,
+    KnowledgeRetrievalResult, KnowledgeRetrievalTrace,
 };
 
 #[test]
@@ -178,6 +179,7 @@ fn knowledge_agent_profile_selects_model_provider_and_multiple_knowledge_binding
     let profile = KnowledgeAgentProfile {
         profile_id: 41,
         tenant_id: 100001,
+        created_by: 30001,
         name: "Support Knowledge Agent".to_string(),
         description: Some("Answers from approved knowledge spaces.".to_string()),
         system_instruction: "Answer only from cited knowledge.".to_string(),
@@ -227,4 +229,43 @@ fn knowledge_agent_profile_selects_model_provider_and_multiple_knowledge_binding
     assert_eq!(json["modelId"], "gpt-4.1");
     assert_eq!(json["status"], "active");
     assert_eq!(json["bindings"].as_array().unwrap().len(), 2);
+    assert!(
+        json.get("createdBy").is_none(),
+        "server-side ownership metadata must not be serialized into the API response: {json}"
+    );
+}
+
+#[test]
+fn knowledge_agent_profile_request_never_accepts_created_by_from_the_wire() {
+    let request = KnowledgeAgentProfileRequest {
+        tenant_id: 100001,
+        created_by: Some(30001),
+        name: "Support Knowledge Agent".to_string(),
+        description: None,
+        system_instruction: "Answer only from cited knowledge.".to_string(),
+        model_provider_id: "provider.model.openai".to_string(),
+        model_id: "gpt-4.1".to_string(),
+        model_parameters: None,
+        retrieval_profile_id: None,
+        citation_policy: None,
+        memory_policy_ref: None,
+        tool_policy_ref: None,
+        answer_policy: None,
+        knowledge_mode: Default::default(),
+        agent_implementation_id: sdkwork_knowledgebase_contract::default_agent_implementation_id(),
+        status: KnowledgeAgentStatus::Active,
+    };
+
+    let mut wire = serde_json::to_value(&request).unwrap();
+    assert!(
+        wire.get("createdBy").is_none(),
+        "the request DTO must not serialize server-side ownership: {wire}"
+    );
+
+    wire["createdBy"] = serde_json::json!("99999");
+    let parsed: KnowledgeAgentProfileRequest = serde_json::from_value(wire).unwrap();
+    assert_eq!(
+        parsed.created_by, None,
+        "a client-supplied createdBy must be ignored on input"
+    );
 }

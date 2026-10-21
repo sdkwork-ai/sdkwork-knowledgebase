@@ -48,6 +48,7 @@
     "kb_source_file_projection",
     "kb_source_file_rendition",
     "kb_drive_source_checkpoint",
-    "kb_drive_event_inbox"
+    "kb_drive_event_inbox",
+    "kb_audit_legal_hold"
   ]
 }

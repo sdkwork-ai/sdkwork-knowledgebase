@@ -311,15 +311,17 @@ fn reject_forbidden_pagination_aliases(query: Option<&str>) -> Result<(), ApiPro
     let Some(query) = query else {
         return Ok(());
     };
-    for pair in query.split('&') {
-        let key = pair.split_once('=').map_or(pair, |(key, _)| key);
+    // Percent-decode keys with the same parser the app surface uses, so an encoded
+    // alias (`pa%67eSize`) cannot slip past the wire-contract check. The error code
+    // matches the app/backend surfaces for one pagination contract across APIs.
+    for (key, _) in url::form_urlencoded::parse(query.as_bytes()) {
         if let Some((alias, canonical)) = FORBIDDEN_PAGINATION_QUERY_ALIASES
             .iter()
             .find(|(alias, _)| key == *alias)
         {
             return Err(ApiProblem::new(
                 StatusCode::BAD_REQUEST,
-                "pagination_parameter_alias_forbidden",
+                "invalid_parameter",
                 format!("HTTP query parameter {alias} is forbidden; use {canonical}"),
             ));
         }

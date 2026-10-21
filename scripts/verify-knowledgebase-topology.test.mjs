@@ -220,17 +220,11 @@ test('topology governance files do not retain retired deployment profile segment
   const deploymentProfileIds = [...deployment.matchAll(/^  ([A-Za-z0-9.-]+):\s*$/gmu)]
     .map((match) => match[1])
     .sort();
-  // Development profiles remain source config under etc/ and are never
-  // deploy targets; cloud deploys test/staging/production, standalone
-  // deploys production only (customer-managed host installs).
+  // v5 topology: `deployments/deploy.yaml` declares the production deploy targets only;
+  // test/staging/development profiles are source config under etc/ and are driven by the
+  // environment-specific deployment pipeline, not by the production deployment descriptor.
   const expectedDeploymentProfileIds = expectedProfileIds
-    .filter((profileId) => {
-      const [deploymentProfile, environment] = profileId.split('.');
-      if (deploymentProfile === 'standalone') {
-        return environment === 'production';
-      }
-      return environment !== 'development';
-    })
+    .filter((profileId) => profileId.endsWith('.production'))
     .sort();
   assert.deepEqual(deploymentProfileIds, expectedDeploymentProfileIds);
   assert.ok(
@@ -508,7 +502,8 @@ test('standalone gateway reads the single application ingress bind env key', asy
   assert.match(gatewayAssembly, /runtime\.build_full_app_router\(\)/);
   assert.match(gatewayAssembly, /runtime\.build_backend_business_router\(\)/);
   assert.match(gatewayAssembly, /runtime\.build_open_business_router\(\)/);
-  assert.match(appMain, /ComposedApiAssembly::try_compose/);
+  assert.match(appMain, /ApiModuleRegistry::new\(\)/);
+  assert.match(appMain, /\.try_compose\(/);
   assert.match(appMain, /composed\.into_hosted\(framework\)/);
   assert.doesNotMatch(routeRuntime, /build_[a-z_]+_router_with_web_framework/);
   assert.doesNotMatch(routeBootstrap, /build_served_(?:app|backend|open)_router/);

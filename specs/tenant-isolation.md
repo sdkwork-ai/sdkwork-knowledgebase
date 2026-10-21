@@ -232,7 +232,10 @@ Context bindings (`kb_space_context_binding`) associate agent profiles with spac
 
 - ADR: `docs/architecture/decisions/ADR-20260731-dedicated-tenant-organization-runtime.md`
 - Runbook: `docs/runbooks/tenant-isolation.md`
-- RLS Migration: `database/migrations/postgres/202607310001_core_organization_isolation.up.sql`
+- RLS schema: folded section `202607310001_core_organization_isolation` in
+  `database/ddl/baseline/postgres/0001_knowledgebase_baseline.sql`; convergence migration
+  `database/migrations/postgres/0001_organization_id_not_null.up.sql`
+- Scope injection: `crates/sdkwork-knowledgebase-database-host/src/postgres_scope.rs`
 - Contract: `crates/sdkwork-knowledgebase-contract/src/tenant.rs`
 - Backend Auth Guards: `crates/sdkwork-routes-knowledgebase-backend-api/src/auth.rs`
 - App API Context: `crates/sdkwork-routes-knowledgebase-app-api/src/web_bootstrap.rs`

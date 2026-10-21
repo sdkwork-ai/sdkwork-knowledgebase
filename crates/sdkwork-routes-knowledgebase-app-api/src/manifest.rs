@@ -214,17 +214,17 @@ pub const ROUTES: &[RouteManifestEntry] = &[
     RouteManifestEntry {
         method: "GET",
         path: "/app/v3/api/knowledge/okf/index",
-        operation_id: "okf.bundle.index.list",
+        operation_id: "okf.bundle.index.retrieve",
     },
     RouteManifestEntry {
         method: "GET",
         path: "/app/v3/api/knowledge/okf/log",
-        operation_id: "okf.bundle.log.list",
+        operation_id: "okf.bundle.log.retrieve",
     },
     RouteManifestEntry {
         method: "GET",
         path: "/app/v3/api/knowledge/okf/profile",
-        operation_id: "okf.bundle.profile.list",
+        operation_id: "okf.bundle.profile.retrieve",
     },
     RouteManifestEntry {
         method: "POST",

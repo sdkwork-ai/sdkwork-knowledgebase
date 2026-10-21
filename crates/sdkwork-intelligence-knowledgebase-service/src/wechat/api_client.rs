@@ -18,6 +18,9 @@ const MAX_WECHAT_JSON_RESPONSE_BYTES: usize = 512 * 1024;
 /// refreshed 200 s before expiry instead of being re-fetched per operation (the token
 /// endpoint is rate-limited to roughly 2,000 calls/day).
 const WECHAT_TOKEN_CACHE_TTL_SECS: u64 = 7_000;
+/// Hard cap on per-appid token entries and refresh locks. A deployment normally has one
+/// account; the cap only bounds a caller that rotates app ids (OOM defense).
+const MAX_WECHAT_CACHE_ENTRIES: usize = 256;
 /// Bounded retries for rate-limited or transient token requests. The WeChat token
 /// endpoint is strictly rate-limited, so retries must stay small and back off.
 const WECHAT_TOKEN_MAX_RETRIES: u32 = 2;
@@ -220,6 +223,17 @@ impl WechatApiClient {
             .token_refresh_locks
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if locks.len() >= MAX_WECHAT_CACHE_ENTRIES && !locks.contains_key(app_id) {
+            // Evict a lock nobody is waiting on; active refresh locks have a second Arc
+            // clone held by the in-flight request and must stay to preserve single-flight.
+            if let Some(idle) = locks
+                .iter()
+                .find(|(_, lock)| Arc::strong_count(lock) == 1)
+                .map(|(key, _)| key.clone())
+            {
+                locks.remove(&idle);
+            }
+        }
         Arc::clone(locks.entry(app_id.to_string()).or_default())
     }
 
@@ -258,9 +272,23 @@ impl WechatApiClient {
 
     fn cache_access_token(&self, app_id: &str, token: String, ttl_secs: u64) {
         if let Ok(mut cache) = self.token_cache.lock() {
+            let now = Instant::now();
+            // Tokens are long-lived (up to ~2h), so an unbounded map is an OOM vector for a
+            // caller that rotates app ids. Drop expired entries, then the soonest-to-expire
+            // entry if the hard cap is still reached.
+            cache.retain(|_, (_, expires_at)| *expires_at > now);
+            if cache.len() >= MAX_WECHAT_CACHE_ENTRIES {
+                if let Some(oldest) = cache
+                    .iter()
+                    .min_by_key(|(_, (_, expires_at))| *expires_at)
+                    .map(|(key, _)| key.clone())
+                {
+                    cache.remove(&oldest);
+                }
+            }
             cache.insert(
                 app_id.to_string(),
-                (token, Instant::now() + Duration::from_secs(ttl_secs)),
+                (token, now + Duration::from_secs(ttl_secs)),
             );
         }
     }
@@ -611,6 +639,33 @@ mod tests {
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
 
     #[test]
+    fn token_cache_stays_bounded_under_app_id_churn() {
+        let client = WechatApiClient::new();
+        for index in 0..(MAX_WECHAT_CACHE_ENTRIES + 32) {
+            client.cache_access_token(&format!("app-{index}"), format!("token-{index}"), 600);
+        }
+        let cache = client.token_cache.lock().expect("cache lock");
+        assert!(
+            cache.len() <= MAX_WECHAT_CACHE_ENTRIES,
+            "token cache grew to {} entries",
+            cache.len()
+        );
+    }
+
+    #[test]
+    fn token_cache_drops_expired_entries_on_write() {
+        let client = WechatApiClient::new();
+        client.token_cache.lock().expect("cache lock").insert(
+            "expired".to_string(),
+            ("stale".to_string(), Instant::now() - Duration::from_secs(1)),
+        );
+        client.cache_access_token("fresh", "token".to_string(), 600);
+        let cache = client.token_cache.lock().expect("cache lock");
+        assert!(!cache.contains_key("expired"));
+        assert!(cache.contains_key("fresh"));
+    }
+
+    #[test]
     fn reqwest_errors_are_rendered_without_request_urls_or_credentials() {
         let error = Client::new()
             .get("http://[::1?access_token=super-secret")
@@ -732,7 +787,9 @@ mod tests {
             .collect()
     }
 
-    fn capture_multipart(responder_target: CapturedRequests) -> impl Fn(&Request) -> ResponseTemplate {
+    fn capture_multipart(
+        responder_target: CapturedRequests,
+    ) -> impl Fn(&Request) -> ResponseTemplate {
         move |request: &Request| {
             if let Ok(mut captures) = responder_target.lock() {
                 captures.push((
@@ -765,7 +822,13 @@ mod tests {
         let client = mock_client(&server.uri());
 
         let material = client
-            .upload_permanent_image("wx-app", "app-secret", "cover.png", "image/png", b"png-bytes")
+            .upload_permanent_image(
+                "wx-app",
+                "app-secret",
+                "cover.png",
+                "image/png",
+                b"png-bytes",
+            )
             .await
             .expect("permanent material upload");
 
@@ -932,13 +995,19 @@ mod tests {
                     .map(|(_, value)| value.to_string())
                     .unwrap_or_default();
                 if call == 0 {
-                    assert_eq!(presented, "token-a", "first draft call uses the cached token");
+                    assert_eq!(
+                        presented, "token-a",
+                        "first draft call uses the cached token"
+                    );
                     ResponseTemplate::new(200).set_body_json(json!({
                         "errcode": 40001,
                         "errmsg": "invalid credential"
                     }))
                 } else {
-                    assert_eq!(presented, "token-b", "retry must present the refreshed token");
+                    assert_eq!(
+                        presented, "token-b",
+                        "retry must present the refreshed token"
+                    );
                     ResponseTemplate::new(200).set_body_json(json!({
                         "media_id": "DRAFT_AFTER_REFRESH"
                     }))
@@ -992,10 +1061,7 @@ mod tests {
             .await
             .expect_err("a second rejection must fail, not loop");
 
-        assert!(matches!(
-            error,
-            WechatApiClientError::AccessTokenRejected
-        ));
+        assert!(matches!(error, WechatApiClientError::AccessTokenRejected));
         assert_eq!(draft_calls.load(Ordering::SeqCst), 2);
     }
 }

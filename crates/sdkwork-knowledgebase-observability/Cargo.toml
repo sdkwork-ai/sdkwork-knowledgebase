@@ -35,10 +35,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 thiserror.workspace = true
 uuid = { version = "1", features = ["v4"] }
 sdkwork-web-bootstrap = { workspace = true, features = ["sqlx"] }
-tracing-opentelemetry = { version = "0.28", optional = true }
-opentelemetry = { version = "0.27", optional = true }
-opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"], optional = true }
-opentelemetry-otlp = { version = "0.27", features = ["http-proto", "reqwest-client"], optional = true }
+tracing-opentelemetry = { version = "0.34", optional = true }
+opentelemetry = { version = "0.33", optional = true }
+opentelemetry_sdk = { version = "0.33", optional = true }
+opentelemetry-otlp = { version = "0.33", features = ["http-proto", "reqwest-client"], optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

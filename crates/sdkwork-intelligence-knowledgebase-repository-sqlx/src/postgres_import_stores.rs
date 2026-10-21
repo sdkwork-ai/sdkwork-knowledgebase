@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sdkwork_database_config::DatabaseEngine;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_document_store::{
     CreateKnowledgeDocumentRecord, KnowledgeDocumentIdentityScope, KnowledgeDocumentStore,
-    KnowledgeDocumentStoreError,
+    KnowledgeDocumentStoreError, PendingDocumentEmbedding,
 };
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_document_version_store::{
     CreateKnowledgeDocumentVersionRecord, CreateNextKnowledgeDocumentVersionRecord,
@@ -47,6 +47,13 @@ use crate::quota_transaction::begin_tenant_quota_transaction;
 const ACTIVE_STATUS: i64 = 1;
 const INITIAL_VERSION: i64 = 0;
 const OUTBOX_STATUS_PENDING: i64 = 0;
+
+/// Persisted ingestion lifecycle codes. They mirror `KnowledgeDocumentVersionState` and the
+/// browser projection mapping: 0 pending, 1 running, 2 succeeded/indexed, 3 failed.
+const DOCUMENT_VERSION_PARSE_SUCCEEDED: i64 = 2;
+const DOCUMENT_INDEX_PENDING: i64 = 0;
+const DOCUMENT_INDEX_RUNNING: i64 = 1;
+const DOCUMENT_INDEX_INDEXED: i64 = 2;
 
 #[derive(Debug, Clone)]
 pub struct PostgresKnowledgeSourceStore {
@@ -318,30 +325,6 @@ impl PostgresKnowledgeSourceStore {
             .collect()
     }
 
-    pub async fn list_active_sources(
-        &self,
-    ) -> Result<Vec<KnowledgeSource>, KnowledgeSourceStoreError> {
-        let tenant_id = source_to_i64("tenant_id", self.tenant_id)?;
-        let organization_id = source_to_i64("organization_id", self.organization_id)?;
-        let rows = sqlx::query(
-            r#"
-            SELECT id, space_id, source_type, provider, drive_bucket, drive_prefix, CAST(metadata AS TEXT) AS metadata
-            FROM kb_source
-            WHERE tenant_id = $1 AND organization_id = $2 AND status = $3
-            ORDER BY id ASC
-            LIMIT 200
-            "#,
-        )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(ACTIVE_STATUS)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(source_sqlx_error)?;
-
-        rows.iter().map(source_from_row).collect()
-    }
-
     pub async fn list_active_sources_page(
         &self,
         cursor: Option<u64>,
@@ -517,6 +500,29 @@ impl KnowledgeDocumentStore for PostgresKnowledgeDocumentStore {
         self.list_documents_page_for_space(space_id, cursor, page_size)
             .await
     }
+
+    async fn mark_document_version_ingested(
+        &self,
+        document_version_id: u64,
+    ) -> Result<(), KnowledgeDocumentStoreError> {
+        self.mark_document_version_ingested_state(document_version_id)
+            .await
+    }
+
+    async fn mark_document_version_indexed(
+        &self,
+        document_version_id: u64,
+    ) -> Result<(), KnowledgeDocumentStoreError> {
+        self.mark_document_version_indexed_state(document_version_id)
+            .await
+    }
+
+    async fn list_documents_pending_embedding(
+        &self,
+        limit: u32,
+    ) -> Result<Vec<PendingDocumentEmbedding>, KnowledgeDocumentStoreError> {
+        self.list_documents_pending_embedding_rows(limit).await
+    }
 }
 
 impl PostgresKnowledgeDocumentStore {
@@ -606,10 +612,13 @@ impl PostgresKnowledgeDocumentStore {
         let organization_id = document_to_i64("organization_id", self.organization_id)?;
         // O(1) trigger-maintained counter read; falls back to the exact
         // aggregate scan only while the counter row is not materialized yet.
-        let count =
-            crate::quota_transaction::tenant_active_document_count(connection, tenant_id, organization_id)
-                .await
-                .map_err(document_sqlx_error)?;
+        let count = crate::quota_transaction::tenant_active_document_count(
+            connection,
+            tenant_id,
+            organization_id,
+        )
+        .await
+        .map_err(document_sqlx_error)?;
         ensure_document_capacity(count, &limits)?;
         Ok(())
     }
@@ -794,6 +803,168 @@ impl PostgresKnowledgeDocumentStore {
         Ok((items, next_cursor, has_more))
     }
 
+    /// Persists `version.parse_state = succeeded` and `document.index_state = running` after
+    /// the ingestion worker has replaced the version's chunks.
+    async fn mark_document_version_ingested_state(
+        &self,
+        document_version_id: u64,
+    ) -> Result<(), KnowledgeDocumentStoreError> {
+        let tenant_id = document_to_i64("tenant_id", self.tenant_id)?;
+        let organization_id = document_to_i64("organization_id", self.organization_id)?;
+        let document_version_id = document_to_i64("document_version_id", document_version_id)?;
+        let now = document_now()?;
+        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$1");
+        let mut transaction = self.pool.begin().await.map_err(document_sqlx_error)?;
+
+        let version_update = format!(
+            r#"
+            UPDATE kb_document_version
+            SET parse_state = $2, updated_at = {updated_at_expr}, version = version + 1
+            WHERE tenant_id = $3 AND organization_id = $4 AND id = $5 AND status = $6
+            "#,
+        );
+        let version_rows = sqlx::query(sqlx::AssertSqlSafe(version_update.as_str()))
+            .bind(&now)
+            .bind(DOCUMENT_VERSION_PARSE_SUCCEEDED)
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(document_version_id)
+            .bind(ACTIVE_STATUS)
+            .execute(&mut *transaction)
+            .await
+            .map_err(document_sqlx_error)?;
+        if version_rows.rows_affected() == 0 {
+            return Err(KnowledgeDocumentStoreError::NotFound(format!(
+                "knowledge document version {document_version_id} was not found"
+            )));
+        }
+
+        let document_update = format!(
+            r#"
+            UPDATE kb_document
+            SET index_state = $2, updated_at = {updated_at_expr}, version = version + 1
+            WHERE tenant_id = $3 AND organization_id = $4 AND status = $5
+              AND current_version_id = $6
+            "#,
+        );
+        sqlx::query(sqlx::AssertSqlSafe(document_update.as_str()))
+            .bind(&now)
+            .bind(DOCUMENT_INDEX_RUNNING)
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(ACTIVE_STATUS)
+            .bind(document_version_id)
+            .execute(&mut *transaction)
+            .await
+            .map_err(document_sqlx_error)?;
+
+        transaction.commit().await.map_err(document_sqlx_error)?;
+        Ok(())
+    }
+
+    /// Persists `document.index_state = indexed` for the document whose current version is
+    /// `document_version_id`. A superseded version is a no-op.
+    async fn mark_document_version_indexed_state(
+        &self,
+        document_version_id: u64,
+    ) -> Result<(), KnowledgeDocumentStoreError> {
+        let tenant_id = document_to_i64("tenant_id", self.tenant_id)?;
+        let organization_id = document_to_i64("organization_id", self.organization_id)?;
+        let document_version_id = document_to_i64("document_version_id", document_version_id)?;
+        let now = document_now()?;
+        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$1");
+        let query = format!(
+            r#"
+            UPDATE kb_document
+            SET index_state = $2, updated_at = {updated_at_expr}, version = version + 1
+            WHERE tenant_id = $3 AND organization_id = $4 AND status = $5
+              AND current_version_id = $6 AND index_state <> $2
+            "#,
+        );
+        sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
+            .bind(&now)
+            .bind(DOCUMENT_INDEX_INDEXED)
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(ACTIVE_STATUS)
+            .bind(document_version_id)
+            .execute(&self.pool)
+            .await
+            .map_err(document_sqlx_error)?;
+        Ok(())
+    }
+
+    /// Returns the bounded post-ingest embedding backlog (oldest first).
+    async fn list_documents_pending_embedding_rows(
+        &self,
+        limit: u32,
+    ) -> Result<Vec<PendingDocumentEmbedding>, KnowledgeDocumentStoreError> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+        let tenant_id = document_to_i64("tenant_id", self.tenant_id)?;
+        let organization_id = document_to_i64("organization_id", self.organization_id)?;
+        let limit = i64::from(limit.min(200));
+        let rows = sqlx::query(
+            r#"
+            SELECT d.space_id, d.id AS document_id, d.current_version_id
+            FROM kb_document d
+            WHERE d.tenant_id = $1
+              AND d.organization_id = $2
+              AND d.status = $3
+              AND d.current_version_id IS NOT NULL
+              AND d.index_state IN ($4, $5)
+              AND EXISTS (
+                  SELECT 1 FROM kb_chunk c
+                  WHERE c.tenant_id = d.tenant_id
+                    AND c.organization_id = d.organization_id
+                    AND c.document_version_id = d.current_version_id
+                    AND c.status = $3
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM kb_embedding e
+                  JOIN kb_chunk embedded_chunk
+                    ON embedded_chunk.id = e.chunk_id
+                   AND embedded_chunk.tenant_id = e.tenant_id
+                   AND embedded_chunk.organization_id = e.organization_id
+                  WHERE embedded_chunk.document_version_id = d.current_version_id
+                    AND e.status = $3
+              )
+            ORDER BY d.updated_at ASC, d.id ASC
+            LIMIT $6
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(ACTIVE_STATUS)
+        .bind(DOCUMENT_INDEX_PENDING)
+        .bind(DOCUMENT_INDEX_RUNNING)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(document_sqlx_error)?;
+
+        rows.into_iter()
+            .map(|row| {
+                Ok(PendingDocumentEmbedding {
+                    space_id: document_from_i64(
+                        "space_id",
+                        row.try_get("space_id").map_err(document_sqlx_error)?,
+                    )?,
+                    document_id: document_from_i64(
+                        "document_id",
+                        row.try_get("document_id").map_err(document_sqlx_error)?,
+                    )?,
+                    document_version_id: document_from_i64(
+                        "current_version_id",
+                        row.try_get("current_version_id")
+                            .map_err(document_sqlx_error)?,
+                    )?,
+                })
+            })
+            .collect()
+    }
+
     pub async fn get_document_by_id(
         &self,
         document_id: u64,
@@ -817,7 +988,7 @@ impl PostgresKnowledgeDocumentStore {
         .await
         .map_err(|error| {
             if matches!(error, sqlx::Error::RowNotFound) {
-                KnowledgeDocumentStoreError::Internal(format!(
+                KnowledgeDocumentStoreError::NotFound(format!(
                     "knowledge document {document_id} was not found"
                 ))
             } else {
@@ -875,7 +1046,7 @@ impl PostgresKnowledgeDocumentStore {
             .await
             .map_err(|error| {
                 if matches!(error, sqlx::Error::RowNotFound) {
-                    KnowledgeDocumentStoreError::Internal(format!(
+                    KnowledgeDocumentStoreError::NotFound(format!(
                         "knowledge document {document_id} was not found"
                     ))
                 } else {
@@ -913,7 +1084,7 @@ impl PostgresKnowledgeDocumentStore {
             .map_err(document_sqlx_error)?;
 
         if rows.rows_affected() == 0 {
-            return Err(KnowledgeDocumentStoreError::Internal(format!(
+            return Err(KnowledgeDocumentStoreError::NotFound(format!(
                 "knowledge document {document_id} was not found"
             )));
         }
@@ -2252,95 +2423,69 @@ impl IngestionJobStore for PostgresIngestionJobStore {
         }
 
         let now_expr = self.timestamp_dialect.sql_timestamp_expr("$7");
-        let candidates_query = format!(
+        let lease_expr = self.timestamp_dialect.sql_timestamp_expr("$8");
+        let update_now_expr = now_expr.clone();
+        // Single-statement claim: the candidate window is selected with FOR UPDATE SKIP LOCKED
+        // and updated in the same statement, so concurrent replicas never double-claim and the
+        // worker does not pay one round trip per candidate. Each claimed row receives its own
+        // fencing token inside the database.
+        let claim_query = format!(
             r#"
-            SELECT id
-            FROM kb_ingestion_job
-            WHERE tenant_id = $1
-              AND organization_id = $2
-              AND status = $3
-              AND job_type = $4
-              AND attempt_count < $9
-              AND (
-                  state = $5
-                  OR (state = $6 AND lease_expires_at IS NOT NULL AND lease_expires_at <= {now_expr})
-              )
-            ORDER BY priority DESC, id ASC
-            LIMIT $8
+            UPDATE kb_ingestion_job AS job
+            SET state = $1,
+                claim_owner = $2,
+                claim_token = gen_random_uuid()::text,
+                lease_expires_at = {lease_expr},
+                attempt_count = job.attempt_count + 1,
+                error_detail = NULL,
+                started_at = COALESCE(job.started_at, {update_now_expr}),
+                finished_at = NULL,
+                updated_at = {update_now_expr},
+                version = job.version + 1
+            WHERE job.id IN (
+                SELECT id
+                FROM kb_ingestion_job
+                WHERE tenant_id = $3
+                  AND organization_id = $4
+                  AND status = $5
+                  AND job_type = $6
+                  AND attempt_count < $9
+                  AND (
+                      state = $10
+                      OR (
+                          state = $11
+                          AND lease_expires_at IS NOT NULL
+                          AND lease_expires_at <= {update_now_expr}
+                      )
+                  )
+                ORDER BY priority DESC, id ASC
+                LIMIT $12
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING id, space_id, job_type, idempotency_key, state, error_detail,
+                      CAST(metadata AS TEXT) AS metadata, attempt_count, claim_token
             "#,
         );
-        let candidate_rows = sqlx::query(sqlx::AssertSqlSafe(candidates_query.as_str()))
+        let claimed_rows = sqlx::query(sqlx::AssertSqlSafe(claim_query.as_str()))
+            .bind(ingestion_state_code(IngestionJobState::Running))
+            .bind(&request.claim_owner)
             .bind(tenant_id)
             .bind(organization_id)
             .bind(ACTIVE_STATUS)
             .bind(KnowledgeSourceType::DriveObject.as_str())
+            .bind(&now_text)
+            .bind(&lease_expires_at_text)
+            .bind(max_attempts)
             .bind(ingestion_state_code(IngestionJobState::Queued))
             .bind(ingestion_state_code(IngestionJobState::Running))
-            .bind(&now_text)
             .bind(limit)
-            .bind(max_attempts)
             .fetch_all(&self.pool)
             .await
             .map_err(job_sqlx_error)?;
 
-        let lease_expr = self.timestamp_dialect.sql_timestamp_expr("$4");
-        let update_now_expr = self.timestamp_dialect.sql_timestamp_expr("$5");
-        let update_query = format!(
-            r#"
-            UPDATE kb_ingestion_job
-            SET state = $1,
-                claim_owner = $2,
-                claim_token = $3,
-                lease_expires_at = {lease_expr},
-                attempt_count = attempt_count + 1,
-                error_detail = NULL,
-                started_at = COALESCE(started_at, {update_now_expr}),
-                finished_at = NULL,
-                updated_at = {update_now_expr},
-                version = version + 1
-            WHERE tenant_id = $6
-              AND organization_id = $7
-              AND id = $8
-              AND status = $9
-              AND job_type = $10
-              AND attempt_count < $13
-              AND (
-                  state = $11
-                  OR (
-                      state = $12
-                      AND lease_expires_at IS NOT NULL
-                      AND lease_expires_at <= {update_now_expr}
-                  )
-              )
-            RETURNING id, space_id, job_type, idempotency_key, state, error_detail,
-                      CAST(metadata AS TEXT) AS metadata, attempt_count
-            "#,
-        );
-
-        let mut claimed = Vec::with_capacity(candidate_rows.len());
-        for candidate in candidate_rows {
-            let job_id: i64 = candidate.try_get("id").map_err(job_sqlx_error)?;
-            let claim_token = Uuid::new_v4().to_string();
-            let row = sqlx::query(sqlx::AssertSqlSafe(update_query.as_str()))
-                .bind(ingestion_state_code(IngestionJobState::Running))
-                .bind(&request.claim_owner)
-                .bind(&claim_token)
-                .bind(&lease_expires_at_text)
-                .bind(&now_text)
-                .bind(tenant_id)
-                .bind(organization_id)
-                .bind(job_id)
-                .bind(ACTIVE_STATUS)
-                .bind(KnowledgeSourceType::DriveObject.as_str())
-                .bind(ingestion_state_code(IngestionJobState::Queued))
-                .bind(ingestion_state_code(IngestionJobState::Running))
-                .bind(max_attempts)
-                .fetch_optional(&self.pool)
-                .await
-                .map_err(job_sqlx_error)?;
-            let Some(row) = row else {
-                continue;
-            };
+        let mut claimed = Vec::with_capacity(claimed_rows.len());
+        for row in claimed_rows {
+            let claim_token: String = row.try_get("claim_token").map_err(job_sqlx_error)?;
             let attempt_count: i64 = row.try_get("attempt_count").map_err(job_sqlx_error)?;
             claimed.push(ClaimedIngestionJob {
                 job: job_from_row(&row)?,

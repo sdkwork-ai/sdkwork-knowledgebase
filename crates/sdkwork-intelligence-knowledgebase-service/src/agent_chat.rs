@@ -233,6 +233,9 @@ where
                 .retrieve_profile(profile_id)
                 .await
                 .map_err(|error| match error {
+                    KnowledgeAgentProfileStoreError::InvalidRequest(detail) => {
+                        KnowledgeAgentChatServiceError::InvalidRequest(detail)
+                    }
                     KnowledgeAgentProfileStoreError::NotFound(id) => {
                         KnowledgeAgentChatServiceError::InvalidRequest(format!(
                             "knowledge agent profile was not found: {id}"
@@ -852,6 +855,7 @@ mod tests {
                 Ok(KnowledgeAgentProfile {
                     profile_id,
                     tenant_id: 100001,
+                    created_by: 30001,
                     name: "External Agent".to_string(),
                     description: None,
                     system_instruction: "Answer with citations.".to_string(),
@@ -1069,6 +1073,7 @@ mod tests {
             Ok(KnowledgeAgentProfile {
                 profile_id,
                 tenant_id: 100001,
+                created_by: 30001,
                 name: "Support Agent".to_string(),
                 description: None,
                 system_instruction: "Answer with citations.".to_string(),
@@ -1345,6 +1350,7 @@ mod tests {
         KnowledgeAgentProfile {
             profile_id: 501,
             tenant_id: 100_001,
+            created_by: 0,
             name: "Knowledge assistant".to_string(),
             description: None,
             system_instruction: "Answer from the knowledge base.".to_string(),

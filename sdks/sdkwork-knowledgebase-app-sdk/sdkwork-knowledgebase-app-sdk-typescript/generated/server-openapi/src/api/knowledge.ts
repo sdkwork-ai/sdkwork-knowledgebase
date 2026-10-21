@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { ChangeKnowledgeWikiSourceFileVisibilityRequest, ConsumeGroupKnowledgebaseLaunchTicketRequest, CreateKnowledgeDocumentRequest, CreateKnowledgeDocumentVersionRequest, CreateKnowledgeSpaceContextBindingRequest, CreateKnowledgeSpaceRequest, GrantKnowledgeSpaceMemberRequest, GroupKnowledgebaseLaunchTarget, IngestionJob, KnowledgeAgentBinding, KnowledgeAgentBindingList, KnowledgeAgentBindingRequest, KnowledgeAgentChatRequest, KnowledgeAgentChatResponse, KnowledgeAgentProfile, KnowledgeAgentProfileRequest, KnowledgeBrowserListData, KnowledgeBrowserView, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeDocument, KnowledgeDocumentContent, KnowledgeDocumentVersion, KnowledgeDriveImportRequest, KnowledgeDriveImportResult, KnowledgeGitImportRequest, KnowledgeGitImportResult, KnowledgeGitSyncRequest, KnowledgeGitSyncResult, KnowledgeIngestRequest, KnowledgeMarketCatalogItem, KnowledgeMarketSubscriptionRequest, KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult, KnowledgeOkfBundleFile, KnowledgeOkfConceptRevisionList, KnowledgeRetrievalRequest, KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceContextBinding, KnowledgeSpaceMember, KnowledgeSpaceMemberSubjectType, KnowledgeWechatApplet, KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest, KnowledgeWechatFanTag, KnowledgeWechatOfficialAccount, KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest, KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest, KnowledgeWikiSourceFile, KnowledgeWikiSourceFileCommandResult, KnowledgeWikiSourceFileVersionCommandRequest, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfConceptSummary, OkfConceptSummaryList, OkfConceptUpsertRequest, OkfContextPackRequest, OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun, OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, PageInfo, PublishKnowledgeWikiSourceFileRequest, SdkWorkCommandData, UpdateKnowledgeSpaceContextBindingRequest, UpdateKnowledgeSpaceRequest } from '../types';
+import type { ChangeKnowledgeWikiSourceFileVisibilityRequest, ConsumeGroupKnowledgebaseLaunchTicketRequest, CreateKnowledgeDocumentRequest, CreateKnowledgeDocumentVersionRequest, CreateKnowledgeSpaceContextBindingRequest, CreateKnowledgeSpaceRequest, GrantKnowledgeSpaceMemberRequest, GroupKnowledgebaseLaunchTarget, IngestionJob, KnowledgeAgentBinding, KnowledgeAgentBindingRequest, KnowledgeAgentChatRequest, KnowledgeAgentChatResponse, KnowledgeAgentProfile, KnowledgeAgentProfileRequest, KnowledgeBrowserListData, KnowledgeBrowserView, KnowledgeContextPack, KnowledgeContextPackRequest, KnowledgeDocument, KnowledgeDocumentContent, KnowledgeDocumentVersion, KnowledgeDriveImportRequest, KnowledgeDriveImportResult, KnowledgeGitImportRequest, KnowledgeGitImportResult, KnowledgeGitSyncRequest, KnowledgeGitSyncResult, KnowledgeIngestRequest, KnowledgeMarketCatalogItem, KnowledgeMarketSubscriptionRequest, KnowledgeMarketSubscriptionResult, KnowledgeMediaTaskRequest, KnowledgeMediaTaskResult, KnowledgeOkfBundleFile, KnowledgeOkfConceptRevisionList, KnowledgeRetrievalRequest, KnowledgeRetrievalResult, KnowledgeSpace, KnowledgeSpaceContextBinding, KnowledgeSpaceMember, KnowledgeSpaceMemberSubjectType, KnowledgeWechatApplet, KnowledgeWechatAppletList, KnowledgeWechatArticlesPreviewRequest, KnowledgeWechatArticlesPublishRequest, KnowledgeWechatFanTag, KnowledgeWechatOfficialAccount, KnowledgeWechatOfficialAccountList, KnowledgeWechatOperationResult, KnowledgeWechatReplaceAppletsRequest, KnowledgeWechatReplaceOfficialAccountsRequest, KnowledgeWikiPublication, KnowledgeWikiPublicationVersionCommandRequest, KnowledgeWikiSourceFile, KnowledgeWikiSourceFileCommandResult, KnowledgeWikiSourceFileVersionCommandRequest, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfConceptSummary, OkfConceptSummaryList, OkfConceptUpsertRequest, OkfContextPackRequest, OkfFileAnswerRequest, OkfIndexDocument, OkfLogDocument, OkfProfileDocument, OkfQualityRun, OkfQualityRunRequest, OkfQueryRequest, OkfQueryResult, PageInfo, PublishKnowledgeWikiSourceFileRequest, SdkWorkCommandData, UpdateKnowledgeSpaceContextBindingRequest, UpdateKnowledgeSpaceRequest } from '../types';
 
 
 export interface KnowledgeWikiSourceFilesVisibilityUpdateParams {
@@ -373,6 +373,11 @@ export class KnowledgeAgentProfilesRetrievalPreviewApi {
   }
 }
 
+export interface KnowledgeAgentProfilesBindingsListParams {
+  cursor?: string;
+  pageSize?: number;
+}
+
 export class KnowledgeAgentProfilesBindingsApi {
   private client: HttpClient;
 
@@ -382,8 +387,12 @@ export class KnowledgeAgentProfilesBindingsApi {
 
 
 /** List agent profile bindings */
-  async list(profileId: string, requestOptions?: ApiRequestOptions): Promise<KnowledgeAgentBindingList> {
-    return this.client.request<KnowledgeAgentBindingList>(appApiPath(`/knowledge/agent_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}/bindings`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  async list(profileId: string, params?: KnowledgeAgentProfilesBindingsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: KnowledgeAgentBinding[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: KnowledgeAgentBinding[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/knowledge/agent_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}/bindings`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Create an agent profile binding */
@@ -550,7 +559,7 @@ export class KnowledgeOkfBundleExportApi {
   }
 }
 
-export interface KnowledgeOkfBundleProfileListParams {
+export interface KnowledgeOkfBundleProfileRetrieveParams {
   spaceId: string;
 }
 
@@ -563,7 +572,7 @@ export class KnowledgeOkfBundleProfileApi {
 
 
 /** Retrieve the OKF bundle profile */
-  async list(params: KnowledgeOkfBundleProfileListParams, requestOptions?: ApiRequestOptions): Promise<OkfProfileDocument> {
+  async retrieve(params: KnowledgeOkfBundleProfileRetrieveParams, requestOptions?: ApiRequestOptions): Promise<OkfProfileDocument> {
     const query = buildQueryString([
       { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
     ]);
@@ -571,7 +580,7 @@ export class KnowledgeOkfBundleProfileApi {
   }
 }
 
-export interface KnowledgeOkfBundleLogListParams {
+export interface KnowledgeOkfBundleLogRetrieveParams {
   spaceId: string;
 }
 
@@ -584,7 +593,7 @@ export class KnowledgeOkfBundleLogApi {
 
 
 /** Retrieve the OKF bundle log */
-  async list(params: KnowledgeOkfBundleLogListParams, requestOptions?: ApiRequestOptions): Promise<OkfLogDocument> {
+  async retrieve(params: KnowledgeOkfBundleLogRetrieveParams, requestOptions?: ApiRequestOptions): Promise<OkfLogDocument> {
     const query = buildQueryString([
       { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
     ]);
@@ -592,7 +601,7 @@ export class KnowledgeOkfBundleLogApi {
   }
 }
 
-export interface KnowledgeOkfBundleIndexListParams {
+export interface KnowledgeOkfBundleIndexRetrieveParams {
   spaceId: string;
 }
 
@@ -605,7 +614,7 @@ export class KnowledgeOkfBundleIndexApi {
 
 
 /** Retrieve the OKF bundle index */
-  async list(params: KnowledgeOkfBundleIndexListParams, requestOptions?: ApiRequestOptions): Promise<OkfIndexDocument> {
+  async retrieve(params: KnowledgeOkfBundleIndexRetrieveParams, requestOptions?: ApiRequestOptions): Promise<OkfIndexDocument> {
     const query = buildQueryString([
       { name: 'space_id', value: params.spaceId, style: 'form', explode: true, allowReserved: false },
     ]);

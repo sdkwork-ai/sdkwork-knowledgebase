@@ -16,6 +16,7 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_memory_context:
 use sdkwork_knowledgebase_contract::rag::KnowledgeMemoryContextFragment;
 use sdkwork_memory_app_sdk_generated_rust::models::MemoryRecord;
 use sdkwork_memory_app_sdk_generated_rust::SdkworkMemoryAppClient;
+use sdkwork_utils_rust::is_blank;
 
 /// Default per-turn memory retrieval deadline.
 pub const DEFAULT_MEMORY_TIMEOUT: Duration = Duration::from_secs(8);
@@ -139,12 +140,12 @@ fn validate_request(
             "tenant_id is required".to_string(),
         ));
     }
-    if request.query.trim().is_empty() {
+    if is_blank(Some(request.query.as_str())) {
         return Err(KnowledgeMemoryContextProviderError::InvalidRequest(
             "query is required".to_string(),
         ));
     }
-    if request.memory_policy_ref.trim().is_empty() {
+    if is_blank(Some(request.memory_policy_ref.as_str())) {
         return Err(KnowledgeMemoryContextProviderError::InvalidRequest(
             "memory_policy_ref is required".to_string(),
         ));

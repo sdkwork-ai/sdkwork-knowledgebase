@@ -168,7 +168,8 @@ fn contract_regression_guards_pin_wechat_envelopes_and_okf_space_param() {
             && !applets.contains("KnowledgeWechatAppletList"),
         "applets GET must use the data.items envelope: {applets}"
     );
-    let fan_tags = list_response("/app/v3/api/knowledge/wechat/official_accounts/{accountId}/fan_tags");
+    let fan_tags =
+        list_response("/app/v3/api/knowledge/wechat/official_accounts/{accountId}/fan_tags");
     assert!(
         fan_tags.contains("\"items\"") && fan_tags.contains("KnowledgeWechatFanTag\""),
         "fan_tags GET must use the data.items envelope: {fan_tags}"
@@ -212,4 +213,3 @@ fn contract_regression_guards_pin_wechat_envelopes_and_okf_space_param() {
         );
     }
 }
-

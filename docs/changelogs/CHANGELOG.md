@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+### Fixed
+
+- PostgreSQL repository reads no longer fail on `TIMESTAMPTZ`/`JSONB` columns under
+  `sqlx::Any`: provider binding, provider migration, wiki public provider and drive-inbox
+  projections render timestamps as RFC 3339 UTC text and JSONB payloads as text. Wiki drive-event
+  replay now compares parsed JSON values and instants, so a JSONB round-trip or a zero fractional
+  second is not mistaken for a different payload. `SqlTimestampDialect::sql_timestamp_text_expr`
+  pins `AT TIME ZONE 'UTC'` so rendered instants do not depend on the server time zone.
+- Runtime configuration rejects the retired `demo` environment: the standalone gateway, group
+  launch ticket consumer, RPC host and provider-secret adapter accept only development, test,
+  staging and production, and fail closed otherwise.
+- PostgreSQL integration tests open RLS-scoped pools through a shared `tests/support` helper,
+  clean their tenant/organization scope, serialize shared-schema wiki tests, and keep the
+  schema-destructive audit-failure probe behind `#[ignore]` for an isolated database job.
+- Release verification was hardened: tracked-manifest discovery replaces recursive filesystem
+  walks in `verify_phase1.ps1`, the required operationId list matches the current contract,
+  external-wire operations may declare explicit anonymous security, provider-certification
+  artifact roots are compared after `realpath`, and the document-extraction component declares
+  the standard `backend-provider` layer role. The legal-hold release command now declares the
+  API_SPEC-required typed command body.
+
+### Changed
+
+- Upgraded the dependency baseline to current compatible releases. Rust: OpenTelemetry
+  0.33/tracing-opentelemetry 0.34, reqwest 0.13 (rustls + webpki roots), thiserror 2,
+  sha2/sha1 0.11, hmac/hkdf 0.13, aes 0.9, cbc 0.2, aes-gcm 0.11, base64 0.23, quick-xml 0.42,
+  pdf-extract 0.12, zip 9. The AES-GCM path now uses hybrid-array keys/nonces and `getrandom`
+  0.4, the WeChat replay hash and engine chunk ids reuse `sdkwork-utils-rust::hex_encode`, and
+  the document extractor uses quick-xml's `xml10_content`/`normalized_value` APIs.
+- PC toolchain aligned to the workspace catalog: Vite 8.3.4 (Rolldown) with native
+  `advancedChunks` splitting (function-based groups plus a 640 KiB `maxSize`), plugin-react
+  6.1.2, vitest 4.1.12, esbuild 0.28.2, TypeScript 6.0.3. The production browser build passes
+  the 650 KiB per-chunk budget.
+
 ### Added
 
 - Added `sdkwork-knowledgebase-provider-secret-adapter` and a typed Provider credential access

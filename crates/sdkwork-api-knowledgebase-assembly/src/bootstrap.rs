@@ -117,16 +117,17 @@ pub fn assemble_app_api_contribution(
 
 pub async fn assemble_api_router_from_environment() -> Result<ApiAssembly, BootstrapError> {
     let runtime = runtime_from_environment_with_group_launch_ticket_consumer(None).await?;
-    assemble_api_router(runtime)
-        .await
-        .map_err(|error| Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(error)))
+    assemble_api_router(runtime).await.map_err(|error| {
+        Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(error))
+    })
 }
 
 pub async fn assemble_app_api_contribution_from_environment() -> Result<ApiAssembly, BootstrapError>
 {
     let runtime = runtime_from_environment_with_group_launch_ticket_consumer(None).await?;
-    assemble_app_api_contribution(runtime)
-        .map_err(|error| Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(error)))
+    assemble_app_api_contribution(runtime).map_err(|error| {
+        Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(error))
+    })
 }
 
 pub async fn assemble_api_router_from_environment_with_group_launch_ticket_consumer<T>(
@@ -140,9 +141,9 @@ where
             .map(|consumer| -> Arc<dyn GroupLaunchTicketConsumer> { Arc::new(consumer) }),
     )
     .await?;
-    assemble_api_router(runtime)
-        .await
-        .map_err(|error| Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(error)))
+    assemble_api_router(runtime).await.map_err(|error| {
+        Box::<dyn std::error::Error + Send + Sync>::from(std::io::Error::other(error))
+    })
 }
 
 pub async fn assemble_business_routes_from_environment() -> Result<ApiAssembly, BootstrapError> {

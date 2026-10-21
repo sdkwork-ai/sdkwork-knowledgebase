@@ -145,26 +145,49 @@ pub fn expand_ranked_with_link_edges(
     tokens: &[String],
     max_candidates: usize,
 ) -> Vec<(f64, OkfConceptSummary)> {
-    if edges.is_empty() {
+    if edges.is_empty() || ranked.is_empty() || max_candidates == 0 {
         return ranked;
     }
+
+    // Index incident edges by endpoint and lowercase each anchor exactly once.
+    // Expansion then costs O(candidates + incident edges) string work instead of
+    // O(seeds x edges) with one lowercased allocation per pair.
+    let mut outbound: HashMap<&str, Vec<usize>> = HashMap::new();
+    let mut inbound: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (index, edge) in edges.iter().enumerate() {
+        outbound
+            .entry(edge.from_concept_id.as_str())
+            .or_default()
+            .push(index);
+        inbound
+            .entry(edge.to_concept_id.as_str())
+            .or_default()
+            .push(index);
+    }
+    let anchor_text_lower = edges
+        .iter()
+        .map(|edge| edge.anchor_text.to_lowercase())
+        .collect::<Vec<_>>();
 
     let mut score_by_id = ranked
         .iter()
         .map(|(score, concept)| (concept.concept_id.clone(), *score))
         .collect::<HashMap<_, _>>();
 
-    let seeds = ranked
+    let mut seeds = ranked
         .iter()
         .filter(|(score, _)| *score > 0.0)
         .map(|(score, concept)| (*score, concept.concept_id.clone()))
         .collect::<Vec<_>>();
+    seeds.sort_by(|left, right| left.1.cmp(&right.1));
+    seeds.dedup_by(|left, right| left.1 == right.1);
 
     for (score, concept_id) in seeds {
-        for edge in edges {
-            if edge.from_concept_id == concept_id {
+        if let Some(indices) = outbound.get(concept_id.as_str()) {
+            for &index in indices {
+                let edge = &edges[index];
                 let anchor_bonus = tokens.iter().any(|token| {
-                    !token.is_empty() && edge.anchor_text.to_lowercase().contains(token.as_str())
+                    !token.is_empty() && anchor_text_lower[index].contains(token.as_str())
                 });
                 let boost = score * LINK_OUTBOUND_BOOST
                     + if anchor_bonus {
@@ -181,7 +204,10 @@ pub fn expand_ranked_with_link_edges(
                     max_candidates,
                 );
             }
-            if edge.to_concept_id == concept_id {
+        }
+        if let Some(indices) = inbound.get(concept_id.as_str()) {
+            for &index in indices {
+                let edge = &edges[index];
                 apply_link_boost(
                     &mut score_by_id,
                     &edge.from_concept_id,

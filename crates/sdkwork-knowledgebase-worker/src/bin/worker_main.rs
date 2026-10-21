@@ -3,8 +3,8 @@ use sdkwork_knowledgebase_contract::{
     parse_canonical_nonnegative_signed_i64, parse_canonical_positive_signed_i64,
 };
 use sdkwork_knowledgebase_worker::{
-    health, run_polling_loop, MaintenanceConfig, MaintenancePollingConfig,
-    WikiBackfillMaintenanceConfig, WikiDriveEventMaintenanceConfig,
+    health, run_polling_loop, AuditRetentionMaintenanceConfig, MaintenanceConfig,
+    MaintenancePollingConfig, WikiBackfillMaintenanceConfig, WikiDriveEventMaintenanceConfig,
 };
 use sdkwork_routes_knowledgebase_app_api::{bootstrap, KnowledgebaseRuntime};
 
@@ -29,6 +29,7 @@ async fn main() {
         std::env::var("SDKWORK_KNOWLEDGEBASE_WORKER_INGESTION_JOB_BATCH_SIZE")
             .ok()
             .and_then(|value| value.parse::<u32>().ok())
+            .filter(|value| (1..=200).contains(value))
             .unwrap_or(25);
     let ingestion_job_lease_seconds =
         std::env::var("SDKWORK_KNOWLEDGEBASE_WORKER_INGESTION_JOB_LEASE_SECONDS")
@@ -131,11 +132,39 @@ async fn main() {
                 ingestion_max_attempts,
                 wiki_backfill,
                 wiki_drive_events,
+                audit_retention: Some(resolve_audit_retention_config()),
                 phase_timeout: std::time::Duration::from_secs(phase_timeout_seconds),
             },
         },
     )
     .await;
+}
+
+/// Automated audit retention is on by default (365 days, 500 events per tick). Both values are
+/// bounded so a misconfiguration cannot silently disable retention or purge unbounded data.
+fn resolve_audit_retention_config() -> AuditRetentionMaintenanceConfig {
+    let retention_days = match std::env::var("SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_DAYS") {
+        Ok(value) => value
+            .parse::<u32>()
+            .ok()
+            .filter(|value| (30..=3650).contains(value))
+            .unwrap_or_else(|| {
+                panic!("SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_DAYS must be between 30 and 3650")
+            }),
+        Err(std::env::VarError::NotPresent) => 365,
+        Err(error) => {
+            panic!("SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_DAYS could not be read: {error}")
+        }
+    };
+    let batch_size = bounded_u32_env(
+        "SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_BATCH_SIZE",
+        500,
+        1_000,
+    );
+    AuditRetentionMaintenanceConfig {
+        retention_days,
+        batch_size,
+    }
 }
 
 fn resolve_worker_id() -> String {

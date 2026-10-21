@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use sdkwork_intelligence_knowledgebase_service::agent::KnowledgeAgentService;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_agent_profile_store::{
-    KnowledgeAgentProfileStore, KnowledgeAgentProfileStoreError,
+    KnowledgeAgentBindingPage, KnowledgeAgentProfileStore, KnowledgeAgentProfileStoreError,
 };
 use sdkwork_intelligence_knowledgebase_service::retrieval::{
     KnowledgeRetrievalExecutor, KnowledgeRetrievalServiceError,
@@ -109,6 +109,58 @@ async fn retrieval_preview_uses_enabled_agent_bindings_and_profile_model_policy(
 }
 
 #[tokio::test]
+async fn agent_service_pages_bindings_with_keyset_cursor() {
+    let store = RecordingAgentProfileStore::default();
+    let retrieval = RecordingRetrievalExecutor::default();
+    let service = KnowledgeAgentService::new(&store, &retrieval);
+
+    let profile = service
+        .create_profile(profile_request("Paged Agent"))
+        .await
+        .unwrap();
+    service
+        .create_binding(
+            profile.profile_id,
+            binding_request(profile.profile_id, 7, 20, true),
+        )
+        .await
+        .unwrap();
+    service
+        .create_binding(
+            profile.profile_id,
+            binding_request(profile.profile_id, 9, 10, true),
+        )
+        .await
+        .unwrap();
+
+    let first = service
+        .list_bindings_page(profile.profile_id, None, 1)
+        .await
+        .unwrap();
+    assert_eq!(first.items.len(), 1);
+    assert_eq!(first.items[0].binding_id, 601);
+    assert_eq!(first.next_cursor, Some(601));
+    assert!(first.has_more);
+
+    let second = service
+        .list_bindings_page(profile.profile_id, first.next_cursor, 1)
+        .await
+        .unwrap();
+    assert_eq!(second.items.len(), 1);
+    assert_eq!(second.items[0].binding_id, 602);
+    assert_eq!(second.next_cursor, None);
+    assert!(!second.has_more);
+
+    for page_size in [0, 201] {
+        let error = service
+            .list_bindings_page(profile.profile_id, None, page_size)
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("between 1 and 200"));
+    }
+}
+
+#[tokio::test]
 async fn agent_service_rejects_binding_profile_mismatch() {
     let store = RecordingAgentProfileStore::default();
     let retrieval = RecordingRetrievalExecutor::default();
@@ -150,6 +202,7 @@ impl KnowledgeAgentProfileStore for RecordingAgentProfileStore {
         let profile = KnowledgeAgentProfile {
             profile_id: 501,
             tenant_id: request.tenant_id,
+            created_by: request.created_by.unwrap_or(0),
             name: request.name,
             description: request.description,
             system_instruction: request.system_instruction,
@@ -193,6 +246,7 @@ impl KnowledgeAgentProfileStore for RecordingAgentProfileStore {
         let profile = KnowledgeAgentProfile {
             profile_id,
             tenant_id: request.tenant_id,
+            created_by: request.created_by.unwrap_or(0),
             name: request.name,
             description: request.description,
             system_instruction: request.system_instruction,
@@ -240,6 +294,35 @@ impl KnowledgeAgentProfileStore for RecordingAgentProfileStore {
             .get(&profile_id)
             .cloned()
             .unwrap_or_default())
+    }
+
+    async fn list_bindings_page(
+        &self,
+        profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
+    ) -> Result<KnowledgeAgentBindingPage, KnowledgeAgentProfileStoreError> {
+        let mut bindings = self.list_bindings(profile_id).await?;
+        bindings.sort_by_key(|binding| binding.binding_id);
+        let after_id = cursor.unwrap_or(0);
+        let mut items = bindings
+            .into_iter()
+            .filter(|binding| binding.binding_id > after_id)
+            .collect::<Vec<_>>();
+        let has_more = items.len() > page_size as usize;
+        if has_more {
+            items.truncate(page_size as usize);
+        }
+        let next_cursor = if has_more {
+            items.last().map(|binding| binding.binding_id)
+        } else {
+            None
+        };
+        Ok(KnowledgeAgentBindingPage {
+            items,
+            next_cursor,
+            has_more,
+        })
     }
 
     async fn create_binding(
@@ -343,6 +426,7 @@ impl KnowledgeRetrievalExecutor for RecordingRetrievalExecutor {
 fn profile_request(name: &str) -> KnowledgeAgentProfileRequest {
     KnowledgeAgentProfileRequest {
         tenant_id: 100001,
+        created_by: None,
         name: name.to_string(),
         description: Some("Answers from support knowledge bases.".to_string()),
         system_instruction: "Answer with citations.".to_string(),
@@ -387,6 +471,7 @@ fn profile(
     KnowledgeAgentProfile {
         profile_id,
         tenant_id: 100001,
+        created_by: 30001,
         name: name.to_string(),
         description: Some("Answers from support knowledge bases.".to_string()),
         system_instruction: "Answer with citations.".to_string(),

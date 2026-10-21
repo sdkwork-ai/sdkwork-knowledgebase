@@ -21,17 +21,17 @@
     "react": "^19.0.0"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.11.1",
     "@sdkwork/drive-app-sdk": "workspace:*",
+    "@sdkwork/iam-credential-entry": "workspace:*",
     "@sdkwork/knowledgebase-app-sdk": "workspace:*",
     "@sdkwork/sdk-common": "workspace:*",
-    "@sdkwork/iam-credential-entry": "workspace:*",
     "@sdkwork/sdkwork-knowledgebase-pc-commons": "workspace:*",
-    "@sdkwork/utils": "workspace:*"
+    "@sdkwork/utils": "workspace:*",
+    "@tauri-apps/api": "^2.12.4"
   },
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "vitest": "^3.2.4"
+    "vitest": "catalog:"
   }
 }

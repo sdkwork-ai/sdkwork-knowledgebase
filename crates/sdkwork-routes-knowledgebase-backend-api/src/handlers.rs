@@ -14,14 +14,14 @@ use sdkwork_knowledgebase_contract::provider_binding::{
     UpdateKnowledgeEngineProviderBindingRequest,
 };
 use sdkwork_knowledgebase_contract::{
-    AnonymizeKnowledgeAuditSubjectRequest, CreateKnowledgeSourceRequest,
-    ExportKnowledgeAuditEventsRequest, KnowledgeIndexRequest, KnowledgeOkfProfileRequest,
-    KnowledgeRetrievalProfileRequest, OkfBundleExportRequest, OkfBundleImportRequest,
-    OkfCandidateReviewRequest, OkfCompileJobRequest, OkfConceptPublishRequest,
-    OkfIndexRebuildRequest, OkfLogEntry, OkfQualityRunRequest,
+    AnonymizeKnowledgeAuditSubjectRequest, CreateKnowledgeAuditLegalHoldRequest,
+    CreateKnowledgeSourceRequest, ExportKnowledgeAuditEventsRequest, KnowledgeIndexRequest,
+    KnowledgeOkfProfileRequest, KnowledgeRetrievalProfileRequest, OkfBundleExportRequest,
+    OkfBundleImportRequest, OkfCandidateReviewRequest, OkfCompileJobRequest,
+    OkfConceptPublishRequest, OkfIndexRebuildRequest, OkfLogEntry, OkfQualityRunRequest,
 };
-use serde::Deserialize;
 use sdkwork_utils_rust::SdkWorkCommandData;
+use serde::Deserialize;
 
 use crate::{
     auth::{require_backend_context, require_backend_mutation_context, RequiredBackendContext},
@@ -51,6 +51,69 @@ pub(crate) struct ListOkfCandidatesQuery {
     pub cursor: Option<String>,
     #[serde(rename = "page_size")]
     pub page_size: Option<u32>,
+}
+
+// Query parameter names follow the API_SPEC §13 lower_snake_case canonical form.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct AuditLegalHoldListQuery {
+    pub cursor: Option<String>,
+    #[serde(rename = "page_size")]
+    pub page_size: Option<u32>,
+}
+
+pub(crate) async fn create_audit_legal_hold(
+    State(state): State<BackendState>,
+    context: RequiredBackendContext,
+    Json(request): Json<CreateKnowledgeAuditLegalHoldRequest>,
+) -> Result<Response, BackendApiProblem> {
+    let context =
+        require_backend_mutation_context(&state, context, "compliance.auditLegalHolds.create")?;
+    let created_by = backend_audit_operator_id(&context)?.to_string();
+    let result = state.api.create_audit_legal_hold(request, created_by).await;
+    created_json(
+        audit_backend_mutation(&context, "compliance.auditLegalHolds.create", result).await?,
+    )
+}
+
+pub(crate) async fn list_audit_legal_holds(
+    State(state): State<BackendState>,
+    context: RequiredBackendContext,
+    Query(query): Query<AuditLegalHoldListQuery>,
+) -> Result<Response, BackendApiProblem> {
+    require_backend_context(&state, context)?;
+    let cursor = parse_cursor(query.cursor.as_deref())?;
+    ok_list_json(
+        state
+            .api
+            .list_audit_legal_holds(cursor.map(|id| id.to_string()), query.page_size)
+            .await,
+    )
+}
+
+pub(crate) async fn release_audit_legal_hold(
+    State(state): State<BackendState>,
+    context: RequiredBackendContext,
+    Path(hold_id): Path<u64>,
+) -> Result<Response, BackendApiProblem> {
+    let context = require_backend_mutation_context(
+        &state,
+        context,
+        "compliance.auditLegalHolds.release.create",
+    )?;
+    let released_by = backend_audit_operator_id(&context)?.to_string();
+    let result = state
+        .api
+        .release_audit_legal_hold(hold_id, released_by)
+        .await;
+    created_json(
+        audit_backend_mutation(
+            &context,
+            "compliance.auditLegalHolds.release.create",
+            result,
+        )
+        .await?,
+    )
 }
 
 fn parse_cursor(cursor: Option<&str>) -> Result<Option<u64>, BackendApiProblem> {
@@ -146,10 +209,7 @@ fn provider_audit_metadata(
 // (data.accepted) per API_SPEC section 15.4, mirroring the provider command
 // handlers; resourceId/status carry the operation outcome when the port
 // result exposes it.
-fn command_data(
-    resource_id: Option<String>,
-    status: Option<String>,
-) -> SdkWorkCommandData {
+fn command_data(resource_id: Option<String>, status: Option<String>) -> SdkWorkCommandData {
     SdkWorkCommandData {
         accepted: true,
         resource_id,
@@ -923,10 +983,12 @@ backend_handler!(
 // Security: The summary is scoped to the authenticated principal's tenant id,
 // validated against the configured runtime tenant before the store is read.
 // Returns space count, document count, and status for the current tenant.
-backend_handler!(retrieve_current_tenant, |state: BackendState,
-                                            context: KnowledgeBackendRequestContext| async move {
-    ok_json(state.api.retrieve_current_tenant(&context).await)
-});
+backend_handler!(
+    retrieve_current_tenant,
+    |state: BackendState, context: KnowledgeBackendRequestContext| async move {
+        ok_json(state.api.retrieve_current_tenant(&context).await)
+    }
+);
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -1091,6 +1153,9 @@ mod tests {
 
         let provider_alias: Result<ListProviderBindingsQuery, _> =
             serde_urlencoded::from_str("page_size=25&pageSize=25");
-        assert!(provider_alias.is_err(), "provider list alias must be rejected");
+        assert!(
+            provider_alias.is_err(),
+            "provider list alias must be rejected"
+        );
     }
 }

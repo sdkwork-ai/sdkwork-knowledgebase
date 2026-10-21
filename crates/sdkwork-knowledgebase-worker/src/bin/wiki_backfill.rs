@@ -227,7 +227,7 @@ enum BackfillCommandError {
     InvalidAfterSpaceId,
     #[error("{0} requires a value")]
     MissingArgumentValue(&'static str),
-    #[error("unexpected or repeated argument: {0}\n{}", usage())]
+    #[error("unexpected or repeated argument: {0}\n{usage}", usage = usage())]
     UnexpectedArgument(String),
     #[error("SDKWORK_DATABASE_URL is required")]
     DatabaseUrlMissing,

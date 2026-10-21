@@ -163,5 +163,6 @@ Teams need a knowledge platform that combines structured documentation, retrieva
 - **Billing owner:** SDKWork platform integration remains a commercial release dependency; this
   application does not implement an independent subscription authority.
 - **Minimum enterprise audit retention period:** policy is documented in
-  [audit-retention.md](../../runbooks/audit-retention.md); bounded export, anonymization, and
-  automated purge require release evidence before commercial launch.
+  [audit-retention.md](../../runbooks/audit-retention.md); bounded export, anonymization, subject
+  legal holds, and automated batched purge are implemented, and a production-like purge run with
+  its counter/log evidence remains a commercial release gate.

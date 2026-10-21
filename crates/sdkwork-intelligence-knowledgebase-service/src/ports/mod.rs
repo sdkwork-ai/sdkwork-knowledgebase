@@ -34,6 +34,7 @@ pub mod knowledge_retrieval_backend;
 pub mod knowledge_retrieval_trace_store;
 pub mod knowledge_source_store;
 pub mod knowledge_space_store;
+pub mod knowledge_wechat_config_lock;
 pub mod knowledge_wiki_drive_source;
 pub mod knowledge_wiki_persistence;
 pub mod knowledge_wiki_public_provider;

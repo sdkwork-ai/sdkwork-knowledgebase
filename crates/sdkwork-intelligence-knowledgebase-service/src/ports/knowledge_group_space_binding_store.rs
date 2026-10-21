@@ -114,12 +114,14 @@ pub trait KnowledgeGroupSpaceBindingStore: Send + Sync {
         conversation_id: &str,
     ) -> Result<GroupKnowledgeSpaceBinding, KnowledgeGroupSpaceBindingStoreError>;
 
-    /// Resolves a group-managed space before organization-level authorization. Callers must not
-    /// use an organization-scoped lookup here: a matching tenant binding in another organization
-    /// is still group-managed and must fail closed rather than fall back to generic Drive ACLs.
+    /// Resolves a group-managed space for one deployment organization. The organization
+    /// predicate is mandatory: another organization in the same tenant may also own a binding
+    /// for this space id, and that binding must fail closed rather than fall back to generic
+    /// Drive ACLs.
     async fn find_group_space_for_space_in_tenant(
         &self,
         tenant_id: u64,
+        organization_id: u64,
         space_id: u64,
     ) -> Result<Option<GroupKnowledgeSpaceBinding>, KnowledgeGroupSpaceBindingStoreError>;
 
@@ -239,12 +241,14 @@ pub trait KnowledgeGroupSpaceBindingStore: Send + Sync {
         limit: u32,
     ) -> Result<Vec<ArchiveGroupKnowledgeSpaceCommand>, KnowledgeGroupSpaceBindingStoreError>;
 
-    /// Returns bounded archive work across every organization owned by one worker-authorized
-    /// tenant. The persisted row supplies each command's organization scope; callers must never
-    /// manufacture that scope from an environment default.
+    /// Returns bounded archive work for the deployment organization of one worker-authorized
+    /// tenant. The persisted row supplies each command's organization scope; the deployment
+    /// organization predicate prevents a worker from scanning another organization's bindings
+    /// that happen to share the tenant.
     async fn list_resumable_group_space_archives_for_tenant(
         &self,
         tenant_id: u64,
+        organization_id: u64,
         limit: u32,
     ) -> Result<Vec<ArchiveGroupKnowledgeSpaceCommand>, KnowledgeGroupSpaceBindingStoreError>;
 

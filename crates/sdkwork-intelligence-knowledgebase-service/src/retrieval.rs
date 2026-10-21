@@ -35,6 +35,21 @@ use thiserror::Error;
 const DEFAULT_TOP_K: u32 = 8;
 const MAX_TOP_K: u32 = 64;
 
+/// Maximum number of bindings one retrieval request may fan out to.
+///
+/// A binding is a separate backend query per requested method, and the HTTP
+/// request body limit (1 MiB) allows thousands of bindings. Without this bound a
+/// single authenticated caller can turn one retrieval request into thousands of
+/// sequential ACL checks and backend searches, exhausting the process-wide
+/// blocking executor and the database pool (`PERFORMANCE_SPEC`, `PAGINATION_SPEC`
+/// section 2).
+pub const MAX_RETRIEVAL_BINDINGS: usize = 16;
+
+/// Maximum number of distinct retrieval methods per request. The method set is a
+/// closed enum, so anything beyond its cardinality is either a duplicate or an
+/// unsupported value.
+pub const MAX_RETRIEVAL_METHODS: usize = 3;
+
 pub struct KnowledgeRetrievalService<'a> {
     backend: &'a dyn KnowledgeRetrievalBackend,
     traces: &'a dyn KnowledgeRetrievalTraceStore,
@@ -383,10 +398,20 @@ fn validate_request(
             "at least one binding is required".to_string(),
         ));
     }
+    if request.bindings.len() > MAX_RETRIEVAL_BINDINGS {
+        return Err(KnowledgeRetrievalServiceError::InvalidRequest(format!(
+            "bindings must contain at most {MAX_RETRIEVAL_BINDINGS} entries"
+        )));
+    }
     if request.bindings.iter().any(|binding| binding.space_id == 0) {
         return Err(KnowledgeRetrievalServiceError::InvalidRequest(
             "binding space_id is required".to_string(),
         ));
+    }
+    if request.methods.len() > MAX_RETRIEVAL_METHODS {
+        return Err(KnowledgeRetrievalServiceError::InvalidRequest(format!(
+            "methods must contain at most {MAX_RETRIEVAL_METHODS} entries"
+        )));
     }
     Ok(())
 }
@@ -394,6 +419,8 @@ fn validate_request(
 fn sorted_bindings(bindings: &[KnowledgeRetrievalBinding]) -> Vec<KnowledgeRetrievalBinding> {
     let mut bindings = bindings.to_vec();
     bindings.sort_by_key(|binding| std::cmp::Reverse(binding.priority));
+    // A caller may repeat one space with different filters; each entry still costs a
+    // backend query, so the loop below is bounded by MAX_RETRIEVAL_BINDINGS entries.
     bindings
 }
 
@@ -401,7 +428,14 @@ fn normalize_methods(methods: &[KnowledgeRetrievalMethod]) -> Vec<KnowledgeRetri
     if methods.is_empty() {
         return vec![KnowledgeRetrievalMethod::Hybrid];
     }
-    methods.to_vec()
+    // Deduplicate so a repeated method cannot multiply backend work.
+    let mut normalized = Vec::with_capacity(methods.len().min(MAX_RETRIEVAL_METHODS));
+    for method in methods {
+        if !normalized.contains(method) {
+            normalized.push(*method);
+        }
+    }
+    normalized
 }
 
 fn normalize_top_k(top_k: Option<u32>) -> u32 {
@@ -548,4 +582,83 @@ pub enum KnowledgeRetrievalServiceError {
     MemoryProvider(#[from] KnowledgeMemoryContextProviderError),
     #[error(transparent)]
     TraceStore(#[from] KnowledgeRetrievalTraceStoreError),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn binding(space_id: u64) -> KnowledgeRetrievalBinding {
+        KnowledgeRetrievalBinding {
+            space_id,
+            source_filter: None,
+            document_filter: None,
+            priority: 0,
+            top_k: None,
+            min_score: None,
+        }
+    }
+
+    fn request(bindings: Vec<KnowledgeRetrievalBinding>) -> KnowledgeRetrievalRequest {
+        KnowledgeRetrievalRequest {
+            tenant_id: 1,
+            actor_id: None,
+            query: "how do we ship".to_string(),
+            retrieval_profile_id: None,
+            bindings,
+            methods: vec![KnowledgeRetrievalMethod::Hybrid],
+            top_k: None,
+            include_citations: true,
+            include_trace: false,
+            context_budget_tokens: None,
+            metadata: vec![],
+        }
+    }
+
+    #[test]
+    fn retrieval_rejects_more_bindings_than_the_fan_out_bound() {
+        let accepted = (0..MAX_RETRIEVAL_BINDINGS)
+            .map(|index| binding(index as u64 + 1))
+            .collect();
+        assert!(validate_request(&request(accepted)).is_ok());
+
+        let rejected = (0..=MAX_RETRIEVAL_BINDINGS)
+            .map(|index| binding(index as u64 + 1))
+            .collect();
+        assert!(matches!(
+            validate_request(&request(rejected)),
+            Err(KnowledgeRetrievalServiceError::InvalidRequest(detail))
+                if detail.contains("bindings must contain at most")
+        ));
+    }
+
+    #[test]
+    fn retrieval_rejects_more_methods_than_the_closed_enum_cardinality() {
+        let mut oversized = request(vec![binding(1)]);
+        oversized.methods = vec![KnowledgeRetrievalMethod::Hybrid; MAX_RETRIEVAL_METHODS + 1];
+        assert!(matches!(
+            validate_request(&oversized),
+            Err(KnowledgeRetrievalServiceError::InvalidRequest(detail))
+                if detail.contains("methods must contain at most")
+        ));
+    }
+
+    #[test]
+    fn retrieval_normalizes_empty_and_duplicate_methods() {
+        let empty = normalize_methods(&[]);
+        assert_eq!(empty, vec![KnowledgeRetrievalMethod::Hybrid]);
+
+        let deduplicated = normalize_methods(&[
+            KnowledgeRetrievalMethod::Keyword,
+            KnowledgeRetrievalMethod::Keyword,
+            KnowledgeRetrievalMethod::Hybrid,
+        ]);
+        assert_eq!(
+            deduplicated,
+            vec![
+                KnowledgeRetrievalMethod::Keyword,
+                KnowledgeRetrievalMethod::Hybrid
+            ]
+        );
+    }
 }

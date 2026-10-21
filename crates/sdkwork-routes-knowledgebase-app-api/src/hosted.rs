@@ -189,14 +189,10 @@ impl KnowledgeIngestAppService for HostedIngestService {
             .run(request, space.drive_space_id.as_deref(), "api-ingest")
             .await
             .map_err(ApiError::from)?;
-        if let Some(document_version_id) = result.document_version_id {
-            // Fire-and-forget by design: the API response is the persisted ingest job, not the
-            // async index build. `try_embed_document_version` records metrics and error logs on
-            // every failure so unindexed documents remain observable and reconcilable.
-            self.runtime
-                .try_embed_document_version(space_id, document_version_id)
-                .await;
-        }
+        // Post-ingest embedding is worker-owned. The document persists its content and chunks
+        // with `index_state = pending`; the worker drains the durable embedding backlog
+        // (`list_documents_pending_embedding`) and marks the document indexed. The HTTP request
+        // never waits on the model provider, and a restart or provider outage cannot lose work.
         Ok(result.job)
     }
 
@@ -270,22 +266,10 @@ impl KnowledgeDriveImportAppService for HostedDriveImportService {
             sdkwork_knowledgebase_document_extraction::DefaultDocumentTextExtractor::new(),
         )));
         match pipeline.process_drive_import_result(&result).await {
-            Ok(pipeline_result) => {
-                if let Some(index_result) = pipeline_result.index_result {
-                    // Fire-and-forget: failures are recorded inside `try_embed_document_version`
-                    // (metric + error log) so unindexed versions stay observable.
-                    self.runtime
-                        .try_embed_document_version(
-                            result.document.space_id,
-                            index_result.document_version_id,
-                        )
-                        .await;
-                }
-                Ok(KnowledgeDriveImportResult {
-                    job: pipeline_result.job,
-                    ..result
-                })
-            }
+            Ok(pipeline_result) => Ok(KnowledgeDriveImportResult {
+                job: pipeline_result.job,
+                ..result
+            }),
             Err(error) => Err(ApiError::from(error)),
         }
     }
@@ -326,13 +310,8 @@ impl KnowledgeGitImportAppService for HostedGitImportService {
             .import_repository(request, space.drive_space_id.as_deref())
             .await
             .map_err(ApiError::from)?;
-        for document_version_id in run.document_version_ids {
-            // Fire-and-forget: failures are recorded inside `try_embed_document_version`
-            // (metric + error log) so unindexed versions stay observable.
-            self.runtime
-                .try_embed_document_version(space_id, document_version_id)
-                .await;
-        }
+        // Embedding for every imported version is drained by the worker from the durable
+        // pending-embedding backlog; the import response never serializes provider calls.
         Ok(run.result)
     }
 

@@ -78,7 +78,8 @@ describe('knowledgebase permission bootstrap alignment', () => {
       gatewayMain,
       /sdkwork_api_iam_assembly::assemble_app_api_contribution/,
     );
-    assert.match(gatewayMain, /ComposedApiAssembly::try_compose/);
+    assert.match(gatewayMain, /ApiModuleRegistry::new\(\)/);
+    assert.match(gatewayMain, /\.try_compose\(/);
     assert.match(gatewayCargo, /^sdkwork_api_iam_assembly\.workspace\s*=\s*true$/m);
     assert.doesNotMatch(assemblyBootstrap, /sdkwork_api_iam_assembly/);
     assert.doesNotMatch(assemblyCargo, /sdkwork[_-]api[_-]iam[_-]assembly/);

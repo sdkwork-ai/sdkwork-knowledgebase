@@ -431,26 +431,25 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             return Err(space_sqlx_error(error));
         }
 
-        let existing_drive_space: Option<String> =
-            match sqlx::query_scalar(
-                r#"
+        let existing_drive_space: Option<String> = match sqlx::query_scalar(
+            r#"
             SELECT drive_space_uuid
             FROM kb_site_publication
             WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3 AND status = 1
             "#,
-            )
-            .bind(tenant_id)
-            .bind(organization_id)
-            .bind(space_id_i64)
-            .fetch_optional(&mut *transaction)
-            .await
-            {
-                Ok(row) => row,
-                Err(error) => {
-                    let _ = transaction.rollback().await;
-                    return Err(space_sqlx_error(error));
-                }
-            };
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(space_id_i64)
+        .fetch_optional(&mut *transaction)
+        .await
+        {
+            Ok(row) => row,
+            Err(error) => {
+                let _ = transaction.rollback().await;
+                return Err(space_sqlx_error(error));
+            }
+        };
         let Some(existing_drive_space) = existing_drive_space else {
             let _ = transaction.rollback().await;
             return Err(KnowledgeSpaceStoreError::Conflict(format!(

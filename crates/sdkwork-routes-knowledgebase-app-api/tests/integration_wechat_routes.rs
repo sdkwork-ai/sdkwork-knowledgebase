@@ -553,7 +553,19 @@ impl TestWechatApi {
     }
 
     fn service(&self) -> KnowledgeWechatService<'_> {
+        // Mirror the hosted wiring: publication is opt-in through the same environment switch
+        // the integration env guard sets for publish-path tests.
+        let publish_enabled = std::env::var("SDKWORK_KNOWLEDGEBASE_WECHAT_PUBLISH_ENABLED")
+            .ok()
+            .map(|value| {
+                matches!(
+                    value.trim().to_ascii_lowercase().as_str(),
+                    "1" | "true" | "yes"
+                )
+            })
+            .unwrap_or(false);
         KnowledgeWechatService::new(&self.drive, "tenant-1", Arc::clone(&self.api_client))
+            .with_publish_enabled(publish_enabled)
     }
 }
 
@@ -568,9 +580,7 @@ impl KnowledgeAppApi for TestWechatApi {
             .list_official_accounts()
             .await
             .map_err(ApiError::from)?;
-        Ok(sdkwork_routes_knowledgebase_app_api::pagination::fixed_list_page_data(
-            accounts,
-        ))
+        Ok(sdkwork_routes_knowledgebase_app_api::pagination::fixed_list_page_data(accounts))
     }
 
     async fn replace_wechat_official_accounts(
@@ -595,9 +605,7 @@ impl KnowledgeAppApi for TestWechatApi {
             .list_applets()
             .await
             .map_err(ApiError::from)?;
-        Ok(sdkwork_routes_knowledgebase_app_api::pagination::fixed_list_page_data(
-            applets,
-        ))
+        Ok(sdkwork_routes_knowledgebase_app_api::pagination::fixed_list_page_data(applets))
     }
 
     async fn replace_wechat_applets(
@@ -641,7 +649,11 @@ fn test_app() -> axum::Router {
 }
 
 fn test_app_with_api(api: TestWechatApi) -> axum::Router {
-    dev_auth::with_dev_app_auth(build_router_with_app_api(api), TEST_TENANT_ID, Some(TEST_ACTOR_ID))
+    dev_auth::with_dev_app_auth(
+        build_router_with_app_api(api),
+        TEST_TENANT_ID,
+        Some(TEST_ACTOR_ID),
+    )
 }
 
 static WECHAT_INTEGRATION_ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -650,6 +662,7 @@ struct WechatIntegrationEnvGuard {
     _lock: MutexGuard<'static, ()>,
     previous_secret_key: Option<String>,
     previous_secret_key_file: Option<String>,
+    previous_publish_enabled: Option<String>,
 }
 
 impl WechatIntegrationEnvGuard {
@@ -661,17 +674,23 @@ impl WechatIntegrationEnvGuard {
             std::env::var("SDKWORK_KNOWLEDGEBASE_SECRETS_ENCRYPTION_KEY").ok();
         let previous_secret_key_file =
             std::env::var("SDKWORK_KNOWLEDGEBASE_SECRETS_ENCRYPTION_KEY_FILE").ok();
+        let previous_publish_enabled =
+            std::env::var("SDKWORK_KNOWLEDGEBASE_WECHAT_PUBLISH_ENABLED").ok();
 
         std::env::set_var(
             "SDKWORK_KNOWLEDGEBASE_SECRETS_ENCRYPTION_KEY",
             "sdkwork-knowledgebase-wechat-integration-test-secret-key",
         );
         std::env::remove_var("SDKWORK_KNOWLEDGEBASE_SECRETS_ENCRYPTION_KEY_FILE");
+        // Publication is disabled by default in production code; these tests exercise the
+        // explicit opt-in path.
+        std::env::set_var("SDKWORK_KNOWLEDGEBASE_WECHAT_PUBLISH_ENABLED", "true");
 
         Self {
             _lock: lock,
             previous_secret_key,
             previous_secret_key_file,
+            previous_publish_enabled,
         }
     }
 }
@@ -685,6 +704,10 @@ impl Drop for WechatIntegrationEnvGuard {
         restore_env_var(
             "SDKWORK_KNOWLEDGEBASE_SECRETS_ENCRYPTION_KEY_FILE",
             self.previous_secret_key_file.as_deref(),
+        );
+        restore_env_var(
+            "SDKWORK_KNOWLEDGEBASE_WECHAT_PUBLISH_ENABLED",
+            self.previous_publish_enabled.as_deref(),
         );
     }
 }

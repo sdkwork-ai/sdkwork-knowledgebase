@@ -22,16 +22,16 @@
     "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/iam-app-sdk": "workspace:*",
     "@sdkwork/knowledgebase-app-sdk": "workspace:*",
-    "@sdkwork/sdk-common": "workspace:*",
     "@sdkwork/knowledgebase-mp-commons": "workspace:*",
     "@sdkwork/knowledgebase-mp-core": "workspace:*",
     "@sdkwork/knowledgebase-mp-host": "workspace:*",
     "@sdkwork/knowledgebase-mp-knowledge": "workspace:*",
-    "@sdkwork/knowledgebase-mp-shell": "workspace:*"
+    "@sdkwork/knowledgebase-mp-shell": "workspace:*",
+    "@sdkwork/sdk-common": "workspace:*"
   },
   "devDependencies": {
-    "esbuild": "^0.25.10",
-    "miniprogram-api-typings": "^4.1.0",
+    "esbuild": "^0.25.12",
+    "miniprogram-api-typings": "^4.1.3",
     "typescript": "catalog:"
   }
 }

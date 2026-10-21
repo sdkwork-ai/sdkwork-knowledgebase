@@ -21,10 +21,37 @@ const REDIS_TLS_ENV: &str = "SDKWORK_KNOWLEDGEBASE_REDIS_TLS";
 
 const DEFAULT_KEY_PREFIX: &str = "sdkwork:knowledgebase";
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RedisRuntimeConfig {
     url: String,
     key_prefix: String,
+}
+
+/// Redacts userinfo so a `tracing` field or error context can never print the Redis password.
+fn redacted_redis_url(value: &str) -> String {
+    match Url::parse(value) {
+        Ok(mut url) => {
+            if !url.username().is_empty() {
+                let _ = url.set_username("***");
+            }
+            if url.password().is_some() {
+                let _ = url.set_password(Some("***"));
+            }
+            url.into()
+        }
+        // Never echo an unparsable value: it may still contain a password fragment.
+        Err(_) => "<invalid redis url>".to_string(),
+    }
+}
+
+impl std::fmt::Debug for RedisRuntimeConfig {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RedisRuntimeConfig")
+            .field("url", &redacted_redis_url(&self.url))
+            .field("key_prefix", &self.key_prefix)
+            .finish()
+    }
 }
 
 impl RedisRuntimeConfig {

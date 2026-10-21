@@ -32,8 +32,13 @@ use crate::{
 const MIGRATION_COLUMNS: &str = r#"
     id, uuid, tenant_id, organization_id, space_id, source_binding_id,
     target_binding_id, operation_state, requested_by, attempt_count,
-    cutover_at, observation_until, completed_at, last_error_category,
-    created_at, updated_at, version
+    TO_CHAR(cutover_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cutover_at,
+    TO_CHAR(observation_until AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS observation_until,
+    TO_CHAR(completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS completed_at,
+    last_error_category,
+    TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at,
+    TO_CHAR(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS updated_at,
+    version
 "#;
 
 #[derive(Clone)]
@@ -569,7 +574,7 @@ async fn binding_precondition(
     binding_id: u64,
     space_id: u64,
 ) -> Result<BindingPrecondition, KnowledgeEngineProviderMigrationStoreError> {
-    let row = sqlx::query("SELECT lifecycle_state, version, last_tested_at FROM kb_provider_binding WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3 AND id = $4 AND status = 1")
+    let row = sqlx::query("SELECT lifecycle_state, version, TO_CHAR(last_tested_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') AS last_tested_at FROM kb_provider_binding WHERE tenant_id = $1 AND organization_id = $2 AND space_id = $3 AND id = $4 AND status = 1")
         .bind(to_i64("tenant_id", scope.tenant_id)?).bind(to_i64("organization_id", scope.organization_id)?).bind(to_i64("space_id", space_id)?).bind(to_i64("binding_id", binding_id)?)
         .fetch_optional(&mut **tx).await.map_err(sql_error)?.ok_or_else(|| KnowledgeEngineProviderMigrationStoreError::InvalidRequest(format!("binding_id={binding_id} is outside the migration space")))?;
     let state: String = row.try_get("lifecycle_state").map_err(row_error)?;

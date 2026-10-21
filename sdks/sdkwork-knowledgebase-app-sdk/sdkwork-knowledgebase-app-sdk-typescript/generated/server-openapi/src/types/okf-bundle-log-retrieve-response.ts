@@ -1,6 +1,6 @@
 import type { OkfLogDocument } from './okf-log-document';
 
-export interface OkfBundleLogListResponse {
+export interface OkfBundleLogRetrieveResponse {
   code: 0;
   data: unknown & { item: OkfLogDocument; };
   /** Server-owned request correlation id. */

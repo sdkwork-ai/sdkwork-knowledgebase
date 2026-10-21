@@ -263,7 +263,6 @@ pub enum RpcHostEnvironment {
     Test,
     Staging,
     Production,
-    Demo,
 }
 
 impl RpcHostEnvironment {
@@ -273,7 +272,6 @@ impl RpcHostEnvironment {
             "test" => Ok(Self::Test),
             "staging" => Ok(Self::Staging),
             "production" => Ok(Self::Production),
-            "demo" => Ok(Self::Demo),
             _ => Err(
                 GroupKnowledgeSpaceLifecycleRpcHostConfigError::InvalidValue {
                     key: ENVIRONMENT_ENV,
@@ -313,7 +311,7 @@ fn resolve_drive_storage_from_env(
         Some(profile) => profile,
         None if matches!(
             environment,
-            RpcHostEnvironment::Development | RpcHostEnvironment::Test | RpcHostEnvironment::Demo
+            RpcHostEnvironment::Development | RpcHostEnvironment::Test
         ) =>
         {
             "standalone".to_string()

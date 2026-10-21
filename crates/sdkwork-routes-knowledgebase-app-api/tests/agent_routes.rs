@@ -409,6 +409,7 @@ fn profile() -> KnowledgeAgentProfile {
     KnowledgeAgentProfile {
         profile_id: 501,
         tenant_id: 100001,
+        created_by: 30001,
         name: "Support Agent".to_string(),
         description: Some("Support KB".to_string()),
         system_instruction: "Answer with citations.".to_string(),

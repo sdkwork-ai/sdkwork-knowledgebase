@@ -10,7 +10,7 @@ use sdkwork_knowledgebase_contract::okf::{
     OkfLogEntry, OkfLogEventType, OkfRevisionReviewState,
 };
 use sdkwork_utils_rust::is_blank;
-use sqlx::{any::AnyRow, Any, AnyPool, QueryBuilder, Row};
+use sqlx::{any::AnyRow, AnyPool, Row};
 use std::sync::Arc;
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use uuid::Uuid;
@@ -26,6 +26,15 @@ const DELETED_STATUS: i64 = 0;
 const MAX_OKF_LIST_ROWS: i64 = 200;
 const INITIAL_VERSION: i64 = 0;
 const MAX_PROJECTION_BATCH_SIZE: usize = 200;
+/// Upper bound accepted by the bounded OKF search; mirrors the service port
+/// bound so a caller cannot request an unbounded `LIMIT`.
+const MAX_OKF_SEARCH_ROWS: u32 = 500;
+/// Sanitized query terms folded into one `to_tsquery` expression.
+const MAX_OKF_SEARCH_TSQUERY_TERMS: usize = 16;
+/// Full-text document indexed for OKF concept search. It covers the fields the
+/// previous in-memory ranker matched (title, concept id, description, tags) so
+/// SQL filtering does not silently drop a match class.
+const OKF_CONCEPT_SEARCH_VECTOR_SQL: &str = "to_tsvector('simple', title || ' ' || concept_id || ' ' || coalesce(description, '') || ' ' || coalesce(CAST(tags AS TEXT), ''))";
 
 #[derive(Debug, Clone)]
 pub struct PostgresKnowledgeOkfConceptStore {
@@ -556,6 +565,136 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
         Ok((items, next_cursor, has_more))
     }
 
+    async fn search_published_concept_summaries(
+        &self,
+        space_id: u64,
+        tokens: &[String],
+        limit: u32,
+    ) -> Result<Vec<OkfConceptSummary>, KnowledgeOkfConceptStoreError> {
+        let tenant_id = to_i64("tenant_id", self.tenant_id)?;
+        let organization_id = to_i64("organization_id", self.organization_id)?;
+        let space_id = to_i64("space_id", space_id)?;
+        let limit = i64::from(limit.clamp(1, MAX_OKF_SEARCH_ROWS));
+        let tsquery = okf_search_tsquery(tokens);
+
+        // Full text + LIMIT stays in PostgreSQL: the service never materializes
+        // a space to rank it. `to_tsquery` receives a sanitized `a | b` term
+        // list built from already tokenized query terms.
+        let rows = if tsquery.is_empty() {
+            sqlx::query(
+                r#"
+                SELECT
+                    title,
+                    concept_id,
+                    concept_type,
+                    logical_path,
+                    description,
+                    source_count,
+                    CAST(updated_at AS TEXT) AS updated_at,
+                    CAST(tags AS TEXT) AS tags
+                FROM kb_okf_concept
+                WHERE tenant_id = $1
+                  AND organization_id = $2
+                  AND space_id = $3
+                  AND status = $4
+                  AND publish_state = 'published'
+                ORDER BY id ASC
+                LIMIT $5
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(space_id)
+            .bind(ACTIVE_STATUS)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(sqlx_error)?
+        } else {
+            let query = format!(
+                r#"
+                SELECT
+                    title,
+                    concept_id,
+                    concept_type,
+                    logical_path,
+                    description,
+                    source_count,
+                    CAST(updated_at AS TEXT) AS updated_at,
+                    CAST(tags AS TEXT) AS tags
+                FROM kb_okf_concept
+                WHERE tenant_id = $1
+                  AND organization_id = $2
+                  AND space_id = $3
+                  AND status = $4
+                  AND publish_state = 'published'
+                  AND {OKF_CONCEPT_SEARCH_VECTOR_SQL} @@ to_tsquery('simple', $5)
+                ORDER BY ts_rank({OKF_CONCEPT_SEARCH_VECTOR_SQL}, to_tsquery('simple', $5)) DESC, id ASC
+                LIMIT $6
+                "#,
+            );
+            sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
+                .bind(tenant_id)
+                .bind(organization_id)
+                .bind(space_id)
+                .bind(ACTIVE_STATUS)
+                .bind(tsquery)
+                .bind(limit)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(sqlx_error)?
+        };
+
+        rows.into_iter().map(description_from_row).collect()
+    }
+
+    async fn get_published_concept_summary(
+        &self,
+        space_id: u64,
+        concept_id_or_logical_path: &str,
+    ) -> Result<Option<OkfConceptSummary>, KnowledgeOkfConceptStoreError> {
+        let needle = concept_id_or_logical_path.trim();
+        if needle.is_empty() {
+            return Ok(None);
+        }
+        let tenant_id = to_i64("tenant_id", self.tenant_id)?;
+        let organization_id = to_i64("organization_id", self.organization_id)?;
+        let space_id = to_i64("space_id", space_id)?;
+
+        let row = sqlx::query(
+            r#"
+            SELECT
+                title,
+                concept_id,
+                concept_type,
+                logical_path,
+                description,
+                source_count,
+                CAST(updated_at AS TEXT) AS updated_at,
+                CAST(tags AS TEXT) AS tags
+            FROM kb_okf_concept
+            WHERE tenant_id = $1
+              AND organization_id = $2
+              AND space_id = $3
+              AND status = $4
+              AND publish_state = 'published'
+              AND (concept_id = $5 OR logical_path = $5)
+            ORDER BY id ASC
+            LIMIT 1
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(space_id)
+        .bind(ACTIVE_STATUS)
+        .bind(needle)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(sqlx_error)?;
+
+        row.map(description_from_row).transpose()
+    }
+
     async fn list_concept_revisions_page(
         &self,
         concept_row_id: u64,
@@ -709,32 +848,31 @@ impl KnowledgeOkfConceptStore for PostgresKnowledgeOkfConceptStore {
         let tenant_id = to_i64("tenant_id", self.tenant_id)?;
         let organization_id = to_i64("organization_id", self.organization_id)?;
         let space_id = to_i64("space_id", space_id)?;
-        let mut builder = QueryBuilder::<Any>::new(
+        let in_placeholders = (0..logical_paths.len())
+            .map(|index| format!("${}", index + 5))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let query = format!(
             r#"
             SELECT logical_path, id, current_revision_id, publish_state
             FROM kb_okf_concept
-            WHERE organization_id =
-            "#,
+            WHERE tenant_id = $1
+              AND organization_id = $2
+              AND space_id = $3
+              AND status = $4
+              AND logical_path IN ({in_placeholders})
+            "#
         );
-        builder.push_bind(organization_id);
-        builder.push(" AND tenant_id = ");
-        builder.push_bind(tenant_id);
-        builder.push(" AND space_id = ");
-        builder.push_bind(space_id);
-        builder.push(" AND status = ");
-        builder.push_bind(ACTIVE_STATUS);
-        builder.push(" AND logical_path IN (");
-        let mut separated = builder.separated(", ");
+        let mut query = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
+            .bind(tenant_id)
+            .bind(organization_id)
+            .bind(space_id)
+            .bind(ACTIVE_STATUS);
         for path in logical_paths {
-            separated.push_bind(path);
+            query = query.bind(path);
         }
-        separated.push_unseparated(")");
 
-        let rows = builder
-            .build()
-            .fetch_all(&self.pool)
-            .await
-            .map_err(sqlx_error)?;
+        let rows = query.fetch_all(&self.pool).await.map_err(sqlx_error)?;
 
         rows.into_iter().map(projection_from_row).collect()
     }
@@ -906,6 +1044,28 @@ fn description_from_row(row: AnyRow) -> Result<OkfConceptSummary, KnowledgeOkfCo
         updated_at: row.try_get("updated_at").map_err(sqlx_error)?,
         tags: tags_from_json(row.try_get("tags").map_err(sqlx_error)?)?,
     })
+}
+
+/// Builds a sanitized `a | b` tsquery term list from query tokens. Only
+/// alphanumeric characters survive, duplicate terms are dropped, and the term
+/// count is capped so one request cannot build an unbounded expression.
+fn okf_search_tsquery(tokens: &[String]) -> String {
+    let mut terms: Vec<String> = Vec::new();
+    for token in tokens {
+        let term = token
+            .chars()
+            .filter(|character| character.is_alphanumeric())
+            .collect::<String>()
+            .to_lowercase();
+        if term.is_empty() || terms.iter().any(|existing| existing == &term) {
+            continue;
+        }
+        terms.push(term);
+        if terms.len() >= MAX_OKF_SEARCH_TSQUERY_TERMS {
+            break;
+        }
+    }
+    terms.join(" | ")
 }
 
 fn projection_from_row(

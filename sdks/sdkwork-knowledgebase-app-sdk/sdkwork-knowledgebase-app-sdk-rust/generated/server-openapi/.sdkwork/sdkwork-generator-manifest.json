@@ -48,7 +48,7 @@
     },
     {
       "path": "src/api/knowledge.rs",
-      "sha256": "7be710921cd2d9b947c982b034c8df0a0cec9e5c9b03d5a81f93fd6d60ae4f60"
+      "sha256": "f6e55e534eb5300d2740eba9200d550877d1bf1309fa997f3e6a390eb9d091c9"
     },
     {
       "path": "src/api/mod.rs",
@@ -213,10 +213,6 @@
     {
       "path": "src/models/ingests_retrieve_response.rs",
       "sha256": "29333d54699aab4c30957dd5b09892208fd925c0207c688e56840ea3f0635b25"
-    },
-    {
-      "path": "src/models/knowledge_agent_binding_list.rs",
-      "sha256": "619e377866ae0cf4a2f406947c47ec709a71e9a777bc8da5a2bc7dc0de1780a9"
     },
     {
       "path": "src/models/knowledge_agent_binding_request.rs",
@@ -472,7 +468,7 @@
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "dc8388beb40720ec223b4b70d33397f7c4a2101b18198c991555bc9974909099"
+      "sha256": "f87e997ccaa9ef2840d17ca1107294f4a32c1c01976dbda4d6f6feb2467f0cf9"
     },
     {
       "path": "src/models/okf_bundle_export_create_response201.rs",
@@ -499,16 +495,16 @@
       "sha256": "5d41071e3329204ec00c6b7faabdd3503524aaaf8ecf6e1de0e1a53be0673dbb"
     },
     {
-      "path": "src/models/okf_bundle_index_list_response.rs",
-      "sha256": "83395d528ddbe6fd61833989e5734a2a6b937de8a6e05f926e5fe34a639ad5b8"
+      "path": "src/models/okf_bundle_index_retrieve_response.rs",
+      "sha256": "cb985b369a1207ea5efcd7295c49f327af3fd0599a6751ae57f9f10ac347f35d"
     },
     {
-      "path": "src/models/okf_bundle_log_list_response.rs",
-      "sha256": "58c0fa0c4e13d9f743753d20e5db792e997d23c5ae3a354fc6cef189992aa407"
+      "path": "src/models/okf_bundle_log_retrieve_response.rs",
+      "sha256": "6d4371b5822f2255fda9b020408ccca258517ff2199c1b71fe6fe14a2563e233"
     },
     {
-      "path": "src/models/okf_bundle_profile_list_response.rs",
-      "sha256": "0cfd3dec2198efb92e766e8ef907c9b66f9a2097a8fc26be47aa8cae122c0460"
+      "path": "src/models/okf_bundle_profile_retrieve_response.rs",
+      "sha256": "e3e4a71f8c33f17fdf171e81f59c1b640ebf90e6e7528e6273d2f93dde5211c6"
     },
     {
       "path": "src/models/okf_concept_summary_list.rs",

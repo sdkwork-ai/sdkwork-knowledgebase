@@ -11,7 +11,7 @@ use sdkwork_knowledgebase_contract::operations::{
 
 #[test]
 fn okf_operation_ids_are_nested_under_okf_resource() {
-    assert_eq!(OKF_BUNDLE_INDEX_RETRIEVE, "okf.bundle.index.list");
+    assert_eq!(OKF_BUNDLE_INDEX_RETRIEVE, "okf.bundle.index.retrieve");
     assert_eq!(OKF_BUNDLE_INDEX_REBUILD, "okf.bundle.index.rebuild");
     assert_eq!(OKF_LOG_ENTRIES_CREATE, "okf.log.entries.create");
     assert_eq!(OKF_PROFILE_CREATE, "okf.profile.create");

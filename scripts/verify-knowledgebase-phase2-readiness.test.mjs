@@ -130,7 +130,9 @@ describe('knowledgebase Phase 2 commercial readiness alignment', () => {
     assert.match(runbook, /365 days/);
     assert.match(runbook, /compliance\.auditEvents\.export\.create/);
     assert.match(runbook, /compliance\.auditEvents\.anonymizeActor\.create/);
-    assert.match(runbook, /retention automation pending/);
+    assert.match(runbook, /retention automation, legal hold enforcement, and purge drill are implemented/);
+    assert.match(runbook, /compliance\.auditLegalHolds\.create/);
+    assert.match(runbook, /worker `audit_retention`/);
   });
 
   it('indexes current commercial release criteria in the product PRD map', () => {

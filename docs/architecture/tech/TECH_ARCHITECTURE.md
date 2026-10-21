@@ -50,8 +50,11 @@ Derived copies are never edited as competing contract authorities.
 
 ## 2. Technology Choices
 
-- **Backend**: Rust, Axum, SQLx, `sdkwork-web-framework`, PostgreSQL authoritative server storage;
-  SQLite exists only in test/client-local fixtures and is not a server profile
+- **Backend**: Rust, Axum, SQLx, `sdkwork-web-framework`, PostgreSQL authoritative server storage.
+  SQLite is not a server profile: no server crate compiles a SQLite driver,
+  `database/database.manifest.json` declares `postgres` only, and the SQLite schema fixture under
+  `tests/fixtures/database/sqlite/` is a reference artifact whose DDL is executed in memory by the
+  schema-parity test — never a second runtime backend.
 - **Storage**: `sdkwork-drive` via `sdkwork-knowledgebase-drive` only. Standalone may use the Drive
   local provider; cloud requires an active non-local Drive provider resolved from Drive metadata
   and credential references, and startup verifies the configured bucket.
@@ -82,7 +85,19 @@ Derived copies are never edited as competing contract authorities.
 - HTTP boundaries: `sdkwork-routes-knowledgebase-{app,backend,open}-api`
 - Background work: `sdkwork-knowledgebase-worker` (outbox, ingest, group archive, and Provider
   migration maintenance)
-- Ingestion workers atomically claim Drive jobs with owner/token leases, renew leases during processing, reclaim expired work after crashes, and fence stale workers from success or failure commits. Jobs whose lease expired at/over `SDKWORK_KNOWLEDGEBASE_WORKER_INGESTION_MAX_ATTEMPTS` claims are failed permanently instead of being reclaimed forever. Chunk replacement, job completion, and outbox append remain one database transaction.
+- Ingestion workers claim Drive jobs with owner/token leases in one
+  `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING` statement, renew leases
+  during processing, reclaim expired work after crashes, and fence stale workers from success or
+  failure commits. Jobs whose lease expired at/over
+  `SDKWORK_KNOWLEDGEBASE_WORKER_INGESTION_MAX_ATTEMPTS` claims are failed permanently instead of
+  being reclaimed forever. Chunk replacement, job completion, and outbox append remain one database
+  transaction. After chunk replacement the worker persists the ingestion lifecycle
+  (`kb_document_version.parse_state = succeeded`, `kb_document.index_state = running`), and the same
+  maintenance phase drains a durable post-ingest embedding backlog
+  (`kb_document.index_state IN (pending, running)` with chunks and no active embeddings). API
+  ingest, Drive import, and Git import only persist content; they never serialize model-provider
+  calls, and an ingestion that completes leaves the document eligible for worker embedding rather
+  than reporting a synchronous success.
 - The worker maintenance loop drives each domain (outbox, ingestion, Provider migration, group
   archive, wiki backfill/relay/events/sources/delivery renewal) under its own time budget with
   panic and error isolation: one slow webhook or panicking phase can delay only its own domain,
@@ -102,9 +117,10 @@ Derived copies are never edited as competing contract authorities.
 - PostgreSQL is authoritative for server runtimes. Every process pool is created with fixed
   `app.current_tenant_id` and `app.current_organization_id` connection settings. Business RLS
   policies require both columns, use `FORCE ROW LEVEL SECURITY`, and are release-tested through a
-  non-owner role. Server repository bootstrap rejects file-backed SQLite; only in-memory SQLite is
-  retained as a deterministic test fixture. Client-owned local persistence must use its own bounded
-  storage adapter and is never an application-server profile or authoritative shared storage.
+  non-owner role. Server repository bootstrap rejects every non-PostgreSQL engine; no server binary
+  compiles a SQLite driver. The SQLite fixture is exercised only by the repository test target
+  (test-only `sqlx` `sqlite` dev-dependency), which applies its baseline and migrations to an
+  in-memory database so the reference cannot rot.
 - PostgreSQL migrations execute atomically (scripts without an explicit transaction boundary are
   wrapped in BEGIN/COMMIT by `sdkwork-database-lifecycle`), so a mid-script failure never leaves a
   partially migrated schema. The `202607310002_outbox_claim_fencing` migration resets only stale
@@ -114,15 +130,32 @@ Derived copies are never edited as competing contract authorities.
 - Gateway, worker, and internal RPC processes enable the SDKWork process-shared database pool before
   module bootstrap. `SDKWORK_DATABASE_MAX_CONNECTIONS` is one combined process budget split between
   one scoped typed `PgPool` and one scoped `AnyPool` compatibility pool; odd budgets favor the typed
-  pool and values below two fail startup. Drive, pgvector, and cloud provider resolution reuse the
-  typed handle. In processes without a process-shared pool (application public ingress), the
-  one-shot migration pool is closed right after bootstrap so the budget is held only by the business
-  `AnyPool` and the Drive pool; the `AnyPool` applies the resolved `ssl_mode` to its connection URL
-  and shares the typed pool's 10 s acquire timeout, so TLS policy cannot silently downgrade to
-  plaintext. Connections additionally set a 30 s `statement_timeout`. The remaining `AnyPool`
-  compatibility driver must be removed before the first commercial production release; see
+  pool and values below two fail startup. The default budget is 20 (10 typed + 10 compatibility) so
+  ordinary write concurrency cannot exhaust the business pool. Every Knowledgebase pool pins
+  `timezone=UTC`, a 30 s `statement_timeout`, and a 120 s
+  `idle_in_transaction_session_timeout`; every `kb_*` business instant is stored as
+  `TIMESTAMPTZ` (migration `0005_timestamptz_normalization` converts existing columns with
+  `AT TIME ZONE 'UTC'`), and repository binds use `CAST(<rfc3339> AS TIMESTAMPTZ)`, so instants are
+  independent of the host/container time zone. Drive, pgvector, and cloud
+  provider resolution reuse the typed handle. In processes without a process-shared pool
+  (application public ingress), the one-shot migration pool is closed right after bootstrap so the
+  budget is held only by the business `AnyPool` and the Drive pool; the `AnyPool` applies the
+  resolved `ssl_mode` to its connection URL and shares the typed pool's 10 s acquire timeout, so TLS
+  policy cannot silently downgrade to plaintext. Quota-enforcing transactions additionally set a 3 s
+  `lock_timeout` before taking the per-tenant advisory lock, so a contended writer fails its own
+  request quickly instead of occupying a pooled connection until the statement timeout. The
+  remaining `AnyPool` compatibility driver must be removed before the first commercial production
+  release; see
   [ADR-20260730-knowledgebase-process-shared-database-pool.md](../decisions/ADR-20260730-knowledgebase-process-shared-database-pool.md).
 - Media tasks consume the generated `cloudrouter-open-sdk` through the existing credential-resolving provider boundary. Image requests require URL output to keep base64 image payloads out of process memory; transcription accepts bounded HTTPS references and rejects local/private hosts.
+- Audit retention is automated in the worker: one `audit_retention` phase deletes at most
+  `SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_BATCH_SIZE` (default 500, max 1000) `kb_audit_event`
+  rows older than `SDKWORK_KNOWLEDGEBASE_AUDIT_RETENTION_DAYS` (default 365, 30..3650). The delete
+  is a single statement over the `(tenant_id, organization_id, created_at, id)` index and skips
+  events whose actor/resource has an active `kb_audit_legal_hold` row; the phase is bounded,
+  idempotent, and reports `knowledgebase_audit_events_purged_total`. Legal holds are managed by
+  backend admin operations `compliance.auditLegalHolds.{create,list,release.create}` (dual-token,
+  `knowledge.platform.manage`, mutation-audited), which list with opaque cursor pagination.
 - WeChat account/applet configuration is a tenant-scoped Drive object with a 1 MiB read/write
   boundary, encrypted secret fields, bounded unique entries, and fail-closed storage errors. A
   replacement contains at most 100 resources and each domain array at most 50 values. IDs/names are
@@ -133,16 +166,25 @@ Derived copies are never edited as competing contract authorities.
   Problem Details before Drive I/O. Secret replacement merges each write-only field independently,
   so rotating an App secret does not clear an omitted token or AES key. See
   [REQ-2026-0731](../../product/requirements/REQ-2026-0731-wechat-config-input-boundaries.md). The
-  current read-modify-write replacement has no Drive version/checksum precondition, so concurrent
-  writers can lose updates; optimistic concurrency and conflict responses are required before
-  commercial activation. Article publish and preview fail closed before upstream mutation because
-  the existing URL-only `cover` field is not a trusted storage reference. The previous embedded
-  fallback thumbnail has been removed. Re-enabling these operations requires an approved API/SDK
-  migration to a managed Drive object reference, bounded server-side cover resolution, durable
-  idempotency, per-target outcomes, retry/reconciliation, partial-failure recovery, and live WeChat
-  evidence.
+  read-modify-write replacement runs under a transaction-scoped PostgreSQL advisory lock
+  (`pg_advisory_xact_lock` with a 3 s `lock_timeout`, namespace `KBWC`), so replicas serving the
+  same tenant serialize instead of losing one side's update; the host injects the lock and the
+  drive document itself still has no compare-and-swap precondition. External article publication
+  is **disabled by default** and fails closed
+  with `403 wechat_publish_disabled` unless
+  `SDKWORK_KNOWLEDGEBASE_WECHAT_PUBLISH_ENABLED=true`. The switch is the release control while the
+  managed Drive cover reference, durable idempotency, per-target outcome records,
+  retry/reconciliation, partial-failure recovery, and live WeChat evidence remain open
+  requirements; enabling it in a production-like environment emits an explicit warning. The preview
+  operation is a local dry run that returns `status: "validated"` and performs no upstream call; the
+  client labels it "validate preview" and states that nothing is sent. The previous embedded
+  fallback thumbnail has been removed; a cover is either managed media data or an already-uploaded
+  app-scoped WeChat media id, and remote cover URLs are rejected.
 - Wiki publication projects Drive nodes under the fixed `sources/raw` root into per-file source,
-  publication, visibility, route, render, and index state. The bounded worker validates pinned
+  publication, visibility, route, render, and index state. Wiki persistence scope is the deployment
+  organization that owns the space, never a personal session's organization claim, so every
+  publication row shares the space row's `(tenant_id, organization_id)` ownership and passes the
+  organization RLS policy. The bounded worker validates pinned
   Drive versions, canonicalizes native routes, sanitizes Markdown/HTML/text pages, and executes
   eligible owner-approved auto-public commands. Eligible native pages and passive static assets
   resolve live through the typed Knowledgebase Wiki provider; ordinary content changes advance
@@ -156,11 +198,12 @@ Derived copies are never edited as competing contract authorities.
   5,000 events plus one overflow probe and returns `413 audit_export_limit_exceeded` when the result
   cannot be complete. It never returns a silently truncated archive. Larger data-subject exports
   require a future cursor-based or asynchronous contract with generated SDK support. Automated
-  retention and legal-hold-aware batch purge are not implemented and remain commercial launch
-  gates; the 365/90/30-day retention values are policy targets only. The matching
-  `(tenant_id, organization_id, actor_id, created_at DESC, id DESC)` composite index now exists on
-  PostgreSQL (`202608040002_audit_event_scope_actor_index`); query-plan and concurrency evidence
-  under load remains a commercial activation gate.
+  retention and legal-hold-aware batch purge are implemented by the worker `audit_retention` phase
+  (bounded batch, 30..3650-day policy, hold-aware single-statement delete) with
+  `knowledgebase_audit_events_purged_total` exported; production-like purge evidence remains a
+  release gate. The matching `(tenant_id, organization_id, actor_id, created_at DESC, id DESC)`
+  composite index and the purge index `(tenant_id, organization_id, created_at, id)` exist on
+  PostgreSQL; query-plan and concurrency evidence under load remains a commercial activation gate.
 - The persistence contract stores only write-only Provider credential references, never plaintext
   credentials. Binding lifecycle and Provider-to-Provider migration checkpoints are
   tenant/organization scoped, version-fenced, RLS protected, and retain predecessors for rollback.
@@ -241,6 +284,11 @@ Derived copies are never edited as competing contract authorities.
 - Managed group spaces use `kb_group_knowledge_space_binding` instead of generic context binding.
   The binding is scoped by tenant, organization, and IM Conversation id; group spaces are hidden
   from generic resource routes and resolved only through the specialized launch path.
+- Agent profiles carry a create-time owner (`kb_agent_profile.created_by`). Read/update/delete
+  require the owner or access through the profile's enabled space bindings; a binding-less profile
+  with no recorded owner is denied (`403 agent_profile_access_denied`) instead of being reachable by
+  every authenticated user in the tenant. The owner is taken from the authenticated actor and is
+  never accepted from the request body.
 - The group resolver requires both a synchronized IM role snapshot and direct Drive authorization.
   Current-Owner initialization and active-content access are separate: only the current IM Owner
   may initialize or retry failed provisioning. Once active, Owner maps to Owner, Admin to Writer,

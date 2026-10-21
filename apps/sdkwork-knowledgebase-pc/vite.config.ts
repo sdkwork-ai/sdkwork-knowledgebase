@@ -30,17 +30,17 @@ const APP_SOURCE_CHUNKS = [
 const APP_SOURCE_SUB_CHUNKS = [
   [
     [
-      'packages/sdkwork-knowledgebase-pc-knowledgebase/src/services/wechat',
-      'packages/sdkwork-knowledgebase-pc-knowledgebase/src/services/wechatCredentialStore',
-    ],
-    'feature-wechat-services',
-  ],
-  [
-    [
       'packages/sdkwork-knowledgebase-pc-knowledgebase/src/WechatPublishPage',
       'packages/sdkwork-knowledgebase-pc-knowledgebase/src/components/WechatPublishModal',
     ],
     'feature-wechat-publish',
+  ],
+  [
+    [
+      'packages/sdkwork-knowledgebase-pc-knowledgebase/src/services/wechat',
+      'packages/sdkwork-knowledgebase-pc-knowledgebase/src/services/wechatCredentialStore',
+    ],
+    'feature-wechat-services',
   ],
   [
     [
@@ -76,25 +76,8 @@ const VENDOR_CHUNKS = [
   ['vendor-virtualization', ['@tanstack/react-virtual']],
 ] as const;
 
-function resolveManualChunk(id: string): string | undefined {
-  const normalizedId = id.replace(/\\/g, '/');
-  const appSourceSubChunk = APP_SOURCE_SUB_CHUNKS.find(([fragments]) =>
-    fragments.some((fragment) => normalizedId.includes(fragment)),
-  );
-  if (appSourceSubChunk) {
-    return appSourceSubChunk[1];
-  }
-  const appSourceChunk = APP_SOURCE_CHUNKS.find(([fragment]) => normalizedId.includes(fragment));
-  if (appSourceChunk) {
-    return appSourceChunk[1];
-  }
-  if (!normalizedId.includes('/node_modules/')) {
-    return undefined;
-  }
-  const vendorChunk = VENDOR_CHUNKS.find(([, fragments]) =>
-    fragments.some((fragment) => normalizedId.includes(fragment)),
-  );
-  return vendorChunk?.[0] ?? 'vendor';
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 const MAX_JAVASCRIPT_CHUNK_BYTES = 650 * 1024;
@@ -119,6 +102,43 @@ function bundleSizeBudgetPlugin() {
     },
   };
 }
+
+// Vite 8 runs Rolldown, whose native code-splitting primitive is
+// `output.advancedChunks`. The legacy `manualChunks` callback is not applied to
+// dynamic-import graphs, which collapsed the knowledge feature into one oversized
+// chunk. Groups are ordered by priority (highest first).
+const CHUNK_MAX_SIZE_BYTES = 640 * 1024;
+
+function includesAny(fragments: readonly string[]) {
+  return (id: string) => fragments.some((fragment) => id.includes(fragment));
+}
+
+const CHUNK_GROUPS = [
+  ...APP_SOURCE_SUB_CHUNKS.map(([fragments, name]) => ({
+    name,
+    test: includesAny(fragments),
+    priority: 40,
+    maxSize: CHUNK_MAX_SIZE_BYTES,
+  })),
+  ...APP_SOURCE_CHUNKS.map(([fragment, name]) => ({
+    name,
+    test: includesAny([fragment]),
+    priority: 30,
+    maxSize: CHUNK_MAX_SIZE_BYTES,
+  })),
+  ...VENDOR_CHUNKS.map(([name, fragments]) => ({
+    name,
+    test: includesAny(fragments),
+    priority: 20,
+    maxSize: CHUNK_MAX_SIZE_BYTES,
+  })),
+  {
+    name: 'vendor',
+    test: (id: string) => id.includes('/node_modules/'),
+    priority: 10,
+    maxSize: CHUNK_MAX_SIZE_BYTES,
+  },
+];
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, __dirname, '');
@@ -239,8 +259,8 @@ export default defineConfig(({mode}) => {
       outDir: resolveBrowserDistOutDir(resolveViteEnvironment(mode, process.env)),
       rollupOptions: {
         output: {
-          manualChunks(id) {
-            return resolveManualChunk(id);
+          advancedChunks: {
+            groups: CHUNK_GROUPS,
           },
         },
       },

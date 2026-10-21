@@ -25,16 +25,16 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@sdkwork/utils": "workspace:*",
-    "@sdkwork/knowledgebase-app-sdk": "workspace:*",
     "@sdkwork/drive-app-sdk": "workspace:*",
+    "@sdkwork/knowledgebase-app-sdk": "workspace:*",
     "@sdkwork/sdkwork-knowledgebase-pc-commons": "workspace:*",
     "@sdkwork/sdkwork-knowledgebase-pc-knowledgebase": "workspace:*",
+    "@sdkwork/utils": "workspace:*",
+    "i18next": "^26.5.3",
     "lucide-react": "^0.487.0",
-    "i18next": "^26.3.1",
-    "react-i18next": "^17.0.8",
-    "sdkwork-knowledgebase-pc-core": "workspace:*",
-    "sdkwork-knowledgebase-pc-admin-core": "workspace:*"
+    "react-i18next": "^17.1.0",
+    "sdkwork-knowledgebase-pc-admin-core": "workspace:*",
+    "sdkwork-knowledgebase-pc-core": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -51,6 +51,6 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "vitest": "^3.2.4"
+    "vitest": "catalog:"
   }
 }

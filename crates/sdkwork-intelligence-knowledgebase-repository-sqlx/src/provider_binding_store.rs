@@ -31,13 +31,22 @@ use crate::id::{default_knowledge_id_generator, next_i64_id, KnowledgeIdGenerato
 const BINDING_COLUMNS: &str = r#"
     id, uuid, tenant_id, organization_id, space_id, implementation_id,
     remote_resource_type, remote_resource_id, credential_reference_id,
-    lifecycle_state, capability_snapshot, capability_snapshot_version,
-    last_tested_at, activated_at, disabled_at, last_error_category,
-    created_by, updated_by, created_at, updated_at, version
+    lifecycle_state, capability_snapshot::text AS capability_snapshot, capability_snapshot_version,
+    TO_CHAR(last_tested_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_tested_at,
+    TO_CHAR(activated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS activated_at,
+    TO_CHAR(disabled_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS disabled_at,
+    last_error_category, created_by, updated_by,
+    TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at,
+    TO_CHAR(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS updated_at,
+    version
 "#;
 const CREDENTIAL_COLUMNS: &str = r#"
-    id, uuid, tenant_id, organization_id, implementation_id, display_name,
-    rotation_state, last_rotated_at, created_by, updated_by, created_at, updated_at, version
+    id, uuid, tenant_id, organization_id, implementation_id, display_name, rotation_state,
+    TO_CHAR(last_rotated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_rotated_at,
+    created_by, updated_by,
+    TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at,
+    TO_CHAR(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS updated_at,
+    version
 "#;
 
 #[derive(Clone)]
@@ -666,7 +675,7 @@ impl KnowledgeEngineProviderBindingStore for SqlxKnowledgeEngineProviderBindingS
         let mut transaction = self.pool.begin().await.map_err(sql_error)?;
         let target = sqlx::query(
             r#"
-            SELECT space_id, capability_snapshot
+            SELECT space_id, capability_snapshot::text AS capability_snapshot
             FROM kb_provider_binding
             WHERE tenant_id = $1 AND organization_id = $2 AND id = $3
               AND lifecycle_state = 'testing' AND last_tested_at IS NOT NULL

@@ -17,7 +17,7 @@ carries identity (`bin/lib/module.sh`) and thin dispatches.
 Declared app types: `server,pc`. Default image tag comes from
 `sdkwork.app.config.json` → `release.currentVersion`.
 
-Flags: `--environment development|test|staging|demo|production` ·
+Flags: `--environment development|test|staging|production` ·
 `--profile standalone|cloud` · `--host wsl|ssh://[user@]host[:port]` ·
 `--yes` · `--dry-run`. Each run appends its command, flags, and exit status
 to `target/bin-evidence/evidence.log`. Run `bin/<script>.sh doctor` for the

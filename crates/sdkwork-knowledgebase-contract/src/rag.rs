@@ -332,6 +332,15 @@ pub struct KnowledgeAgentProfile {
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]
     pub tenant_id: u64,
+    /// Server-side ownership metadata used for object-level authorization.
+    ///
+    /// This field is populated from the authenticated actor when the profile is
+    /// created and is never serialized on the wire, so the public response shape
+    /// and generated SDK models are unchanged. `0` marks a profile created before
+    /// ownership was recorded (or without an authenticated actor); such a profile
+    /// remains usable through its enabled space bindings and is denied otherwise.
+    #[serde(default, skip_serializing)]
+    pub created_by: u64,
     pub name: String,
     pub description: Option<String>,
     pub system_instruction: String,
@@ -365,6 +374,12 @@ pub struct KnowledgeAgentProfileRequest {
         deserialize_with = "deserialize_u64_from_string_or_number"
     )]
     pub tenant_id: u64,
+    /// Server-side ownership metadata. It is never accepted from the wire: the
+    /// HTTP route overwrites it with the authenticated actor before persistence,
+    /// `skip_serializing` keeps it out of request payloads, and
+    /// `skip_deserializing` ignores any client-supplied `createdBy` value.
+    #[serde(default, skip_serializing, skip_deserializing)]
+    pub created_by: Option<u64>,
     pub name: String,
     pub description: Option<String>,
     pub system_instruction: String,
@@ -529,6 +544,16 @@ impl KnowledgeAgentBindingRequest {
 impl KnowledgeAgentProfileRequest {
     pub fn with_tenant_id(mut self, tenant_id: u64) -> Self {
         self.tenant_id = tenant_id;
+        self
+    }
+
+    /// Sets the server-side owner of the profile from the authenticated actor.
+    ///
+    /// The value always replaces any request-body value (which serde ignores via
+    /// `skip_deserializing`), so ownership cannot be spoofed by a caller.
+    #[must_use]
+    pub fn with_created_by(mut self, actor: Option<u64>) -> Self {
+        self.created_by = actor;
         self
     }
 }

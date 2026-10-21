@@ -95,15 +95,15 @@ const appOperations = [
     dataRef: '#/components/schemas/KnowledgeOkfConceptRevisionList',
   }),
   resource('get', '/app/v3/api/knowledge/okf/index', {
-    operationId: 'okf.bundle.index.list',
+    operationId: 'okf.bundle.index.retrieve',
     itemRef: '#/components/schemas/OkfIndexDocument',
   }),
   resource('get', '/app/v3/api/knowledge/okf/log', {
-    operationId: 'okf.bundle.log.list',
+    operationId: 'okf.bundle.log.retrieve',
     itemRef: '#/components/schemas/OkfLogDocument',
   }),
   resource('get', '/app/v3/api/knowledge/okf/profile', {
-    operationId: 'okf.bundle.profile.list',
+    operationId: 'okf.bundle.profile.retrieve',
     itemRef: '#/components/schemas/OkfProfileDocument',
   }),
   resource('post', '/app/v3/api/knowledge/okf/queries/{queryId}/file_answer', {
@@ -115,9 +115,9 @@ const appOperations = [
     operationId: 'okf.concepts.update',
     itemRef: '#/components/schemas/OkfConceptSummary',
   }),
-  resource('get', '/app/v3/api/knowledge/agent_profiles/{profileId}/bindings', {
+  list('get', '/app/v3/api/knowledge/agent_profiles/{profileId}/bindings', {
     operationId: 'agentProfiles.bindings.list',
-    itemRef: '#/components/schemas/KnowledgeAgentBindingList',
+    itemRef: '#/components/schemas/KnowledgeAgentBinding',
   }),
   resource('post', '/app/v3/api/knowledge/agent_profiles/{profileId}/bindings', {
     operationId: 'agentProfiles.bindings.create',
@@ -354,6 +354,20 @@ const backendOperations = [
     operationId: 'compliance.auditEvents.anonymizeActor.create',
     status: '201',
     itemRef: '#/components/schemas/AnonymizeKnowledgeAuditSubjectResult',
+  }),
+  list('get', '/backend/v3/api/knowledge/compliance/audit_legal_holds', {
+    operationId: 'compliance.auditLegalHolds.list',
+    itemRef: '#/components/schemas/KnowledgeAuditLegalHoldItem',
+  }),
+  resource('post', '/backend/v3/api/knowledge/compliance/audit_legal_holds', {
+    operationId: 'compliance.auditLegalHolds.create',
+    status: '201',
+    itemRef: '#/components/schemas/KnowledgeAuditLegalHoldItem',
+  }),
+  resource('post', '/backend/v3/api/knowledge/compliance/audit_legal_holds/{holdId}/release', {
+    operationId: 'compliance.auditLegalHolds.release.create',
+    status: '201',
+    itemRef: '#/components/schemas/KnowledgeAuditLegalHoldItem',
   }),
 ];
 
@@ -1315,6 +1329,35 @@ function ensureAuditComplianceContracts(spec) {
     ...structuredClone(problemResponse),
     description: 'Audit export exceeds the 5,000-event synchronous response bound',
   };
+
+  const createHold = schemas.CreateKnowledgeAuditLegalHoldRequest?.properties;
+  if (!createHold) {
+    throw new Error('Missing Backend OpenAPI CreateKnowledgeAuditLegalHoldRequest');
+  }
+  Object.assign(createHold, {
+    subjectType: { type: 'string', enum: ['actor', 'resource'] },
+    subjectId: { type: 'string', minLength: 1, maxLength: 128, pattern: '\\S' },
+    reason: { type: 'string', minLength: 1, maxLength: 512, pattern: '\\S' },
+    caseReference: nullableSchema({ type: 'string', minLength: 1, maxLength: 128 }),
+  });
+
+  const holdItem = schemas.KnowledgeAuditLegalHoldItem?.properties;
+  if (!holdItem) {
+    throw new Error('Missing Backend OpenAPI KnowledgeAuditLegalHoldItem');
+  }
+  Object.assign(holdItem, {
+    holdId: int64StringSchema(),
+    uuid: { type: 'string', minLength: 1, maxLength: 64 },
+    subjectType: { type: 'string', enum: ['actor', 'resource'] },
+    subjectId: { type: 'string', minLength: 1, maxLength: 128 },
+    reason: { type: 'string', minLength: 1, maxLength: 512 },
+    caseReference: nullableSchema({ type: 'string', maxLength: 128 }),
+    status: { type: 'string', enum: ['active', 'released'] },
+    createdBy: { type: 'string', minLength: 1, maxLength: 128 },
+    releasedBy: nullableSchema({ type: 'string', maxLength: 128 }),
+    releasedAt: nullableSchema({ type: 'string', format: 'date-time' }),
+    createdAt: { type: 'string', format: 'date-time' },
+  });
 }
 
 function alignOkfPaginationSchemas(spec) {

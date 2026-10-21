@@ -19,7 +19,6 @@ async fn assert_onyx_health(upstream_status: u16, expected: KnowledgeEngineHealt
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("health-key".to_string()),
         allow_private_network: true,
-
     });
 
     assert_eq!(engine.health().await.expect("health").status, expected);
@@ -51,7 +50,6 @@ async fn onyx_search_maps_unified_search_results() {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
         allow_private_network: true,
-
     });
 
     let result = engine
@@ -105,7 +103,6 @@ async fn onyx_read_document_uses_open_urls() {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
         allow_private_network: true,
-
     });
 
     // The read allowlist is populated only by this space's search results.
@@ -156,7 +153,6 @@ async fn onyx_read_document_rejects_urls_outside_the_space_search_allowlist() {
         base_url: mock_server.uri(),
         api_key: zeroize::Zeroizing::new("test-api-key".to_string()),
         allow_private_network: true,
-
     });
 
     let error = engine

@@ -260,4 +260,19 @@ pub const ROUTES: &[RouteManifestEntry] = &[
         path: "/backend/v3/api/knowledge/compliance/audit_events/anonymize_actor",
         operation_id: "compliance.auditEvents.anonymizeActor.create",
     },
+    RouteManifestEntry {
+        method: "GET",
+        path: "/backend/v3/api/knowledge/compliance/audit_legal_holds",
+        operation_id: "compliance.auditLegalHolds.list",
+    },
+    RouteManifestEntry {
+        method: "POST",
+        path: "/backend/v3/api/knowledge/compliance/audit_legal_holds",
+        operation_id: "compliance.auditLegalHolds.create",
+    },
+    RouteManifestEntry {
+        method: "POST",
+        path: "/backend/v3/api/knowledge/compliance/audit_legal_holds/{holdId}/release",
+        operation_id: "compliance.auditLegalHolds.release.create",
+    },
 ];

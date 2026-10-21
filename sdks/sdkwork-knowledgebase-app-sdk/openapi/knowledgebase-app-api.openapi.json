@@ -3724,7 +3724,7 @@
     },
     "/app/v3/api/knowledge/okf/index": {
       "get": {
-        "operationId": "okf.bundle.index.list",
+        "operationId": "okf.bundle.index.retrieve",
         "tags": [
           "knowledge"
         ],
@@ -3901,7 +3901,7 @@
     },
     "/app/v3/api/knowledge/okf/log": {
       "get": {
-        "operationId": "okf.bundle.log.list",
+        "operationId": "okf.bundle.log.retrieve",
         "tags": [
           "knowledge"
         ],
@@ -4078,7 +4078,7 @@
     },
     "/app/v3/api/knowledge/okf/profile": {
       "get": {
-        "operationId": "okf.bundle.profile.list",
+        "operationId": "okf.bundle.profile.retrieve",
         "tags": [
           "knowledge"
         ],
@@ -6241,11 +6241,18 @@
                         "data": {
                           "type": "object",
                           "required": [
-                            "item"
+                            "items",
+                            "pageInfo"
                           ],
                           "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/KnowledgeAgentBindingList"
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/KnowledgeAgentBinding"
+                              }
+                            },
+                            "pageInfo": {
+                              "$ref": "#/components/schemas/PageInfo"
                             }
                           }
                         }
@@ -6379,6 +6386,27 @@
               "type": "string",
               "pattern": "^[0-9]+$",
               "x-sdkwork-int64-string": true
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
             }
           }
         ],
@@ -15914,20 +15942,6 @@
           },
           "enabled": {
             "type": "boolean"
-          }
-        }
-      },
-      "KnowledgeAgentBindingList": {
-        "type": "object",
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/KnowledgeAgentBinding"
-            }
           }
         }
       },

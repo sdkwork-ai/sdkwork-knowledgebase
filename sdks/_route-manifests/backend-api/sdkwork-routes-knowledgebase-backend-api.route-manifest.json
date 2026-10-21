@@ -1092,6 +1092,72 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api"
+    },
+    {
+      "method": "GET",
+      "path": "/backend/v3/api/knowledge/compliance/audit_legal_holds",
+      "operationId": "compliance.auditLegalHolds.list",
+      "tags": [
+        "knowledge"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-knowledgebase",
+        "apiAuthority": "sdkwork-knowledgebase-backend-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api"
+    },
+    {
+      "method": "POST",
+      "path": "/backend/v3/api/knowledge/compliance/audit_legal_holds",
+      "operationId": "compliance.auditLegalHolds.create",
+      "tags": [
+        "knowledge"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-knowledgebase",
+        "apiAuthority": "sdkwork-knowledgebase-backend-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api"
+    },
+    {
+      "method": "POST",
+      "path": "/backend/v3/api/knowledge/compliance/audit_legal_holds/{holdId}/release",
+      "operationId": "compliance.auditLegalHolds.release.create",
+      "tags": [
+        "knowledge"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-knowledgebase",
+        "apiAuthority": "sdkwork-knowledgebase-backend-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api"
     }
   ]
 }

@@ -151,9 +151,12 @@ impl KnowledgeAppApi for AgentOnlyAppApi {
         &self,
         context: KnowledgeAppRequestContext,
         profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
     ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
-        let bindings = self.agent.list_bindings(context, profile_id).await?;
-        Ok(crate::pagination::fixed_list_page_data(bindings.items))
+        self.agent
+            .list_bindings_page(context, profile_id, cursor, page_size)
+            .await
     }
 
     async fn create_agent_profile_binding(
@@ -295,9 +298,12 @@ impl KnowledgeAppApi for AgentAndRetrievalAppApi {
         &self,
         context: KnowledgeAppRequestContext,
         profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
     ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
-        let bindings = self.agent.list_bindings(context, profile_id).await?;
-        Ok(crate::pagination::fixed_list_page_data(bindings.items))
+        self.agent
+            .list_bindings_page(context, profile_id, cursor, page_size)
+            .await
     }
 
     async fn create_agent_profile_binding(
@@ -885,9 +891,12 @@ impl KnowledgeAppApi for FullAppApi {
         &self,
         context: KnowledgeAppRequestContext,
         profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
     ) -> ApiResult<SdkWorkPageData<KnowledgeAgentBinding>> {
-        let bindings = self.agent.list_bindings(context, profile_id).await?;
-        Ok(crate::pagination::fixed_list_page_data(bindings.items))
+        self.agent
+            .list_bindings_page(context, profile_id, cursor, page_size)
+            .await
     }
 
     async fn create_agent_profile_binding(

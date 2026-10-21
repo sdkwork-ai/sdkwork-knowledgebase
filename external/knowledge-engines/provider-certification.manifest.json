@@ -149,7 +149,7 @@
         "status": "passed",
         "suiteVersion": "1.0.0",
         "verifiedAt": "2026-08-08",
-        "sourceFingerprint": "4a3e67468b2fae6397748e2e90cd52cd584d8379ce179bc70566d40cfd789555",
+        "sourceFingerprint": "eff90abbfa4822a85b67cd258f5ccf59972e2975da59c7da40c9d5f9ff64cb30",
         "command": {
           "program": "cargo",
           "args": [

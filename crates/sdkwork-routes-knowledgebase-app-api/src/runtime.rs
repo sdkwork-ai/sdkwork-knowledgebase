@@ -92,9 +92,10 @@ async fn memory_context_provider_from_env(
                 );
                 return Ok(None);
             };
-            MemoryAppApiContextProvider::new(base_url)
-                .map(|provider| Some(Arc::new(provider) as Arc<dyn KnowledgeMemoryContextProvider>))
-                .map_err(|error| sqlx::Error::Configuration(error.into()))
+            let provider = MemoryAppApiContextProvider::new(base_url)
+                .map_err(|error| sqlx::Error::Configuration(error.into()))?;
+            let provider: Arc<dyn KnowledgeMemoryContextProvider> = Arc::new(provider);
+            Ok(Some(provider))
         }
     }
 }
@@ -109,6 +110,7 @@ use sdkwork_intelligence_knowledgebase_service::{
         KnowledgeEngineSpaceResolver,
     },
     okf::{OkfBundleFileRegistryService, OkfBundleInitializerService},
+    ports::knowledge_document_store::KnowledgeDocumentStore,
     ports::{
         group_launch_ticket_consumer::GroupLaunchTicketConsumer,
         knowledge_access_control::KnowledgeAccessRole,
@@ -173,8 +175,7 @@ use crate::{
     },
     hosted_access::{
         ensure_runtime_tenant, require_actor_id, require_agent_binding_space_access_with_role,
-        require_agent_profile_space_access, require_agent_profile_space_access_with_role,
-        require_bindings_space_access, require_space_access,
+        require_agent_profile_manage_access, require_bindings_space_access, require_space_access,
     },
     hosted_backend::HostedBackendApi,
     hosted_commerce::HostedCommerceService,
@@ -183,6 +184,7 @@ use crate::{
     hosted_open::HostedOpenApi,
     hosted_wechat::HostedWechatService,
     hosted_wiki::HostedWikiPublicationService,
+    pagination::{cursor_page_data, encode_u64_next_cursor},
     AgentChatCredentials, ApiError, ApiResult, KnowledgeAgentAppService,
     KnowledgeAppRequestContext, KnowledgeRetrievalAppService,
 };
@@ -1483,6 +1485,20 @@ impl KnowledgebaseRuntime {
         &self.audit_event_store
     }
 
+    /// Deletes one bounded batch of audit events older than `cutoff` (RFC 3339, UTC).
+    /// Active legal holds are applied inside the statement so a purge can never delete
+    /// evidence that is under hold.
+    pub async fn purge_expired_audit_events(
+        &self,
+        cutoff: &str,
+        limit: u32,
+    ) -> Result<u64, String> {
+        self.audit_event_store
+            .purge_expired_events(cutoff, limit)
+            .await
+            .map_err(|error| error.to_string())
+    }
+
     pub(crate) fn drive_import_metadata_store(&self) -> &PostgresDriveImportMetadataStore {
         &self.drive_import_metadata_store
     }
@@ -1825,6 +1841,12 @@ impl KnowledgebaseRuntime {
         &self.drive_storage
     }
 
+    /// Authoritative PostgreSQL pool used by the embedded Drive schema; also backs
+    /// cross-replica advisory locks for Drive-backed configuration documents.
+    pub(crate) fn drive_pool(&self) -> &sqlx::PgPool {
+        &self.drive_pool
+    }
+
     pub(crate) fn drive_space_provisioner(&self) -> &KnowledgebaseDriveSpaceProvisionerAdapter {
         &self.drive_space_provisioner
     }
@@ -1919,7 +1941,24 @@ impl KnowledgebaseRuntime {
             .embed_document_version(self.tenant_id, &index, document_version_id)
             .await
         {
-            Ok(count) => Some(count),
+            Ok(count) => {
+                // Persist the completed state so the browser/ingest status stops reporting
+                // `pending` forever. A superseded version is a no-op inside the store.
+                if let Err(error) = self
+                    .document_store()
+                    .mark_document_version_indexed(document_version_id)
+                    .await
+                {
+                    tracing::warn!(
+                        tenant_id = self.tenant_id,
+                        space_id,
+                        document_version_id,
+                        error = %error,
+                        "post-ingest embedding completed but the indexed state could not be persisted"
+                    );
+                }
+                Some(count)
+            }
             Err(error) => {
                 tracing::warn!(
                     tenant_id = self.tenant_id,
@@ -1936,6 +1975,44 @@ impl KnowledgebaseRuntime {
                 None
             }
         }
+    }
+
+    /// Drains a bounded slice of the durable post-ingest embedding backlog.
+    ///
+    /// The backlog is the authoritative work queue for embeddings: API ingest, Drive import,
+    /// Git import and provider rebuilds only persist content, and this method (driven by the
+    /// worker maintenance loop) performs the provider calls and records the indexed state.
+    /// Entries that fail stay pending and are retried on the next tick with provider metrics.
+    pub async fn process_pending_embeddings(&self, limit: u32) -> usize {
+        if limit == 0 {
+            return 0;
+        }
+        let pending = match self
+            .document_store()
+            .list_documents_pending_embedding(limit)
+            .await
+        {
+            Ok(pending) => pending,
+            Err(error) => {
+                tracing::warn!(
+                    tenant_id = self.tenant_id,
+                    error = %error,
+                    "failed to load the post-ingest embedding backlog"
+                );
+                return 0;
+            }
+        };
+        let mut completed = 0usize;
+        for item in pending {
+            if self
+                .try_embed_document_version(item.space_id, item.document_version_id)
+                .await
+                .is_some()
+            {
+                completed += 1;
+            }
+        }
+        completed
     }
 
     pub async fn publish_pending_outbox_events(
@@ -2185,14 +2262,35 @@ impl KnowledgebaseRuntime {
     ) -> Result<usize, String> {
         use sdkwork_intelligence_knowledgebase_service::ingest::KnowledgeIngestionJobWorkerService;
 
-        KnowledgeIngestionJobWorkerService::new(self.ingestion_job_store(), self.drive_storage())
-            .with_document_text_extractor(Some(std::sync::Arc::new(
-                sdkwork_knowledgebase_document_extraction::DefaultDocumentTextExtractor::new(),
-            )))
-            .process_queued_jobs(worker_id, lease_duration, limit, max_attempts)
-            .await
-            .map(|result| result.processed)
-            .map_err(|error| error.to_string())
+        let result = KnowledgeIngestionJobWorkerService::new(
+            self.ingestion_job_store(),
+            self.drive_storage(),
+        )
+        .with_document_text_extractor(Some(std::sync::Arc::new(
+            sdkwork_knowledgebase_document_extraction::DefaultDocumentTextExtractor::new(),
+        )))
+        .process_queued_jobs(worker_id, lease_duration, limit, max_attempts)
+        .await
+        .map_err(|error| error.to_string())?;
+
+        // Persist the ingestion lifecycle for every version whose chunks were replaced. The
+        // embedding backlog only selects documents in `pending`/`running`, so without this
+        // transition a successfully chunked document would look unprocessed forever.
+        for document_version_id in &result.ingested_document_version_ids {
+            if let Err(error) = self
+                .document_store()
+                .mark_document_version_ingested(*document_version_id)
+                .await
+            {
+                tracing::warn!(
+                    tenant_id = self.tenant_id,
+                    document_version_id,
+                    error = %error,
+                    "ingestion completed but the document lifecycle state could not be persisted"
+                );
+            }
+        }
+        Ok(result.processed)
     }
 
     pub async fn process_provider_migrations(
@@ -2220,7 +2318,11 @@ impl KnowledgebaseRuntime {
         }
         let commands = match self
             .group_space_binding_store
-            .list_resumable_group_space_archives_for_tenant(self.tenant_id, limit.min(200))
+            .list_resumable_group_space_archives_for_tenant(
+                self.tenant_id,
+                self.organization_id,
+                limit.min(200),
+            )
             .await
         {
             Ok(commands) => commands,
@@ -2450,7 +2552,11 @@ impl KnowledgeAgentAppService for HostedAgentService {
         let retrieval = self.runtime.retrieval_service();
         let service = KnowledgeAgentService::new(self.runtime.agent_store.as_ref(), &retrieval);
         service
-            .create_profile(request.with_tenant_id(context.tenant_id))
+            .create_profile(
+                request
+                    .with_tenant_id(context.tenant_id)
+                    .with_created_by(context.actor_id),
+            )
             .await
             .map_err(Into::into)
     }
@@ -2466,7 +2572,13 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access(&self.runtime, &context, &profile).await?;
+        require_agent_profile_manage_access(
+            &self.runtime,
+            &context,
+            &profile,
+            KnowledgeAccessRole::Reader,
+        )
+        .await?;
         Ok(profile)
     }
 
@@ -2482,7 +2594,7 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access_with_role(
+        require_agent_profile_manage_access(
             &self.runtime,
             &context,
             &existing,
@@ -2506,7 +2618,7 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access_with_role(
+        require_agent_profile_manage_access(
             &self.runtime,
             &context,
             &existing,
@@ -2527,8 +2639,46 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access(&self.runtime, &context, &profile).await?;
+        require_agent_profile_manage_access(
+            &self.runtime,
+            &context,
+            &profile,
+            KnowledgeAccessRole::Reader,
+        )
+        .await?;
         service.list_bindings(profile_id).await.map_err(Into::into)
+    }
+
+    async fn list_bindings_page(
+        &self,
+        context: KnowledgeAppRequestContext,
+        profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
+    ) -> ApiResult<sdkwork_utils_rust::SdkWorkPageData<KnowledgeAgentBinding>> {
+        let retrieval = self.runtime.retrieval_service();
+        let service = KnowledgeAgentService::new(self.runtime.agent_store.as_ref(), &retrieval);
+        let profile = service
+            .retrieve_profile(profile_id)
+            .await
+            .map_err(ApiError::from)?;
+        require_agent_profile_manage_access(
+            &self.runtime,
+            &context,
+            &profile,
+            KnowledgeAccessRole::Reader,
+        )
+        .await?;
+        let page = service
+            .list_bindings_page(profile_id, cursor, page_size)
+            .await
+            .map_err(ApiError::from)?;
+        Ok(cursor_page_data(
+            page.items,
+            encode_u64_next_cursor(page.next_cursor),
+            page.has_more,
+            page_size,
+        ))
     }
 
     async fn create_binding(
@@ -2543,7 +2693,7 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access_with_role(
+        require_agent_profile_manage_access(
             &self.runtime,
             &context,
             &profile,
@@ -2576,7 +2726,7 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access_with_role(
+        require_agent_profile_manage_access(
             &self.runtime,
             &context,
             &profile,
@@ -2612,7 +2762,7 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access_with_role(
+        require_agent_profile_manage_access(
             &self.runtime,
             &context,
             &profile,
@@ -2637,7 +2787,13 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access(&self.runtime, &context, &profile).await?;
+        require_agent_profile_manage_access(
+            &self.runtime,
+            &context,
+            &profile,
+            KnowledgeAccessRole::Reader,
+        )
+        .await?;
         require_bindings_space_access(&self.runtime, &context, &request.bindings).await?;
         service
             .preview_retrieval(profile_id, request)
@@ -2658,7 +2814,13 @@ impl KnowledgeAgentAppService for HostedAgentService {
             .retrieve_profile(profile_id)
             .await
             .map_err(ApiError::from)?;
-        require_agent_profile_space_access(&self.runtime, &context, &profile).await?;
+        require_agent_profile_manage_access(
+            &self.runtime,
+            &context,
+            &profile,
+            KnowledgeAccessRole::Reader,
+        )
+        .await?;
 
         let mut allowed_space_ids = profile
             .bindings
@@ -2800,9 +2962,12 @@ impl crate::KnowledgeAppApi for AgentAndRetrievalHostedApi {
         &self,
         context: KnowledgeAppRequestContext,
         profile_id: u64,
+        cursor: Option<u64>,
+        page_size: u32,
     ) -> ApiResult<sdkwork_utils_rust::SdkWorkPageData<KnowledgeAgentBinding>> {
-        let bindings = self.agent.list_bindings(context, profile_id).await?;
-        Ok(crate::pagination::fixed_list_page_data(bindings.items))
+        self.agent
+            .list_bindings_page(context, profile_id, cursor, page_size)
+            .await
     }
 
     async fn create_agent_profile_binding(

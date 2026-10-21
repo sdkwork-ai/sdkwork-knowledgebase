@@ -18,7 +18,7 @@
   "transportPackageName": "sdkwork-knowledgebase-backend-sdk-generated-typescript",
   "apiPrefix": "/backend/v3/api",
   "standardProfile": "sdkwork-v3",
-  "ownerOnlyOperationCount": 49,
+  "ownerOnlyOperationCount": 52,
   "standardVersion": "2026-06-06",
   "managedBy": "sdks/standardize-knowledgebase-sdk-family.mjs",
   "typescript": {
@@ -134,7 +134,7 @@
   ],
   "metadata": {
     "standardVersion": "2026-06-06",
-    "ownerOnlyOperationCount": 49,
+    "ownerOnlyOperationCount": 52,
     "managedBy": "sdks/standardize-knowledgebase-sdk-family.mjs"
   }
 }

@@ -19,6 +19,7 @@ serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 sdkwork-intelligence-knowledgebase-service.workspace = true
+sdkwork-utils-rust.workspace = true
 sdkwork-knowledgebase-contract.workspace = true
 sdkwork-knowledgebase-provider-runtime.workspace = true
 tracing = "0.1"

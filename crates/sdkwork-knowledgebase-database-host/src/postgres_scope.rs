@@ -24,6 +24,20 @@ pub const POSTGRES_ORGANIZATION_SESSION_KEY: &str = "app.current_organization_id
 /// query cannot monopolize the fixed per-process connection budget.
 pub const POSTGRES_STATEMENT_TIMEOUT_OPTION: &str = "-c statement_timeout=30000";
 
+/// Session time zone for every Knowledgebase pool.
+///
+/// Business instants are stored as absolute time; repository code writes RFC3339 text and
+/// some legacy columns are still `TIMESTAMP`. Pinning the session zone to UTC makes
+/// `CAST(text AS TIMESTAMP)`, `now()`, and `timestamptz` comparisons independent of the
+/// container/host zone, which is what lease expiry and retry scheduling assume.
+pub const POSTGRES_TIMEZONE_OPTION: &str = "-c timezone=UTC";
+
+/// Aborts a transaction that is left idle (for example while an external call is awaited
+/// between statements) so a leaked transaction cannot hold row locks or a connection
+/// indefinitely. 120 s leaves headroom for legitimate Drive/provider round-trips.
+pub const POSTGRES_IDLE_TRANSACTION_TIMEOUT_OPTION: &str =
+    "-c idle_in_transaction_session_timeout=120000";
+
 /// Returns the tenant id required for PostgreSQL pool checkout, failing closed in
 /// production-like environments.
 pub fn require_postgres_rls_tenant_id() -> Result<u64, PoolError> {
@@ -100,7 +114,7 @@ pub fn postgres_url_with_deployment_scope(
     }
 
     let scope_options = format!(
-        "-c {POSTGRES_TENANT_SESSION_KEY}={tenant_id} -c {POSTGRES_ORGANIZATION_SESSION_KEY}={organization_id} {POSTGRES_STATEMENT_TIMEOUT_OPTION}"
+        "-c {POSTGRES_TENANT_SESSION_KEY}={tenant_id} -c {POSTGRES_ORGANIZATION_SESSION_KEY}={organization_id} {POSTGRES_STATEMENT_TIMEOUT_OPTION} {POSTGRES_TIMEZONE_OPTION} {POSTGRES_IDLE_TRANSACTION_TIMEOUT_OPTION}"
     );
     if let Some(index) = options_index {
         let existing = query_pairs[index].1.trim();
@@ -151,14 +165,20 @@ pub fn postgres_url_with_statement_timeout(database_url: &str) -> Result<String,
     if let Some(index) = options_index {
         let existing = query_pairs[index].1.trim();
         query_pairs[index].1 = if existing.is_empty() {
-            POSTGRES_STATEMENT_TIMEOUT_OPTION.to_string()
+            format!(
+                "{POSTGRES_STATEMENT_TIMEOUT_OPTION} {POSTGRES_TIMEZONE_OPTION} {POSTGRES_IDLE_TRANSACTION_TIMEOUT_OPTION}"
+            )
         } else {
-            format!("{existing} {POSTGRES_STATEMENT_TIMEOUT_OPTION}")
+            format!(
+                "{existing} {POSTGRES_STATEMENT_TIMEOUT_OPTION} {POSTGRES_TIMEZONE_OPTION} {POSTGRES_IDLE_TRANSACTION_TIMEOUT_OPTION}"
+            )
         };
     } else {
         query_pairs.push((
             "options".to_string(),
-            POSTGRES_STATEMENT_TIMEOUT_OPTION.to_string(),
+            format!(
+                "{POSTGRES_STATEMENT_TIMEOUT_OPTION} {POSTGRES_TIMEZONE_OPTION} {POSTGRES_IDLE_TRANSACTION_TIMEOUT_OPTION}"
+            ),
         ));
     }
 
@@ -186,7 +206,7 @@ mod tests {
             .expect("options parameter");
         assert_eq!(
             options,
-            "-c search_path=sdkwork_ai_dev,public -c app.current_tenant_id=42 -c app.current_organization_id=7 -c statement_timeout=30000"
+            "-c search_path=sdkwork_ai_dev,public -c app.current_tenant_id=42 -c app.current_organization_id=7 -c statement_timeout=30000 -c timezone=UTC -c idle_in_transaction_session_timeout=120000"
         );
     }
 
@@ -198,7 +218,7 @@ mod tests {
         let parsed = Url::parse(&configured).expect("valid URL");
         assert!(parsed.query_pairs().any(|(key, value)| key == "options"
             && value
-                == "-c app.current_tenant_id=7 -c app.current_organization_id=11 -c statement_timeout=30000"));
+                == "-c app.current_tenant_id=7 -c app.current_organization_id=11 -c statement_timeout=30000 -c timezone=UTC -c idle_in_transaction_session_timeout=120000"));
     }
 
     #[test]
@@ -237,7 +257,7 @@ mod tests {
             .expect("options parameter");
         assert_eq!(
             options,
-            "-c search_path=sdkwork_ai_dev,public -c statement_timeout=30000"
+            "-c search_path=sdkwork_ai_dev,public -c statement_timeout=30000 -c timezone=UTC -c idle_in_transaction_session_timeout=120000"
         );
     }
 
@@ -248,7 +268,7 @@ mod tests {
                 .expect("guarded URL");
         let parsed = Url::parse(&configured).expect("valid URL");
         assert!(parsed.query_pairs().any(|(key, value)| key == "options"
-            && value == "-c statement_timeout=30000"));
+            && value == "-c statement_timeout=30000 -c timezone=UTC -c idle_in_transaction_session_timeout=120000"));
     }
 
     #[test]
@@ -257,7 +277,9 @@ mod tests {
             "postgresql://app@localhost/sdkwork_ai_dev?options=-c%20statement_timeout%3D60000",
         )
         .expect_err("caller statement_timeout must fail closed");
-        assert!(error.to_string().contains("deployment-owned statement_timeout"));
+        assert!(error
+            .to_string()
+            .contains("deployment-owned statement_timeout"));
     }
 
     #[test]
