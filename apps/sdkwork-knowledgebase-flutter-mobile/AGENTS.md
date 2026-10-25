@@ -10,7 +10,7 @@ The canonical standards index is `../../../sdkwork-specs/README.md`, and `../../
 
 ## Application Identity
 
-Read `sdkwork.app.config.json` only for application identity, SDK/API inventory, release metadata, packaging, or app-owned capabilities. Runtime values belong to source configuration, not to the application declaration.
+Read `agent.app.config.json` only for application identity, SDK/API inventory, release metadata, packaging, or app-owned capabilities. Runtime values belong to source configuration, not to the application declaration.
 
 - Application code: `knowledgebase`
 - Application key: `sdkwork-knowledgebase-flutter-mobile`

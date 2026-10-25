@@ -32,7 +32,7 @@ Do not copy root standard text into this repository. If these relative paths do 
 
 ## Application Identity
 
-Read `sdkwork.app.config.json` only when the task touches Knowledgebase application behavior, runtime config, SDK wiring, release metadata, app-owned capabilities, packaging, or deployment. For unrelated documentation or tooling work, do not expand into the full app manifest unless evidence requires it.
+Read `agent.app.config.json` only when the task touches Knowledgebase application behavior, runtime config, SDK wiring, release metadata, app-owned capabilities, packaging, or deployment. For unrelated documentation or tooling work, do not expand into the full app manifest unless evidence requires it.
 
 ## Group Knowledgebase Boundary
 
@@ -60,7 +60,7 @@ boundary declared in `../sdkwork-im/AGENTS.md` (Group Knowledgebase Boundary):
 
 - `AGENTS.md`: repository agent entrypoint and relative SDKWork spec index.
 - `CLAUDE.md`, `GEMINI.md`, `CODEX.md`: compatibility shims that point to `AGENTS.md` and must not duplicate rules.
-- `sdkwork.app.config.json`: Knowledgebase application identity, runtime, release, and capability metadata.
+- `agent.app.config.json`: Knowledgebase application identity, runtime, release, and capability metadata.
 - `etc/`: deployable-root source configuration for concrete environment, Base URL, bind, topology, and deployment values.
 - `sdkwork.workflow.json`: GitHub packaging/release workflow manifest governed by `GITHUB_WORKFLOW_SPEC.md`.
 - `.github/workflows/package.yml`: thin reusable workflow call only.
@@ -85,7 +85,7 @@ boundary declared in `../sdkwork-im/AGENTS.md` (Group Knowledgebase Boundary):
 Use dynamic progressive loading for the current task: resolve the selected root and task category before reading broad source context.
 
 1. Read this `AGENTS.md` routing material and classify the owned surface.
-2. Read `sdkwork.app.config.json`, module `specs/`, repository/application `specs/`, and `.sdkwork/` only when the task reaches the contract each item governs.
+2. Read `agent.app.config.json`, module `specs/`, repository/application `specs/`, and `.sdkwork/` only when the task reaches the contract each item governs.
 3. Locate only the relevant task-matrix row or navigation heading in `../sdkwork-specs/README.md`; do not load the full catalog.
 4. Read only the task-specific global spec sections selected by that route, then inspect implementation files.
 <!-- /SDKWORK-PROGRESSIVE-LOADING: v1 -->
@@ -93,7 +93,7 @@ Use dynamic progressive loading for the current task: resolve the selected root 
 Use dynamic progressive loading:
 
 1. Read this `AGENTS.md` and any nearer component-level `AGENTS.md`.
-2. Read `sdkwork.app.config.json` only when app behavior, runtime config, SDK wiring, release, packaging, or app-owned capabilities are touched.
+2. Read `agent.app.config.json` only when app behavior, runtime config, SDK wiring, release, packaging, or app-owned capabilities are touched.
 3. Read local `specs/README.md` and `specs/component.spec.json` only when the task touches that local contract.
 4. Read local `.sdkwork/README.md`, `.sdkwork/skills/`, and `.sdkwork/plugins/` only when local agent extensions are relevant.
 5. Read `../sdkwork-specs/README.md`, then only the task-specific root specs.
@@ -161,7 +161,7 @@ Run the narrowest relevant check first, then broader verification when API contr
 **All image build, package, deploy, rollback, log, backup, and config operations MUST go through
 the `bin/` entrypoints.** Never invoke `docker build`, `docker compose`, `cargo build --release`,
 or hand-edit a deployed bundle directly — the entrypoints resolve the image tag from
-`sdkwork.app.config.json` → `release.currentVersion`, bridge Windows→WSL automatically
+`agent.app.config.json` → `release.currentVersion`, bridge Windows→WSL automatically
 (`sdkwork_local_run`), pass the full registry reference required by `DOCKER_SPEC.md` §2.1, and
 append audit evidence to `target/bin-evidence/evidence.log`. Raw `docker`/`cargo` calls bypass
 version pinning, WSL bridging, and the evidence trap.
@@ -172,7 +172,7 @@ Full reference: [`bin/README.md`](bin/README.md). Entrypoint contract:
 ### Release workflow (build → deploy → verify)
 
 ```sh
-# 0. Bump release.currentVersion in sdkwork.app.config.json FIRST (tag source of truth).
+# 0. Bump release.currentVersion in agent.app.config.json FIRST (tag source of truth).
 # 1. Build the container image (runs in WSL where required).
 bin/docker-image.sh build --image-tag <version>
 # 2. Deploy per environment (production mutations require --yes).

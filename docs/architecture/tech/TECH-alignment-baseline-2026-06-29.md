@@ -27,7 +27,7 @@ Pre-launch alignment baseline against `../sdkwork-specs/`. Native composition au
 | Frontend SDK inventory | `apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-core/specs/component.spec.json#contracts.sdkDependencies` (app + platform workspaces with `surface` / `credentialMode`) |
 | Resolved composition output | `generated/composition.resolved.json` via `node ../sdkwork-specs/tools/resolve-composition.mjs --root .` |
 | Runtime SDK base URLs | `sdkwork-knowledgebase-pc-core/src/composition/dependency-runtime.ts` |
-| PC app config workspace pointer | `apps/sdkwork-knowledgebase-pc/sdkwork.app.config.json#packages.workspace` → `../../pnpm-workspace.yaml` |
+| PC app config workspace pointer | `apps/sdkwork-knowledgebase-pc/agent.app.config.json#packages.workspace` → `../../pnpm-workspace.yaml` |
 | Core public exports | `sdkwork-knowledgebase-pc-core/package.json#exports` (`.`, `./sdk`, `./modules`, `./host`, `./session`, `./composition`) |
 | SDK contract types (capability packages) | `sdkwork-knowledgebase-pc-core/src/sdk/sdkContractTypes.ts` |
 

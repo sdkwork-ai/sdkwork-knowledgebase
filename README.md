@@ -37,7 +37,7 @@ jobs/ plugins/ examples/ etc/ deployments/ scripts/ tests/
                                              Standard root capability directories for jobs, plugins, deployment, and verification.
 ```
 
-This repository root is the primary SDKWork Knowledgebase application root and owns `sdkwork.app.config.json`. The PC app surface lives under `apps/sdkwork-knowledgebase-pc/`.
+This repository root is the primary SDKWork Knowledgebase application root and owns `agent.app.config.json`. The PC app surface lives under `apps/sdkwork-knowledgebase-pc/`.
 
 This workspace follows the standard project root directory dictionary from `../sdkwork-specs/SDKWORK_WORKSPACE_SPEC.md`.
 
@@ -148,7 +148,7 @@ Common environment variables:
 - `SDKWORK_DATABASE_MAX_CONNECTIONS` (combined process budget shared by all embedded database consumers)
 - `SDKWORK_DATABASE_TEMPORARY_ANY_POOL_EXCEPTION=true` and
   `SDKWORK_DATABASE_TEMPORARY_DRIVER_POOL_COUNT=1` (tracked pre-release compatibility contract)
-- `SDKWORK_KNOWLEDGEBASE_TENANT_ID` (must match IAM login tenant; development profiles use `100001` from `sdkwork.app.config.json`)
+- `SDKWORK_KNOWLEDGEBASE_TENANT_ID` (must match IAM login tenant; development profiles use `100001` from `agent.app.config.json`)
 - `SDKWORK_KNOWLEDGEBASE_APPLICATION_PUBLIC_INGRESS_BIND` / `SDKWORK_KNOWLEDGEBASE_APPLICATION_PUBLIC_HTTP_URL`
 - `SDKWORK_KNOWLEDGEBASE_DEV_ALLOWED_ORIGINS` (dev CORS allowlist for browser origins such as `http://127.0.0.1:5184`)
 - `SDKWORK_KNOWLEDGEBASE_DRIVE_STORAGE_ROOT` (standalone local Drive provider only; default `data/drive-objects`)

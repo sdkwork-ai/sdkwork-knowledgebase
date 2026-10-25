@@ -14,7 +14,7 @@ Phase 0.1 exit criteria and Phase 1.0 launch acceptance checklist for SDKWork Kn
 
 Decision: SDKWork Knowledgebase remains prelaunch and must not be treated as a production/commercial release until release-governance evidence is attached. The app manifest remains a `DRAFT` with `publish.preLaunch=true`, `release.defaultChannel=DEV`, disabled prelaunch packages, and disabled placeholder media projection.
 
-- [x] Align manifest launch state: `sdkwork.app.config.json` projects `publish.status=DRAFT`, `publish.preLaunch=true`, `release.defaultChannel=DEV`, `release.latest.DEV=0.1.0`, and `publish.metadata.releaseStatus=prelaunch-gated`.
+- [x] Align manifest launch state: `agent.app.config.json` projects `publish.status=DRAFT`, `publish.preLaunch=true`, `release.defaultChannel=DEV`, `release.latest.DEV=0.1.0`, and `publish.metadata.releaseStatus=prelaunch-gated`.
 - [ ] Replace placeholder catalog media: icon, screenshot, and preview entries are disabled with `generatedPlaceholder=true` and `releaseStatus=prelaunch-placeholder`; production listing requires Drive-backed, real product media assets.
 - [ ] Attach `web-universal-cloud-browser-zip` artifact evidence: checksum value, signing evidence, SBOM, provenance/attestation, immutable artifact URL or digest, and build workflow run.
 - [ ] Record rollout, rollback, monitoring, and smoke-test evidence for each runtime target and deployment profile.
@@ -155,7 +155,7 @@ pnpm lint
 
 - [ ] Web bundle `web-universal-cloud-browser-zip` release evidence attached: checksum, signature, SBOM, provenance/attestation, immutable artifact reference, and workflow run. The manifest declares these controls as required and keeps the package disabled until evidence exists.
 - [x] Four SDK families (app, backend, internal, and open) indexed for governed consumption (`specs/component.spec.json`)
-- [x] Desktop packaging workflow explicitly prelaunch-disabled until desktop CI targets ship (`sdkwork.app.config.json` metadata)
+- [x] Desktop packaging workflow explicitly prelaunch-disabled until desktop CI targets ship (`agent.app.config.json` metadata)
 
 Launch orchestration runbook: [deployments/runbooks/production-launch.md](../../../deployments/runbooks/production-launch.md)
 

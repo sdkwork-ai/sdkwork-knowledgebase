@@ -42,7 +42,7 @@ function expandWildcard(scope, catalogCodes) {
 describe('knowledgebase permission bootstrap alignment', () => {
   it('bootstrap scope covers app route manifest permissions via wildcard inheritance', () => {
     const appManifest = readJson('specs/iam.module.manifest.json');
-    const appConfig = readJson('sdkwork.app.config.json');
+    const appConfig = readJson('agent.app.config.json');
     const routeManifest = readText(
       'crates/sdkwork-routes-knowledgebase-app-api/src/http_route_manifest.rs',
     );
@@ -93,12 +93,12 @@ describe('knowledgebase permission bootstrap alignment', () => {
     assert.equal(composition.inheritanceMode, 'module-catalog-with-overrides');
     assert.match(
       composition.bootstrapAccessTokenScope.inheritFrom,
-      /sdkwork\.app\.config\.json#backend\.accessTokenPermissionScope/,
+      /agent\.app\.config\.json#backend\.accessTokenPermissionScope/,
     );
   });
 
-  it('development topology binds runtime tenant to sdkwork.app.config.json tenantId', () => {
-    const appConfig = readJson('sdkwork.app.config.json');
+  it('development topology binds runtime tenant to agent.app.config.json tenantId', () => {
+    const appConfig = readJson('agent.app.config.json');
     const tenantId = appConfig.backend.tenantId;
     const developmentProfiles = [
       'etc/topology/standalone.development.env',

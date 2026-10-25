@@ -87,7 +87,7 @@ These foundations are implementation evidence, not commercial release approval.
 - [ ] Images and desktop/web artifacts are immutable and include checksum, signature, SBOM,
   provenance, attestation, license approval, and reproducible workflow evidence.
 - [ ] Real catalog media, rollout/rollback evidence, live smoke results, and production SLO ownership
-  are attached before `sdkwork.app.config.json` publication gates are enabled.
+  are attached before `agent.app.config.json` publication gates are enabled.
 
 ## Verification
 

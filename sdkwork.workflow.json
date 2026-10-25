@@ -6,7 +6,7 @@
     "name": "SDKWork Knowledgebase",
     "repository": "sdkwork-ai/sdkwork-knowledgebase",
     "sourcePath": ".",
-    "configPath": "sdkwork.app.config.json"
+    "configPath": "agent.app.config.json"
   },
   "release": {
     "artifactPrefix": "sdkwork-knowledgebase",

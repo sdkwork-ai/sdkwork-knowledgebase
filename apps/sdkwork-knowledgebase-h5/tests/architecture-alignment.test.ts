@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { KNOWLEDGEBASE_CAPABILITY_ROUTE_IDS } from "@sdkwork/knowledgebase-h5-knowledge/routes";
 
 const appConfig = JSON.parse(
-  readFileSync(new URL("../sdkwork.app.config.json", import.meta.url), "utf8"),
+  readFileSync(new URL("../agent.app.config.json", import.meta.url), "utf8"),
 ) as { app: { key: string }; runtime: { family: string } };
 
 test("H5 root declares the h5 application family", () => {

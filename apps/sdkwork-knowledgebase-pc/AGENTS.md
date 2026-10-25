@@ -22,7 +22,7 @@ Do not copy root standard text into this directory. If these relative paths do n
 
 ## Application Identity
 
-This is the PC browser/desktop app surface for the root Knowledgebase application. Read `../../sdkwork.app.config.json` only when the task touches app identity, runtime config, SDK wiring, release metadata, app-owned capabilities, packaging, or deployment.
+This is the PC browser/desktop app surface for the root Knowledgebase application. Read `../../agent.app.config.json` only when the task touches app identity, runtime config, SDK wiring, release metadata, app-owned capabilities, packaging, or deployment.
 
 ## Local Dictionary Structure
 
@@ -41,7 +41,7 @@ This is the PC browser/desktop app surface for the root Knowledgebase applicatio
 Use dynamic progressive loading for the current task: resolve the selected root and task category before reading broad source context.
 
 1. Read this `AGENTS.md` routing material and classify the owned surface.
-2. Read `../../AGENTS.md`, `../../sdkwork.app.config.json`, local package manifests, `specs/`, `etc/`, and `.sdkwork/` only when the task reaches the contract each item governs.
+2. Read `../../AGENTS.md`, `../../agent.app.config.json`, local package manifests, `specs/`, `etc/`, and `.sdkwork/` only when the task reaches the contract each item governs.
 3. Locate only the relevant task-matrix row or navigation heading in `../../../sdkwork-specs/README.md`; do not load the full catalog.
 4. Read only the selected task-specific global specs, then inspect implementation files.
 <!-- /SDKWORK-PROGRESSIVE-LOADING: v1 -->

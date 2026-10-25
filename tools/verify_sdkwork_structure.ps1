@@ -78,7 +78,7 @@ foreach ($path in $requiredSpecPaths) {
 }
 
 Assert-PathExists "AGENTS.md" "Missing SDKWORK agent entrypoint"
-Assert-PathExists "sdkwork.app.config.json" "Missing application manifest"
+Assert-PathExists "agent.app.config.json" "Missing application manifest"
 Assert-PathExists ".sdkwork/README.md" "Missing SDKWORK workspace README"
 Assert-PathExists ".sdkwork/skills/README.md" "Missing SDKWORK skills README"
 Assert-PathExists ".sdkwork/plugins/README.md" "Missing SDKWORK plugins README"
@@ -101,8 +101,8 @@ foreach ($configFile in $topologySpec.packaging.cloudConfigFiles) {
 }
 
 $agent = Get-Content -Raw -LiteralPath "AGENTS.md"
-Assert-Contains $agent "sdkwork.app.config.json" "AGENTS.md"
-Assert-NotContains $agent "No `sdkwork.app.config.json` is present" "AGENTS.md"
+Assert-Contains $agent "agent.app.config.json" "AGENTS.md"
+Assert-NotContains $agent "No `agent.app.config.json` is present" "AGENTS.md"
 
 foreach ($path in @(".sdkwork/README.md", ".sdkwork/skills/README.md", ".sdkwork/plugins/README.md")) {
     $content = Get-Content -Raw -LiteralPath $path
@@ -133,12 +133,12 @@ foreach ($directory in $requiredRootDirectories) {
 
 Assert-PathAbsent "services" "Nonstandard top-level services directory must be removed"
 
-$rootManifest = Get-JsonFile "sdkwork.app.config.json"
+$rootManifest = Get-JsonFile "agent.app.config.json"
 if ($rootManifest.publish.config.workspaceRoot -ne ".") {
-    throw "sdkwork.app.config.json publish.config.workspaceRoot must be '.': $($rootManifest.publish.config.workspaceRoot)"
+    throw "agent.app.config.json publish.config.workspaceRoot must be '.': $($rootManifest.publish.config.workspaceRoot)"
 }
 if ($rootManifest.devApp.sourceRoot -ne ".") {
-    throw "sdkwork.app.config.json devApp.sourceRoot must be '.': $($rootManifest.devApp.sourceRoot)"
+    throw "agent.app.config.json devApp.sourceRoot must be '.': $($rootManifest.devApp.sourceRoot)"
 }
 
 $expectedPackages = @(
@@ -284,7 +284,7 @@ $activeSearchRoots = @(
     "AGENTS.md",
     "Cargo.toml",
     "README.md",
-    "sdkwork.app.config.json",
+    "agent.app.config.json",
     ".sdkwork",
     "apis",
     "apps",

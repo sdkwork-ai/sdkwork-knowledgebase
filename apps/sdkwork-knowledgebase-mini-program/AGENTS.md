@@ -22,13 +22,13 @@ Do not copy root standard text into this application root. If these relative pat
 
 ## Application Identity
 
-Read `sdkwork.app.config.json` only when the task touches mini program behavior, runtime config, SDK wiring, release metadata, packaging, or deployment. For unrelated package-local work, do not expand into the full app manifest unless evidence requires it.
+Read `agent.app.config.json` only when the task touches mini program behavior, runtime config, SDK wiring, release metadata, packaging, or deployment. For unrelated package-local work, do not expand into the full app manifest unless evidence requires it.
 
 ## Local Dictionary Structure
 
 - `AGENTS.md`: mini program root agent entrypoint and relative SDKWork spec index.
 - `CLAUDE.md`, `GEMINI.md`, `CODEX.md`: compatibility shims that point to `AGENTS.md` and must not duplicate rules.
-- `sdkwork.app.config.json`: mini program identity, runtime, release, and capability metadata.
+- `agent.app.config.json`: mini program identity, runtime, release, and capability metadata.
 - `project.config.json`: WeChat developer tool project descriptor (`miniprogramRoot: src/`).
 - `etc/`: surface-owned source configuration that delegates to the repository deployment authority.
 - `config/mini-program/`: runtime env materialization targets per deployment profile.
@@ -46,7 +46,7 @@ Read `sdkwork.app.config.json` only when the task touches mini program behavior,
 Use dynamic progressive loading for the current task: resolve the selected root and task category before reading broad source context.
 
 1. Read this `AGENTS.md` routing material and classify the owned surface.
-2. Read `sdkwork.app.config.json`, local `specs/`, and `.sdkwork/` only when the task reaches the contract each item governs.
+2. Read `agent.app.config.json`, local `specs/`, and `.sdkwork/` only when the task reaches the contract each item governs.
 3. Locate only the relevant task-matrix row or navigation heading in `../../../sdkwork-specs/README.md`; do not load the full catalog.
 4. Read only the task-specific global spec sections selected by that route, then inspect implementation files.
 <!-- /SDKWORK-PROGRESSIVE-LOADING: v1 -->
@@ -126,5 +126,5 @@ Authority: `sdkwork-specs/API_SPEC.md` section 4.5 and sections 14–16, `SDK_SP
 
 ## Human Review Rules
 
-- Human review is required before changing `sdkwork.app.config.json`, `etc/`, or any deployment profile.
+- Human review is required before changing `agent.app.config.json`, `etc/`, or any deployment profile.
 - Human review is required before changing the projected `pages`/`subPackages` binding.

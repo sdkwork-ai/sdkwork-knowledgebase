@@ -100,7 +100,7 @@ assert(
   'configs/ is retired; source-controlled application configuration must exist only under etc/',
 );
 
-assert(fs.existsSync(path.join(repoRoot, 'sdkwork.app.config.json')), 'sdkwork.app.config.json must exist');
+assert(fs.existsSync(path.join(repoRoot, 'agent.app.config.json')), 'agent.app.config.json must exist');
 assert(fs.existsSync(path.join(repoRoot, 'sdkwork.workflow.json')), 'sdkwork.workflow.json must exist');
 assert(fs.existsSync(path.join(repoRoot, 'package.json')), 'package.json must exist per PNPM_SCRIPT_SPEC.md');
 assert(
@@ -469,7 +469,7 @@ const requiredSkeletonPaths = [
   'scripts/README.md',
   'apps/README.md',
   'apps/sdkwork-knowledgebase-pc/AGENTS.md',
-  'apps/sdkwork-knowledgebase-pc/sdkwork.app.config.json',
+  'apps/sdkwork-knowledgebase-pc/agent.app.config.json',
   'apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-core/specs/component.spec.json',
   'apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-core/src/sdk/sdkContractTypes.ts',
   'pnpm-workspace.yaml',
@@ -486,10 +486,10 @@ for (const relativePath of requiredSkeletonPaths) {
   );
 }
 
-const pcAppConfig = readJson('apps/sdkwork-knowledgebase-pc/sdkwork.app.config.json');
+const pcAppConfig = readJson('apps/sdkwork-knowledgebase-pc/agent.app.config.json');
 assert(
   pcAppConfig.packages?.workspace === '../../pnpm-workspace.yaml',
-  'apps/sdkwork-knowledgebase-pc/sdkwork.app.config.json must reference repository root pnpm-workspace.yaml',
+  'apps/sdkwork-knowledgebase-pc/agent.app.config.json must reference repository root pnpm-workspace.yaml',
 );
 
 const pcCoreComponentSpec = readJson(

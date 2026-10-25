@@ -18,7 +18,7 @@ the core backend (Drive, provider runtime, grant/launch tickets, outbox, worker 
 projection) is genuinely implemented, and there are **no** `todo!()` / `unimplemented!()` /
 `dbg!()` markers in non-test Rust. The blockers are a specific set of correctness, scalability,
 authorization-consistency, and documentation-integrity defects listed below, plus the release
-gates the repository itself already records as open (`sdkwork.app.config.json` projects
+gates the repository itself already records as open (`agent.app.config.json` projects
 `publish.status=DRAFT`, `publish.preLaunch=true`, `releaseEvidenceStatus=missing`).
 
 Highest-risk themes:

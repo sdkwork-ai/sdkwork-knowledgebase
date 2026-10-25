@@ -4,7 +4,7 @@
 # Build context: an unpacked container install package directory assembled by
 # scripts/build-knowledgebase-container.mjs (dist/container-image-build)
 # containing bin/ (gateway + worker release binaries), portal/dist,
-# database-modules/, sdkwork.app.config.json, container/entrypoint and
+# database-modules/, agent.app.config.json, container/entrypoint and
 # install-manifest.json.
 #
 # The committed copy is the build input for `pnpm build:container`; it is
@@ -54,7 +54,7 @@ ENV SDKWORK_KNOWLEDGEBASE_APP_ROOT=${INSTALL_ROOT}/database-modules/sdkwork-know
     SDKWORK_IAM_APP_ROOT=${INSTALL_ROOT}/database-modules/sdkwork-iam \
     SDKWORK_DRIVE_APP_ROOT=${INSTALL_ROOT}/database-modules/sdkwork-drive \
     SDKWORK_WEB_STORE_APP_ROOT=${INSTALL_ROOT}/database-modules/sdkwork-web-framework
-# Application identity root: sdkwork.app.config.json is installed at the
+# Application identity root: agent.app.config.json is installed at the
 # install root; IAM tenant provisioning resolves it via SDKWORK_APP_ROOT.
 ENV SDKWORK_APP_ROOT=${INSTALL_ROOT}
 # Operator binaries must be on PATH so `docker compose exec` diagnostics work

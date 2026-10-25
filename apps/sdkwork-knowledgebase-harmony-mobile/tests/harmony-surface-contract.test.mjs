@@ -38,7 +38,7 @@ function listFiles(relativePath) {
 for (const requiredPath of [
   "AGENTS.md",
   "README.md",
-  "sdkwork.app.config.json",
+  "agent.app.config.json",
   "specs/component.spec.json",
   "oh-package.json5",
   "build-profile.json5",
@@ -173,7 +173,7 @@ for (const hostFile of hostConfigFiles) {
 
 // --- App manifest ----------------------------------------------------------
 
-const manifest = JSON.parse(mustExist("sdkwork.app.config.json"));
+const manifest = JSON.parse(mustExist("agent.app.config.json"));
 assert.equal(manifest.app?.appType, "APP_HARMONY", "Harmony root must declare appType APP_HARMONY");
 assert.equal(manifest.runtime?.family, "mobile", "Harmony root must declare runtime.family mobile");
 assert.equal(

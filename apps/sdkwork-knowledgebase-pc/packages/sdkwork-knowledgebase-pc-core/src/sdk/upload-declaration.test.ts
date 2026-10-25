@@ -63,7 +63,7 @@ const DECLARATION_PATH = fileURLToPath(
  * test: a wrong literal on both sides of the declaration/constant pair still fails here.
  */
 const APP_CONFIG_PATH = fileURLToPath(
-  new URL('../../../../sdkwork.app.config.json', import.meta.url),
+  new URL('../../../../agent.app.config.json', import.meta.url),
 );
 /** §9.4 reserves `im` for Drive; an application must not declare or send it. */
 const RESERVED_SCENES = ['im'];
@@ -82,7 +82,7 @@ function loadCanonicalAppId(): string {
   };
   const appId = config.backend?.appId ?? config.app?.key;
   if (!appId) {
-    throw new Error('sdkwork.app.config.json does not declare backend.appId.');
+    throw new Error('agent.app.config.json does not declare backend.appId.');
   }
   return appId;
 }
@@ -99,7 +99,7 @@ describe('upload declaration file', () => {
     expect(loadDeclaration().appId).toBe(KNOWLEDGEBASE_PC_APP_ID);
   });
 
-  it('sources its declared appId from sdkwork.app.config.json', () => {
+  it('sources its declared appId from agent.app.config.json', () => {
     expect(loadDeclaration().appId).toBe(loadCanonicalAppId());
     expect(KNOWLEDGEBASE_PC_APP_ID).toBe(loadCanonicalAppId());
   });

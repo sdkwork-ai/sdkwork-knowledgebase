@@ -32,7 +32,7 @@ function resolveAppIdFromManifest(manifest) {
   if (legacyAppId) {
     return legacyAppId;
   }
-  throw new Error('sdkwork.app.config.json app.key is required for IAM bootstrap access token generation');
+  throw new Error('agent.app.config.json app.key is required for IAM bootstrap access token generation');
 }
 
 function resolveTenantIdFromManifest(manifest) {
@@ -127,13 +127,13 @@ export function resolveRepoApplicationManifestPath(repoRoot, manifestPath) {
       : path.join(normalizedRepoRoot, explicitManifestPath);
   }
 
-  const defaultManifestPath = path.join(normalizedRepoRoot, 'sdkwork.app.config.json');
+  const defaultManifestPath = path.join(normalizedRepoRoot, 'agent.app.config.json');
   if (existsSync(defaultManifestPath)) {
     return defaultManifestPath;
   }
 
   throw new Error(
-    `sdkwork.app.config.json not found under ${normalizedRepoRoot}; pass manifestPath explicitly`,
+    `agent.app.config.json not found under ${normalizedRepoRoot}; pass manifestPath explicitly`,
   );
 }
 

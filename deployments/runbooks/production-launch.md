@@ -134,7 +134,7 @@ two-secret overlap procedure; never perform an uncoordinated single-secret rollb
    package metadata remains `releaseStatus: prelaunch-artifact-pending`.
 2. Do not publish or enable `web-universal-cloud-browser-zip` until release evidence has been
    recorded for checksum, signature, SBOM, provenance, attestation, workflow run, rollout,
-   rollback, and live smoke results per `sdkwork.app.config.json`.
+   rollback, and live smoke results per `agent.app.config.json`.
 3. Publish or approve private-registry consumption for all three SDK families:
    - `sdkwork-knowledgebase-app-sdk`
    - `sdkwork-knowledgebase-backend-sdk`

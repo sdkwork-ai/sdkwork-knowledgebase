@@ -71,7 +71,7 @@ describe('knowledgebase launch runbook alignment', () => {
   });
 
   it('requires supply-chain release gates in app manifest', () => {
-    const manifest = readJson('sdkwork.app.config.json');
+    const manifest = readJson('agent.app.config.json');
     assert.equal(manifest.security.checksumRequired, true);
     assert.equal(manifest.security.signatureRequired, true);
     assert.equal(manifest.security.sbomRequired, true);
@@ -108,7 +108,7 @@ describe('knowledgebase launch runbook alignment', () => {
   });
 
   it('keeps the app manifest prelaunch-gated until release evidence exists', () => {
-    const manifest = readJson('sdkwork.app.config.json');
+    const manifest = readJson('agent.app.config.json');
     assert.equal(manifest.publish.status, 'DRAFT');
     assert.equal(manifest.publish.preLaunch, true);
     assert.equal(manifest.publish.metadata?.releaseStatus, 'prelaunch-gated');
@@ -125,7 +125,7 @@ describe('knowledgebase launch runbook alignment', () => {
   });
 
   it('does not enable placeholder catalog media for release projection', () => {
-    const manifest = readJson('sdkwork.app.config.json');
+    const manifest = readJson('agent.app.config.json');
     const mediaEntries = [
       manifest.media.icons.primary,
       ...(manifest.media.icons.platform ?? []),
@@ -142,7 +142,7 @@ describe('knowledgebase launch runbook alignment', () => {
   });
 
   it('uses canonical package ids for prelaunch install packages', () => {
-    const manifest = readJson('sdkwork.app.config.json');
+    const manifest = readJson('agent.app.config.json');
     const packageIds = manifest.artifacts.installConfig.packages.map((entry) => entry.id).sort();
     assert.deepEqual(packageIds, [
       'linux-x64-standalone-desktop-appimage',
@@ -158,7 +158,7 @@ describe('knowledgebase launch runbook alignment', () => {
   });
 
   it('keeps desktop bundles prelaunch-disabled until CI packaging ships', () => {
-    const manifest = readJson('sdkwork.app.config.json');
+    const manifest = readJson('agent.app.config.json');
     const desktopPackages = manifest.artifacts.installConfig.packages.filter((entry) =>
       String(entry.platform ?? '').startsWith('DESKTOP_'),
     );

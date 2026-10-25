@@ -282,11 +282,11 @@ function createBuildPlan(settings, root = workspaceRoot) {
         ],
       ),
       // Application identity manifest at the install root: IAM tenant
-      // provisioning resolves sdkwork.app.config.json under the app root
+      // provisioning resolves agent.app.config.json under the app root
       // (SDKWORK_APP_ROOT).
       {
-        archivePath: 'sdkwork.app.config.json',
-        sourcePath: path.join(root, 'sdkwork.app.config.json'),
+        archivePath: 'agent.app.config.json',
+        sourcePath: path.join(root, 'agent.app.config.json'),
         label: 'application identity manifest',
       },
     ],

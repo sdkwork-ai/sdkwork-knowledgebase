@@ -5,7 +5,7 @@ import { test } from "node:test";
 const readJson = (relative) =>
   JSON.parse(readFileSync(new URL(`../${relative}`, import.meta.url), "utf8"));
 
-const appConfig = readJson("sdkwork.app.config.json");
+const appConfig = readJson("agent.app.config.json");
 const appJson = readJson("src/app.json");
 const componentSpec = readJson("specs/component.spec.json");
 
