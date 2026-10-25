@@ -155,3 +155,14 @@ sdks/**/*-typescript/src/*.d.ts
 # Local dev-gateway config artifacts (contain dev credentials; never commit)
 # Added by repo-commit task 2026-10-07; targeted rule only, compliant with check-gitignore-standard
 /artifacts/
+
+# ---- auto-audited: local artifacts that must never be committed ----
+*.key
+*.pem
+*.p12
+*.pfx
+*.keystore
+tmp/
+temp/
+*.temp
+.next/

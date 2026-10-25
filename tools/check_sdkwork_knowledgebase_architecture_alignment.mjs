@@ -101,7 +101,7 @@ assert(
 );
 
 assert(fs.existsSync(path.join(repoRoot, 'agent.app.config.json')), 'agent.app.config.json must exist');
-assert(fs.existsSync(path.join(repoRoot, 'sdkwork.workflow.json')), 'sdkwork.workflow.json must exist');
+assert(fs.existsSync(path.join(repoRoot, 'agent.workflow.json')), 'agent.workflow.json must exist');
 assert(fs.existsSync(path.join(repoRoot, 'package.json')), 'package.json must exist per PNPM_SCRIPT_SPEC.md');
 assert(
   fs.existsSync(path.join(repoRoot, '.github/workflows/package.yml')),
@@ -182,7 +182,7 @@ for (const member of [...workspaceMembersBlock.matchAll(/"([^"]+)"/gu)].map((mat
   );
 }
 
-const workflow = readJson('sdkwork.workflow.json');
+const workflow = readJson('agent.workflow.json');
 const dependencyIds = new Set((workflow.dependencies || []).map((dependency) => dependency.id));
 for (const dependencyId of [
   'sdkwork-appbase',
@@ -195,26 +195,26 @@ for (const dependencyId of [
   'sdkwork-kernel',
   'sdkwork-memory',
 ]) {
-  assert(dependencyIds.has(dependencyId), `sdkwork.workflow.json must declare ${dependencyId}`);
+  assert(dependencyIds.has(dependencyId), `agent.workflow.json must declare ${dependencyId}`);
 }
-assert(!dependencyIds.has('sdkwork-discovery'), 'sdkwork.workflow.json must not declare sdkwork-discovery until RPC exists');
+assert(!dependencyIds.has('sdkwork-discovery'), 'agent.workflow.json must not declare sdkwork-discovery until RPC exists');
 const targetIds = new Set((workflow.targets || []).map((target) => target.id));
 for (const targetId of [
   'linux-x64-standalone-server-tar-gz',
   'web-universal-cloud-browser-zip',
 ]) {
-  assert(targetIds.has(targetId), `sdkwork.workflow.json must declare target ${targetId}`);
+  assert(targetIds.has(targetId), `agent.workflow.json must declare target ${targetId}`);
 }
 for (const target of workflow.targets || []) {
   assert(
     ['standalone', 'cloud'].includes(target.deploymentProfile),
-    `sdkwork.workflow.json target ${target.id} must declare canonical deploymentProfile`,
+    `agent.workflow.json target ${target.id} must declare canonical deploymentProfile`,
   );
-  assert(target.runtimeTarget, `sdkwork.workflow.json target ${target.id} must declare runtimeTarget`);
-  assert(target.runner, `sdkwork.workflow.json target ${target.id} must declare runner`);
+  assert(target.runtimeTarget, `agent.workflow.json target ${target.id} must declare runtimeTarget`);
+  assert(target.runner, `agent.workflow.json target ${target.id} must declare runner`);
   assert(
     Array.isArray(target.outputGlobs) && target.outputGlobs.length > 0,
-    `sdkwork.workflow.json target ${target.id} must declare outputGlobs`,
+    `agent.workflow.json target ${target.id} must declare outputGlobs`,
   );
 }
 

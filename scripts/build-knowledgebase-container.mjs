@@ -67,7 +67,7 @@ const INSTALL_ROOT = '/opt/sdkwork/knowledgebase';
 function defaultVersionFromWorkflow() {
   try {
     const workflow = JSON.parse(
-      readFileSync(path.join(workspaceRoot, 'sdkwork.workflow.json'), 'utf8'),
+      readFileSync(path.join(workspaceRoot, 'agent.workflow.json'), 'utf8'),
     );
     return workflow.release?.defaultVersion ?? '0.1.0';
   } catch {

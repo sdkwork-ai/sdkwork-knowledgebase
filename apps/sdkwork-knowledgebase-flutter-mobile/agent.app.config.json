@@ -137,6 +137,6 @@
     "architectureSpec": "FLUTTER_APP_MOBILE_ARCHITECTURE_SPEC.md",
     "runtimeTarget": "flutter-mobile",
     "deploymentConfig": "etc/sdkwork.deployment.config.json",
-    "releaseAuthority": "../../sdkwork.workflow.json"
+    "releaseAuthority": "../../agent.workflow.json"
   }
 }
