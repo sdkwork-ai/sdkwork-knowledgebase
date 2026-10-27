@@ -34,7 +34,7 @@ Windows 浏览器 → hosts: 127.0.0.1 testapidocker.sdkwork.com testapidocker.b
 | `scripts/deploy-wsl-docker.mjs`（薄包装）+ `scripts/wsl-deploy.sh`（WSL 内执行） | 幂等编排：安装 docker/nginx/rsync（apt，缺则装）→ 同步工作区到 WSL ext4（排除 target/node_modules/dist/.git，含 16 个必要兄弟仓库）→ rustup + `cargo build --release -p sdkwork-api-knowledgebase-standalone-gateway -p sdkwork-knowledgebase-worker` → pnpm install + `vite build --mode standalone.docker` → `build:container` → `docker compose up -d` → 安装 nginx site + reload → 写入 Windows hosts（失败则给出提权命令）→ 端到端验证输出 |
 | `apps/sdkwork-knowledgebase-pc/.env.standalone.docker` | 提交的 Vite 构建环境：standalone 档案、environment=development、`DEV_SAME_ORIGIN_API=true`、browser-local token、dev auth 凭据 |
 | `package.json` scripts | `build:container`、`build:container:check`、`deploy:docker:wsl`（名称过 `check:pnpm-script-standard`；`docker:*` 前缀禁用） |
-| `sdkwork.workflow.json` | 追加 target `linux-x64-standalone-container-oci`（runtimeTarget=container、deploymentProfile=standalone、format=oci、outputGlobs=release 二进制+dist）——仅追加不改动既有 target，遵循 GITHUB_WORKFLOW_SPEC §5.0 |
+| `agent.workflow.json` | 追加 target `linux-x64-standalone-container-oci`（runtimeTarget=container、deploymentProfile=standalone、format=oci、outputGlobs=release 二进制+dist）——仅追加不改动既有 target，遵循 GITHUB_WORKFLOW_SPEC §5.0 |
 | `docs/installation/docker-deployment.md` | 完整部署文档：前置、WSL 安装、构建、compose、nginx、Windows hosts、验证、故障排查（Clash 代理直连、端口冲突、登录） |
 | `deployments/docker/Dockerfile.api` + `.worker` | 删除（现状无法构建：依赖 ../sdkwork-* 路径、上下文无兄弟仓库；且 EXPOSE 8080 与真实 18081 不一致，被新根 Dockerfile 取代），`deployments/README.md` 同步更新 |
 
@@ -65,4 +65,4 @@ Windows 浏览器 → hosts: 127.0.0.1 testapidocker.sdkwork.com testapidocker.b
 
 ## 人审说明
 
-- 删除 2 个旧 Dockerfile、修改 sdkwork.workflow.json（release 治理）属规范要求的人审范围——此计划即提交审核；其余均为新增文件 + package.json 脚本追加
+- 删除 2 个旧 Dockerfile、修改 agent.workflow.json（release 治理）属规范要求的人审范围——此计划即提交审核；其余均为新增文件 + package.json 脚本追加
