@@ -21,7 +21,7 @@ import {
   resolveSurfaceHttpUrl,
   waitForHttpHealthy,
 } from './lib/knowledgebase-topology.mjs';
-import { mergeRepoDevBootstrapAccessTokenEnv, readApplicationManifest, resolveRepoApplicationManifestPath } from './lib/knowledgebase-dev-bootstrap-access-token-env.mjs';
+import { mergeRepoDevBootstrapAccessTokenEnv, readApplicationManifest, resolveRepoApplicationManifestPath } from '../../sdkwork-iam/scripts/dev/create-dev-bootstrap-access-token-env.mjs';
 import {
   buildCargoPrebuildArgs,
   cargoCommand,
