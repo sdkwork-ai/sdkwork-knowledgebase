@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::{WikiPublicPageMetadata};
+use crate::models::WikiPublicPageMetadata;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WikiRouteResolution {

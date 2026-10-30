@@ -2,11 +2,14 @@ use std::sync::Arc;
 
 use reqwest::Method;
 
-use crate::api::base::{RequestHeaders};
-use crate::api::paths::custom_path;
+use crate::api::base::RequestHeaders;
 use crate::api::paths::append_query_string;
-use crate::http::{SdkworkError, SdkworkHttpClient, BinaryResponseStream};
-use crate::models::{DriveCloudEvent, DriveEventReceipt, ResolveWikiRouteRequest, WikiPublicPageListData, WikiPublication, WikiRouteResolution};
+use crate::api::paths::custom_path;
+use crate::http::{BinaryResponseStream, SdkworkError, SdkworkHttpClient};
+use crate::models::{
+    DriveCloudEvent, DriveEventReceipt, ResolveWikiRouteRequest, WikiPublicPageListData,
+    WikiPublication, WikiRouteResolution,
+};
 
 #[derive(Clone)]
 pub struct KnowledgebaseInternalWikiApi {
@@ -19,70 +22,206 @@ impl KnowledgebaseInternalWikiApi {
     }
 
     /// Receive a signed Drive event for a Wiki source scope
-    pub async fn drive_events_receive(&self, body: &DriveCloudEvent, x_sdkwork_event_id: &str, x_sdkwork_event_timestamp: &str, x_sdkwork_event_signature: &str, x_sdkwork_event_retry_count: &str, x_sdkwork_drive_channel_id: &str, x_sdkwork_idempotency_key: &str) -> Result<DriveEventReceipt, SdkworkError> {
+    pub async fn drive_events_receive(
+        &self,
+        body: &DriveCloudEvent,
+        x_sdkwork_event_id: &str,
+        x_sdkwork_event_timestamp: &str,
+        x_sdkwork_event_signature: &str,
+        x_sdkwork_event_retry_count: &str,
+        x_sdkwork_drive_channel_id: &str,
+        x_sdkwork_idempotency_key: &str,
+    ) -> Result<DriveEventReceipt, SdkworkError> {
         let path = custom_path(&"/knowledgebase/drive_events".to_string());
         let headers = build_request_headers(
             &[
-                ("x-sdkwork-event-id", HeaderParameterSpec::new(x_sdkwork_event_id, "simple", false, None)),
-                ("x-sdkwork-event-timestamp", HeaderParameterSpec::new(x_sdkwork_event_timestamp, "simple", false, None)),
-                ("x-sdkwork-event-signature", HeaderParameterSpec::new(x_sdkwork_event_signature, "simple", false, None)),
-                ("x-sdkwork-event-retry-count", HeaderParameterSpec::new(x_sdkwork_event_retry_count, "simple", false, None)),
-                ("x-sdkwork-drive-channel-id", HeaderParameterSpec::new(x_sdkwork_drive_channel_id, "simple", false, None)),
-                ("x-sdkwork-idempotency-key", HeaderParameterSpec::new(x_sdkwork_idempotency_key, "simple", false, None)),
+                (
+                    "x-sdkwork-event-id",
+                    HeaderParameterSpec::new(x_sdkwork_event_id, "simple", false, None),
+                ),
+                (
+                    "x-sdkwork-event-timestamp",
+                    HeaderParameterSpec::new(x_sdkwork_event_timestamp, "simple", false, None),
+                ),
+                (
+                    "x-sdkwork-event-signature",
+                    HeaderParameterSpec::new(x_sdkwork_event_signature, "simple", false, None),
+                ),
+                (
+                    "x-sdkwork-event-retry-count",
+                    HeaderParameterSpec::new(x_sdkwork_event_retry_count, "simple", false, None),
+                ),
+                (
+                    "x-sdkwork-drive-channel-id",
+                    HeaderParameterSpec::new(x_sdkwork_drive_channel_id, "simple", false, None),
+                ),
+                (
+                    "x-sdkwork-idempotency-key",
+                    HeaderParameterSpec::new(x_sdkwork_idempotency_key, "simple", false, None),
+                ),
             ],
             &[],
         );
-        self.client.post(&path, Some(body), None, headers.as_ref(), Some("application/json")).await
+        self.client
+            .post(
+                &path,
+                Some(body),
+                None,
+                headers.as_ref(),
+                Some("application/json"),
+            )
+            .await
     }
 
     /// Retrieve an active public Wiki publication
-    pub async fn wiki_publications_retrieve(&self, publication_uuid: &str) -> Result<WikiPublication, SdkworkError> {
-        let path = custom_path(&format!("/knowledgebase/wiki_publications/{}", serialize_path_parameter(publication_uuid, PathParameterSpec::new("publicationUuid", "simple", false))));
+    pub async fn wiki_publications_retrieve(
+        &self,
+        publication_uuid: &str,
+    ) -> Result<WikiPublication, SdkworkError> {
+        let path = custom_path(&format!(
+            "/knowledgebase/wiki_publications/{}",
+            serialize_path_parameter(
+                publication_uuid,
+                PathParameterSpec::new("publicationUuid", "simple", false)
+            )
+        ));
         self.client.get(&path, None, None).await
     }
 
     /// Resolve one normalized public Wiki route
-    pub async fn wiki_publications_routes_resolve(&self, publication_uuid: &str, body: &ResolveWikiRouteRequest) -> Result<WikiRouteResolution, SdkworkError> {
-        let path = custom_path(&format!("/knowledgebase/wiki_publications/{}/routes/resolve", serialize_path_parameter(publication_uuid, PathParameterSpec::new("publicationUuid", "simple", false))));
-        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    pub async fn wiki_publications_routes_resolve(
+        &self,
+        publication_uuid: &str,
+        body: &ResolveWikiRouteRequest,
+    ) -> Result<WikiRouteResolution, SdkworkError> {
+        let path = custom_path(&format!(
+            "/knowledgebase/wiki_publications/{}/routes/resolve",
+            serialize_path_parameter(
+                publication_uuid,
+                PathParameterSpec::new("publicationUuid", "simple", false)
+            )
+        ));
+        self.client
+            .post(&path, Some(body), None, None, Some("application/json"))
+            .await
     }
 
     /// Retrieve one bounded pinned public Wiki representation
-    pub async fn wiki_publications_contents_retrieve(&self, publication_uuid: &str, content_handle: &str) -> Result<Vec<u8>, SdkworkError> {
-        let path = custom_path(&format!("/knowledgebase/wiki_publications/{}/contents/{}", serialize_path_parameter(publication_uuid, PathParameterSpec::new("publicationUuid", "simple", false)), serialize_path_parameter(content_handle, PathParameterSpec::new("contentHandle", "simple", false))));
-        self.client.request_bytes(Method::GET, &path, Option::<&serde_json::Value>::None, None, None, None, false, false).await
+    pub async fn wiki_publications_contents_retrieve(
+        &self,
+        publication_uuid: &str,
+        content_handle: &str,
+    ) -> Result<Vec<u8>, SdkworkError> {
+        let path = custom_path(&format!(
+            "/knowledgebase/wiki_publications/{}/contents/{}",
+            serialize_path_parameter(
+                publication_uuid,
+                PathParameterSpec::new("publicationUuid", "simple", false)
+            ),
+            serialize_path_parameter(
+                content_handle,
+                PathParameterSpec::new("contentHandle", "simple", false)
+            )
+        ));
+        self.client
+            .request_bytes(
+                Method::GET,
+                &path,
+                Option::<&serde_json::Value>::None,
+                None,
+                None,
+                None,
+                false,
+                false,
+            )
+            .await
     }
 
     /// Streaming variant of the same operation: yields the binary body in
     /// bounded chunks without materializing the whole payload in memory.
-    pub async fn wiki_publications_contents_retrieve_stream(&self, publication_uuid: &str, content_handle: &str) -> Result<BinaryResponseStream, SdkworkError> {
-        let path = custom_path(&format!("/knowledgebase/wiki_publications/{}/contents/{}", serialize_path_parameter(publication_uuid, PathParameterSpec::new("publicationUuid", "simple", false)), serialize_path_parameter(content_handle, PathParameterSpec::new("contentHandle", "simple", false))));
-        self.client.request_bytes_stream(Method::GET, &path, Option::<&serde_json::Value>::None, None, None, None, false, false).await
+    pub async fn wiki_publications_contents_retrieve_stream(
+        &self,
+        publication_uuid: &str,
+        content_handle: &str,
+    ) -> Result<BinaryResponseStream, SdkworkError> {
+        let path = custom_path(&format!(
+            "/knowledgebase/wiki_publications/{}/contents/{}",
+            serialize_path_parameter(
+                publication_uuid,
+                PathParameterSpec::new("publicationUuid", "simple", false)
+            ),
+            serialize_path_parameter(
+                content_handle,
+                PathParameterSpec::new("contentHandle", "simple", false)
+            )
+        ));
+        self.client
+            .request_bytes_stream(
+                Method::GET,
+                &path,
+                Option::<&serde_json::Value>::None,
+                None,
+                None,
+                None,
+                false,
+                false,
+            )
+            .await
     }
 
     /// List public Wiki navigation pages
-    pub async fn wiki_publications_navigation_list(&self, publication_uuid: &str, locale: Option<&str>, cursor: Option<&str>, page_size: Option<i64>) -> Result<WikiPublicPageListData, SdkworkError> {
+    pub async fn wiki_publications_navigation_list(
+        &self,
+        publication_uuid: &str,
+        locale: Option<&str>,
+        cursor: Option<&str>,
+        page_size: Option<i64>,
+    ) -> Result<WikiPublicPageListData, SdkworkError> {
         let query = build_query_string(&[
             QueryParameterSpec::new("locale", locale, "form", true, false, None),
             QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
             QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
         ]);
-        let path = append_query_string(custom_path(&format!("/knowledgebase/wiki_publications/{}/navigation", serialize_path_parameter(publication_uuid, PathParameterSpec::new("publicationUuid", "simple", false)))), &query);
+        let path = append_query_string(
+            custom_path(&format!(
+                "/knowledgebase/wiki_publications/{}/navigation",
+                serialize_path_parameter(
+                    publication_uuid,
+                    PathParameterSpec::new("publicationUuid", "simple", false)
+                )
+            )),
+            &query,
+        );
         self.client.get(&path, None, None).await
     }
 
     /// Search public Wiki page metadata
-    pub async fn wiki_publications_pages_search(&self, publication_uuid: &str, q: &str, locale: Option<&str>, cursor: Option<&str>, page_size: Option<i64>) -> Result<WikiPublicPageListData, SdkworkError> {
+    pub async fn wiki_publications_pages_search(
+        &self,
+        publication_uuid: &str,
+        q: &str,
+        locale: Option<&str>,
+        cursor: Option<&str>,
+        page_size: Option<i64>,
+    ) -> Result<WikiPublicPageListData, SdkworkError> {
         let query = build_query_string(&[
             QueryParameterSpec::new("q", q, "form", true, false, None),
             QueryParameterSpec::new("locale", locale, "form", true, false, None),
             QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
             QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
         ]);
-        let path = append_query_string(custom_path(&format!("/knowledgebase/wiki_publications/{}/pages/search", serialize_path_parameter(publication_uuid, PathParameterSpec::new("publicationUuid", "simple", false)))), &query);
+        let path = append_query_string(
+            custom_path(&format!(
+                "/knowledgebase/wiki_publications/{}/pages/search",
+                serialize_path_parameter(
+                    publication_uuid,
+                    PathParameterSpec::new("publicationUuid", "simple", false)
+                )
+            )),
+            &query,
+        );
         self.client.get(&path, None, None).await
     }
-
 }
 
 struct PathParameterSpec<'a> {
@@ -93,7 +232,11 @@ struct PathParameterSpec<'a> {
 
 impl<'a> PathParameterSpec<'a> {
     fn new(name: &'a str, style: &'a str, explode: bool) -> Self {
-        Self { name, style, explode }
+        Self {
+            name,
+            style,
+            explode,
+        }
     }
 }
 
@@ -102,15 +245,32 @@ fn serialize_path_parameter<T: serde::Serialize>(value: T, spec: PathParameterSp
     if value.is_null() {
         return String::new();
     }
-    let style = if spec.style.is_empty() { "simple" } else { spec.style };
+    let style = if spec.style.is_empty() {
+        "simple"
+    } else {
+        spec.style
+    };
     match value {
-        serde_json::Value::Array(values) => serialize_path_array(spec.name, &values, style, spec.explode),
-        serde_json::Value::Object(values) => serialize_path_object(spec.name, &values, style, spec.explode),
-        value => format!("{}{}", path_primitive_prefix(spec.name, style), percent_encode(&primitive_to_string(&value))),
+        serde_json::Value::Array(values) => {
+            serialize_path_array(spec.name, &values, style, spec.explode)
+        }
+        serde_json::Value::Object(values) => {
+            serialize_path_object(spec.name, &values, style, spec.explode)
+        }
+        value => format!(
+            "{}{}",
+            path_primitive_prefix(spec.name, style),
+            percent_encode(&primitive_to_string(&value))
+        ),
     }
 }
 
-fn serialize_path_array(name: &str, values: &[serde_json::Value], style: &str, explode: bool) -> String {
+fn serialize_path_array(
+    name: &str,
+    values: &[serde_json::Value],
+    style: &str,
+    explode: bool,
+) -> String {
     let serialized = values
         .iter()
         .filter(|value| !value.is_null())
@@ -121,7 +281,11 @@ fn serialize_path_array(name: &str, values: &[serde_json::Value], style: &str, e
     }
     if style == "matrix" {
         if explode {
-            return serialized.iter().map(|item| format!(";{}={}", name, item)).collect::<Vec<_>>().join("");
+            return serialized
+                .iter()
+                .map(|item| format!(";{}={}", name, item))
+                .collect::<Vec<_>>()
+                .join("");
         }
         return format!(";{}={}", name, serialized.join(","));
     }
@@ -204,7 +368,10 @@ impl HeaderParameterSpec {
     }
 }
 
-fn build_request_headers(headers: &[(&str, HeaderParameterSpec)], cookies: &[(&str, HeaderParameterSpec)]) -> Option<RequestHeaders> {
+fn build_request_headers(
+    headers: &[(&str, HeaderParameterSpec)],
+    cookies: &[(&str, HeaderParameterSpec)],
+) -> Option<RequestHeaders> {
     let mut request_headers = RequestHeaders::new();
     for (name, parameter) in headers {
         if let Some(value) = serialize_header_parameter(parameter) {
@@ -346,12 +513,36 @@ fn append_serialized_parameter(pairs: &mut Vec<String>, parameter: &QueryParamet
         return;
     }
 
-    let style = if parameter.style.is_empty() { "form" } else { parameter.style };
+    let style = if parameter.style.is_empty() {
+        "form"
+    } else {
+        parameter.style
+    };
     match &parameter.value {
-        serde_json::Value::Array(values) => append_array_parameter(pairs, parameter.name, values, style, parameter.explode, parameter.allow_reserved),
-        serde_json::Value::Object(values) if style == "deepObject" => append_deep_object_parameter(pairs, parameter.name, values, parameter.allow_reserved),
-        serde_json::Value::Object(values) => append_object_parameter(pairs, parameter.name, values, style, parameter.explode, parameter.allow_reserved),
-        value => pairs.push(format!("{}={}", percent_encode(parameter.name), encode_query_value(&primitive_to_string(value), parameter.allow_reserved))),
+        serde_json::Value::Array(values) => append_array_parameter(
+            pairs,
+            parameter.name,
+            values,
+            style,
+            parameter.explode,
+            parameter.allow_reserved,
+        ),
+        serde_json::Value::Object(values) if style == "deepObject" => {
+            append_deep_object_parameter(pairs, parameter.name, values, parameter.allow_reserved)
+        }
+        serde_json::Value::Object(values) => append_object_parameter(
+            pairs,
+            parameter.name,
+            values,
+            style,
+            parameter.explode,
+            parameter.allow_reserved,
+        ),
+        value => pairs.push(format!(
+            "{}={}",
+            percent_encode(parameter.name),
+            encode_query_value(&primitive_to_string(value), parameter.allow_reserved)
+        )),
     }
 }
 
@@ -363,17 +554,29 @@ fn append_array_parameter(
     explode: bool,
     allow_reserved: bool,
 ) {
-    let serialized = values.iter().filter(|value| !value.is_null()).map(primitive_to_string).collect::<Vec<_>>();
+    let serialized = values
+        .iter()
+        .filter(|value| !value.is_null())
+        .map(primitive_to_string)
+        .collect::<Vec<_>>();
     if serialized.is_empty() {
         return;
     }
     if style == "form" && explode {
         for item in serialized {
-            pairs.push(format!("{}={}", percent_encode(name), encode_query_value(&item, allow_reserved)));
+            pairs.push(format!(
+                "{}={}",
+                percent_encode(name),
+                encode_query_value(&item, allow_reserved)
+            ));
         }
         return;
     }
-    pairs.push(format!("{}={}", percent_encode(name), encode_query_value(&serialized.join(","), allow_reserved)));
+    pairs.push(format!(
+        "{}={}",
+        percent_encode(name),
+        encode_query_value(&serialized.join(","), allow_reserved)
+    ));
 }
 
 fn append_object_parameter(
@@ -390,14 +593,22 @@ fn append_object_parameter(
             continue;
         }
         if style == "form" && explode {
-            pairs.push(format!("{}={}", percent_encode(key), encode_query_value(&primitive_to_string(value), allow_reserved)));
+            pairs.push(format!(
+                "{}={}",
+                percent_encode(key),
+                encode_query_value(&primitive_to_string(value), allow_reserved)
+            ));
         } else {
             serialized.push(key.clone());
             serialized.push(primitive_to_string(value));
         }
     }
     if !serialized.is_empty() {
-        pairs.push(format!("{}={}", percent_encode(name), encode_query_value(&serialized.join(","), allow_reserved)));
+        pairs.push(format!(
+            "{}={}",
+            percent_encode(name),
+            encode_query_value(&serialized.join(","), allow_reserved)
+        ));
     }
 }
 
@@ -409,7 +620,11 @@ fn append_deep_object_parameter(
 ) {
     for (key, value) in values {
         if !value.is_null() {
-            pairs.push(format!("{}={}", percent_encode(&format!("{}[{}]", name, key)), encode_query_value(&primitive_to_string(value), allow_reserved)));
+            pairs.push(format!(
+                "{}={}",
+                percent_encode(&format!("{}[{}]", name, key)),
+                encode_query_value(&primitive_to_string(value), allow_reserved)
+            ));
         }
     }
 }
@@ -420,11 +635,24 @@ fn encode_query_value(value: &str, allow_reserved: bool) -> String {
         return encoded;
     }
     for (escaped, reserved) in [
-        ("%3A", ":"), ("%2F", "/"), ("%3F", "?"), ("%23", "#"),
-        ("%5B", "["), ("%5D", "]"), ("%40", "@"), ("%21", "!"),
-        ("%24", "$"), ("%26", "&"), ("%27", "'"), ("%28", "("),
-        ("%29", ")"), ("%2A", "*"), ("%2B", "+"), ("%2C", ","),
-        ("%3B", ";"), ("%3D", "="),
+        ("%3A", ":"),
+        ("%2F", "/"),
+        ("%3F", "?"),
+        ("%23", "#"),
+        ("%5B", "["),
+        ("%5D", "]"),
+        ("%40", "@"),
+        ("%21", "!"),
+        ("%24", "$"),
+        ("%26", "&"),
+        ("%27", "'"),
+        ("%28", "("),
+        ("%29", ")"),
+        ("%2A", "*"),
+        ("%2B", "+"),
+        ("%2C", ","),
+        ("%3B", ";"),
+        ("%3D", "="),
     ] {
         encoded = encoded.replace(escaped, reserved);
     }
