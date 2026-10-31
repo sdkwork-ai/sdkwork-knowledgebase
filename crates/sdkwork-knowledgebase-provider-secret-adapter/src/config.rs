@@ -9,6 +9,7 @@ pub const KNOWLEDGEBASE_PROVIDER_SECRET_ENV_PREFIX: &str = "SDKWORK_KNOWLEDGEBAS
 pub enum KnowledgebaseProviderCredentialEnvironment {
     Development,
     Test,
+    Demo,
     Staging,
     Production,
 }
@@ -20,6 +21,7 @@ impl KnowledgebaseProviderCredentialEnvironment {
         match value.trim().to_ascii_lowercase().as_str() {
             "development" => Ok(Self::Development),
             "test" => Ok(Self::Test),
+            "demo" => Ok(Self::Demo),
             "staging" => Ok(Self::Staging),
             "production" => Ok(Self::Production),
             _ => Err(KnowledgebaseProviderCredentialResolverConfigurationError::InvalidEnvironment),
@@ -27,7 +29,7 @@ impl KnowledgebaseProviderCredentialEnvironment {
     }
 
     pub fn allows_local_sources(self) -> bool {
-        matches!(self, Self::Development | Self::Test)
+        matches!(self, Self::Development | Self::Test | Self::Demo)
     }
 
     pub fn requires_managed_source(self) -> bool {
@@ -38,6 +40,7 @@ impl KnowledgebaseProviderCredentialEnvironment {
         match self {
             Self::Development => "development",
             Self::Test => "test",
+            Self::Demo => "demo",
             Self::Staging => "staging",
             Self::Production => "production",
         }

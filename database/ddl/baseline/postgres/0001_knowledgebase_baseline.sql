@@ -2704,14 +2704,19 @@ BEGIN
         'kb_audit_legal_hold'
     ])
     LOOP
-        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
-        EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', table_name);
-        EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', table_name);
-        EXECUTE format('DROP POLICY IF EXISTS organization_isolation ON %I', table_name);
-        EXECUTE format(
-            'CREATE POLICY organization_isolation ON %I AS PERMISSIVE FOR ALL TO PUBLIC USING (tenant_id = NULLIF(current_setting(''app.current_tenant_id'', true), '''')::bigint AND organization_id = NULLIF(current_setting(''app.current_organization_id'', true), '''')::bigint) WITH CHECK (tenant_id = NULLIF(current_setting(''app.current_tenant_id'', true), '''')::bigint AND organization_id = NULLIF(current_setting(''app.current_organization_id'', true), '''')::bigint)',
-            table_name
-        );
+        -- Tables later in this baseline (for example kb_audit_legal_hold) are
+        -- created after this policy loop; apply their RLS policy in their own
+        -- DDL section instead of failing the fresh baseline here.
+        IF to_regclass(table_name) IS NOT NULL THEN
+            EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
+            EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', table_name);
+            EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', table_name);
+            EXECUTE format('DROP POLICY IF EXISTS organization_isolation ON %I', table_name);
+            EXECUTE format(
+                'CREATE POLICY organization_isolation ON %I AS PERMISSIVE FOR ALL TO PUBLIC USING (tenant_id = NULLIF(current_setting(''app.current_tenant_id'', true), '''')::bigint AND organization_id = NULLIF(current_setting(''app.current_organization_id'', true), '''')::bigint) WITH CHECK (tenant_id = NULLIF(current_setting(''app.current_tenant_id'', true), '''')::bigint AND organization_id = NULLIF(current_setting(''app.current_organization_id'', true), '''')::bigint)',
+                table_name
+            );
+        END IF;
     END LOOP;
 END $$;
 
