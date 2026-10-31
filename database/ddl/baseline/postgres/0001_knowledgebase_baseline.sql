@@ -2700,8 +2700,7 @@ BEGIN
         'kb_provider_credential_reference', 'kb_provider_binding',
         'kb_provider_migration_operation', 'kb_site_publication',
         'kb_source_file_projection', 'kb_source_file_rendition',
-        'kb_drive_source_checkpoint', 'kb_drive_event_inbox',
-        'kb_audit_legal_hold'
+        'kb_drive_source_checkpoint', 'kb_drive_event_inbox'
     ])
     LOOP
         -- Tables later in this baseline (for example kb_audit_legal_hold) are
