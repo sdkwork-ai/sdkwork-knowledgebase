@@ -31,8 +31,8 @@ Windows 浏览器 → hosts: 127.0.0.1 testapidocker.sdkwork.com testapidocker.b
 | `docker/postgres/init/001-create-schema.sql` | `CREATE SCHEMA IF NOT EXISTS sdkwork_ai_prod; GRANT ...`（与生命周期 search_path 对齐） |
 | `docker/nginx/testapidocker-knowledgebase.conf` | 三域名 server 块 + 静态 root + SPA fallback + 4 个 API 前缀反代 + 探针反代；`client_max_body_size 32m`（对齐 k8s ingress 既有值） |
 | `scripts/build-knowledgebase-container.mjs` | `pnpm build:container`：前置校验（release 二进制、dist、docker daemon）→ 组装 `dist/install-package-staging`（bin/ 经 strip、portal/dist、database 模块、agent.app.config.json、entrypoint、install-manifest.json 含内容清单+sha256）→ 生成安装包 tar.gz → 解包到 `dist/container-image-build` → `docker build` → 证据 `dist/container-image.json`（imageId/digest，RELEASE_SPEC §4.1）+ 输入快照缓存（cloudrouter 同款，重复构建秒级） |
-| `scripts/deploy-wsl-docker.mjs`（薄包装）+ `scripts/wsl-deploy.sh`（WSL 内执行） | 幂等编排：安装 docker/nginx/rsync（apt，缺则装）→ 同步工作区到 WSL ext4（排除 target/node_modules/dist/.git，含 16 个必要兄弟仓库）→ rustup + `cargo build --release -p sdkwork-api-knowledgebase-standalone-gateway -p sdkwork-knowledgebase-worker` → pnpm install + `vite build --mode standalone.docker` → `build:container` → `docker compose up -d` → 安装 nginx site + reload → 写入 Windows hosts（失败则给出提权命令）→ 端到端验证输出 |
-| `apps/sdkwork-knowledgebase-pc/.env.standalone.docker` | 提交的 Vite 构建环境：standalone 档案、environment=development、`DEV_SAME_ORIGIN_API=true`、browser-local token、dev auth 凭据 |
+| `scripts/deploy-wsl-docker.mjs`（薄包装）+ `scripts/wsl-deploy.sh`（WSL 内执行） | 幂等编排：安装 docker/nginx/rsync（apt，缺则装）→ 同步工作区到 WSL ext4（排除 target/node_modules/dist/.git，含 16 个必要兄弟仓库）→ rustup + `cargo build --release -p sdkwork-api-knowledgebase-standalone-gateway -p sdkwork-knowledgebase-worker` → pnpm install + `vite build --mode standalone.development` → `build:container` → `docker compose up -d` → 安装 nginx site + reload → 写入 Windows hosts（失败则给出提权命令）→ 端到端验证输出 |
+| `apps/sdkwork-knowledgebase-pc/.env.standalone.development` | 提交的 Vite 构建环境：standalone 档案、environment=development、`DEV_SAME_ORIGIN_API=true`、browser-local token、dev auth 凭据 |
 | `package.json` scripts | `build:container`、`build:container:check`、`deploy:docker:wsl`（名称过 `check:pnpm-script-standard`；`docker:*` 前缀禁用） |
 | `agent.workflow.json` | 追加 target `linux-x64-standalone-container-oci`（runtimeTarget=container、deploymentProfile=standalone、format=oci、outputGlobs=release 二进制+dist）——仅追加不改动既有 target，遵循 GITHUB_WORKFLOW_SPEC §5.0 |
 | `docs/installation/docker-deployment.md` | 完整部署文档：前置、WSL 安装、构建、compose、nginx、Windows hosts、验证、故障排查（Clash 代理直连、端口冲突、登录） |
@@ -43,7 +43,7 @@ Windows 浏览器 → hosts: 127.0.0.1 testapidocker.sdkwork.com testapidocker.b
 1. WSL：安装 docker engine（apt `docker.io` + compose 插件）、nginx、rsync；启动 docker 服务
 2. 工作区同步到 WSL ext4（`~/sdkwork-workspace/`，16 个仓库：knowledgebase + iam/web-framework/drive/database/cloudrouter/kernel/memory/id/utils/im/rpc-framework/appbase/ui/core/sdk-commons/app-topology）——避开 9p 挂载的编译性能陷阱
 3. WSL 内 `cargo build --release`（gateway + worker，首次约 1–2 小时一次性成本，之后增量）
-4. `pnpm install` + `vite build --mode standalone.docker`（同源 API 构建）
+4. `pnpm install` + `vite build --mode standalone.development`（同源 API 构建）
 5. `build:container` → `sdkwork-knowledgebase:local`（strip 后镜像预计 <300MB，不含任何源码/依赖树）
 6. `docker compose up -d` → 4 服务全部 healthy（gateway 启动时经 `SDKWORK_DATABASE_AUTO_MIGRATE=1` 自动跑 baseline）
 7. nginx site 安装到 `/etc/nginx/sites-enabled/sdkwork/testapidocker-knowledgebase.conf` + `nginx -t` + reload

@@ -3,7 +3,7 @@
  * Generate a credential-entry bootstrap Access-Token JWT for the standalone
  * container deployment.
  *
- * The static portal bundle is built with `--mode standalone.docker`, which
+ * The static portal bundle is built with `--mode standalone.development`, which
  * injects `process.env.SDKWORK_ACCESS_TOKEN` (see vite.config.ts) so the
  * browser sends the token on credential-entry requests (registrations/
  * sessions). The gateway resolves it through the IAM development

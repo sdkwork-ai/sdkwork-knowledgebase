@@ -308,7 +308,7 @@ function validateBuildPlan(plan) {
   if (distFiles.length === 0) {
     issues.push(
       `portal dist is empty (${plan.portalDistPath}); build it first with `
-      + '`pnpm --dir apps/sdkwork-knowledgebase-pc exec vite build --mode standalone.docker`',
+      + '`pnpm --dir apps/sdkwork-knowledgebase-pc exec vite build --mode standalone.development`',
     );
   }
   return issues;
