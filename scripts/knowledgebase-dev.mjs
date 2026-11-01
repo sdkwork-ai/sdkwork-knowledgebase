@@ -138,7 +138,7 @@ function printHelp() {
 Topology-aware Knowledgebase dev entry. Loads etc/topology profile env via @sdkwork/app-topology.
 
 Database profiles:
-  postgres (default)  IAM/login and Knowledgebase HTTP handlers share PostgreSQL from .env.postgres.
+  postgres (default)  IAM/login and Knowledgebase HTTP handlers share PostgreSQL from config/host/postgres.env.
 
 Options:
   --deployment-profile <standalone|cloud>           Default: standalone
@@ -154,7 +154,7 @@ function resolvePostgresDevEnvFile(settings) {
   if (settings.devEnvFile) {
     return settings.devEnvFile;
   }
-  return fs.existsSync(path.join(REPO_ROOT, '.env.postgres')) ? '.env.postgres' : '.env.postgres.example';
+  return fs.existsSync(path.join(REPO_ROOT, 'config/host/postgres.env')) ? 'config/host/postgres.env' : 'config/host/postgres.env.example';
 }
 
 function resolveKnowledgebaseRuntimeTenantEnv(env = {}) {

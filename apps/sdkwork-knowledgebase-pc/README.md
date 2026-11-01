@@ -31,7 +31,7 @@ Import rule: use package names (`@sdkwork/sdkwork-knowledgebase-pc-*`). Capabili
 | `config/desktop/sdkwork-knowledgebase-pc.development.toml.example` | Desktop dev host |
 | `config/desktop/sdkwork-knowledgebase-pc.production.toml.example` | Desktop production host |
 
-Repository-root `.env.postgres` supplies development database and IAM signing secrets (copy from `../../.env.postgres.example`).
+Repository-root `config/host/postgres.env` supplies development database and IAM signing secrets (copy from `../../config/host/postgres.env.example`).
 
 ## Prerequisites
 

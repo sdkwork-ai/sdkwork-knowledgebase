@@ -15,7 +15,7 @@ Additional safe templates:
 - `examples/knowledgebase-redis.env.example`: non-secret Redis configuration example.
 - `examples/browser-security-headers.nginx.conf`: browser static-host security headers.
 
-Host-local overrides such as `.env.postgres`, `.env.local`, and `etc/**/*.local.*` stay out of
+Host-local overrides such as `config/host/postgres.env`, `.env.local`, and `etc/**/*.local.*` stay out of
 source control. Passwords, ingress tokens, signing masters, certificates, and provider credentials
 come from the deployment secret manager or mounted ignored secret files. Installed runtime config
 is materialized to the locations governed by `../sdkwork-specs/RUNTIME_DIRECTORY_SPEC.md`; source

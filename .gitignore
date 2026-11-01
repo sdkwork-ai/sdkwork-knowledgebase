@@ -26,7 +26,7 @@ sdks/**/generated/server-openapi/package-lock.json
 .env.test.local
 .env.staging.local
 .env.production.local
-.env.postgres
+config/host/postgres.env
 .env.release.local
 config/*.local.toml
 configs/*.local.toml
@@ -93,7 +93,7 @@ backup/
 .env.*
 !.env.example
 !.env.*.example
-!.env.postgres.example
+!config/host/postgres.env.example
 coverage/
 **/.pnpm-store/
 **/.sdkwork/dart/pub-cache/

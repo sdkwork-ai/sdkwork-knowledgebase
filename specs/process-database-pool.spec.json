@@ -3,7 +3,7 @@
   "kind": "sdkwork.process-database-pool",
   "tenantModel": "one-tenant-per-process",
   "profile": {
-    "exampleFile": ".env.postgres.example",
+    "exampleFile": "config/host/postgres.env.example",
     "database": "sdkwork_ai_dev",
     "schema": "sdkwork_ai_dev"
   },
