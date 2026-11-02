@@ -2370,6 +2370,9 @@ async fn insert_group_space(
     Ok(KnowledgeSpace {
         id,
         uuid,
+        // A group-managed space has no creator-based access override: membership is IM-owned
+        // and projected into the Drive ACL, so the reservation records no personal owner.
+        created_by: 0,
         name: group_name.to_string(),
         description: None,
         drive_space_id: None,
@@ -3145,7 +3148,7 @@ async fn fetch_binding_space(
     };
     let row = sqlx::query(
         r#"
-        SELECT id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+        SELECT id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
         FROM kb_space
         WHERE tenant_id = $1 AND organization_id = $2 AND id = $3
         "#,
@@ -3416,6 +3419,10 @@ fn group_space_from_row(
     Ok(KnowledgeSpace {
         id: group_from_i64("id", row.try_get("id").map_err(group_sqlx_error)?)?,
         uuid: row.try_get("uuid").map_err(group_sqlx_error)?,
+        created_by: group_from_i64(
+            "created_by",
+            row.try_get("created_by").map_err(group_sqlx_error)?,
+        )?,
         name: row.try_get("name").map_err(group_sqlx_error)?,
         description: row.try_get("description").map_err(group_sqlx_error)?,
         drive_space_id: row.try_get("drive_space_id").map_err(group_sqlx_error)?,

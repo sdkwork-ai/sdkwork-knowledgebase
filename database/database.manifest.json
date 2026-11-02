@@ -10,7 +10,7 @@
   ],
   "defaultEngine": "postgres",
   "tablePrefix": "kb_",
-  "contractVersion": "1.6.0",
+  "contractVersion": "1.7.0",
   "baselineStrategy": "baseline-plus-migrations",
   "modules": [],
   "lifecycle": {

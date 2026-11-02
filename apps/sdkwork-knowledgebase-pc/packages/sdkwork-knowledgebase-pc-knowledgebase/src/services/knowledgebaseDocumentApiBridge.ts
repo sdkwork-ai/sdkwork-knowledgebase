@@ -38,7 +38,12 @@ import {
   scanKnowledgeBrowserNodes,
 } from './knowledgeBrowserListService';
 import { resolveKnowledgeBrowserParentDriveNodeId } from './knowledgeBrowserParentResolver';
+import { readDriveNodeTextContent } from './knowledgeDriveContentService';
 import { hydrateDocumentMediaUrl } from './knowledgeDriveMediaService';
+import {
+  partitionKnowledgeSpaceIdsByMode,
+  resolveKnowledgeSpaceKnowledgeMode,
+} from './knowledgeSpaceKnowledgeMode';
 import {
   fetchKnowledgeDocumentContent,
   getKnowledgebaseTenantId,
@@ -66,6 +71,7 @@ import {
 } from 'sdkwork-knowledgebase-pc-core';
 
 import type { DocumentMeta, FolderNode, KnowledgeBase } from './document';
+import { listSpaceNotes } from './knowledgeNotesListService';
 import { normalizeSdkWorkListPage } from './sdkWorkListPage';
 import { getActiveEphemeralFixedKnowledgebaseWorkspaceSpaceId } from '../workspaceMode';
 
@@ -145,24 +151,62 @@ function parseOkfDocumentId(id: string): { spaceId: string; conceptRowId: string
   return { spaceId, conceptRowId };
 }
 
-async function readOkfConceptMarkdown(spaceId: string, conceptRowId: string): Promise<string> {
-  const client = requireSdkClient();
-  const concept = await client.knowledge.okf.concepts.retrieve(conceptRowId);
-  const result = await client.knowledge.retrievals.create({
-    query: concept.conceptId,
-    bindings: [{ spaceId: String(spaceId), priority: 0, topK: 3 }],
-    includeCitations: false,
-    includeTrace: false,
-    topK: 3,
-  });
-  // Same document-ownership rule as readIndexedDocumentContent: never serve
-  // the top-ranked chunk of an unrelated document as this concept's body. The
-  // concept's own title/description is the safe fallback.
-  const hit =
-    result.hits.find((entry) => entry.title === concept.title)
-    ?? result.hits.find((entry) => entry.citation?.locator?.includes(concept.conceptId));
-  if (hit?.content) {
-    return hit.content;
+/**
+ * Resolve the Drive node that holds one OKF concept's Markdown body.
+ *
+ * Concept files live under the space's `okf/` bundle root, so they are only
+ * listed by the OKF browser view; the default `files` view starts at
+ * `sources/raw`. A loaded tree answers without a request, and a cold tree costs
+ * one bounded page scan.
+ *
+ * @param spaceId - owning knowledge space.
+ * @param conceptRowId - concept row id (`KnowledgeBrowserNode.conceptId`).
+ * @returns the concept file's Drive node id, or null when it is not listed.
+ */
+async function resolveOkfConceptDriveNodeId(
+  spaceId: string,
+  conceptRowId: string,
+): Promise<string | null> {
+  const loaded = getLoadedKnowledgeBrowserNodes(spaceId, { view: 'okf_bundle' });
+  const cached = loaded.find((node) => node.conceptId === conceptRowId);
+  if (cached) {
+    return resolveDriveNodeId(cached);
+  }
+  const scanned = await scanKnowledgeBrowserNodes(
+    spaceId,
+    (node) => node.conceptId === conceptRowId,
+    { view: 'okf_bundle' },
+  );
+  return scanned ? resolveDriveNodeId(scanned) : null;
+}
+
+/**
+ * Read one OKF concept's authoritative Markdown body.
+ *
+ * The body is the concept file in the space's OKF bundle, read through the
+ * Drive object API. The knowledge retrieval API is RAG-only and the gateway
+ * refuses it for OKF-bundle spaces (`rag_retrieval_mode_required`, 40003), so it
+ * cannot serve a concept body. The concept's own title and description remain
+ * the safe fallback when the file cannot be read.
+ *
+ * @param spaceId - owning knowledge space.
+ * @param conceptRowId - concept row id.
+ * @param driveNodeId - already-resolved concept file node, when the caller has
+ *   the browser node at hand.
+ * @returns the Markdown body, or the title/description fallback.
+ */
+async function readOkfConceptMarkdown(
+  spaceId: string,
+  conceptRowId: string,
+  driveNodeId?: string | null,
+): Promise<string> {
+  const concept = await requireSdkClient().knowledge.okf.concepts.retrieve(conceptRowId);
+  const resolvedDriveNodeId = driveNodeId ?? await resolveOkfConceptDriveNodeId(spaceId, conceptRowId);
+  if (resolvedDriveNodeId) {
+    const markdown = await readDriveNodeTextContent(resolvedDriveNodeId);
+    if (markdown !== null) {
+      return markdown;
+    }
   }
   return `# ${concept.title}\n\n${concept.description}`;
 }
@@ -493,7 +537,61 @@ export async function getDocuments(kbId: string): Promise<(FolderNode | Document
       return undefined;
     }
   }, favoriteNodeIds);
+
+  await appendAuthoredNotes(grouped, nodes, kbId);
   return grouped;
+}
+
+/**
+ * Merge notes created inside the knowledge base (documents without a drive
+ * node) into the file tree.
+ *
+ * The browser tree only lists drive nodes, so a note created with "新的笔记"
+ * — or any document the editor owns — used to vanish from the workspace as
+ * soon as the list refreshed, leaving no way to reopen it. Notes that the
+ * browser already represents (a document linked to a drive file) are skipped so
+ * the tree never shows the same document twice.
+ *
+ * Newest notes come first: the list is ascending by document id, and a freshly
+ * created note is appended last by the API.
+ */
+async function appendAuthoredNotes(
+  roots: (FolderNode | DocumentMeta)[],
+  nodes: KnowledgeBrowserNode[],
+  kbId: string,
+): Promise<void> {
+  const represented = new Set<string>();
+  for (const node of nodes) {
+    represented.add(node.id);
+    represented.add(resolveBrowserDocumentId(node, kbId));
+    if (node.documentId) represented.add(String(node.documentId));
+  }
+
+  let notes;
+  try {
+    notes = await listSpaceNotes(kbId);
+  } catch {
+    // The drive tree stays usable when the notes listing is unavailable.
+    return;
+  }
+
+  for (let index = notes.length - 1; index >= 0; index -= 1) {
+    const note = notes[index];
+    if (represented.has(note.id)) {
+      continue;
+    }
+    const isMarkdown = note.mimeType?.trim().toLowerCase() === 'text/markdown';
+    const noteDocument: DocumentMeta = {
+      id: note.id,
+      title: note.title || note.id,
+      type: isMarkdown ? 'markdown' : 'richtext',
+      kbId,
+      parentId: null,
+      updatedAt: '',
+      author: 'Knowledgebase',
+    };
+    roots.unshift(noteDocument);
+  }
 }
 
 export async function ensureFolderChildrenLoaded(
@@ -517,11 +615,30 @@ export async function loadMoreFolderChildren(
   return loadMoreKnowledgeBrowserNodes(spaceId, folderId);
 }
 
+/**
+ * Read an indexed document's text through the RAG chunk index.
+ *
+ * Only a RAG space answers `POST /knowledge/retrievals`; the gateway rejects the
+ * call for OKF-bundle and external spaces. Those spaces are served by the
+ * authoritative document-content API or their Drive file instead, so this
+ * helper reports "no chunk content" rather than sending a request that cannot
+ * succeed.
+ *
+ * @param spaceId - owning knowledge space.
+ * @param documentId - indexed document id.
+ * @param title - document title used as the retrieval query.
+ * @returns the matching chunk text, or null when the space is not RAG or no
+ *   chunk belongs to this document.
+ */
 async function readIndexedDocumentContent(
   spaceId: string,
   documentId: string,
   title: string,
 ): Promise<string | null> {
+  if (await resolveKnowledgeSpaceKnowledgeMode(spaceId) !== 'rag') {
+    return null;
+  }
+
   const client = requireSdkClient();
   const result = await client.knowledge.retrievals.create({
     query: title,
@@ -540,12 +657,26 @@ async function readIndexedDocumentContent(
   return content ? content : null;
 }
 
+/** Node mime types whose Drive object is text this editor may open as Markdown. */
+const TEXTUAL_BROWSER_NODE_EXTENSIONS = /\.(?:md|markdown|txt|text|json|ya?ml|csv|html?|css|tsx?|jsx?|py|rs|go|java|toml|ini|log)$/i;
+
+function isTextualBrowserNode(node: KnowledgeBrowserNode): boolean {
+  const mimeType = (node.mimeType ?? '').trim().toLowerCase();
+  if (mimeType.startsWith('text/')) {
+    return true;
+  }
+  if (mimeType === '' || mimeType === 'application/json') {
+    return TEXTUAL_BROWSER_NODE_EXTENSIONS.test(node.path);
+  }
+  return false;
+}
+
 async function readBrowserNodeContent(
   node: KnowledgeBrowserNode,
   spaceId: string,
 ): Promise<string | null> {
   if (node.conceptId) {
-    return readOkfConceptMarkdown(spaceId, node.conceptId);
+    return readOkfConceptMarkdown(spaceId, node.conceptId, resolveDriveNodeId(node));
   }
   if (node.documentId) {
     const indexed = await readIndexedDocumentContent(
@@ -555,6 +686,16 @@ async function readBrowserNodeContent(
     );
     if (indexed) {
       return indexed;
+    }
+  }
+  // The browser node is a Drive object. Textual files — including every source
+  // file of an OKF bundle — are served from that object, which is the only
+  // content source for a space without a RAG chunk index.
+  const driveNodeId = resolveDriveNodeId(node);
+  if (driveNodeId && isTextualBrowserNode(node)) {
+    const text = await readDriveNodeTextContent(driveNodeId);
+    if (text !== null) {
+      return text;
     }
   }
   return null;
@@ -730,7 +871,12 @@ export async function getDocumentContent(id: string): Promise<string> {
       if (!document.currentVersionId) {
         return '';
       }
-      return `# ${document.title}\n\nThis document is indexed in Knowledgebase but no retrieval chunks were found yet.`;
+      // Only a RAG space reads its body out of the chunk index; an OKF-bundle
+      // space has no chunk body to fall back on, so it continues to the
+      // browser-node (Drive) read below instead of a placeholder.
+      if (await resolveKnowledgeSpaceKnowledgeMode(document.spaceId) === 'rag') {
+        return `# ${document.title}\n\nThis document is indexed in Knowledgebase but no retrieval chunks were found yet.`;
+      }
     } catch {
       // Fall through to browser-node resolution.
     }
@@ -1282,64 +1428,74 @@ export async function searchAll(query: string): Promise<{
     return { kbs: matchedKbs, docs: [] };
   }
 
-  const bindings = registry.map((entry, index) => ({
-    spaceId: String(entry.spaceId),
+  // `POST /knowledge/retrievals` is RAG-only: one OKF-bundle or external space
+  // in the binding list makes the gateway reject the whole search (40003), so
+  // only RAG spaces are searched through chunks. OKF-bundle spaces answer the
+  // same query through the OKF query API below.
+  const { rag: ragSpaceIds, okfBundle: okfSpaceIds } = await partitionKnowledgeSpaceIdsByMode(
+    registry.map((entry) => String(entry.spaceId)),
+  );
+
+  const bindings = ragSpaceIds.map((spaceId, index) => ({
+    spaceId,
     priority: index,
     topK: 20,
   }));
 
-  try {
-    const result = await client.knowledge.retrievals.create({
-      query: trimmedQuery,
-      bindings,
-      includeCitations: true,
-      includeTrace: false,
-      topK: 20,
-    });
-
-    const docs: DocumentMeta[] = [];
-    const seenDocumentIds = new Set<string>();
-
-    for (const hit of result.hits) {
-      if (seenDocumentIds.has(hit.documentId)) {
-        continue;
-      }
-      seenDocumentIds.add(hit.documentId);
-
-      const kbId = hit.spaceId;
-      docs.push({
-        id: hit.documentId,
-        title: hit.title?.trim() || 'Untitled',
-        type: 'markdown',
-        kbId,
-        updatedAt: new Date().toISOString(),
-        author: 'Knowledgebase',
-        content: hit.content,
+  if (bindings.length > 0) {
+    try {
+      const result = await client.knowledge.retrievals.create({
+        query: trimmedQuery,
+        bindings,
+        includeCitations: true,
+        includeTrace: false,
+        topK: 20,
       });
-    }
 
-    if (docs.length > 0) {
-      return { kbs: matchedKbs, docs };
+      const docs: DocumentMeta[] = [];
+      const seenDocumentIds = new Set<string>();
+
+      for (const hit of result.hits) {
+        if (seenDocumentIds.has(hit.documentId)) {
+          continue;
+        }
+        seenDocumentIds.add(hit.documentId);
+
+        const kbId = hit.spaceId;
+        docs.push({
+          id: hit.documentId,
+          title: hit.title?.trim() || 'Untitled',
+          type: 'markdown',
+          kbId,
+          updatedAt: new Date().toISOString(),
+          author: 'Knowledgebase',
+          content: hit.content,
+        });
+      }
+
+      if (docs.length > 0) {
+        return { kbs: matchedKbs, docs };
+      }
+    } catch (error) {
+      console.warn('[KnowledgebaseDocumentApiBridge] retrieval search failed.', error);
     }
-  } catch (error) {
-    console.warn('[KnowledgebaseDocumentApiBridge] retrieval search failed.', error);
   }
 
-  const okfDocs = await searchOkfConceptDocs(trimmedQuery, registry);
+  const okfDocs = await searchOkfConceptDocs(trimmedQuery, okfSpaceIds);
   return { kbs: matchedKbs, docs: okfDocs };
 }
 
 async function searchOkfConceptDocs(
   query: string,
-  registry: ReturnType<typeof readRegisteredSpaces>,
+  spaceIds: readonly string[],
 ): Promise<DocumentMeta[]> {
   const client = requireSdkClient();
   const docs: DocumentMeta[] = [];
 
-  for (const entry of registry.slice(0, 2)) {
+  for (const spaceId of spaceIds.slice(0, 2)) {
     try {
       const result = await client.knowledge.okf.queries.create({
-        spaceId: entry.spaceId,
+        spaceId,
         query,
       });
       const snippet = result.answerMarkdown.trim();
@@ -1347,10 +1503,10 @@ async function searchOkfConceptDocs(
         continue;
       }
       docs.push({
-        id: `okf:${entry.spaceId}:query-${docs.length}`,
+        id: `okf:${spaceId}:query-${docs.length}`,
         title: `OKF ? ${query}`,
         type: 'markdown',
-        kbId: String(entry.spaceId),
+        kbId: String(spaceId),
         updatedAt: new Date().toISOString(),
         author: 'Knowledgebase',
         content: snippet,

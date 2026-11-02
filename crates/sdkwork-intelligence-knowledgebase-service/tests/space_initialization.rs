@@ -413,6 +413,7 @@ impl KnowledgeSpaceStore for MemorySpaceStore {
         let space = KnowledgeSpace {
             id: *next_id,
             uuid: format!("space-{}", *next_id),
+            created_by: record.created_by,
             name: record.name,
             description: record.description,
             drive_space_id: None,

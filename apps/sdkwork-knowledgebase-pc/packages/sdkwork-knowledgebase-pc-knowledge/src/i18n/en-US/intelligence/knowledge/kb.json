@@ -184,6 +184,8 @@
   "notesLoading": "Loading…",
   "notesEmpty": "No notes yet — click \"New Note\" in the top right to start",
   "notesDelete": "Delete note",
+  "notesSave": "Save",
+  "notesSaveShortcut": "Save (Ctrl+S)",
   "notesCreated": "Note created",
   "notesDeleted": "Note deleted",
   "notesSaving": "Saving…",

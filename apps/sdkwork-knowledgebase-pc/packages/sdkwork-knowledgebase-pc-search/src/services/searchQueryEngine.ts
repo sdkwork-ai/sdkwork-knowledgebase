@@ -1,6 +1,7 @@
 import { AIService } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/services/ai';
 import { DocumentService } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/services/document';
 import { synthesizeKnowledgeSearchAnswer } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/services/knowledgeAgentChatService';
+import { partitionKnowledgeSpaceIdsByMode } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/services/knowledgeSpaceKnowledgeMode';
 import { isBlank } from '@sdkwork/utils';
 import {
   getKnowledgebaseAppSdkClient,
@@ -35,11 +36,22 @@ async function buildWebSources(query: string): Promise<SearchSource[]> {
     return [];
   }
 
-  const bindings = registry.slice(0, 1).map((entry, index) => ({
-    spaceId: String(entry.spaceId),
-    priority: index,
-    topK: 1,
-  }));
+  // Public web search rides on `POST /knowledge/retrievals`, which the gateway
+  // refuses for any space that is not in RAG mode (`rag_retrieval_mode_required`,
+  // 40003). Only a RAG space may carry the request; without one there is no
+  // endpoint to reach the configured web search backend.
+  const { rag: ragSpaceIds } = await partitionKnowledgeSpaceIdsByMode(
+    registry.map((entry) => entry.spaceId),
+  );
+  const bindingSpaceId = ragSpaceIds[0];
+  if (!bindingSpaceId) {
+    console.warn(
+      '[SearchQueryEngine] Web search needs a RAG knowledge space to carry the public-web request; no registered space uses RAG mode.',
+    );
+    return [];
+  }
+
+  const bindings = [{ spaceId: bindingSpaceId, priority: 0, topK: 1 }];
 
   try {
     const result = await sdk.client.knowledge.retrievals.create({
@@ -87,10 +99,15 @@ async function buildOkfSources(query: string): Promise<SearchSource[]> {
 
   const registry = readRegisteredSpaces(tenantId);
   const sources: SearchSource[] = [];
-  for (const entry of registry.slice(0, MAX_OKF_SOURCES)) {
+  // `okf.queries` answers only for a space with an OKF bundle; asking a RAG or
+  // external space would be rejected, so the OKF query runs on OKF spaces only.
+  const { okfBundle: okfSpaceIds } = await partitionKnowledgeSpaceIdsByMode(
+    registry.map((entry) => entry.spaceId),
+  );
+  for (const spaceId of okfSpaceIds.slice(0, MAX_OKF_SOURCES)) {
     try {
       const result = await sdk.client.knowledge.okf.queries.create({
-        spaceId: entry.spaceId,
+        spaceId,
         query,
       });
       const snippet = result.answerMarkdown
@@ -102,10 +119,10 @@ async function buildOkfSources(query: string): Promise<SearchSource[]> {
         continue;
       }
       sources.push({
-        id: `okf-${entry.spaceId}-${sources.length}`,
+        id: `okf-${spaceId}-${sources.length}`,
         title: `OKF · ${query}`,
         type: 'doc',
-        kbId: String(entry.spaceId),
+        kbId: String(spaceId),
         docType: 'markdown',
         snippet: `${snippet}...`,
       });

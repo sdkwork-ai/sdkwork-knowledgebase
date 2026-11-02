@@ -7,7 +7,7 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_drive_storage::
     KnowledgeDriveStorage, PutKnowledgeObjectRequest,
 };
 use sdkwork_intelligence_knowledgebase_service::{
-    browser::{KnowledgeBrowserAccessContext, KnowledgeBrowserService},
+    browser::KnowledgeBrowserService,
     imports::KnowledgeDriveImportService,
     imports::KnowledgeGitImportService,
     imports::{KnowledgeDocumentMarkdownReader, KnowledgeGitSyncService},
@@ -44,11 +44,11 @@ use sdkwork_utils_rust::{is_blank, SdkWorkPageData};
 
 use crate::{
     hosted_access::{
-        create_space_with_context, delete_space_with_context, ensure_runtime_tenant,
-        grant_space_member_with_context, list_space_members_with_context, require_actor_id,
-        require_document_access, require_document_access_with_role, require_ingest_access,
-        require_okf_concept_space_access, require_okf_concept_space_access_with_role,
-        require_space_access, require_space_access_with_role, revoke_space_member_with_context,
+        create_space_with_context, delete_space_with_context, grant_space_member_with_context,
+        list_space_members_with_context, require_document_access,
+        require_document_access_with_role, require_ingest_access, require_okf_concept_space_access,
+        require_okf_concept_space_access_with_role, require_space_access,
+        require_space_access_with_role, revoke_space_member_with_context,
         update_space_with_context,
     },
     hosted_support::{
@@ -658,24 +658,23 @@ impl KnowledgeBrowserApi for HostedBrowserService {
         context: KnowledgeAppRequestContext,
         request: ListKnowledgeBrowserRequest,
     ) -> ApiResult<KnowledgeBrowserListData> {
-        ensure_runtime_tenant(&self.runtime, &context)?;
-        // Fail-closed: an anonymous browser identity must never reach the browser service, or a
-        // missing actor would bypass per-actor ACL checks.
-        let actor_id = require_actor_id(&context)?;
+        // Browsing resolves access through the same space authority as every other app route,
+        // so a space's creator, an explicitly granted member, and a group member all reach the
+        // browser exactly like they reach documents, OKF, and ingest. Fail-closed behaviors
+        // (tenant scope, missing actor, missing access control) come from that authority.
+        let space = require_space_access_with_role(
+            &self.runtime,
+            &context,
+            request.space_id,
+            KnowledgeAccessRole::Reader,
+        )
+        .await?;
         let service = KnowledgeBrowserService::new(
-            self.runtime.space_store(),
             self.runtime.drive_tree(),
             self.runtime.browser_projection_store(),
-        )
-        .with_access_control(self.runtime.access_control());
+        );
         let page = service
-            .list(
-                Some(KnowledgeBrowserAccessContext {
-                    tenant_id: context.tenant_id,
-                    actor_id,
-                }),
-                request,
-            )
+            .list(&space, request)
             .await
             .map_err(ApiError::from)?;
         Ok(page.into())

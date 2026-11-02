@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS kb_space (
     status INTEGER NOT NULL,
     okf_bundle_initialized INTEGER NOT NULL DEFAULT 0,
     okf_log_sequence_counter BIGINT NOT NULL DEFAULT 0,
+    created_by BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0

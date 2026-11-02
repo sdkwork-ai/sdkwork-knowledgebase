@@ -175,13 +175,20 @@ export function useNotesAutosave(options: UseNotesAutosaveOptions): UseNotesAuto
         void flushActiveRef.current().catch(() => undefined);
       }
     };
+    const handleOnline = () => {
+      // Reconnected: drain every buffered edit instead of waiting for the next
+      // keystroke to retry.
+      void engine.flushAll().catch(() => undefined);
+    };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('online', handleOnline);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('online', handleOnline);
     };
   }, []);
 

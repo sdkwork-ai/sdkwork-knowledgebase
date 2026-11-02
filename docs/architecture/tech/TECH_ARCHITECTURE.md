@@ -273,6 +273,16 @@ Derived copies are never edited as competing contract authorities.
   rejected (never degraded to tenant-scoped visibility), and an anonymous browser identity is
   rejected instead of falling back to an `anonymous` actor. Grant/revoke paths enforce the same
   requirement symmetrically.
+- Knowledge spaces carry a create-time owner (`kb_space.created_by`) recorded from the
+  authenticated actor and never accepted from the request body or exposed on the wire. The creator
+  keeps access to its own space for every role even when the separately projected Drive node ACL
+  for it is missing or stale (a space created before the projection existed, a failed projection, or
+  a dropped grant); the missing creator owner grant is repaired best-effort on that access so the
+  Drive surfaces the browser hands parents to (upload and folder creation under `sources/raw`)
+  agree with the Knowledge verdict. Every other actor still needs an explicit Drive grant, a space
+  with no recorded creator keeps the Drive decision only, and group-managed spaces stay governed
+  exclusively by the IM snapshot plus their projected ACL. Browsing resolves access through this
+  same authority instead of re-deriving a second permission verdict.
 - Knowledgebase, Official Account, and Applet configuration surfaces expose icon/emoji selection,
   not browser Data URL avatar persistence. Custom media remains unavailable until an app-api/Drive
   contract can store a stable managed object reference and resolve bounded delivery URLs. WeChat

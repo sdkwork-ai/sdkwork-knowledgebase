@@ -1,7 +1,7 @@
 use axum::body::Body;
 use axum::http::{header, Method, Request, StatusCode};
 use sdkwork_intelligence_knowledgebase_repository_sqlx::{
-    is_postgres_database_url, PostgresKnowledgeOkfConceptStore,
+    connect_postgres_pool, is_postgres_database_url, PostgresKnowledgeOkfConceptStore,
     SqlxKnowledgeEngineProviderBindingStore,
 };
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_okf_concept_store::{
@@ -73,6 +73,89 @@ async fn hosted_app_router_lists_documents() {
 
     let body = response_body_json(response).await;
     assert!(body["items"].is_array());
+}
+
+/// Regression: a user must always reach the space they created.
+///
+/// Space access used to be decided only by the separately projected Drive node ACL. A space
+/// created before that projection existed, or whose projection is missing or stale, answered
+/// `403 40301 actor does not have access to space ...` to its own creator on every read — the
+/// browser included, which is the surface the whole knowledge UI is built on. The creator is
+/// now admitted from the space record and the missing grant is repaired on access, while any
+/// other actor still needs an explicit grant.
+#[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
+#[tokio::test]
+async fn hosted_space_creator_keeps_browser_access_without_a_drive_acl_projection() {
+    let Some(runtime) = test_runtime().await else {
+        eprintln!(
+            "skipping integration test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL"
+        );
+        return;
+    };
+    let database_url = optional_postgres_database_url().expect("postgres database url");
+    let app = dev_auth::with_dev_app_auth(runtime.build_full_app_router(), 1, Some(42));
+    let space_id = create_space(&app, "Creator Browser Space").await;
+
+    let (status, body) = browse_space(&app, space_id).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "the creator must browse the space it just created: {body}"
+    );
+
+    // Reproduce a legacy space or a lost projection: drop every direct Drive grant on the
+    // space's nodes, which is exactly the state that produced the reported 403.
+    let drive_space_id: Option<String> =
+        sqlx::query_scalar("SELECT drive_space_id FROM kb_space WHERE id = $1")
+            .bind(space_id as i64)
+            .fetch_one(runtime.pool())
+            .await
+            .expect("read the knowledge space Drive binding");
+    let drive_space_id = drive_space_id.expect("created space must be bound to a Drive space");
+    let drive_pool = connect_postgres_pool(&database_url)
+        .await
+        .expect("connect the configured PostgreSQL database");
+    sqlx::query(
+        "DELETE FROM dr_drive_node_permission \
+         WHERE subject_type = 'user' \
+           AND node_id IN (SELECT id FROM dr_drive_node WHERE space_id = $1)",
+    )
+    .bind(&drive_space_id)
+    .execute(&drive_pool)
+    .await
+    .expect("remove the projected Drive ACL");
+
+    let (status, body) = browse_space(&app, space_id).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "a missing Drive ACL projection must not lock the creator out of its own space: {body}"
+    );
+
+    // The repair must restore the creator's owner grant so the Drive surfaces the browser
+    // hands parents to (upload, folder creation) agree with the Knowledge verdict.
+    let repaired: i64 = sqlx::query_scalar(
+        "SELECT COUNT(1) FROM dr_drive_node_permission \
+         WHERE subject_type = 'user' AND subject_id = '42' \
+           AND node_id IN (SELECT id FROM dr_drive_node WHERE space_id = $1)",
+    )
+    .bind(&drive_space_id)
+    .fetch_one(&drive_pool)
+    .await
+    .expect("count the repaired Drive grant");
+    assert!(
+        repaired > 0,
+        "the creator's Drive grant must be repaired on access"
+    );
+
+    let other_user = dev_auth::with_dev_app_auth(runtime.build_full_app_router(), 1, Some(99));
+    let (status, problem) = browse_space(&other_user, space_id).await;
+    assert_eq!(
+        status,
+        StatusCode::FORBIDDEN,
+        "another tenant user must not browse a space it neither created nor was granted: {problem}"
+    );
+    assert_eq!(problem["code"], 40301);
 }
 
 #[ignore = "requires a PostgreSQL integration environment; the Knowledgebase server runtime requires PostgreSQL by architecture"]
@@ -5562,6 +5645,27 @@ async fn hosted_app_runs_okf_lint_job_for_space() {
     assert_eq!(response.status(), StatusCode::CREATED);
     let body = response_body_json(response).await;
     assert_eq!(body["state"], "succeeded");
+}
+
+/// Browses the knowledge space through the app API and returns the status with the decoded
+/// payload (or the problem body when the request is rejected).
+async fn browse_space(app: &axum::Router, space_id: u64) -> (StatusCode, Value) {
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::GET)
+                .uri(format!(
+                    "/app/v3/api/knowledge/spaces/{space_id}/browser?view=files"
+                ))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let status = response.status();
+    let body = response_body_json(response).await;
+    (status, body)
 }
 
 async fn create_space(app: &axum::Router, name: &str) -> u64 {

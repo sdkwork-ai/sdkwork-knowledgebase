@@ -94,6 +94,11 @@ pub struct CreateKnowledgeSpaceRecord {
     pub description: Option<String>,
     pub okf_bundle_initialized: bool,
     pub knowledge_mode: KnowledgeAgentKnowledgeMode,
+    /// Authenticated actor that created the space, or `0` when the creating path
+    /// has no authenticated actor (for example a trusted provisioning reservation).
+    /// Persisted so the creator keeps object-level access without depending on the
+    /// separately projected Drive ACL.
+    pub created_by: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1126,6 +1126,7 @@ mod tests {
         KnowledgeSpace {
             id: 1,
             uuid: "space-uuid".to_string(),
+            created_by: 0,
             name: "group-space".to_string(),
             description: None,
             drive_space_id: Some("drive-space-1".to_string()),

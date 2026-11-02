@@ -138,6 +138,10 @@ function createMockState(telemetry?: E2eMockTelemetry) {
     mimeType: string;
     spaceId: number;
     title: string;
+    /** True when the document is backed by a drive node, like an upload or a
+     * drive import. Manually created notes have no drive node, so the browser
+     * tree cannot list them — matching the production backend. */
+    driveBacked: boolean;
   }>();
 
   documents.set(E2E_SOURCE_DOCUMENT.numericId, {
@@ -146,6 +150,7 @@ function createMockState(telemetry?: E2eMockTelemetry) {
     spaceId: 1,
     title: E2E_SOURCE_DOCUMENT.title,
     mimeType: 'text/markdown',
+    driveBacked: true,
   });
 
   return {
@@ -158,27 +163,6 @@ function createMockState(telemetry?: E2eMockTelemetry) {
 }
 
 type MockState = ReturnType<typeof createMockState>;
-
-function buildRetrievalHits(query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) {
-    return [];
-  }
-
-  return [
-    {
-      documentId: E2E_SOURCE_DOCUMENT.id,
-      spaceId: '1',
-      title: E2E_SOURCE_DOCUMENT.title,
-      content: E2E_SOURCE_DOCUMENT.content,
-      retrievalMethod: 'vector',
-      score: 0.92,
-      citation: {
-        sourceUri: null,
-      },
-    },
-  ];
-}
 
 async function handleKnowledgeRoute(route: Route, state: MockState): Promise<void> {
   const request = route.request();
@@ -216,36 +200,40 @@ async function handleKnowledgeRoute(route: Route, state: MockState): Promise<voi
   }
 
   if (method === 'GET' && /\/knowledge\/spaces\/\d+\/browser$/.test(pathname)) {
-    const items = [...state.documents.values()].map((document) => ({
-      id: `node-${document.id}`,
-      nodeType: 'document',
-      name: document.title,
-      parentId: null,
-      path: `/sources/raw/${document.title}`,
-      driveSpaceId: E2E_SPACE.driveSpaceId,
-      driveNodeId: `drive-node-${document.id}`,
-      documentId: String(document.id),
-      documentVersionId: String(document.id),
-      conceptId: null,
-      conceptRevisionId: null,
-      mimeType: document.mimeType,
-      sizeBytes: String(new TextEncoder().encode(document.content).byteLength),
-      ingestState: 'succeeded',
-      parseState: 'succeeded',
-      indexState: 'succeeded',
-      okfState: 'succeeded',
-      childrenCount: '0',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-      permissions: {
-        canRead: true,
-        canUpload: true,
-        canRename: true,
-        canMove: true,
-        canDelete: true,
-        canReview: true,
-        canPublish: true,
-      },
-    }));
+    // Drive-backed documents only: manually created notes have no drive node
+    // in the real product and must be reached through `documents.list`.
+    const items = [...state.documents.values()]
+      .filter((document) => document.driveBacked)
+      .map((document) => ({
+        id: `node-${document.id}`,
+        nodeType: 'document',
+        name: document.title,
+        parentId: null,
+        path: `/sources/raw/${document.title}`,
+        driveSpaceId: E2E_SPACE.driveSpaceId,
+        driveNodeId: `drive-node-${document.id}`,
+        documentId: String(document.id),
+        documentVersionId: String(document.id),
+        conceptId: null,
+        conceptRevisionId: null,
+        mimeType: document.mimeType,
+        sizeBytes: String(new TextEncoder().encode(document.content).byteLength),
+        ingestState: 'succeeded',
+        parseState: 'succeeded',
+        indexState: 'succeeded',
+        okfState: 'succeeded',
+        childrenCount: '0',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        permissions: {
+          canRead: true,
+          canUpload: true,
+          canRename: true,
+          canMove: true,
+          canDelete: true,
+          canReview: true,
+          canPublish: true,
+        },
+      }));
     await sdkworkData(route, 200, {
       spaceId: '1',
       driveSpaceId: E2E_SPACE.driveSpaceId,
@@ -352,11 +340,16 @@ async function handleKnowledgeRoute(route: Route, state: MockState): Promise<voi
     const created = {
       content: '',
       id: state.nextDocumentId,
-      spaceId: body?.spaceId ?? 1,
+      // `documents.list` filters by numeric space id (query parameter), so the
+      // stored record must use the same numeric form the request sends.
+      spaceId: Number(body?.spaceId ?? 1),
       title: body?.title?.trim() || 'New Document',
       mimeType: body?.mimeType ?? 'text/plain',
       visibility: 'private',
       language: 'en',
+      // `documents.create` makes a note, not a drive node: the browser tree
+      // stays empty until the notes listing exposes it.
+      driveBacked: false,
     };
     state.documents.set(created.id, created);
     state.telemetry?.createdDocumentIds.push(created.id);
@@ -454,11 +447,20 @@ async function handleKnowledgeRoute(route: Route, state: MockState): Promise<voi
   }
 
   if (method === 'POST' && pathname.endsWith('/knowledge/retrievals')) {
-    const body = request.postDataJSON() as { query?: string } | null;
-    await json(route, 200, {
-      retrievalId: '1',
-      hits: buildRetrievalHits(body?.query ?? ''),
-    });
+    // Contract-faithful guard: `POST /knowledge/retrievals` is RAG-only, and the
+    // gateway rejects it for any space whose knowledgeMode is not `rag`
+    // (`rag_retrieval_mode_required`, 40003). The E2E app runs on an OKF-bundle
+    // space, so serving hits here would hide exactly the mode mismatch this
+    // suite exists to catch.
+    const body = request.postDataJSON() as { bindings?: Array<{ spaceId?: string }> } | null;
+    const rejectedSpaceId = body?.bindings?.[0]?.spaceId ?? String(E2E_SPACE.id);
+    await sdkworkProblem(
+      route,
+      400,
+      40003,
+      'Bad Request',
+      `space ${rejectedSpaceId} uses ${E2E_SPACE.knowledgeMode} knowledge mode; use okf query/context-pack or external engine APIs instead of RAG retrievals`,
+    );
     return;
   }
 
