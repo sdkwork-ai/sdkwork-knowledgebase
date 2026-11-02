@@ -1,9 +1,11 @@
 import React, { Suspense, useState, useEffect, useCallback, useRef, lazy } from 'react';
-import { Share2, Pin, Sparkles, Music, Video, FileText, Code, Image as ImageIcon } from 'lucide-react';
+import { Share2, Pin, Sparkles, Music, Video, FileText, Code, Image as ImageIcon, Save } from 'lucide-react';
 import { Tabs } from './components/Tabs';
+import { SaveStatusPill } from './components/SaveStatusPill';
 import { DocumentMeta, KnowledgeBase, FolderNode } from './services/document';
 import { useTranslation } from 'react-i18next';
 import { TiptapEditor } from './TiptapEditor';
+import type { KnowledgeDocumentSaveStatus } from './hooks/useKnowledgeBaseDocumentPersistence';
 // Monaco (via CodeEditorPanel) is by far the heaviest dependency in this
 // package and is only needed for `code` documents; lazy-loading it keeps the
 // main knowledgebase chunk inside its size budget.
@@ -53,6 +55,17 @@ export interface EditorPanelProps {
   onMouseDownDragAi?: () => void;
   publishEnabled?: boolean;
   workspaceMode?: KnowledgebaseWorkspaceMode;
+  /** Save lifecycle of the active text document, shown beside the manual save
+   * button. Absent for surfaces that do not own document persistence. */
+  saveStatus?: KnowledgeDocumentSaveStatus;
+  /** True while the active document has edits that are not persisted yet. */
+  hasPendingEdits?: boolean;
+  /** Flush the active document's buffered content immediately (retry too). */
+  onSaveNow?: () => void;
+  /** Conflict recovery: overwrite the server copy with the local content. */
+  onOverwriteActive?: () => void;
+  /** Focuses the title input on mount (Notion-style new-note flow). */
+  autoFocusTitle?: boolean;
 }
 
 const getTabIcon = (type: string) => {
@@ -98,8 +111,13 @@ export function EditorPanel({
   isDraggingAi = false,
   onMouseDownDragAi,
   publishEnabled = true,
-  workspaceMode = 'standard'}: EditorPanelProps) {
-  const { t } = useTranslation('editor');
+  workspaceMode = 'standard',
+  saveStatus,
+  hasPendingEdits = false,
+  onSaveNow,
+  onOverwriteActive,
+  autoFocusTitle = false}: EditorPanelProps) {
+  const { t, i18n } = useTranslation('editor');
   const aiEnabled = isKnowledgebaseWorkspaceAiEnabled(workspaceMode);
 
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, docId: string, docTitle: string } | null>(null);
@@ -182,6 +200,14 @@ export function EditorPanel({
     });
   };
 
+  // Manual save applies to text documents only: media and PDF viewers have no
+  // body persistence here, so showing the affordance for them would lie.
+  const supportsTextSave = Boolean(
+    onSaveNow
+    && activeDoc
+    && (activeDoc.type === 'richtext' || activeDoc.type === 'markdown' || activeDoc.type === 'code'),
+  );
+
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-[var(--color-kb-editor)] overflow-hidden relative">
       {/* 1. VS Code-Style Tabs Bar with Scroll Buttons & Right Click Context Menu */}
@@ -194,7 +220,47 @@ export function EditorPanel({
         onContextMenu={handleTabContextMenu}
         onBarContextMenu={handleBarContextMenu}
         rightActions={
-          <div className={`flex items-center h-[39px] px-3 gap-1.5 shrink-0 border-l border-zinc-200/80 dark:border-[var(--color-kb-panel-border)]/55 bg-zinc-50/50 dark:bg-black/10 select-none z-30 w-[190px] justify-end ${!publishEnabled && !aiEnabled ? 'hidden' : ''}`}>
+          <div className={`flex items-center h-[39px] px-3 gap-2 shrink-0 border-l border-zinc-200/80 dark:border-[var(--color-kb-panel-border)]/55 bg-zinc-50/50 dark:bg-black/10 select-none z-30 min-w-[190px] w-auto justify-end ${!publishEnabled && !aiEnabled && !supportsTextSave ? 'hidden' : ''}`}>
+            {supportsTextSave && (
+              <div className="flex items-center gap-2 shrink-0">
+                <SaveStatusPill
+                  status={saveStatus?.state ?? 'idle'}
+                  lastSavedAt={saveStatus?.savedAt ?? null}
+                  locale={i18n.language}
+                  testIdPrefix="knowledgebase-pc-editor"
+                  labels={{
+                    saving: t('saveStatusSaving'),
+                    saved: t('saveStatusSaved'),
+                    savedAt: (time) => t('saveStatusSavedAt', { time }),
+                    unsaved: t('saveStatusUnsaved'),
+                    failed: t('saveStatusFailed'),
+                    retry: t('saveStatusRetry'),
+                    conflict: t('saveStatusConflict'),
+                    overwrite: t('saveStatusOverwrite'),
+                  }}
+                  onRetry={() => onSaveNow?.()}
+                  onOverwrite={() => onOverwriteActive?.()}
+                />
+                <button
+                  type="button"
+                  disabled={
+                    !hasPendingEdits
+                    || saveStatus?.state === 'saving'
+                    // A conflicted buffer is resolved through the pill's
+                    // overwrite action; a plain flush would be a silent no-op.
+                    || saveStatus?.state === 'conflict'
+                  }
+                  onClick={() => onSaveNow?.()}
+                  title={t('saveShortcutHint')}
+                  aria-keyshortcuts="Control+S Meta+S"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--color-kb-panel-border)] text-[11.5px] font-medium text-[var(--color-kb-text)] hover:bg-[var(--color-kb-panel-hover)] transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+                  data-testid="knowledgebase-pc-editor-save"
+                >
+                  <Save size={12} strokeWidth={2.5} />
+                  {saveStatus?.state === 'saving' ? t('saveStatusSaving') : t('saveNow')}
+                </button>
+              </div>
+            )}
             {publishEnabled && (
               <button
               type="button"
@@ -336,6 +402,7 @@ export function EditorPanel({
                       kbId={activeKb?.id}
                       workspaceMode={workspaceMode}
                       parentFolderId={activeDoc.parentId}
+                      autoFocusTitle={autoFocusTitle}
                       onOpenImageGallery={() => {
                         setAssetLibraryTab('image');
                         setAssetLibraryOpen(true);
@@ -376,10 +443,11 @@ export function EditorPanel({
                         onChange={onContentChange}
                         docTitle={activeDoc.title}
                         onTitleChange={(newTitle) => onTitleChange?.(activeDoc.id, newTitle)}
-                      onEditorReady={setActiveEditor}
-                      kbId={activeKb?.id}
-                      workspaceMode={workspaceMode}
-                      parentFolderId={activeDoc.parentId}
+                        onEditorReady={setActiveEditor}
+                        kbId={activeKb?.id}
+                        workspaceMode={workspaceMode}
+                        parentFolderId={activeDoc.parentId}
+                        autoFocusTitle={autoFocusTitle}
                         onOpenImageGallery={() => {
                           setAssetLibraryTab('image');
                           setAssetLibraryOpen(true);

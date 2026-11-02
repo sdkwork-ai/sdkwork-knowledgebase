@@ -3,8 +3,8 @@ use crate::okf::{OkfBundleInitializerService, OkfBundleInitializerServiceError};
 use crate::ports::knowledge_wiki_persistence::WikiPersistenceScope;
 use crate::ports::{
     knowledge_access_control::{
-        KnowledgeAccessControl, KnowledgeAccessControlError, KnowledgeAccessRole,
-        KnowledgeSubjectType,
+        GrantKnowledgeSpaceAccessRequest, KnowledgeAccessCheckRequest, KnowledgeAccessControl,
+        KnowledgeAccessControlError, KnowledgeAccessRole, KnowledgeSubjectType,
     },
     knowledge_drive_space::{
         CreateKnowledgeDriveSpaceRequest, DeleteKnowledgeDriveSpaceRequest,
@@ -44,6 +44,14 @@ fn knowledge_drive_space_owner(knowledge_space_uuid: &str) -> (String, String) {
     )
 }
 
+/// Reports whether `actor_id` is the recorded creator of `space`.
+///
+/// Spaces created before ownership was recorded (`created_by == 0`) have no creator to
+/// match, so they keep the Drive ACL decision only.
+fn is_space_creator(space: &KnowledgeSpace, actor_id: &str) -> bool {
+    space.created_by != 0 && space.created_by.to_string() == actor_id.trim()
+}
+
 pub struct KnowledgeSpaceService<'a> {
     store: &'a dyn KnowledgeSpaceStore,
     okf_bundle_initializer: &'a OkfBundleInitializerService<'a>,
@@ -52,6 +60,7 @@ pub struct KnowledgeSpaceService<'a> {
     drive_context: Option<KnowledgeSpaceDriveContext>,
     wiki_context: Option<KnowledgeWikiContext>,
     wiki_initializer: Option<&'a KnowledgeWikiInitializationService<'a>>,
+    creator_id: Option<u64>,
 }
 
 impl<'a> KnowledgeSpaceService<'a> {
@@ -67,6 +76,7 @@ impl<'a> KnowledgeSpaceService<'a> {
             drive_context: None,
             wiki_context: None,
             wiki_initializer: None,
+            creator_id: None,
         }
     }
 
@@ -92,6 +102,15 @@ impl<'a> KnowledgeSpaceService<'a> {
 
     pub fn with_access_control(mut self, access_control: &'a dyn KnowledgeAccessControl) -> Self {
         self.access_control = Some(access_control);
+        self
+    }
+
+    /// Sets the authenticated actor that owns a space created through this service.
+    ///
+    /// The creator is persisted on the space row and keeps object-level access to
+    /// it even when the separately projected Drive ACL is missing or stale.
+    pub fn with_creator(mut self, creator_id: u64) -> Self {
+        self.creator_id = (creator_id != 0).then_some(creator_id);
         self
     }
 
@@ -143,6 +162,7 @@ impl<'a> KnowledgeSpaceService<'a> {
                 description: request.description,
                 okf_bundle_initialized: false,
                 knowledge_mode: request.knowledge_mode,
+                created_by: self.creator_id.unwrap_or_default(),
             })
             .await
             .map_err(KnowledgeSpaceServiceError::Store)?;
@@ -305,33 +325,108 @@ impl<'a> KnowledgeSpaceService<'a> {
             .get_space(space_id)
             .await
             .map_err(KnowledgeSpaceServiceError::Store)?;
+        self.authorize_space_access(&space, tenant_id, actor_id, required_role)
+            .await?;
+        Ok(space)
+    }
 
-        // Read paths are fail-closed: without a configured access control the operation is
-        // rejected instead of silently degrading to tenant-scoped visibility only.
+    /// Resolves the effective access a caller holds on a knowledge space.
+    ///
+    /// The Drive node ACL is the authority for shared access, but it is a projection:
+    /// it is written separately from the space record, so a missing or stale grant
+    /// must never lock a space's creator out of the space they created. The recorded
+    /// creator is therefore always admitted and the missing Drive grant is repaired on
+    /// that same call, which keeps the Drive surfaces (for example the upload flow that
+    /// resolves `sources/raw`) consistent with the Knowledge verdict. A caller that is
+    /// neither the creator nor granted by the Drive ACL stays denied.
+    ///
+    /// Read paths stay fail-closed: without a configured access control the operation is
+    /// rejected instead of silently degrading to tenant-scoped visibility only.
+    async fn authorize_space_access(
+        &self,
+        space: &KnowledgeSpace,
+        tenant_id: &str,
+        actor_id: &str,
+        required_role: KnowledgeAccessRole,
+    ) -> Result<(), KnowledgeSpaceServiceError> {
         let access = self.require_access_control()?;
-        let drive_space_id = space.drive_space_id.as_ref().ok_or_else(|| {
-            KnowledgeSpaceServiceError::AccessDenied(format!(
-                "space {space_id} is not bound to a drive space for access control"
-            ))
-        })?;
+        let is_creator = is_space_creator(space, actor_id);
+
+        let Some(drive_space_id) = space.drive_space_id.as_deref() else {
+            // Without a Drive binding there is no ACL to consult. Only the recorded
+            // creator may still reach the space, so it remains renameable and deletable
+            // instead of becoming an unreachable orphan.
+            return if is_creator {
+                Ok(())
+            } else {
+                Err(KnowledgeSpaceServiceError::AccessDenied(format!(
+                    "space {} is not bound to a drive space for access control",
+                    space.id
+                )))
+            };
+        };
+
         let grant = access
-            .check_space_access(
-                crate::ports::knowledge_access_control::KnowledgeAccessCheckRequest {
-                    tenant_id: tenant_id.to_string(),
-                    actor_id: actor_id.to_string(),
-                    drive_space_id: drive_space_id.clone(),
-                    required_role,
-                },
-            )
+            .check_space_access(KnowledgeAccessCheckRequest {
+                tenant_id: tenant_id.to_string(),
+                actor_id: actor_id.to_string(),
+                drive_space_id: drive_space_id.to_string(),
+                required_role,
+            })
             .await
             .map_err(KnowledgeSpaceServiceError::AccessControl)?;
-        if !grant.allowed {
-            return Err(KnowledgeSpaceServiceError::AccessDenied(format!(
-                "actor {actor_id} does not have access to space {space_id}"
-            )));
+        if grant.allowed {
+            return Ok(());
+        }
+        if is_creator {
+            self.repair_creator_space_access(access, space, tenant_id, drive_space_id)
+                .await;
+            return Ok(());
         }
 
-        Ok(space)
+        Err(KnowledgeSpaceServiceError::AccessDenied(format!(
+            "actor {actor_id} does not have access to space {}",
+            space.id
+        )))
+    }
+
+    /// Re-grants the recorded creator's owner permission after the Drive ACL lost it.
+    ///
+    /// Repair is best-effort: the creator is already admitted from the space record, so a
+    /// failed repair must not turn their own space into an error. It only leaves the Drive
+    /// projection stale, which is logged for the operator.
+    async fn repair_creator_space_access(
+        &self,
+        access: &dyn KnowledgeAccessControl,
+        space: &KnowledgeSpace,
+        tenant_id: &str,
+        drive_space_id: &str,
+    ) {
+        let creator_id = space.created_by.to_string();
+        let repair = access
+            .grant_space_access(GrantKnowledgeSpaceAccessRequest {
+                tenant_id: tenant_id.to_string(),
+                drive_space_id: drive_space_id.to_string(),
+                drive_node_id: None,
+                subject_type: KnowledgeSubjectType::User,
+                subject_id: creator_id.clone(),
+                role: KnowledgeAccessRole::Owner,
+                operator_id: creator_id,
+            })
+            .await;
+        match repair {
+            Ok(()) => tracing::info!(
+                knowledge_space_id = space.id,
+                creator_id = space.created_by,
+                "restored the creator's owner grant on a knowledge space whose drive ACL projection was missing"
+            ),
+            Err(error) => tracing::warn!(
+                knowledge_space_id = space.id,
+                creator_id = space.created_by,
+                error = %error,
+                "failed to restore the creator's owner grant on a knowledge space"
+            ),
+        }
     }
 
     pub async fn grant_space_member(

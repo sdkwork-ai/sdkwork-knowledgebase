@@ -14,6 +14,7 @@ import {
   resolveBrowserDocumentId,
 } from './knowledgeBrowserListService';
 import { hydrateDocumentMediaUrl } from './knowledgeDriveMediaService';
+import { partitionKnowledgeSpaceIdsByMode } from './knowledgeSpaceKnowledgeMode';
 
 export interface KnowledgeAssetLibraryItem {
   title: string;
@@ -368,36 +369,45 @@ export async function searchKnowledgeMediaDocuments(
 
   try {
     const client = requireSdkClient();
-    const bindings = registry.map((entry, index) => ({
-      spaceId: String(entry.spaceId),
+    // Media names are matched through RAG chunk titles, and the gateway only
+    // serves `POST /knowledge/retrievals` for RAG spaces: binding an OKF-bundle
+    // or external space would reject the whole request (40003). Those spaces are
+    // covered by the paginated browser scan below.
+    const { rag: ragSpaceIds } = await partitionKnowledgeSpaceIdsByMode(
+      registry.map((entry) => String(entry.spaceId)),
+    );
+    const bindings = ragSpaceIds.map((spaceId, index) => ({
+      spaceId,
       priority: index,
       topK: limit,
     }));
-    const retrieval = await client.knowledge.retrievals.create({
-      query: trimmedQuery,
-      bindings,
-      includeCitations: false,
-      includeTrace: false,
-      topK: limit,
-    });
+    if (bindings.length > 0) {
+      const retrieval = await client.knowledge.retrievals.create({
+        query: trimmedQuery,
+        bindings,
+        includeCitations: false,
+        includeTrace: false,
+        topK: limit,
+      });
 
-    for (const hit of retrieval.hits) {
-      if (!hit.title?.toLowerCase().includes(trimmedQuery)) {
-        continue;
-      }
-      const kbId = hit.spaceId;
-      const doc: DocumentMeta = {
-        id: hit.documentId,
-        title: hit.title?.trim() || 'Untitled',
-        type: 'file',
-        kbId,
-        updatedAt: new Date().toISOString(),
-        author: 'Knowledgebase',
-        content: hit.content,
-      };
-      results.push(doc);
-      if (results.length >= limit) {
-        return results;
+      for (const hit of retrieval.hits) {
+        if (!hit.title?.toLowerCase().includes(trimmedQuery)) {
+          continue;
+        }
+        const kbId = hit.spaceId;
+        const doc: DocumentMeta = {
+          id: hit.documentId,
+          title: hit.title?.trim() || 'Untitled',
+          type: 'file',
+          kbId,
+          updatedAt: new Date().toISOString(),
+          author: 'Knowledgebase',
+          content: hit.content,
+        };
+        results.push(doc);
+        if (results.length >= limit) {
+          return results;
+        }
       }
     }
   } catch {

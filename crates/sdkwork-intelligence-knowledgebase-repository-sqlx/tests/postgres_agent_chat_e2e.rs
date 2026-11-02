@@ -144,6 +144,7 @@ async fn postgres_agent_chat_answers_from_ingested_knowledge_with_citations() {
             name: format!("postgres chat e2e space {nonce}"),
             description: Some("agent chat e2e".to_string()),
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode: KnowledgeAgentKnowledgeMode::Rag,
         })
         .await

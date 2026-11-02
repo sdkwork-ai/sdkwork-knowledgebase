@@ -117,9 +117,14 @@ export function KnowledgeFileList({
       if (parentId && parentId !== currentFolderId) {
          setCurrentFolderId(parentId);
       }
-      setTimeout(() => {
-        setRenameItem({ id: newItem.id, title: newItem.title, type: newItem.type });
-      }, 100);
+      // A new note opens in the editor with its title focused there; starting
+      // an inline list rename at the same time would give the note two active
+      // title inputs racing to persist different values.
+      if (actionType !== 'note_doc') {
+        setTimeout(() => {
+          setRenameItem({ id: newItem.id, title: newItem.title, type: newItem.type });
+        }, 100);
+      }
     }
   };
 

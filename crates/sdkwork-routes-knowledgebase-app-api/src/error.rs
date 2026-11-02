@@ -579,30 +579,12 @@ impl From<KnowledgeBrowserServiceError> for ApiError {
             KnowledgeBrowserServiceError::InvalidRequest(detail) => {
                 Self::invalid_request("invalid_knowledge_browser_request", detail)
             }
-            KnowledgeBrowserServiceError::AccessDenied(detail) => Self::new(
-                axum::http::StatusCode::FORBIDDEN,
-                "knowledge_browser_access_denied",
-                detail,
-            ),
-            KnowledgeBrowserServiceError::AccessControlNotConfigured => Self::internal(
-                "knowledge_browser_access_control_not_configured",
-                "knowledge browser access control is not configured",
-            ),
-            KnowledgeBrowserServiceError::SpaceStore(error) => Self::from(error),
             KnowledgeBrowserServiceError::DriveTree(error) => {
                 Self::internal("knowledge_browser_drive_tree_failed", error.to_string())
             }
             KnowledgeBrowserServiceError::ProjectionStore(error) => {
                 Self::internal("knowledge_browser_projection_failed", error.to_string())
             }
-            KnowledgeBrowserServiceError::AccessControl(error) => match error {
-                KnowledgeAccessControlError::NotFound(message) => {
-                    Self::not_found("knowledge_browser_drive_anchor_missing", message)
-                }
-                other => {
-                    Self::internal("knowledge_browser_access_control_failed", other.to_string())
-                }
-            },
         }
     }
 }

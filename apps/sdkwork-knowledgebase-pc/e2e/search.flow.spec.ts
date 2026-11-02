@@ -6,8 +6,12 @@ import {
 } from './knowledgeApiMocks';
 
 test.describe('Knowledgebase PC search flow', () => {
-  test('returns cited local results and navigates to the source document', async ({ page }) => {
-    await setupKnowledgebaseE2ePage(page);
+  test('answers from the OKF bundle without attempting RAG retrieval', async ({ page }) => {
+    // The registered E2E space runs in OKF-bundle mode, the product default. Its
+    // content is answered by `okf.queries`; `POST /knowledge/retrievals` is
+    // RAG-only and the gateway rejects it for this space (40003), so the search
+    // must never send that request.
+    const telemetry = await setupKnowledgebaseE2ePage(page);
 
     await page.goto('/');
     await expect(page.getByTestId('knowledgebase-pc-app-shell')).toBeVisible({ timeout: 30_000 });
@@ -22,12 +26,12 @@ test.describe('Knowledgebase PC search flow', () => {
     await page.getByTitle('Send').click();
 
     await expect(page.getByText(E2E_SOURCE_DOCUMENT.title)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(`OKF ? ${query}`)).toBeVisible({ timeout: 30_000 });
 
     await page.getByTestId('search-sources-toggle').click();
-    await page.getByTestId('search-source-row-doc').click();
+    await expect(page.getByTestId('search-source-row-doc')).toBeVisible();
 
-    await expect(
-      page.locator(`[data-tab-id="${E2E_SOURCE_DOCUMENT.numericId}"]`),
-    ).toBeVisible({ timeout: 15_000 });
+    expect(telemetry.requestedPaths).not.toContain('POST /app/v3/api/knowledge/retrievals');
+    expect(telemetry.requestedPaths).toContain('POST /app/v3/api/knowledge/okf/queries');
   });
 });

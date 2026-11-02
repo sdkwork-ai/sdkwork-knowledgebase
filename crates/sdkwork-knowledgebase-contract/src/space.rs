@@ -29,6 +29,17 @@ pub struct KnowledgeSpace {
     )]
     pub id: u64,
     pub uuid: String,
+    /// Server-side ownership metadata used for object-level authorization.
+    ///
+    /// The creating actor is recorded when the space is created and is never
+    /// serialized on the wire, so the public response shape and generated SDK
+    /// models are unchanged. A space always remains reachable by its creator,
+    /// even when the separate Drive ACL projection for it is missing or stale;
+    /// `0` marks a space created before ownership was recorded (or by a
+    /// server-side path without an authenticated actor), which only keeps the
+    /// Drive ACL decision.
+    #[serde(default, skip_serializing)]
+    pub created_by: u64,
     pub name: String,
     pub description: Option<String>,
     pub drive_space_id: Option<String>,

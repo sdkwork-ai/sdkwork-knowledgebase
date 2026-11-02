@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  AlertTriangle,
-  Check,
   CloudOff,
   FileText,
   Loader2,
   Plus,
   RotateCcw,
+  Save,
   Search,
   Trash2,
 } from 'lucide-react';
@@ -21,11 +20,11 @@ import type { NotesAutosaveEvent } from './hooks/notesAutosaveEngine';
 import {
   useNotesAutosave,
   type NotesAutosavePortWithBaseline,
-  type NotesSaveStatus,
 } from './hooks/useNotesAutosave';
+import { SaveStatusPill } from './components/SaveStatusPill';
 import { toastKnowledgebaseError } from './components/ui/toastKnowledgebaseError';
 import { toast } from './components/ui/toast-manager';
-import { formatNoteSavedTime } from './utils/noteSavedTimeFormatter';
+import { buildUniqueNoteTitle } from './utils/noteTitle';
 import { TiptapEditor } from './TiptapEditor';
 
 interface NoteEditorState {
@@ -265,8 +264,10 @@ export function NotesWorkspace() {
   const handleCreateNote = async () => {
     if (!kbId) return;
     try {
+      // The note body is saved through a title-keyed ingest, so two notes that
+      // share the default title would overwrite each other.
       const created = await DocumentService.createDocument({
-        title: t('notesUntitled'),
+        title: buildUniqueNoteTitle(t('notesUntitled'), notes.map((note) => note.title)),
         type: 'richtext',
         content: '',
         kbId,
@@ -318,13 +319,42 @@ export function NotesWorkspace() {
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <NotesSaveStatusPill
+          <SaveStatusPill
             status={autosave.status}
             lastSavedAt={autosave.lastSavedAt}
             locale={i18n.language}
+            testIdPrefix="knowledgebase-pc-notes"
+            labels={{
+              saving: t('notesSaving'),
+              saved: t('notesStatusSaved'),
+              savedAt: (time) => t('notesStatusSavedAt', { time }),
+              unsaved: t('notesStatusUnsaved'),
+              failed: t('notesStatusSaveFailed'),
+              retry: t('notesStatusRetry'),
+              conflict: t('notesStatusConflict'),
+              overwrite: t('notesStatusOverwrite'),
+            }}
             onRetry={() => void autosave.flushActive()}
             onOverwrite={() => void autosave.overwriteActive()}
           />
+          <button
+            type="button"
+            onClick={() => void autosave.flushActive()}
+            disabled={
+              !autosave.hasPendingEdits
+              || autosave.status === 'saving'
+              // A conflicted buffer is resolved through the pill's overwrite
+              // action; a plain flush would be a silent no-op.
+              || autosave.status === 'conflict'
+            }
+            title={t('notesSaveShortcut')}
+            aria-keyshortcuts="Control+S Meta+S"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--color-kb-panel-border)] text-[12px] font-medium text-[var(--color-kb-text)] hover:bg-[var(--color-kb-panel-hover)] transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+            data-testid="knowledgebase-pc-notes-save"
+          >
+            <Save size={13} />
+            {autosave.status === 'saving' ? t('notesSaving') : t('notesSave')}
+          </button>
           <button
             type="button"
             onClick={handleCreateNote}
@@ -452,102 +482,5 @@ export function NotesWorkspace() {
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * Autosave status pill (Notion-style): quiet "已保存 <time>" when healthy, a
- * spinner while saving, and explicit recovery actions when a save failed or a
- * concurrent edit was detected. Announced politely to screen readers.
- */
-function NotesSaveStatusPill(props: {
-  status: NotesSaveStatus;
-  lastSavedAt: number | null;
-  locale: string;
-  onRetry: () => void;
-  onOverwrite: () => void;
-}) {
-  const { t } = useTranslation('kb');
-  const { status, lastSavedAt, locale, onRetry, onOverwrite } = props;
-
-  if (status === 'idle') {
-    return null;
-  }
-
-  const baseClass =
-    'flex items-center gap-1.5 text-[12px] leading-none text-[var(--color-kb-text-muted)]';
-
-  if (status === 'saving') {
-    return (
-      <span className={baseClass} role="status" aria-live="polite" data-testid="knowledgebase-pc-notes-save-status">
-        <Loader2 size={12} className="animate-spin" />
-        {t('notesSaving')}
-      </span>
-    );
-  }
-
-  if (status === 'saved') {
-    const timeLabel =
-      lastSavedAt !== null
-        ? formatNoteSavedTime(lastSavedAt, locale || 'zh-CN')
-        : null;
-    return (
-      <span className={baseClass} role="status" aria-live="polite" data-testid="knowledgebase-pc-notes-save-status">
-        <Check size={12} className="text-emerald-500" />
-        {timeLabel ? t('notesStatusSavedAt', { time: timeLabel }) : t('notesStatusSaved')}
-      </span>
-    );
-  }
-
-  if (status === 'conflict') {
-    return (
-      <span
-        className="flex items-center gap-1.5 text-[12px] leading-none text-amber-600"
-        role="status"
-        aria-live="polite"
-        data-testid="knowledgebase-pc-notes-save-status"
-      >
-        <AlertTriangle size={12} />
-        {t('notesStatusConflict')}
-        <button
-          type="button"
-          onClick={onOverwrite}
-          className="ml-0.5 px-2 py-1 rounded-md border border-amber-500/50 text-amber-600 text-[11px] font-medium hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-kb-accent)]"
-          data-testid="knowledgebase-pc-notes-overwrite"
-        >
-          {t('notesStatusOverwrite')}
-        </button>
-      </span>
-    );
-  }
-
-  if (status === 'error') {
-    return (
-      <span
-        className="flex items-center gap-1.5 text-[12px] leading-none text-rose-500"
-        role="status"
-        aria-live="polite"
-        data-testid="knowledgebase-pc-notes-save-status"
-      >
-        <CloudOff size={12} />
-        {t('notesStatusSaveFailed')}
-        <button
-          type="button"
-          onClick={onRetry}
-          className="ml-0.5 px-2 py-1 rounded-md border border-rose-400/50 text-rose-500 text-[11px] font-medium hover:bg-rose-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-kb-accent)]"
-          data-testid="knowledgebase-pc-notes-retry"
-        >
-          {t('notesStatusRetry')}
-        </button>
-      </span>
-    );
-  }
-
-  // dirty: local edits are waiting for the debounce window.
-  return (
-    <span className={baseClass} role="status" aria-live="polite" data-testid="knowledgebase-pc-notes-save-status">
-      <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-kb-text-muted)]/60" />
-      {t('notesStatusUnsaved')}
-    </span>
   );
 }

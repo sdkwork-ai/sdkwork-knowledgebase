@@ -44,3 +44,13 @@ Ordered corrections for already-initialized environments:
 - `0007_audit_retention_legal_hold.up.sql` — add subject-scoped legal holds
   (`kb_audit_legal_hold`) and the `(tenant_id, organization_id, created_at, id)`
   purge index. Held actors/resources are skipped by the batched retention delete.
+- `0008_knowledge_space_creator.up.sql` — add `kb_space.created_by` so a knowledge
+  space always carries an object-level owner instead of depending only on the
+  separately projected Drive ACL. The column is folded into the baseline
+  `CREATE TABLE`, so fresh installs receive it during baseline initialization and
+  the idempotent `ALTER` is a no-op there. The backfill derives the owner of a
+  legacy row from the creation-time actor already stored on its active
+  `kb_site_publication` row; the `NO FORCE ROW LEVEL SECURITY` window inside the
+  migration transaction exists only so that backfill can reach every scope. No
+  index is added: authorization loads the space by its scoped primary key and
+  compares the owner in memory.

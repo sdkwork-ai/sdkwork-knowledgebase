@@ -66,6 +66,7 @@ async fn provider_migration_is_idempotent_claimed_versioned_and_reversible() {
             name: "Provider migration space".to_string(),
             description: None,
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode: KnowledgeAgentKnowledgeMode::External,
         })
         .await
@@ -387,6 +388,7 @@ async fn migration_fixture(
             name: "Migration fixture".to_string(),
             description: None,
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode: KnowledgeAgentKnowledgeMode::External,
         })
         .await

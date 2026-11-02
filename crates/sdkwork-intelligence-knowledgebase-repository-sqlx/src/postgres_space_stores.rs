@@ -141,7 +141,7 @@ impl PostgresKnowledgeSpaceStore {
         let limit = i64::from(limit.clamp(1, 500));
         let rows = sqlx::query(
             r#"
-            SELECT id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            SELECT id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             FROM kb_space
             WHERE tenant_id = $1 AND organization_id = $2 AND status = $3
               AND NOT EXISTS (
@@ -182,7 +182,7 @@ impl PostgresKnowledgeSpaceStore {
         let rows = if let Some(after_id) = cursor_id {
             sqlx::query(
                 r#"
-                SELECT id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+                SELECT id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
                 FROM kb_space
                 WHERE tenant_id = $1 AND organization_id = $2 AND status = $3 AND id > $4
                   AND NOT EXISTS (
@@ -207,7 +207,7 @@ impl PostgresKnowledgeSpaceStore {
         } else {
             sqlx::query(
                 r#"
-                SELECT id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+                SELECT id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
                 FROM kb_space
                 WHERE tenant_id = $1 AND organization_id = $2 AND status = $3
                   AND NOT EXISTS (
@@ -255,8 +255,8 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
         let id = next_i64_id(&self.id_generator).map_err(space_id_error)?;
         let now = utc_sql_timestamp_text().map_err(KnowledgeSpaceStoreError::Internal)?;
 
-        let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$11");
-        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$12");
+        let created_at_expr = self.timestamp_dialect.sql_timestamp_expr("$12");
+        let updated_at_expr = self.timestamp_dialect.sql_timestamp_expr("$13");
         let query = format!(
             r#"
             INSERT INTO kb_space (
@@ -270,12 +270,13 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
                 status,
                 okf_bundle_initialized,
                 knowledge_mode,
+                created_by,
                 created_at,
                 updated_at,
                 version
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, {created_at_expr}, {updated_at_expr}, $13)
-            RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, {created_at_expr}, {updated_at_expr}, $14)
+            RETURNING id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
         let row = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
@@ -289,6 +290,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             .bind(space_status_code(KnowledgeSpaceStatus::Active))
             .bind(bool_code(record.okf_bundle_initialized))
             .bind(space_knowledge_mode_code(record.knowledge_mode))
+            .bind(space_to_i64("created_by", record.created_by)?)
             .bind(now.clone())
             .bind(&now)
             .bind(INITIAL_VERSION)
@@ -306,7 +308,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
 
         let row = sqlx::query(
             r#"
-            SELECT id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            SELECT id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             FROM kb_space
             WHERE tenant_id = $1 AND organization_id = $2 AND id = $3 AND status = $4
               AND NOT EXISTS (
@@ -373,7 +375,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             WHERE tenant_id = $3 AND organization_id = $4 AND id = $5
               AND status IN ($6, $7)
               AND (drive_space_id IS NULL OR drive_space_id = $1)
-            RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            RETURNING id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
         let row = match sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
@@ -483,7 +485,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             SET okf_bundle_initialized = 1, updated_at = {updated_at_expr}, version = version + 1
             WHERE tenant_id = $2 AND organization_id = $3 AND id = $4
               AND status IN ($5, $6)
-            RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            RETURNING id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
         let row = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
@@ -522,7 +524,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
                       AND group_binding.organization_id = kb_space.organization_id
                       AND group_binding.space_id = kb_space.id
               )
-            RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            RETURNING id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
         let row = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
@@ -604,7 +606,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
             SET name = COALESCE($1, name), description = COALESCE($2, description),
                 updated_at = {updated_at_expr}, version = version + 1
             WHERE tenant_id = $4 AND organization_id = $5 AND id = $6 AND status = $7
-            RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            RETURNING id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
         let row = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
@@ -646,7 +648,7 @@ impl KnowledgeSpaceStore for PostgresKnowledgeSpaceStore {
                       AND group_binding.lifecycle_state = 'active'
                       AND group_binding.acl_projection_state = 'active'
               )
-            RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            RETURNING id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
         let row = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
@@ -739,7 +741,7 @@ impl PostgresKnowledgeSpaceStore {
                       AND group_binding.organization_id = kb_space.organization_id
                       AND group_binding.space_id = kb_space.id
               )
-            RETURNING id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            RETURNING id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             "#,
         );
         let row = sqlx::query(sqlx::AssertSqlSafe(query.as_str()))
@@ -765,8 +767,9 @@ impl PostgresKnowledgeSpaceStore {
         let space_id_i64 = space_to_i64("space_id", space_id)?;
         let row = sqlx::query(
             r#"
-            SELECT space.id, space.uuid, space.name, space.description, space.drive_space_id,
-                   space.status, space.okf_bundle_initialized, space.knowledge_mode
+            SELECT space.id, space.uuid, space.created_by, space.name, space.description,
+                   space.drive_space_id, space.status, space.okf_bundle_initialized,
+                   space.knowledge_mode
             FROM kb_space space
             INNER JOIN kb_group_knowledge_space_binding group_binding
               ON group_binding.tenant_id = space.tenant_id
@@ -795,8 +798,9 @@ impl PostgresKnowledgeSpaceStore {
         let space_id_i64 = space_to_i64("space_id", space_id)?;
         let row = sqlx::query(
             r#"
-            SELECT space.id, space.uuid, space.name, space.description, space.drive_space_id,
-                   space.status, space.okf_bundle_initialized, space.knowledge_mode
+            SELECT space.id, space.uuid, space.created_by, space.name, space.description,
+                   space.drive_space_id, space.status, space.okf_bundle_initialized,
+                   space.knowledge_mode
             FROM kb_space space
             INNER JOIN kb_group_knowledge_space_binding group_binding
               ON group_binding.tenant_id = space.tenant_id
@@ -821,7 +825,7 @@ impl PostgresKnowledgeSpaceStore {
         let organization_id = space_to_i64("organization_id", self.organization_id)?;
         let row = sqlx::query(
             r#"
-            SELECT id, uuid, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
+            SELECT id, uuid, created_by, name, description, drive_space_id, status, okf_bundle_initialized, knowledge_mode
             FROM kb_space
             WHERE tenant_id = $1 AND organization_id = $2 AND status = $3 AND okf_bundle_initialized = 1
               AND NOT EXISTS (
@@ -1165,6 +1169,10 @@ fn space_from_row(row: &AnyRow) -> Result<KnowledgeSpace, KnowledgeSpaceStoreErr
     Ok(KnowledgeSpace {
         id: space_from_i64("id", row.try_get("id").map_err(space_sqlx_error)?)?,
         uuid: row.try_get("uuid").map_err(space_sqlx_error)?,
+        created_by: space_from_i64(
+            "created_by",
+            row.try_get("created_by").map_err(space_sqlx_error)?,
+        )?,
         name: row.try_get("name").map_err(space_sqlx_error)?,
         description: row.try_get("description").map_err(space_sqlx_error)?,
         drive_space_id: row.try_get("drive_space_id").map_err(space_sqlx_error)?,

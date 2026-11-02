@@ -306,6 +306,7 @@ impl KnowledgeSpaceStore for UnboundSpaceStore {
         Ok(KnowledgeSpace {
             id: space_id,
             uuid: format!("test-space-{space_id}"),
+            created_by: 0,
             name: format!("Test Space {space_id}"),
             description: None,
             drive_space_id: None,

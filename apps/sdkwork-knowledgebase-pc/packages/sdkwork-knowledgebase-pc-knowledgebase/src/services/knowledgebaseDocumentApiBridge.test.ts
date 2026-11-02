@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   bindKnowledgebaseSessionStore,
   configureKnowledgebaseAppSdk,
+  configureKnowledgebaseDriveAppSdk,
   readLocalDocumentContent,
   setKnowledgebaseApiEnabled,
   type SessionSnapshot,
@@ -11,9 +12,12 @@ import {
 import {
   createDocument,
   getDocumentContent,
+  getDocuments,
   saveDocumentContent,
 } from './knowledgebaseDocumentApiBridge';
+import type { DocumentMeta } from './document';
 import { activateEphemeralFixedKnowledgebaseWorkspace } from '../workspaceMode';
+import { forgetKnowledgeSpaceKnowledgeMode } from './knowledgeSpaceKnowledgeMode';
 
 const EMPTY_SESSION_STORE: SessionStore = createStaticSessionStore({});
 
@@ -95,6 +99,7 @@ function bindTenantContext(tenantId: string): void {
 afterEach(() => {
   bindKnowledgebaseSessionStore(EMPTY_SESSION_STORE);
   setKnowledgebaseApiEnabled(false);
+  forgetKnowledgeSpaceKnowledgeMode();
   Reflect.deleteProperty(globalThis, 'window');
 });
 
@@ -221,6 +226,9 @@ describe('KnowledgebaseDocumentApiBridge.createDocument', () => {
             }),
           },
           spaces: {
+            // The group workspace space is chunk-indexed: the document body is
+            // read through retrieval, which the gateway serves for RAG mode.
+            retrieve: async () => ({ id: '420', knowledgeMode: 'rag' }),
             browser: {
               list: async () => ({
                 spaceId: '420',
@@ -294,8 +302,133 @@ describe('KnowledgebaseDocumentApiBridge.createDocument', () => {
   });
 });
 
-function createStorageSpy(): Storage {
-  return {
+describe('KnowledgebaseDocumentApiBridge.getDocuments', () => {
+  it('lists authored notes that have no drive node next to the drive tree', async () => {
+    const browserList = vi.fn(async () => ({
+      spaceId: '77',
+      parentId: null,
+      view: 'files',
+      pageSize: 100,
+      items: [
+        {
+          id: 'browser-doc-991',
+          nodeType: 'document',
+          name: 'Drive source',
+          path: '/Drive source.md',
+          documentId: '991',
+          mimeType: 'text/markdown',
+          updatedAt: '2026-07-09T00:00:00.000Z',
+          permissions: { canRead: true, canWrite: true, canDelete: true },
+        },
+      ],
+      pageInfo: { mode: 'cursor', hasMore: false, nextCursor: null },
+    }));
+    const documentsList = vi.fn(async () => ({
+      items: [
+        {
+          id: '991',
+          spaceId: '77',
+          title: 'Drive source',
+          mimeType: 'text/markdown',
+          originalFileDriveNodeId: 'drive-991',
+          currentVersionId: 'v-991',
+        },
+        {
+          id: '1200',
+          spaceId: '77',
+          title: '未命名笔记',
+          mimeType: 'text/plain',
+          originalFileDriveNodeId: null,
+          currentVersionId: null,
+        },
+        {
+          id: '1201',
+          spaceId: '77',
+          title: 'Uploaded PDF',
+          mimeType: 'application/pdf',
+          originalFileDriveNodeId: 'drive-1201',
+          currentVersionId: 'v-1201',
+        },
+      ],
+      pageInfo: { mode: 'offset', hasMore: false, nextCursor: null },
+    }));
+
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '77');
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          documents: { list: documentsList },
+          spaces: { browser: { list: browserList } },
+        },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    setKnowledgebaseApiEnabled(true);
+
+    const tree = await getDocuments('77');
+
+    const ids = tree.map((item) => item.id);
+    // The note has no drive node, so the browser tree alone would hide it; it
+    // must still be listed (newest first) exactly once. The drive-backed
+    // document and the upload are not repeated by the notes listing.
+    expect(ids).toEqual(['1200', '991']);
+    const note = tree[0] as DocumentMeta;
+    expect(note.title).toBe('未命名笔记');
+    expect(note.type).toBe('richtext');
+    expect(note.kbId).toBe('77');
+    expect(documentsList).toHaveBeenCalledWith(expect.objectContaining({ spaceId: '77' }));
+  });
+
+  it('keeps the drive tree usable when the notes listing fails', async () => {
+    const browserList = vi.fn(async () => ({
+      spaceId: '78',
+      parentId: null,
+      view: 'files',
+      pageSize: 100,
+      items: [
+        {
+          id: 'browser-doc-992',
+          nodeType: 'document',
+          name: 'Only drive document',
+          path: '/Only drive document.md',
+          documentId: '992',
+          mimeType: 'text/markdown',
+          updatedAt: '2026-07-09T00:00:00.000Z',
+          permissions: { canRead: true, canWrite: true, canDelete: true },
+        },
+      ],
+      pageInfo: { mode: 'cursor', hasMore: false, nextCursor: null },
+    }));
+
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '78');
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          documents: {
+            list: async () => {
+              throw new Error('notes listing unavailable');
+            },
+          },
+          spaces: { browser: { list: browserList } },
+        },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    setKnowledgebaseApiEnabled(true);
+
+    await expect(getDocuments('78')).resolves.toEqual([
+      expect.objectContaining({ id: '992', title: 'Only drive document' }),
+    ]);
+  });
+});
+
+function createStorageSpy(): Storage {  return {
     get length() {
       return 0;
     },
@@ -312,3 +445,223 @@ function expectStorageUnused(storage: Storage): void {
   expect(storage.setItem).not.toHaveBeenCalled();
   expect(storage.removeItem).not.toHaveBeenCalled();
 }
+
+/** Build one Drive content response for a UTF-8 text object. */
+function driveTextContentResponse(text: string): Record<string, unknown> {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return {
+    nodeId: 'drive-okf-700',
+    encoding: 'base64',
+    content: btoa(binary),
+    sizeBytes: String(bytes.byteLength),
+    returnedRangeStart: '0',
+    returnedRangeLength: String(bytes.byteLength),
+    hasMore: false,
+  };
+}
+
+describe('KnowledgebaseDocumentApiBridge content reads honour the space knowledge mode', () => {
+  it('reads an OKF concept body from its Drive file without RAG retrieval', async () => {
+    const retrievalsCreate = vi.fn();
+    const conceptRetrieve = vi.fn(async () => ({
+      title: 'Release Checklist',
+      description: 'Steps that gate a release.',
+      conceptId: 'release-checklist',
+      tags: [],
+    }));
+    const browserList = vi.fn(async () => ({
+      spaceId: '42',
+      parentId: null,
+      view: 'okf_bundle',
+      pageSize: 100,
+      items: [
+        {
+          id: 'drive-okf-700',
+          nodeType: 'okf_concept',
+          name: 'Release Checklist',
+          path: 'okf/release-checklist.md',
+          driveNodeId: 'drive-okf-700',
+          conceptId: '700',
+          mimeType: 'text/markdown',
+          updatedAt: '2026-11-01T00:00:00.000Z',
+          permissions: { canRead: true, canWrite: true, canDelete: true },
+        },
+      ],
+      pageInfo: { mode: 'cursor', hasMore: false, nextCursor: null },
+    }));
+    const driveContentRetrieve = vi.fn(async () =>
+      driveTextContentResponse('# Release Checklist\n\nGate every release on this list.'),
+    );
+
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '42');
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          retrievals: { create: retrievalsCreate },
+          okf: { concepts: { retrieve: conceptRetrieve } },
+          spaces: {
+            retrieve: async () => ({ id: '42', knowledgeMode: 'okf_bundle' }),
+            browser: { list: browserList },
+          },
+        },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    configureKnowledgebaseDriveAppSdk({
+      client: {
+        drive: { nodes: { content: { retrieve: driveContentRetrieve } } },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    setKnowledgebaseApiEnabled(true);
+
+    await expect(getDocumentContent('okf:42:700')).resolves.toBe(
+      '# Release Checklist\n\nGate every release on this list.',
+    );
+    expect(driveContentRetrieve).toHaveBeenCalledWith(
+      'drive-okf-700',
+      expect.objectContaining({ encoding: 'base64' }),
+    );
+    // RAG retrieval is rejected for an OKF-bundle space, so it must never run.
+    expect(retrievalsCreate).not.toHaveBeenCalled();
+  });
+
+  it('reads a text document from Drive instead of retrieval when the space is not RAG', async () => {
+    const retrievalsCreate = vi.fn();
+    const driveContentRetrieve = vi.fn(async () =>
+      driveTextContentResponse('# Drive source body'),
+    );
+
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '42');
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          retrievals: { create: retrievalsCreate },
+          documents: {
+            content: {
+              list: async () => {
+                throw new Error('no authoritative content version');
+              },
+            },
+            retrieve: async () => ({
+              id: '991',
+              spaceId: '42',
+              title: 'Drive source',
+              currentVersionId: 'v-991',
+            }),
+          },
+          spaces: {
+            retrieve: async () => ({ id: '42', knowledgeMode: 'okf_bundle' }),
+            browser: {
+              list: async () => ({
+                spaceId: '42',
+                parentId: null,
+                view: 'files',
+                pageSize: 100,
+                items: [
+                  {
+                    id: 'drive-991',
+                    nodeType: 'document',
+                    name: 'Drive source',
+                    path: 'sources/raw/Drive source.md',
+                    driveNodeId: 'drive-991',
+                    documentId: '991',
+                    mimeType: 'text/markdown',
+                    updatedAt: '2026-11-01T00:00:00.000Z',
+                    permissions: { canRead: true, canWrite: true, canDelete: true },
+                  },
+                ],
+                pageInfo: { mode: 'cursor', hasMore: false, nextCursor: null },
+              }),
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    configureKnowledgebaseDriveAppSdk({
+      client: {
+        drive: { nodes: { content: { retrieve: driveContentRetrieve } } },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    setKnowledgebaseApiEnabled(true);
+
+    await expect(getDocumentContent('991')).resolves.toBe('# Drive source body');
+    expect(retrievalsCreate).not.toHaveBeenCalled();
+  });
+
+  it('keeps reading a RAG space document through retrieval', async () => {
+    const retrievalsCreate = vi.fn(async () => ({
+      hits: [
+        {
+          documentId: '992',
+          title: 'RAG source',
+          content: '# RAG source body',
+        },
+      ],
+    }));
+
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '42');
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          retrievals: { create: retrievalsCreate },
+          documents: {
+            content: {
+              list: async () => {
+                throw new Error('no authoritative content version');
+              },
+            },
+            retrieve: async () => ({
+              id: '992',
+              spaceId: '42',
+              title: 'RAG source',
+              currentVersionId: 'v-1',
+            }),
+          },
+          spaces: {
+            retrieve: async () => ({ id: '42', knowledgeMode: 'rag' }),
+            browser: {
+              list: async () => ({
+                spaceId: '42',
+                parentId: null,
+                view: 'files',
+                pageSize: 100,
+                items: [],
+                pageInfo: { mode: 'cursor', hasMore: false, nextCursor: null },
+              }),
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    setKnowledgebaseApiEnabled(true);
+
+    await expect(getDocumentContent('992')).resolves.toBe('# RAG source body');
+    expect(retrievalsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: 'RAG source',
+        bindings: [expect.objectContaining({ spaceId: '42' })],
+      }),
+    );
+  });
+});

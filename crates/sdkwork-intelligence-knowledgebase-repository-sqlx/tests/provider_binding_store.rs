@@ -39,6 +39,7 @@ async fn provider_binding_lifecycle_is_scoped_versioned_and_atomically_switchabl
             name: "Provider Binding Space".to_string(),
             description: None,
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode:
                 sdkwork_knowledgebase_contract::rag::KnowledgeAgentKnowledgeMode::External,
         })
@@ -161,6 +162,7 @@ async fn provider_binding_rejects_stale_versions_and_cross_implementation_creden
             name: "Provider Concurrency Space".to_string(),
             description: None,
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode:
                 sdkwork_knowledgebase_contract::rag::KnowledgeAgentKnowledgeMode::External,
         })

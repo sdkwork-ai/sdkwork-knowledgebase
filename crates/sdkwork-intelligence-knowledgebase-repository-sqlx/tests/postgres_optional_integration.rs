@@ -172,6 +172,7 @@ async fn postgres_ingest_quota_advisory_lock_is_atomic_when_database_url_configu
             name: format!("postgres quota fixture space {nonce}"),
             description: Some("quota advisory lock probe".to_string()),
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode: KnowledgeAgentKnowledgeMode::default(),
         })
         .await
@@ -446,6 +447,7 @@ async fn postgres_create_space_when_database_url_configured() {
             name: "postgres integration space".to_string(),
             description: Some("created by postgres_optional_integration".to_string()),
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode: KnowledgeAgentKnowledgeMode::OkfBundle,
         })
         .await
@@ -472,6 +474,7 @@ async fn postgres_browser_projection_batches_document_status_when_database_url_c
             name: "postgres browser projection space".to_string(),
             description: Some("created by postgres_optional_integration".to_string()),
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode: KnowledgeAgentKnowledgeMode::default(),
         })
         .await
@@ -554,6 +557,7 @@ async fn postgres_rls_hides_rows_without_session_scope_when_database_url_configu
             name: "RLS fail-closed fixture".to_string(),
             description: None,
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode: KnowledgeAgentKnowledgeMode::default(),
         })
         .await
@@ -654,6 +658,7 @@ async fn postgres_ingest_to_retrieval_round_trip_when_database_url_configured() 
             name: format!("postgres e2e space {nonce}"),
             description: Some("ingest-to-retrieval e2e".to_string()),
             okf_bundle_initialized: false,
+            created_by: 0,
             knowledge_mode: KnowledgeAgentKnowledgeMode::Rag,
         })
         .await

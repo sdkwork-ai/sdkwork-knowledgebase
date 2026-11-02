@@ -43,6 +43,27 @@ import {
   shouldPersistKnowledgebaseWorkspaceState,
   type KnowledgebaseWorkspaceMode,
 } from './workspaceMode';
+import { buildUniqueNoteTitle } from './utils/noteTitle';
+
+/**
+ * Every title currently visible in the space tree. A new note's default title
+ * must not collide with any of them: a note body is saved by title, so two
+ * same-titled notes would write into the same document.
+ */
+function collectDocumentTitles(items: (FolderNode | DocumentMeta)[]): string[] {
+  const titles: string[] = [];
+  const visit = (nodes: (FolderNode | DocumentMeta)[]) => {
+    for (const node of nodes) {
+      if (typeof node.title === 'string') titles.push(node.title);
+      if (node.type === 'folder') {
+        const children = (node as FolderNode).children;
+        if (Array.isArray(children)) visit(children);
+      }
+    }
+  };
+  visit(items);
+  return titles;
+}
 
 export * from './components/ui/toast-manager';
 export * from './services/tabService';
@@ -118,9 +139,19 @@ export function KnowledgeBaseApp({
   );
   const [isDraggingKbs, setIsDraggingKbs] = useState<boolean>(false);
 
-  // Debounced, serialized document persistence: one save per document in flight, pending
-  // content flushed on doc switch and window unload (never a request storm per keystroke).
-  const { handleContentChange } = useKnowledgeBaseDocumentPersistence({
+  // Debounced, serialized document persistence: title and body edits coalesce
+  // behind one debounce, saves serialize per document, failures retry, and a
+  // document switch / tab hide / unmount always flushes the buffer first.
+  const {
+    handleTitleChange: persistTitle,
+    handleContentChange,
+    saveStatus,
+    hasPendingEdits,
+    saveNow,
+    overwriteActive,
+    getPendingEdits,
+    forget: forgetDocumentEdits,
+  } = useKnowledgeBaseDocumentPersistence({
     activeDoc,
     docs,
     loadingDocs,
@@ -128,6 +159,21 @@ export function KnowledgeBaseApp({
     setActiveDoc,
     setDocContent,
   });
+
+  // New-note affordance: the freshly created note's title input takes the
+  // caret once, so the user names it before typing (and avoids two notes
+  // sharing the default title, which would make their saves collide).
+  const [focusTitleDocId, setFocusTitleDocId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isDocLoading || focusTitleDocId === null || activeDoc?.id !== focusTitleDocId) {
+      return undefined;
+    }
+    // The editor has mounted with its content; drop the flag so coming back to
+    // this note later does not steal the caret into the title again.
+    const timer = window.setTimeout(() => setFocusTitleDocId(null), 0);
+    return () => window.clearTimeout(timer);
+  }, [activeDoc?.id, focusTitleDocId, isDocLoading]);
 
   // Request sequence guards: a stale response (older than the latest selection) is
   // discarded so fast doc/KB switching can never render one document under another.
@@ -343,7 +389,15 @@ export function KnowledgeBaseApp({
         if (seq !== docRequestSeqRef.current) {
           return;
         }
-        setDocContent(content);
+        // Buffered edits (a failed or still-queued autosave) win over the
+        // server copy: reopening a dirty document must show what the user typed.
+        const pending = getPendingEdits(doc.id);
+        const pendingTitle = pending?.title;
+        if (pendingTitle !== undefined) {
+          setActiveDoc(prev => (prev && prev.id === doc.id ? { ...prev, title: pendingTitle } : prev));
+          setOpenDocs(prev => prev.map(d => (d.id === doc.id ? { ...d, title: pendingTitle } : d)));
+        }
+        setDocContent(pending?.content ?? content);
         setIsDocLoading(false);
       } catch (error) {
         if (seq !== docRequestSeqRef.current) {
@@ -358,7 +412,7 @@ export function KnowledgeBaseApp({
       setDocContent('');
       setIsDocLoading(false);
     }
-  }, [activeKb, tabCache, t]);
+  }, [activeKb, getPendingEdits, tabCache, t]);
 
   const handleSelectKb = useCallback((kb: KnowledgeBase, preserveState = false) => {
     if (fixedKnowledgeBaseId && kb.id !== fixedKnowledgeBaseId) {
@@ -482,16 +536,13 @@ export function KnowledgeBaseApp({
     setDocContent('');
   }, [activeKb, tabCache]);
 
-  const handleTitleChange = useCallback(async (docId: string, newTitle: string) => {
-    // Capture the previous title up front so a failed rename can revert the
-    // optimistic update instead of leaving UI and server out of sync.
-    const previousTitle = openDocs.find((d) => d.id === docId)?.title
-      ?? docs.find((d) => d.id === docId)?.title;
-    // 1. Update active list/state
+  const handleTitleChange = useCallback((docId: string, newTitle: string) => {
+    // Optimistic rename: the editor, the open tabs, and the file tree all show
+    // the typed title immediately; the shared autosave pipeline persists it
+    // behind the same debounce as the body (one write, not one per keystroke).
     setActiveDoc(prev => (prev && prev.id === docId ? { ...prev, title: newTitle } : prev));
     setOpenDocs(prev => prev.map(d => (d.id === docId ? { ...d, title: newTitle } : d)));
 
-    // 2. Update flat / deep document tree
     setDocs(prev => {
       const updateInTree = (items: any[]): any[] => {
         return items.map(item => {
@@ -507,26 +558,11 @@ export function KnowledgeBaseApp({
       return updateInTree(prev);
     });
 
-    // 3. Persist, with revert + toast on failure (this callback's promise is
-    // fire-and-forget for callers, so a rejection must never go unhandled).
-    try {
-      await DocumentService.updateDocument(docId, { title: newTitle });
-    } catch (error) {
-      toastKnowledgebaseError(error, t);
-      const revertInTree = (items: any[]): any[] => items.map(item => {
-        if (item.id === docId && previousTitle !== undefined) {
-          return { ...item, title: previousTitle };
-        }
-        if (item.type === 'folder' && item.children) {
-          return { ...item, children: revertInTree(item.children) };
-        }
-        return item;
-      });
-      setActiveDoc(prev => (prev && prev.id === docId && previousTitle !== undefined ? { ...prev, title: previousTitle } : prev));
-      setOpenDocs(prev => prev.map(d => (d.id === docId && previousTitle !== undefined ? { ...d, title: previousTitle } : d)));
-      setDocs(revertInTree);
-    }
-  }, [docs, openDocs, t]);
+    // A failed rename keeps the typed title on screen and reports through the
+    // save pill: reverting text under the user's caret is worse than showing a
+    // retry action.
+    persistTitle(docId, newTitle);
+  }, [persistTitle]);
 
   const handleCreateKb = async (gitUrl?: string, gitBranch?: string) => {
     if (isBlank(newKbTitle)) return;
@@ -564,7 +600,13 @@ export function KnowledgeBaseApp({
     if (actionType === 'chat' || actionType === 'chat_file' || actionType === 'chat_dialog') { titleStr = actionType === 'chat_file' ? t('fromChatFile', { defaultValue: '聊天文件' }) : actionType === 'chat_dialog' ? t('fromChatDialog', { defaultValue: '聊天对话' }) : t('chatFile', { defaultValue: '聊天记录' }); docType = 'markdown'; }
     if (actionType === 'personalKb') { titleStr = t('importedPersonalKb'); docType = 'folder'; } // group them in a folder
     if (actionType === 'link') { titleStr = payload?.url || t('webLink'); docType = 'markdown'; }
-    if (actionType === 'note_doc') { titleStr = t('newDoc'); docType = 'richtext'; }
+    if (actionType === 'note_doc') {
+      // Notes are stored as knowledge documents and their body is saved by
+      // title, so the default title must be unique inside the space; shared
+      // titles made every save land on the oldest same-titled document.
+      titleStr = buildUniqueNoteTitle(t('notesUntitled'), collectDocumentTitles(docs));
+      docType = 'richtext';
+    }
     if (actionType === 'note_sheet') { titleStr = t('newSheet', { defaultValue: '表格' }); docType = 'richtext'; }
     if (actionType === 'cloudDrive') { titleStr = t('cloudDrive'); docType = 'folder'; } // import as folder
     if (actionType === 'notesApp') { titleStr = t('notesApp'); docType = 'richtext'; }
@@ -670,6 +712,9 @@ export function KnowledgeBaseApp({
       }
       if (selectableResult) {
         handleSelectDoc(selectableResult);
+        if (actionType === 'note_doc') {
+          setFocusTitleDocId(selectableResult.id);
+        }
       }
       return resultItem;
     } catch (e) {
@@ -785,6 +830,8 @@ export function KnowledgeBaseApp({
                 try {
                   for (const id of selectedDocIds) {
                     await DocumentService.deleteDocument(id);
+                    // The document is gone: drop its buffered autosave edits.
+                    forgetDocumentEdits(id);
                   }
                   if (activeKb) {
                      setLoadingDocs(true);
@@ -841,6 +888,15 @@ export function KnowledgeBaseApp({
             isAIOpen={isAIOpen}
             onToggleAI={() => setIsAIOpen(!isAIOpen)}
             onContentChange={handleContentChange}
+            saveStatus={saveStatus}
+            hasPendingEdits={hasPendingEdits}
+            onSaveNow={() => {
+              void saveNow();
+            }}
+            onOverwriteActive={() => {
+              void overwriteActive();
+            }}
+            autoFocusTitle={focusTitleDocId !== null && focusTitleDocId === activeDoc?.id}
             onUpdateDocs={() => {
               if (activeKb) {
                 const refreshSeq = ++kbRequestSeqRef.current;

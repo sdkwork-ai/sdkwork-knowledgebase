@@ -127,14 +127,25 @@ export function TiptapEditor({
   const isEphemeralFixedWorkspace = workspaceMode === 'ephemeral-fixed';
   const [title, setTitle] = useState(docTitle);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  // The title input is authoritative while the user types. Parent state updates
+  // travel back as `docTitle`; applying a stale prop mid-typing moves the caret
+  // and drops characters ("项目" typed as "目"). Only external changes made
+  // while the input is unfocused (document switch, programmatic rename) are
+  // adopted.
+  const titleFocusedRef = useRef(false);
 
   useEffect(() => {
-    setTitle(docTitle);
+    if (!titleFocusedRef.current) {
+      setTitle(docTitle);
+    }
   }, [docTitle]);
 
   useEffect(() => {
     if (autoFocusTitle) {
+      // A fresh note starts with the default title selected, so typing names it
+      // instead of appending to "Untitled note" (Notion-style new page).
       titleInputRef.current?.focus();
+      titleInputRef.current?.select();
     }
   }, [autoFocusTitle]);
 
@@ -615,6 +626,17 @@ export function TiptapEditor({
               ref={titleInputRef}
               placeholder={t('untitledNote')}
               value={title}
+              onFocus={() => { titleFocusedRef.current = true; }}
+              onBlur={() => {
+                titleFocusedRef.current = false;
+                // A cleared title would persist as an empty document name; the
+                // server keys note bodies by title, so keep a usable fallback.
+                if (!title.trim()) {
+                  const fallback = t('untitledNote');
+                  setTitle(fallback);
+                  onTitleChange?.(fallback);
+                }
+              }}
               onChange={(e) => handleTitleChangeLocal(e.target.value)}
               className="w-full bg-transparent border-none text-3xl font-extrabold tracking-tight text-[var(--color-kb-text-heading)] outline-none focus:outline-none focus:ring-0 p-0 placeholder-zinc-300 dark:placeholder-zinc-700"
             />

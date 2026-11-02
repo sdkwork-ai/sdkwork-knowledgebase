@@ -321,6 +321,9 @@ pub(crate) async fn create_space_with_context(
         .with_drive_context(runtime.tenant_id_str(), runtime.operator_id())
         .with_drive_space_provisioner(runtime.drive_space_provisioner())
         .with_access_control(runtime.access_control())
+        // The authenticated actor owns the space it creates, so it keeps access even if the
+        // Drive ACL projection for the new space is later missing or stale.
+        .with_creator(actor_id)
         .with_wiki_context(
             sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_persistence::WikiPersistenceScope {
                 tenant_id: context.tenant_id,

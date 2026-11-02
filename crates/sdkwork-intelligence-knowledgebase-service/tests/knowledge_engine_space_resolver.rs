@@ -639,6 +639,7 @@ async fn native_space_mode_is_not_overridden_by_provider_binding() {
                 KnowledgeSpace {
                     id: 9,
                     uuid: "space-9".to_string(),
+                    created_by: 0,
                     name: "External Space".to_string(),
                     description: None,
                     drive_space_id: Some("drive-9".to_string()),
@@ -911,6 +912,7 @@ fn external_space(space_id: u64) -> KnowledgeSpace {
     KnowledgeSpace {
         id: space_id,
         uuid: format!("space-{space_id}"),
+        created_by: 0,
         name: "External Mode Space".to_string(),
         description: None,
         drive_space_id: Some(format!("drive-{space_id}")),

@@ -47,6 +47,7 @@ async fn compile_workflow_refreshes_standard_bundle_catalog_and_drive_nodes() {
     let spaces = FixedSpaceStore::new(KnowledgeSpace {
         id: 7,
         uuid: "space-7".to_string(),
+        created_by: 0,
         name: "Workflow Space".to_string(),
         description: None,
         drive_space_id: Some("drv-kb-007".to_string()),
@@ -92,6 +93,7 @@ async fn eval_workflow_refreshes_catalog_after_linting() {
     let spaces = FixedSpaceStore::new(KnowledgeSpace {
         id: 9,
         uuid: "space-9".to_string(),
+        created_by: 0,
         name: "Eval Space".to_string(),
         description: None,
         drive_space_id: Some("drv-kb-009".to_string()),
