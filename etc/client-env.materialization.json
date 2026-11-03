@@ -32,7 +32,15 @@
       "requiredOutputKeys": [
         "VITE_SDKWORK_KNOWLEDGEBASE_APPLICATION_PUBLIC_HTTP_URL",
         "VITE_SDKWORK_KNOWLEDGEBASE_PLATFORM_API_GATEWAY_HTTP_URL"
-      ]
+      ],
+      "accessToken": {
+        "appId": "sdkwork-knowledgebase-pc",
+        "tenantId": "100001",
+        "organizationId": "0",
+        "permissionScope": [
+          "iam:self"
+        ]
+      }
     }
   ],
   "profiles": [

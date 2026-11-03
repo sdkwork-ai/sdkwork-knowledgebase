@@ -7,7 +7,7 @@ Canonical lifecycle assets for `sdkwork-knowledgebase` per `DATABASE_FRAMEWORK_S
 - tablePrefix: `kb_`; SDKWork Web Framework owns and migrates `web_` tables independently in the shared schema.
 - baselineAnchorTable: `kb_space`
 
-## Initialization State
+## Initialization state
 
 The module uses `baselineStrategy: baseline-plus-migrations`:
 
