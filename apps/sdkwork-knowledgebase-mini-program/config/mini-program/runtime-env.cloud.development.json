@@ -1,32 +1,7 @@
 {
+  "SDKWORK_ACCESS_TOKEN": "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWtub3dsZWRnZWJhc2UiLCJhdWQiOiJzZGt3b3JrLWtub3dsZWRnZWJhc2UiLCJkZXBsb3ltZW50X21vZGUiOiJzYWFzIiwiZGVwbG95bWVudF9wcm9maWxlIjoiY2xvdWQiLCJlbnZpcm9ubWVudCI6ImRldmVsb3BtZW50IiwiZXhwIjo0MTAyNDQ0ODAwLCJpYXQiOjE3NjcyMjU2MDAsImlzcyI6InNka3dvcmstaWFtLXB1YmxpYyIsImxvZ2luX3Njb3BlIjoiVEVOQU5UIiwib3JnYW5pemF0aW9uX2lkIjoiMCIsInBlcm1pc3Npb25fc2NvcGUiOlsiaWFtOnNlbGYiXSwicnVudGltZV90YXJnZXQiOiJtaW5pLXByb2dyYW0iLCJzZXNzaW9uX2lkIjoiYm9vdHN0cmFwLXB1YmxpYy1zZGt3b3JrLWtub3dsZWRnZWJhc2UtY2xvdWQuZGV2ZWxvcG1lbnQiLCJ0ZW5hbnRfaWQiOiIxMDAwMDEiLCJ0b2tlbl9jbGFzcyI6ImFwcGxpY2F0aW9uIiwidG9rZW5fdHlwZSI6ImFjY2VzcyIsInRva2VuX3ZlcnNpb24iOjEsInVzZXJfaWQiOiIwIn0.public",
   "SDKWORK_DEPLOYMENT_PROFILE": "cloud",
   "SDKWORK_ENVIRONMENT": "development",
   "SDKWORK_PROFILE_ID": "cloud.development",
-  "SDKWORK_RUNTIME_TARGET": "mini-program",
-  "SDKWORK_KNOWLEDGEBASE_MP_APP_API_BASE_URL": "https://api-dev.sdkwork.com/app/v3/api",
-  "SDKWORK_KNOWLEDGEBASE_MP_APPLICATION_PUBLIC_HTTP_URL": "https://api-dev.sdkwork.com",
-  "SDKWORK_KNOWLEDGEBASE_MP_DEPLOYMENT_PROFILE": "cloud",
-  "SDKWORK_KNOWLEDGEBASE_MP_ENVIRONMENT": "development",
-  "SDKWORK_KNOWLEDGEBASE_MP_PROFILE_ID": "cloud.development",
-  "SDKWORK_KNOWLEDGEBASE_MP_RUNTIME_TARGET": "mini-program",
-  "SDKWORK_KNOWLEDGEBASE_MP_PLATFORM": "MP_WEIXIN",
-  "SDKWORK_KNOWLEDGEBASE_MP_CLOUD_API_BASE_URLS": [
-    "https://api-dev.sdkwork.com",
-    "https://api-dev.birdcoder.com",
-    "https://api-dev.dtupay.com",
-    "https://api-dev.noaper.com",
-    "https://api-dev.sdkwork.cn",
-    "https://api-dev.birdcoder.cn",
-    "https://api-dev.dtupay.cn",
-    "https://api-dev.noaper.cn",
-    "https://api-dev.skubc.com",
-    "https://api-dev.skubc.cn",
-    "https://api-dev.zowalk.com",
-    "https://api-dev.zowalk.cn",
-    "https://api-dev.offer86.com",
-    "https://api-dev.offer86.cn",
-    "https://api-dev.86offer.com",
-    "https://api-dev.86offer.cn"
-  ],
-  "SDKWORK_ACCESS_TOKEN": "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWtub3dsZWRnZWJhc2UiLCJhdWQiOiJzZGt3b3JrLWtub3dsZWRnZWJhc2UiLCJkZXBsb3ltZW50X21vZGUiOiJzYWFzIiwiZGVwbG95bWVudF9wcm9maWxlIjoiY2xvdWQiLCJlbnZpcm9ubWVudCI6ImRldmVsb3BtZW50IiwiZXhwIjo0MTAyNDQ0ODAwLCJpYXQiOjE3NjcyMjU2MDAsImlzcyI6InNka3dvcmstaWFtLXB1YmxpYyIsImxvZ2luX3Njb3BlIjoiVEVOQU5UIiwib3JnYW5pemF0aW9uX2lkIjoiMCIsInBlcm1pc3Npb25fc2NvcGUiOlsiaWFtOnNlbGYiLCJrbm93bGVkZ2UuKiJdLCJydW50aW1lX3RhcmdldCI6Im1pbmktcHJvZ3JhbSIsInNlc3Npb25faWQiOiJib290c3RyYXAtcHVibGljLXNka3dvcmsta25vd2xlZGdlYmFzZS1jbG91ZC5kZXZlbG9wbWVudCIsInRlbmFudF9pZCI6IjEwMDAwMSIsInRva2VuX2NsYXNzIjoiYXBwbGljYXRpb24iLCJ0b2tlbl90eXBlIjoiYWNjZXNzIiwidG9rZW5fdmVyc2lvbiI6MSwidXNlcl9pZCI6IjAifQ.public"
+  "SDKWORK_RUNTIME_TARGET": "mini-program"
 }

@@ -41,6 +41,51 @@
           "iam:self"
         ]
       }
+    },
+    {
+      "id": "sdkwork-knowledgebase-flutter-mobile",
+      "root": "apps/sdkwork-knowledgebase-flutter-mobile",
+      "format": "flutter",
+      "runtimeTarget": "flutter-android",
+      "bindings": {},
+      "accessToken": {
+        "appId": "sdkwork-knowledgebase",
+        "tenantId": "100001",
+        "organizationId": "0",
+        "permissionScope": [
+          "iam:self"
+        ]
+      }
+    },
+    {
+      "id": "sdkwork-knowledgebase-mini-program",
+      "root": "apps/sdkwork-knowledgebase-mini-program",
+      "format": "mini-program",
+      "runtimeTarget": "mini-program",
+      "bindings": {},
+      "accessToken": {
+        "appId": "sdkwork-knowledgebase",
+        "tenantId": "100001",
+        "organizationId": "0",
+        "permissionScope": [
+          "iam:self"
+        ]
+      }
+    },
+    {
+      "id": "sdkwork-knowledgebase-h5",
+      "root": "apps/sdkwork-knowledgebase-h5",
+      "format": "vite",
+      "runtimeTarget": "browser",
+      "bindings": {},
+      "accessToken": {
+        "appId": "sdkwork-knowledgebase-h5",
+        "tenantId": "100001",
+        "organizationId": "0",
+        "permissionScope": [
+          "iam:self"
+        ]
+      }
     }
   ],
   "profiles": [
