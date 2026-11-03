@@ -1,31 +1,7 @@
 {
+  "SDKWORK_ACCESS_TOKEN": "eyJhbGciOiJub25lIiwia2lkIjoicHVibGljLWFwcC10b2tlbiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJzZGt3b3JrLWtub3dsZWRnZWJhc2UiLCJhdWQiOiJzZGt3b3JrLWtub3dsZWRnZWJhc2UiLCJkZXBsb3ltZW50X21vZGUiOiJzYWFzIiwiZGVwbG95bWVudF9wcm9maWxlIjoiY2xvdWQiLCJlbnZpcm9ubWVudCI6InRlc3QiLCJleHAiOjQxMDI0NDQ4MDAsImlhdCI6MTc2NzIyNTYwMCwiaXNzIjoic2Rrd29yay1pYW0tcHVibGljIiwibG9naW5fc2NvcGUiOiJURU5BTlQiLCJvcmdhbml6YXRpb25faWQiOiIwIiwicGVybWlzc2lvbl9zY29wZSI6WyJpYW06c2VsZiJdLCJydW50aW1lX3RhcmdldCI6Im1pbmktcHJvZ3JhbSIsInNlc3Npb25faWQiOiJib290c3RyYXAtcHVibGljLXNka3dvcmsta25vd2xlZGdlYmFzZS1jbG91ZC50ZXN0IiwidGVuYW50X2lkIjoiMTAwMDAxIiwidG9rZW5fY2xhc3MiOiJhcHBsaWNhdGlvbiIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJ0b2tlbl92ZXJzaW9uIjoxLCJ1c2VyX2lkIjoiMCJ9.public",
   "SDKWORK_DEPLOYMENT_PROFILE": "cloud",
   "SDKWORK_ENVIRONMENT": "test",
   "SDKWORK_PROFILE_ID": "cloud.test",
-  "SDKWORK_RUNTIME_TARGET": "mini-program",
-  "SDKWORK_KNOWLEDGEBASE_MP_APP_API_BASE_URL": "https://api-test.sdkwork.com/app/v3/api",
-  "SDKWORK_KNOWLEDGEBASE_MP_APPLICATION_PUBLIC_HTTP_URL": "https://api-test.sdkwork.com",
-  "SDKWORK_KNOWLEDGEBASE_MP_DEPLOYMENT_PROFILE": "cloud",
-  "SDKWORK_KNOWLEDGEBASE_MP_ENVIRONMENT": "test",
-  "SDKWORK_KNOWLEDGEBASE_MP_PROFILE_ID": "cloud.test",
-  "SDKWORK_KNOWLEDGEBASE_MP_RUNTIME_TARGET": "mini-program",
-  "SDKWORK_KNOWLEDGEBASE_MP_PLATFORM": "MP_WEIXIN",
-  "SDKWORK_KNOWLEDGEBASE_MP_CLOUD_API_BASE_URLS": [
-    "https://api-test.sdkwork.com",
-    "https://api-test.birdcoder.com",
-    "https://api-test.dtupay.com",
-    "https://api-test.noaper.com",
-    "https://api-test.sdkwork.cn",
-    "https://api-test.birdcoder.cn",
-    "https://api-test.dtupay.cn",
-    "https://api-test.noaper.cn",
-    "https://api-test.skubc.com",
-    "https://api-test.skubc.cn",
-    "https://api-test.zowalk.com",
-    "https://api-test.zowalk.cn",
-    "https://api-test.offer86.com",
-    "https://api-test.offer86.cn",
-    "https://api-test.86offer.com",
-    "https://api-test.86offer.cn"
-  ]
+  "SDKWORK_RUNTIME_TARGET": "mini-program"
 }
