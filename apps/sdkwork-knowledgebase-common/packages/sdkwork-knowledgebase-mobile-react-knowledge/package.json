@@ -23,6 +23,8 @@
     "react-router": ">=7.0.0"
   },
   "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "tsx": "catalog:"
   }
 }
