@@ -86,16 +86,32 @@
           "iam:self"
         ]
       }
+    },
+    {
+      "id": "sdkwork-knowledgebase-harmony-mobile",
+      "root": "apps/sdkwork-knowledgebase-harmony-mobile",
+      "format": "harmony-native",
+      "runtimeTarget": "harmony-native",
+      "accessToken": {
+        "appId": "sdkwork-knowledgebase",
+        "tenantId": "100001",
+        "organizationId": "0",
+        "permissionScope": [
+          "iam:self"
+        ]
+      }
     }
   ],
   "profiles": [
     "standalone.development",
     "standalone.test",
     "standalone.staging",
+    "standalone.demo",
     "standalone.production",
     "cloud.development",
     "cloud.test",
     "cloud.staging",
+    "cloud.demo",
     "cloud.production"
   ]
 }
