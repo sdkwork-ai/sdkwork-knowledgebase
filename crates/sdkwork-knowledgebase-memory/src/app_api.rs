@@ -17,6 +17,7 @@ use sdkwork_knowledgebase_contract::rag::KnowledgeMemoryContextFragment;
 use sdkwork_memory_app_sdk_generated_rust::models::MemoryRecord;
 use sdkwork_memory_app_sdk_generated_rust::SdkworkMemoryAppClient;
 use sdkwork_utils_rust::is_blank;
+use sdkwork_utils_rust::service_base_url::{registry_base_url_or, report_registry_result};
 
 /// Default per-turn memory retrieval deadline.
 pub const DEFAULT_MEMORY_TIMEOUT: Duration = Duration::from_secs(8);
@@ -78,7 +79,9 @@ impl KnowledgeMemoryContextProvider for MemoryAppApiContextProvider {
                 )
             })?;
 
-        let client = SdkworkMemoryAppClient::new_with_base_url(self.base_url.clone())
+        // DISCOVERY_SPEC §12.1: registry-first, configured topology as fallback.
+        let base_url = registry_base_url_or("sdkwork-memory", &self.base_url);
+        let client = SdkworkMemoryAppClient::new_with_base_url(base_url.clone())
             .map_err(|error| KnowledgeMemoryContextProviderError::Internal(error.to_string()))?;
         client.set_auth_token(auth_token);
         if let Some(access_token) = request
@@ -90,7 +93,7 @@ impl KnowledgeMemoryContextProvider for MemoryAppApiContextProvider {
             client.set_access_token(access_token);
         }
 
-        let response = tokio::time::timeout(
+        let call = tokio::time::timeout(
             self.timeout,
             client.memory().retrievals_create(
                 &sdkwork_memory_app_sdk_generated_rust::models::MemoryRetrievalRequest {
@@ -119,14 +122,21 @@ impl KnowledgeMemoryContextProvider for MemoryAppApiContextProvider {
                 ),
             ),
         )
-        .await
-        .map_err(|_| {
-            KnowledgeMemoryContextProviderError::Upstream(format!(
-                "memory query did not complete within {} ms",
-                self.timeout.as_millis()
-            ))
-        })?
-        .map_err(|error| KnowledgeMemoryContextProviderError::Upstream(error.to_string()))?;
+        .await;
+        report_registry_result(
+            "sdkwork-memory",
+            &base_url,
+            matches!(&call, Ok(Ok(_))),
+            "knowledgebase memory retrieval failed",
+        );
+        let response = call
+            .map_err(|_| {
+                KnowledgeMemoryContextProviderError::Upstream(format!(
+                    "memory query did not complete within {} ms",
+                    self.timeout.as_millis()
+                ))
+            })?
+            .map_err(|error| KnowledgeMemoryContextProviderError::Upstream(error.to_string()))?;
 
         Ok(map_retrieval_result(response, &request))
     }

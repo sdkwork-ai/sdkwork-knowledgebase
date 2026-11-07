@@ -1,4 +1,5 @@
 use sdkwork_utils_rust::is_blank;
+use sdkwork_utils_rust::service_base_url::registry_base_url_or;
 use std::sync::Arc;
 
 use crate::async_bridge::block_on_async;
@@ -45,9 +46,15 @@ pub fn is_rig_model_provider(model_provider_id: &str) -> bool {
 }
 
 pub fn resolve_cloud_router_client_from_env() -> Result<SdkworkAiClient, String> {
-    let base_url = std::env::var(CLOUDROUTER_OPEN_HTTP_URL_ENV).map_err(|_| {
-        format!("{CLOUDROUTER_OPEN_HTTP_URL_ENV} must be set for Rig cloud-router LLM access")
-    })?;
+    let configured = std::env::var(CLOUDROUTER_OPEN_HTTP_URL_ENV).unwrap_or_default();
+    // DISCOVERY_SPEC §12.1: registry-first, configured topology as fallback.
+    let base_url = registry_base_url_or("cloudrouter", &configured);
+    if base_url.is_empty() {
+        return Err(format!(
+            "{CLOUDROUTER_OPEN_HTTP_URL_ENV} must be set for Rig cloud-router LLM access, \
+             or the HTTP service registry must have a healthy cloudrouter instance"
+        ));
+    }
     let client = SdkworkAiClient::new_with_base_url(base_url).map_err(map_sdk_error)?;
 
     if let Ok(api_key) = std::env::var("SDKWORK_CLOUDROUTER_API_KEY") {

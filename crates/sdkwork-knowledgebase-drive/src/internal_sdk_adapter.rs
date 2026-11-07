@@ -12,6 +12,7 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_drive_sour
     ResolveKnowledgeWikiSourceRequest, KNOWLEDGEBASE_RAW_CONSUMER_KIND, MAX_WIKI_SOURCE_READ_BYTES,
     ROOT_SCOPE_SUBSCRIPTION_TYPE,
 };
+use sdkwork_utils_rust::service_base_url::registry_base_url_or;
 use sdkwork_utils_rust::{hmac_sha256, is_blank, sha256_hash};
 
 const MIN_EVENT_CHANNEL_TTL_SECONDS: u64 = 3_600;
@@ -66,6 +67,9 @@ impl KnowledgebaseDriveInternalSdkAdapter {
                 "Drive Internal API ingress token is invalid".to_string(),
             ));
         }
+        // DISCOVERY_SPEC §12.1: registry-first base URL, configured topology as
+        // the degradation fallback.
+        let base_url = registry_base_url_or("sdkwork-drive", &base_url);
         let client = SdkworkCustomClient::new_with_base_url(base_url).map_err(map_sdk_error)?;
         client.set_api_key(&ingress_token);
         Ok(Self::new(client))
