@@ -437,7 +437,7 @@ impl KnowledgeOutboxStore for PostgresKnowledgeOutboxStore {
                 claim_owner = NULL,
                 claim_token = NULL,
                 retry_count = retry_count + 1,
-                next_attempt_at = $9,
+                next_attempt_at = CAST($9 AS TIMESTAMPTZ),
                 version = version + 1
             WHERE tenant_id = $3 AND organization_id = $4 AND id = $5 AND status = $6
               AND claim_owner = $7 AND claim_token = $8

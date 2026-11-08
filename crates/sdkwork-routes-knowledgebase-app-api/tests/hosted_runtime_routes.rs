@@ -6096,7 +6096,7 @@ async fn insert_okf_revision_fixture(pool: &sqlx::AnyPool, concept_row_id: u64, 
             markdown_object_ref_id, content_hash, review_state, status,
             created_at, updated_at, version
         )
-        VALUES ($1, $2, 1, $3, $4, $1, $5, 'approved', 1, $6, $6, 0)
+        VALUES ($1, $2, 1, $3, $4, $1, $5, 'approved', 1, CAST($6 AS TIMESTAMPTZ), CAST($6 AS TIMESTAMPTZ), 0)
         "#,
     )
     .bind(id)

@@ -271,7 +271,7 @@ async fn seed_group_binding(runtime: &KnowledgebaseRuntime, space_id: u64) {
             group_name, lifecycle_state, acl_projection_state,
             provisioning_idempotency_key_sha256_hex, membership_epoch,
             created_by, updated_by, created_at, updated_at, version
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CAST($15 AS TIMESTAMPTZ), CAST($16 AS TIMESTAMPTZ), $17)
         "#,
     )
     .bind(binding_id)
@@ -306,7 +306,7 @@ async fn seed_group_binding(runtime: &KnowledgebaseRuntime, space_id: u64) {
                 id, uuid, tenant_id, organization_id, binding_id, principal_kind, actor_id,
                 member_role, access_level, membership_epoch, status, created_at, updated_at,
                 version
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CAST($12 AS TIMESTAMPTZ), CAST($13 AS TIMESTAMPTZ), $14)
             "#,
         )
         .bind(binding_id + offset)
