@@ -10,120 +10,37 @@
   },
   "status": "ok",
   "mode": "apply",
-  "hasChanges": true,
+  "hasChanges": false,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "f27d84a27588a9479a8a8b73cdb9db0f7eaf6f4bc7e01f4f14ccd97e899ef5c6",
+  "changeFingerprint": "094d7f8730e1b8b2eb6d6f3c1fc002645895f601f70e9f6fdf7555813563f850",
   "changeImpact": {
     "schemaVersion": 1,
-    "areas": [
-      "build-metadata"
-    ],
-    "details": [
-      {
-        "area": "build-metadata",
-        "paths": [
-          "Cargo.toml"
-        ]
-      }
-    ],
-    "requiresVerification": true,
-    "summary": "Detected impact areas: build-metadata. Verification is required."
+    "areas": [],
+    "details": [],
+    "requiresVerification": false,
+    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
-    "nextAction": "verify",
+    "riskLevel": "low",
+    "nextAction": "skip",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "Changes have been applied. Run the required verification plan now.",
+    "summary": "No actionable changes were detected. No apply or verification step is required.",
     "reasons": [
-      "verification-required"
+      "no-actionable-changes"
     ]
   },
   "executionHandoff": {
     "schemaVersion": 1,
-    "summary": "Run the required verification commands now.",
-    "steps": [
-      {
-        "id": "verify-check",
-        "title": "Unified package check",
-        "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: build-metadata.",
-        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-backend-sdk\\sdkwork-knowledgebase-backend-sdk-rust\\generated\\server-openapi",
-        "command": "node",
-        "args": [
-          "./bin/publish-core.mjs",
-          "--language",
-          "rust",
-          "--project-dir",
-          ".",
-          "--action",
-          "check"
-        ],
-        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
-      },
-      {
-        "id": "verify-build",
-        "title": "Unified package build",
-        "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: build-metadata.",
-        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-backend-sdk\\sdkwork-knowledgebase-backend-sdk-rust\\generated\\server-openapi",
-        "command": "node",
-        "args": [
-          "./bin/publish-core.mjs",
-          "--language",
-          "rust",
-          "--project-dir",
-          ".",
-          "--action",
-          "build"
-        ],
-        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
-      }
-    ]
+    "summary": "No further commands are required.",
+    "steps": []
   },
   "verificationPlan": {
-    "shouldRun": true,
-    "runPhase": "now",
-    "summary": "Detected impact areas: build-metadata. Verification is required. Run the required verification commands now against the generated SDK output.",
-    "steps": [
-      {
-        "id": "check",
-        "title": "Unified package check",
-        "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: build-metadata.",
-        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-backend-sdk\\sdkwork-knowledgebase-backend-sdk-rust\\generated\\server-openapi",
-        "command": "node",
-        "args": [
-          "./bin/publish-core.mjs",
-          "--language",
-          "rust",
-          "--project-dir",
-          ".",
-          "--action",
-          "check"
-        ],
-        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
-      },
-      {
-        "id": "build",
-        "title": "Unified package build",
-        "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: build-metadata.",
-        "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-backend-sdk\\sdkwork-knowledgebase-backend-sdk-rust\\generated\\server-openapi",
-        "command": "node",
-        "args": [
-          "./bin/publish-core.mjs",
-          "--language",
-          "rust",
-          "--project-dir",
-          ".",
-          "--action",
-          "build"
-        ],
-        "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
-      }
-    ]
+    "shouldRun": false,
+    "runPhase": "skip",
+    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
+    "steps": []
   },
   "sdk": {
     "name": "sdkwork-knowledgebase-backend-sdk",
@@ -139,30 +56,29 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 166,
-    "models": 147,
+    "totalFiles": 172,
+    "models": 153,
     "apis": 1,
-    "types": 149
+    "types": 155
   },
   "warnings": [],
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 1,
+    "writtenFiles": 0,
     "skippedScaffoldFiles": 1,
-    "skippedUnchangedGeneratedFiles": 164,
+    "skippedUnchangedGeneratedFiles": 171,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "f27d84a27588a9479a8a8b73cdb9db0f7eaf6f4bc7e01f4f14ccd97e899ef5c6",
+    "changeFingerprint": "094d7f8730e1b8b2eb6d6f3c1fc002645895f601f70e9f6fdf7555813563f850",
     "changes": {
       "createdGeneratedFiles": [],
-      "updatedGeneratedFiles": [
-        "Cargo.toml"
-      ],
+      "updatedGeneratedFiles": [],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
+        "Cargo.toml",
         "CHANGELOG.md",
         "LICENSE",
         "README.md",
@@ -180,6 +96,10 @@
         "src/models/common.rs",
         "src/models/compliance_audit_events_anonymize_actor_create_response201.rs",
         "src/models/compliance_audit_events_export_create_response201.rs",
+        "src/models/compliance_audit_legal_holds_create_response201.rs",
+        "src/models/compliance_audit_legal_holds_list_response.rs",
+        "src/models/compliance_audit_legal_holds_release_create_response201.rs",
+        "src/models/create_knowledge_audit_legal_hold_request.rs",
         "src/models/create_knowledge_document_request.rs",
         "src/models/create_knowledge_document_version_request.rs",
         "src/models/create_knowledge_engine_provider_binding_request.rs",
@@ -203,6 +123,8 @@
         "src/models/knowledge_agent_profile.rs",
         "src/models/knowledge_audit_event_export.rs",
         "src/models/knowledge_audit_event_item.rs",
+        "src/models/knowledge_audit_legal_hold_item.rs",
+        "src/models/knowledge_audit_legal_hold_release_command.rs",
         "src/models/knowledge_citation.rs",
         "src/models/knowledge_context_fragment.rs",
         "src/models/knowledge_context_pack_request.rs",
@@ -334,72 +256,26 @@
     },
     "impact": {
       "schemaVersion": 1,
-      "areas": [
-        "build-metadata"
-      ],
-      "details": [
-        {
-          "area": "build-metadata",
-          "paths": [
-            "Cargo.toml"
-          ]
-        }
-      ],
-      "requiresVerification": true,
-      "summary": "Detected impact areas: build-metadata. Verification is required."
+      "areas": [],
+      "details": [],
+      "requiresVerification": false,
+      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
     },
     "verificationPlan": {
-      "shouldRun": true,
-      "runPhase": "now",
-      "summary": "Detected impact areas: build-metadata. Verification is required. Run the required verification commands now against the generated SDK output.",
-      "steps": [
-        {
-          "id": "check",
-          "title": "Unified package check",
-          "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: build-metadata.",
-          "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-backend-sdk\\sdkwork-knowledgebase-backend-sdk-rust\\generated\\server-openapi",
-          "command": "node",
-          "args": [
-            "./bin/publish-core.mjs",
-            "--language",
-            "rust",
-            "--project-dir",
-            ".",
-            "--action",
-            "check"
-          ],
-          "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action check"
-        },
-        {
-          "id": "build",
-          "title": "Unified package build",
-          "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: build-metadata.",
-          "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-backend-sdk\\sdkwork-knowledgebase-backend-sdk-rust\\generated\\server-openapi",
-          "command": "node",
-          "args": [
-            "./bin/publish-core.mjs",
-            "--language",
-            "rust",
-            "--project-dir",
-            ".",
-            "--action",
-            "build"
-          ],
-          "displayCommand": "node ./bin/publish-core.mjs --language rust --project-dir . --action build"
-        }
-      ]
+      "shouldRun": false,
+      "runPhase": "skip",
+      "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
+      "steps": []
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
-      "nextAction": "verify",
+      "riskLevel": "low",
+      "nextAction": "skip",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
-      "summary": "Changes have been applied. Run the required verification plan now.",
+      "summary": "No actionable changes were detected. No apply or verification step is required.",
       "reasons": [
-        "verification-required"
+        "no-actionable-changes"
       ]
     },
     "backedUpFiles": [],

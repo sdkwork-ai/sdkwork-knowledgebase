@@ -1,7 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APP_API_PERMISSION_BY_OPERATION } from '../scripts/patch-app-route-permissions.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(scriptDir, '..');
@@ -19,8 +18,14 @@ const targets = [
     dataScope: 'organization',
   },
   {
+    // First-party app-api is a consumer surface (tier 0-2). PERMISSION_STANDARD_SPEC
+    // §Surface Authorization Tiers forbids per-route RBAC scopes here: the shared
+    // framework policy deliberately never blocks app-api, and space/document access is
+    // enforced by the service layer's ownership/ACL checks. Any `x-sdkwork-permission`
+    // or `x-sdkwork-auth-tier` on this surface is stale metadata that misleads SDK
+    // consumers, so this target strips both unconditionally.
     relativePath: 'sdks/sdkwork-knowledgebase-app-sdk/openapi/knowledgebase-app-api.openapi.json',
-    permissionByOperation: APP_API_PERMISSION_BY_OPERATION,
+    stripConsumerAuthorization: true,
     tenantScope: 'tenant',
     dataScope: 'organization',
   },
@@ -33,7 +38,7 @@ function isProtectedOperation(operation) {
   return Array.isArray(security) && security.length > 0;
 }
 
-function applyPermissions(document, { permission, permissionByOperation, auditEvent, tenantScope, dataScope }) {
+function applyPermissions(document, target) {
   let changed = false;
 
   for (const pathItem of Object.values(document.paths ?? {})) {
@@ -46,49 +51,32 @@ function applyPermissions(document, { permission, permissionByOperation, auditEv
         continue;
       }
 
-      if (permissionByOperation) {
-        // Read operations are tenant-scoped authenticated reads without an
-        // RBAC permission requirement (same contract as other IM embedded
-        // dependency surfaces).
-        if (method === 'get') {
-          if ('x-sdkwork-permission' in operation) {
-            delete operation['x-sdkwork-permission'];
-            changed = true;
-          }
-        } else {
-          const operationPermission = permissionByOperation[operation.operationId];
-          if (operationPermission === null) {
-            // `null` marks an operation any authenticated principal may call:
-            // dual-token authenticated, no RBAC permission requirement.
-            if ('x-sdkwork-permission' in operation) {
-              delete operation['x-sdkwork-permission'];
-              changed = true;
-            }
-          } else if (!operationPermission) {
-            throw new Error(
-              `missing app-api permission mapping for operation ${operation.operationId}`,
-            );
-          } else if (operation['x-sdkwork-permission'] !== operationPermission) {
-            operation['x-sdkwork-permission'] = operationPermission;
-            changed = true;
-          }
+      if (target.stripConsumerAuthorization) {
+        if ('x-sdkwork-permission' in operation) {
+          delete operation['x-sdkwork-permission'];
+          changed = true;
+        }
+        if ('x-sdkwork-auth-tier' in operation) {
+          delete operation['x-sdkwork-auth-tier'];
+          changed = true;
         }
       } else {
-        if (operation['x-sdkwork-permission'] !== permission) {
-          operation['x-sdkwork-permission'] = permission;
+        if (operation['x-sdkwork-permission'] !== target.permission) {
+          operation['x-sdkwork-permission'] = target.permission;
+          changed = true;
+        }
+        if (target.auditEvent && operation['x-sdkwork-audit-event'] !== target.auditEvent) {
+          operation['x-sdkwork-audit-event'] = target.auditEvent;
           changed = true;
         }
       }
-      if (auditEvent && operation['x-sdkwork-audit-event'] !== auditEvent) {
-        operation['x-sdkwork-audit-event'] = auditEvent;
+
+      if (operation['x-sdkwork-tenant-scope'] !== target.tenantScope) {
+        operation['x-sdkwork-tenant-scope'] = target.tenantScope;
         changed = true;
       }
-      if (operation['x-sdkwork-tenant-scope'] !== tenantScope) {
-        operation['x-sdkwork-tenant-scope'] = tenantScope;
-        changed = true;
-      }
-      if (operation['x-sdkwork-data-scope'] !== dataScope) {
-        operation['x-sdkwork-data-scope'] = dataScope;
+      if (operation['x-sdkwork-data-scope'] !== target.dataScope) {
+        operation['x-sdkwork-data-scope'] = target.dataScope;
         changed = true;
       }
     }

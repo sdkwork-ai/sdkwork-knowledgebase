@@ -512,10 +512,13 @@ impl KnowledgeRetrievalRequest {
         self
     }
 
+    /// Binds the request to the authenticated actor.
+    ///
+    /// The authenticated principal is authoritative: a caller-supplied `actorId` in the
+    /// body MUST NOT be able to attribute a retrieval to another user, so this always
+    /// overwrites the deserialized value (API_SPEC.md §14.1 request-context fields).
     pub fn with_actor_id(mut self, actor_id: Option<u64>) -> Self {
-        if self.actor_id.is_none() {
-            self.actor_id = actor_id;
-        }
+        self.actor_id = actor_id;
         self
     }
 }
@@ -526,10 +529,9 @@ impl KnowledgeContextPackRequest {
         self
     }
 
+    /// Binds the request to the authenticated actor (always overwrites a body value).
     pub fn with_actor_id(mut self, actor_id: Option<u64>) -> Self {
-        if self.actor_id.is_none() {
-            self.actor_id = actor_id;
-        }
+        self.actor_id = actor_id;
         self
     }
 }

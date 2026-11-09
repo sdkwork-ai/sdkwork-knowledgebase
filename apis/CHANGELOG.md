@@ -1,5 +1,34 @@
 # SDKWork Knowledgebase API Changelog
 
+## Pre-release contract alignment (2026-11)
+
+Corrections applied before first launch; no published SDK consumer migration is required.
+
+- **App-api authorization tiers** (PERMISSION_STANDARD_SPEC §Surface Authorization
+  Tiers): app-api is a first-party consumer surface (tier 0–2). All
+  `x-sdkwork-permission` declarations on `/app/v3/api` operations were removed —
+  the Rust route manifest already enforced none, and access is decided by the
+  service layer's space/document ownership and member ACLs. Backend-api keeps
+  `knowledge.platform.manage`; open-api keeps its per-operation OAuth-style scopes.
+- **Open-api scopes are enforced**: `retrievals.create`, `contextPacks.create`, and
+  `ingests.create` now declare their scope in the runtime route manifest, matching
+  the contract (`knowledge.retrievals.write`, `knowledge.context_packs.write`,
+  `knowledge.ingests.write`). API keys must carry the documented scope.
+- **Actor identity is credential-owned**: `actorId` was removed from the
+  `KnowledgeRetrievalRequest`, `KnowledgeContextPackRequest`, and
+  `KnowledgeAgentChatRequest` schemas, and the runtime always overwrites it from the
+  authenticated principal. `OkfConceptUpsertRequest.actor` is likewise no longer
+  advertised; the authenticated actor is authoritative.
+- **Create status alignment**: `documents.versions.create`,
+  `spaces.contextBindings.create`, `agentProfiles.bindings.create`,
+  `agentProfiles.retrievalPreview.create`, `agentProfiles.chat.create`, and
+  `spaces.members.create` return the contract's `201` instead of `200`.
+- **OperationId alignment**: `GET /backend/v3/api/knowledge/group_launch_capability`
+  is `group.launch.list` in the contract, the route manifest, and the runtime.
+- **Rate-limit tiers** use canonical `sdkwork_web_contract::RateLimitTier` values
+  (`auth-critical`, `standard`); the invalid `write-heavy`/`read` values were
+  removed.
+
 ## App API (`/app/v3/api`)
 
 ### 0.1.0 (Phase 0 MVP)
@@ -14,7 +43,7 @@ Initial API surface for the SDKWork Knowledgebase App API.
 
 **Space Members**
 - `GET /app/v3/api/knowledge/spaces/{spaceId}/members` — `spaces.members.list`
-- `POST /app/v3/api/knowledge/spaces/{spaceId}/members` — `spaces.members.members`
+- `POST /app/v3/api/knowledge/spaces/{spaceId}/members` — `spaces.members.create`
 - `DELETE /app/v3/api/knowledge/spaces/{spaceId}/members` — `spaces.members.delete`
 
 **Documents**
@@ -25,7 +54,7 @@ Initial API surface for the SDKWork Knowledgebase App API.
 - `DELETE /app/v3/api/knowledge/documents/{documentId}` — `documents.delete`
 - `GET /app/v3/api/knowledge/documents/{documentId}/content` — `documents.content.list`
 - `GET /app/v3/api/knowledge/documents/{documentId}/versions` — `documents.versions.list`
-- `POST /app/v3/api/knowledge/documents/{documentId}/versions` — `documents.versions.versions`
+- `POST /app/v3/api/knowledge/documents/{documentId}/versions` — `documents.versions.create`
 
 **Ingestion**
 - `POST /app/v3/api/knowledge/ingests` — `ingests.create`
@@ -70,22 +99,18 @@ Clients creating root folders or uploading root files use response `data.parentI
 - `PATCH /app/v3/api/knowledge/agent_profiles/{profileId}` — `agentProfiles.update`
 - `DELETE /app/v3/api/knowledge/agent_profiles/{profileId}` — `agentProfiles.delete`
 - `GET /app/v3/api/knowledge/agent_profiles/{profileId}/bindings` — `agentProfiles.bindings.list`
-- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/bindings` — `agentProfiles.bindings.bindings`
+- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/bindings` — `agentProfiles.bindings.create`
 - `PATCH /app/v3/api/knowledge/agent_profiles/{profileId}/bindings/{bindingId}` — `agentProfiles.bindings.update`
 - `DELETE /app/v3/api/knowledge/agent_profiles/{profileId}/bindings/{bindingId}` — `agentProfiles.bindings.delete`
-- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview` — `agentProfiles.retrievalPreview.retrievalPreview`
-- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/chat` — `agentProfiles.chat.chat`
+- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/retrieval_preview` — `agentProfiles.retrievalPreview.create`
+- `POST /app/v3/api/knowledge/agent_profiles/{profileId}/chat` — `agentProfiles.chat.create`
 
 **Context Bindings**
 - `GET /app/v3/api/knowledge/spaces/{spaceId}/context_bindings` — `spaces.contextBindings.list`
-- `POST /app/v3/api/knowledge/spaces/{spaceId}/context_bindings` — `spaces.contextBindings.contextBindings`
+- `POST /app/v3/api/knowledge/spaces/{spaceId}/context_bindings` — `spaces.contextBindings.create`
 - `GET /app/v3/api/knowledge/context_bindings/{bindingId}` — `contextBindings.retrieve`
 - `PATCH /app/v3/api/knowledge/context_bindings/{bindingId}` — `contextBindings.update`
 - `DELETE /app/v3/api/knowledge/context_bindings/{bindingId}` — `contextBindings.delete`
-
-**Upload Sessions**
-- `POST /app/v3/api/knowledge/upload_sessions` — `uploadSessions.create`
-- `POST /app/v3/api/knowledge/upload_sessions/{sessionId}/complete` — `uploadSessions.complete`
 
 **WeChat Integration**
 - `GET /app/v3/api/knowledge/wechat/official_accounts` — `wechat.officialAccounts.list`
@@ -142,7 +167,7 @@ Corrections applied before first launch; no consumer migration is required.
   in all three surfaces, for both responses and request bodies.
 - **Command envelope** (API_SPEC §15.4): backend lifecycle commands
   (`okf.candidates.approve/reject`, `okf.concepts.publish`,
-  `okf.index.rebuild`, `indexes.rebuild`) return `data.accepted`
+  `okf.bundle.index.rebuild`, `indexes.rebuild`) return `data.accepted`
   (`SdkWorkCommandData`) instead of `data.item`.
 - **Small fixed lists** (`wechat` official accounts/applets/fan tags,
   `agents.bindings.list`) return the list envelope (`data.items` +

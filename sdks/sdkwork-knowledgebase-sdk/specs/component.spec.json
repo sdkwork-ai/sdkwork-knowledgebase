@@ -53,7 +53,7 @@
     ],
     "sdkDependencies": [],
     "sdkClients": [
-      "SdkworkKnowledgebaseClient"
+      "SdkworkKnowledgebaseOpenClient"
     ],
     "events": [],
     "configKeys": [

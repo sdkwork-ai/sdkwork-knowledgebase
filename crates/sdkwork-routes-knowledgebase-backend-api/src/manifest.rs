@@ -233,7 +233,7 @@ pub const ROUTES: &[RouteManifestEntry] = &[
     RouteManifestEntry {
         method: "GET",
         path: "/backend/v3/api/knowledge/group_launch_capability",
-        operation_id: "group.launch.capability",
+        operation_id: "group.launch.list",
     },
     RouteManifestEntry {
         method: "GET",

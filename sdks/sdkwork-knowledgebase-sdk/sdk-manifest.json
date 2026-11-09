@@ -49,7 +49,7 @@
       "version": "0.1.0",
       "description": "Generator-owned TypeScript transport SDK for sdkwork-knowledgebase-open-api.",
       "consumerSurface": {
-        "primaryClient": "SdkworkKnowledgebaseClient",
+        "primaryClient": "SdkworkKnowledgebaseOpenClient",
         "apiPrefix": "/knowledge/v3/api"
       }
     }

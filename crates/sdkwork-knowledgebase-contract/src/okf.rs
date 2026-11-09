@@ -452,6 +452,10 @@ pub struct OkfConceptUpsertRequest {
     pub space_id: u64,
     pub concept_id: String,
     pub markdown: String,
+    /// Optional legacy attribution. The authenticated actor is authoritative; this value
+    /// is only a fallback when the request carries no principal (for example an internal
+    /// operator bootstrap), and clients MUST NOT rely on it to set the audit actor.
+    #[serde(default)]
     pub actor: String,
     pub publish: bool,
 }

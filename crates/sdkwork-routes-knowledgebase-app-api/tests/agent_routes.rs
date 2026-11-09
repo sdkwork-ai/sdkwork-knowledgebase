@@ -47,7 +47,7 @@ async fn agent_profile_routes_call_injected_service() {
         ))
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
     assert_eq!(response_json(binding_response).await["spaceId"], "7");
 
     let list_response = app

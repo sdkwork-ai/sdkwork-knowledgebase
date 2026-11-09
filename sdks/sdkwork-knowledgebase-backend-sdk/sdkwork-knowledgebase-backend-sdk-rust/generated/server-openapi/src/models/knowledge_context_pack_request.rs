@@ -4,10 +4,6 @@ use crate::models::{KnowledgeRetrievalBinding};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct KnowledgeContextPackRequest {
-    #[serde(rename = "actorId")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub actor_id: Option<String>,
-
     pub query: String,
 
     #[serde(rename = "retrievalProfileId")]

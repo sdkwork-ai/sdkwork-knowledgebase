@@ -35,7 +35,7 @@ function op(id, summary, methodExtras) {
     'x-sdkwork-request-context': 'WebRequestContext',
     'x-sdkwork-api-surface': 'app-api',
     'x-sdkwork-source-route-crate': 'sdkwork-routes-knowledgebase-app-api',
-    'x-sdkwork-rate-limit-tier': methodExtras.rateLimit ?? 'read',
+    'x-sdkwork-rate-limit-tier': methodExtras.rateLimit ?? 'standard',
     'x-sdkwork-auth-mode': 'dual-token',
     ...(methodExtras.body
       ? {
@@ -56,7 +56,7 @@ const spec = JSON.parse(await readFile(openapiPath, 'utf8'));
 
 spec.paths['/app/v3/api/knowledge/wechat/official_accounts'] = {
   get: op('wechat.officialAccounts.list', 'List WeChat official accounts', {
-    rateLimit: 'read',
+    rateLimit: 'standard',
     responses: {
       200: {
         description: 'OK',
@@ -69,7 +69,7 @@ spec.paths['/app/v3/api/knowledge/wechat/official_accounts'] = {
     },
   }),
   put: op('wechat.officialAccounts.update', 'Replace WeChat official accounts', {
-    rateLimit: 'write-heavy',
+    rateLimit: 'auth-critical',
     body: 'KnowledgeWechatReplaceOfficialAccountsRequest',
     responses: {
       200: {
@@ -86,7 +86,7 @@ spec.paths['/app/v3/api/knowledge/wechat/official_accounts'] = {
 
 spec.paths['/app/v3/api/knowledge/wechat/applets'] = {
   get: op('wechat.applets.list', 'List WeChat applets', {
-    rateLimit: 'read',
+    rateLimit: 'standard',
     responses: {
       200: {
         description: 'OK',
@@ -99,7 +99,7 @@ spec.paths['/app/v3/api/knowledge/wechat/applets'] = {
     },
   }),
   put: op('wechat.applets.update', 'Replace WeChat applets', {
-    rateLimit: 'write-heavy',
+    rateLimit: 'auth-critical',
     body: 'KnowledgeWechatReplaceAppletsRequest',
     responses: {
       200: {
@@ -116,7 +116,7 @@ spec.paths['/app/v3/api/knowledge/wechat/applets'] = {
 
 spec.paths['/app/v3/api/knowledge/wechat/articles/publish'] = {
   post: op('wechat.articles.publish', 'Publish WeChat articles', {
-    rateLimit: 'write-heavy',
+    rateLimit: 'auth-critical',
     body: 'KnowledgeWechatArticlesPublishRequest',
       responses: {
       200: jsonResponse(commandEnvelope('#/components/schemas/KnowledgeWechatOperationResult')),
@@ -126,7 +126,7 @@ spec.paths['/app/v3/api/knowledge/wechat/articles/publish'] = {
 
 spec.paths['/app/v3/api/knowledge/wechat/articles/preview'] = {
   post: op('wechat.articles.preview', 'Preview WeChat articles', {
-    rateLimit: 'write-heavy',
+    rateLimit: 'auth-critical',
     body: 'KnowledgeWechatArticlesPreviewRequest',
     responses: {
       200: jsonResponse(commandEnvelope('#/components/schemas/KnowledgeWechatOperationResult')),

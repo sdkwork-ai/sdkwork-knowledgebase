@@ -60,7 +60,7 @@
     },
     {
       "path": "src/api/knowledge.ts",
-      "sha256": "d7e909879f328529930ca43ee2cf1cbd99446397b5ac8ea5d344fbcd3fa47e09"
+      "sha256": "168074abe30f83e82f1415e3b1536d673560a783f1112a6d5d8a22be2fe32717"
     },
     {
       "path": "src/api/paths.ts",
@@ -105,6 +105,22 @@
     {
       "path": "src/types/compliance-audit-events-export-create-response201.ts",
       "sha256": "4595273be3affe5e6dcd7018abc79ab6010bb37dcc325a4cb54cb53125bfcecd"
+    },
+    {
+      "path": "src/types/compliance-audit-legal-holds-create-response201.ts",
+      "sha256": "583eeae98e59ffe4546664afb62659e29fd7291ed4402d79066ee0e1ff09d816"
+    },
+    {
+      "path": "src/types/compliance-audit-legal-holds-list-response.ts",
+      "sha256": "afb989164eff6613f77372792349822ecce79a38358cba5e4577f05573627051"
+    },
+    {
+      "path": "src/types/compliance-audit-legal-holds-release-create-response201.ts",
+      "sha256": "de4868475cf8e5eb44e1b131018e64f8fb003c6d8e340b5fb6e6d52e8b921e88"
+    },
+    {
+      "path": "src/types/create-knowledge-audit-legal-hold-request.ts",
+      "sha256": "528e493c552fc459ad6f60055c89e3b7951b1f1edbab321fcdc15289b06213f8"
     },
     {
       "path": "src/types/create-knowledge-document-request.ts",
@@ -152,7 +168,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "7ab18e751a02f72d3a76c33dbc9300c1732dea8e921559c4044f1d46d315bd0f"
+      "sha256": "1ddf0a0e54b0247a0981eb2489baef58498bd72ac002c55df104e8a28168f608"
     },
     {
       "path": "src/types/indexes-create-response201.ts",
@@ -211,6 +227,14 @@
       "sha256": "b1f9f0f69e18485936bb7ca04b24614142e3927f1804f3ad60531939b439f549"
     },
     {
+      "path": "src/types/knowledge-audit-legal-hold-item.ts",
+      "sha256": "5306e26661af50695e5c30cd867eecd3239e3bd8463c67f4d1b84e27124b1c55"
+    },
+    {
+      "path": "src/types/knowledge-audit-legal-hold-release-command.ts",
+      "sha256": "60ff77b42ba4ffb3dd0e404fd15a1f04ca2228cb10209f4b954463c144360049"
+    },
+    {
       "path": "src/types/knowledge-citation.ts",
       "sha256": "5d27dbdd19738dc215ac121c8b144e50af1069b39299767786d8bfa52e8f2379"
     },
@@ -220,7 +244,7 @@
     },
     {
       "path": "src/types/knowledge-context-pack-request.ts",
-      "sha256": "7ed56c554be03537524c7e035e3300eb32d260a7a2ccdc864850092a2b40ef19"
+      "sha256": "d607ff9b3dda00af3239baa503d374ba3a42d258509f1fe50237ecaca520d00e"
     },
     {
       "path": "src/types/knowledge-context-pack.ts",
@@ -372,7 +396,7 @@
     },
     {
       "path": "src/types/knowledge-retrieval-request.ts",
-      "sha256": "d7ba9db7ccc753b524c9b0ab542e4be33f282682039522c7fe98426737919585"
+      "sha256": "08d501d0c8aa44543d3a1d094ed663781ed5b2fc89a6c0130a9a4d135a3d1dc5"
     },
     {
       "path": "src/types/knowledge-retrieval-result.ts",
@@ -472,7 +496,7 @@
     },
     {
       "path": "src/types/okf-bundle-index-rebuild-response.ts",
-      "sha256": "95f62d3d704404ed321d6dfd9985fdb4a8e5a88030d5e05fe1e1b0f25c50471e"
+      "sha256": "1f30c501852b7a618d76f4f175ad6e36086140c90d4517c76d21a967f7f191ee"
     },
     {
       "path": "src/types/okf-candidate-result-list.ts",
@@ -488,7 +512,7 @@
     },
     {
       "path": "src/types/okf-candidates-approve-response.ts",
-      "sha256": "6e574f6edb907dc31cf09c35df365137e48697bee3bfd7494754fdd78187f24f"
+      "sha256": "cf590e283dcd8e6c803e25d9170961c92a27f972aca3477fcd291b3fdda79899"
     },
     {
       "path": "src/types/okf-candidates-list-response.ts",
@@ -496,7 +520,7 @@
     },
     {
       "path": "src/types/okf-candidates-reject-response.ts",
-      "sha256": "e934794aa8554b8d2c33432a516c44e25c0d221f8dfa3054f4dab5564999ac85"
+      "sha256": "51a08f85d79edde29487799c84c754ed9dcfda22ba323f58eb6d25dcd668970f"
     },
     {
       "path": "src/types/okf-compile-job-request.ts",
@@ -520,7 +544,7 @@
     },
     {
       "path": "src/types/okf-concepts-publish-response.ts",
-      "sha256": "6a87f46a0a1434f178f107957067a57391678d0ae48e834b79f13dff3d6ad034"
+      "sha256": "a4fb6ef0cc4540c9966cc16c0ba6ba1443792546e356ebd40ef767e1cb9a1d0f"
     },
     {
       "path": "src/types/okf-context-pack-request.ts",

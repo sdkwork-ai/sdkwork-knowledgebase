@@ -1,8 +1,8 @@
-import type { OkfCandidateResult } from './okf-candidate-result';
+import type { SdkWorkCommandData } from './sdk-work-command-data';
 
 export interface OkfCandidatesRejectResponse {
   code: 0;
-  data: unknown & { item: OkfCandidateResult; };
+  data: unknown & SdkWorkCommandData;
   /** Server-owned request correlation id. */
   traceId: string;
 }

@@ -12,7 +12,7 @@
   "mode": "apply",
   "hasChanges": false,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "092bac3f56ee4a520d51808f304eb2241c8792b6706b92a19c7bcda6b6ad2b7f",
+  "changeFingerprint": "2a4eb720dffe82c9c2bd34d12dd36b7e9ff9a7134df9102f437098379d4dbb97",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [],
@@ -56,10 +56,10 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 190,
-    "models": 166,
+    "totalFiles": 196,
+    "models": 172,
     "apis": 1,
-    "types": 168
+    "types": 174
   },
   "warnings": [],
   "syncSummary": {
@@ -67,10 +67,10 @@
     "controlPlaneEnabled": true,
     "writtenFiles": 0,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 188,
+    "skippedUnchangedGeneratedFiles": 194,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "092bac3f56ee4a520d51808f304eb2241c8792b6706b92a19c7bcda6b6ad2b7f",
+    "changeFingerprint": "2a4eb720dffe82c9c2bd34d12dd36b7e9ff9a7134df9102f437098379d4dbb97",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [],
@@ -99,6 +99,10 @@
         "src/types/common.ts",
         "src/types/compliance-audit-events-anonymize-actor-create-response201.ts",
         "src/types/compliance-audit-events-export-create-response201.ts",
+        "src/types/compliance-audit-legal-holds-create-response201.ts",
+        "src/types/compliance-audit-legal-holds-list-response.ts",
+        "src/types/compliance-audit-legal-holds-release-create-response201.ts",
+        "src/types/create-knowledge-audit-legal-hold-request.ts",
         "src/types/create-knowledge-document-request.ts",
         "src/types/create-knowledge-document-version-request.ts",
         "src/types/create-knowledge-engine-provider-binding-request.ts",
@@ -125,6 +129,8 @@
         "src/types/knowledge-agent-status.ts",
         "src/types/knowledge-audit-event-export.ts",
         "src/types/knowledge-audit-event-item.ts",
+        "src/types/knowledge-audit-legal-hold-item.ts",
+        "src/types/knowledge-audit-legal-hold-release-command.ts",
         "src/types/knowledge-citation.ts",
         "src/types/knowledge-context-fragment.ts",
         "src/types/knowledge-context-pack-request.ts",

@@ -385,6 +385,32 @@ impl PostgresKnowledgeAuditEventStore {
         let organization_id = i64::try_from(self.organization_id).map_err(|_| {
             KnowledgeAuditEventStoreError::InvalidRequest("organization_id".to_string())
         })?;
+        // A legal hold is keyed by the audit event's actor id. Rewriting that id to the
+        // anonymization sentinel would silently unpin every held event, so erasure MUST
+        // fail closed while an active actor-scoped hold covers the subject. Resource-scoped
+        // holds are unaffected: they key on resource_id, which anonymization preserves.
+        let active_actor_holds: i64 = sqlx::query_scalar(
+            r#"
+            SELECT COUNT(*)
+            FROM kb_audit_legal_hold
+            WHERE tenant_id = $1
+              AND organization_id = $2
+              AND subject_type = 'actor'
+              AND subject_id = $3
+              AND status = $4
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(actor_id)
+        .bind(AUDIT_LEGAL_HOLD_ACTIVE_STATUS)
+        .fetch_one(&self.pool)
+        .await?;
+        if active_actor_holds > 0 {
+            return Err(KnowledgeAuditEventStoreError::Conflict(format!(
+                "actor {actor_id} is covered by an active legal hold; release the hold before anonymizing"
+            )));
+        }
         let result = sqlx::query(
             r#"
             UPDATE kb_audit_event

@@ -964,7 +964,7 @@
     {
       "method": "GET",
       "path": "/backend/v3/api/knowledge/group_launch_capability",
-      "operationId": "group.launch.capability",
+      "operationId": "group.launch.list",
       "tags": [
         "knowledge"
       ],

@@ -3,10 +3,11 @@ use sdkwork_database_config::{
 };
 use sdkwork_intelligence_knowledgebase_repository_sqlx::{
     connect_postgres_and_install_schema, is_postgres_database_url, knowledgebase_health_check,
-    CreateKnowledgeAuditLegalHold, KnowledgeAuditEventRecord, PostgresIngestionJobStore,
-    PostgresKnowledgeAuditEventStore, PostgresKnowledgeBrowserProjectionStore,
-    PostgresKnowledgeDocumentStore, PostgresKnowledgeDocumentVersionStore,
-    PostgresKnowledgeDriveObjectRefStore, PostgresKnowledgeSpaceStore,
+    CreateKnowledgeAuditLegalHold, KnowledgeAuditEventRecord, KnowledgeAuditEventStoreError,
+    PostgresIngestionJobStore, PostgresKnowledgeAuditEventStore,
+    PostgresKnowledgeBrowserProjectionStore, PostgresKnowledgeDocumentStore,
+    PostgresKnowledgeDocumentVersionStore, PostgresKnowledgeDriveObjectRefStore,
+    PostgresKnowledgeSpaceStore,
 };
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_browser_projection_store::KnowledgeBrowserProjectionStore;
 use sdkwork_intelligence_knowledgebase_service::ports::knowledge_document_store::{
@@ -368,6 +369,98 @@ async fn postgres_audit_retention_respects_legal_holds_when_database_url_configu
         .execute(&pool)
         .await
         .expect("cleanup probe events");
+    sqlx::query("DELETE FROM kb_audit_legal_hold WHERE id = $1")
+        .bind(hold.hold_id as i64)
+        .execute(&pool)
+        .await
+        .expect("cleanup legal hold");
+}
+
+/// Anonymization MUST fail closed while an active actor-scoped legal hold covers the
+/// subject: rewriting `actor_id` to the redaction sentinel would otherwise unpin every
+/// held event and make it purgeable.
+#[tokio::test]
+async fn postgres_audit_anonymize_refuses_active_legal_hold_when_database_url_configured() {
+    let Some(database_url) = optional_postgres_database_url() else {
+        eprintln!(
+            "skipping postgres audit anonymize legal-hold integration test: set SDKWORK_DATABASE_URL or DATABASE_URL to a postgres URL"
+        );
+        return;
+    };
+
+    let pool = connect_scoped_pool(&database_url, 100_001, 7).await;
+    let store = PostgresKnowledgeAuditEventStore::new(pool.clone(), 100_001, 7);
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock")
+        .as_nanos();
+    let actor = format!("gdpr-held-actor-{nonce}");
+    let request_id = format!("gdpr-held-request-{nonce}");
+
+    store
+        .append_event(KnowledgeAuditEventRecord {
+            id: None,
+            uuid: None,
+            event_type: "probe".to_string(),
+            actor_type: "user".to_string(),
+            actor_id: actor.clone(),
+            resource_type: "space".to_string(),
+            resource_id: None,
+            result: "success".to_string(),
+            request_id: Some(request_id.clone()),
+            trace_id: None,
+            payload: None,
+            created_at: None,
+        })
+        .await
+        .expect("append audit event");
+
+    let hold = store
+        .create_legal_hold(CreateKnowledgeAuditLegalHold {
+            subject_type: "actor".to_string(),
+            subject_id: actor.clone(),
+            reason: "gdpr erasure drill".to_string(),
+            case_reference: Some("CASE-GDPR".to_string()),
+            created_by: "integration-test".to_string(),
+        })
+        .await
+        .expect("create legal hold");
+
+    let error = store
+        .anonymize_actor(&actor)
+        .await
+        .expect_err("anonymization must be refused while a legal hold is active");
+    assert!(
+        matches!(error, KnowledgeAuditEventStoreError::Conflict(_)),
+        "expected Conflict, got {error:?}"
+    );
+
+    let actor_after: (String,) =
+        sqlx::query_as("SELECT actor_id FROM kb_audit_event WHERE request_id = $1")
+            .bind(&request_id)
+            .fetch_one(&pool)
+            .await
+            .expect("audit row must still exist");
+    assert_eq!(
+        actor_after.0, actor,
+        "the held event's actor id must be preserved"
+    );
+
+    store
+        .release_legal_hold(hold.hold_id, "integration-test")
+        .await
+        .expect("release legal hold");
+    let anonymized = store
+        .anonymize_actor(&actor)
+        .await
+        .expect("anonymization succeeds after the hold is released");
+    assert!(anonymized >= 1);
+
+    sqlx::query("DELETE FROM kb_audit_event WHERE request_id = $1")
+        .bind(&request_id)
+        .execute(&pool)
+        .await
+        .expect("cleanup audit event");
     sqlx::query("DELETE FROM kb_audit_legal_hold WHERE id = $1")
         .bind(hold.hold_id as i64)
         .execute(&pool)

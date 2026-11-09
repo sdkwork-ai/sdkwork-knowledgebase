@@ -210,29 +210,33 @@ const appOperations = [
 ];
 
 const backendOperations = [
-  resource('post', '/backend/v3/api/knowledge/okf/candidates/{candidateId}/approve', {
+  command('post', '/backend/v3/api/knowledge/okf/candidates/{candidateId}/approve', {
     operationId: 'okf.candidates.approve',
     status: '200',
-    itemRef: '#/components/schemas/OkfCandidateResult',
+    payloadRef: '#/components/schemas/SdkWorkCommandData',
   }),
-  resource('post', '/backend/v3/api/knowledge/okf/candidates/{candidateId}/reject', {
+  command('post', '/backend/v3/api/knowledge/okf/candidates/{candidateId}/reject', {
     operationId: 'okf.candidates.reject',
     status: '200',
-    itemRef: '#/components/schemas/OkfCandidateResult',
+    payloadRef: '#/components/schemas/SdkWorkCommandData',
   }),
-  resource('post', '/backend/v3/api/knowledge/okf/concepts/{conceptId}/publish', {
+  command('post', '/backend/v3/api/knowledge/okf/concepts/{conceptId}/publish', {
     operationId: 'okf.concepts.publish',
     status: '200',
-    itemRef: '#/components/schemas/OkfConceptSummary',
+    payloadRef: '#/components/schemas/SdkWorkCommandData',
   }),
-  resource('post', '/backend/v3/api/knowledge/okf/index/rebuild', {
+  command('post', '/backend/v3/api/knowledge/okf/index/rebuild', {
     operationId: 'okf.bundle.index.rebuild',
     status: '200',
-    itemRef: '#/components/schemas/OkfIndexDocument',
+    payloadRef: '#/components/schemas/SdkWorkCommandData',
   }),
   resource('get', '/backend/v3/api/knowledge/provider_health', {
     operationId: 'providerHealth.list',
     itemRef: '#/components/schemas/KnowledgeProviderHealth',
+  }),
+  resource('get', '/backend/v3/api/knowledge/group_launch_capability', {
+    operationId: 'group.launch.list',
+    itemRef: '#/components/schemas/GroupKnowledgebaseLaunchCapability',
   }),
   namedList('get', '/backend/v3/api/knowledge/provider_credential_references', {
     operationId: 'providerCredentialReferences.list',
@@ -742,7 +746,8 @@ function registerWikiOperation(spec, method, routePath, options) {
     'x-sdkwork-data-scope': 'organization',
     ...(method !== 'get'
       ? {
-          'x-sdkwork-permission': options.permission,
+          // App-api is tier 0-2: the wiki commands are owner/writer ACL-gated by the
+          // service layer and MUST NOT declare a per-route RBAC permission.
           'x-sdkwork-rate-limit-tier': 'auth-critical',
           'x-sdkwork-idempotent': true,
           'x-sdkwork-audit-event': options.auditEvent,

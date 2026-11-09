@@ -155,7 +155,7 @@
   "adminConsoleLoading": "Loading admin data…",
   "adminConsoleApiUnavailable": "Backend API is not configured for this runtime.",
   "adminConsoleForbiddenTitle": "Admin access required",
-  "adminConsoleForbiddenBody": "Your account needs knowledge.platform.manage or knowledge.* permission.",
+  "adminConsoleForbiddenBody": "Your account needs the knowledge.platform.manage permission.",
   "adminConsoleTenantStatus": "Tenant status",
   "adminConsoleSpaceCount": "Knowledge spaces",
   "adminConsoleDocumentCount": "Documents",

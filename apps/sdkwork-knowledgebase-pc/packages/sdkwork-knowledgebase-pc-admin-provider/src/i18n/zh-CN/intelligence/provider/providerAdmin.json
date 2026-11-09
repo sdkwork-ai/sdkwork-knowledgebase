@@ -4,7 +4,7 @@
   "back": "管理总览",
   "refresh": "刷新",
   "forbiddenTitle": "需要 Provider 管理权限",
-  "forbiddenBody": "此页面需要 knowledge.platform.manage 或 knowledge.* 权限。",
+  "forbiddenBody": "此页面需要 knowledge.platform.manage 权限。",
   "apiUnavailable": "当前运行环境未配置 Backend API。",
   "credentials": "凭据引用",
   "bindings": "Provider 绑定",

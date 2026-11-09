@@ -10,7 +10,5 @@ pub struct OkfConceptUpsertRequest {
 
     pub markdown: String,
 
-    pub actor: String,
-
     pub publish: bool,
 }

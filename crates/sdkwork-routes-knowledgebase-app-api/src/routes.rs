@@ -530,7 +530,7 @@ async fn grant_space_member(
     Json(request): Json<GrantKnowledgeSpaceMemberRequest>,
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
-    command_json(
+    created_command_json(
         state
             .api
             .grant_space_member(context, space_id, request)
@@ -926,7 +926,7 @@ async fn create_document_version(
             "documentId in body must match documentId in path",
         ));
     }
-    ok_json(
+    created_json(
         state
             .api
             .create_document_version(context, document_id, request)
@@ -1265,7 +1265,7 @@ async fn create_agent_profile_binding(
             "profileId in body must match profileId in path",
         ));
     }
-    ok_json(
+    created_json(
         state
             .api
             .create_agent_profile_binding(context, profile_id, request.with_tenant_id(tenant_id))
@@ -1323,7 +1323,7 @@ async fn create_agent_profile_retrieval_preview(
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     let tenant_id = context.tenant_id;
-    ok_json(
+    created_json(
         state
             .api
             .create_agent_profile_retrieval_preview(
@@ -1332,8 +1332,7 @@ async fn create_agent_profile_retrieval_preview(
                 request.with_tenant_id(tenant_id),
             )
             .await,
-    )
-}
+    )}
 
 async fn create_agent_profile_chat(
     State(state): State<AppState>,
@@ -1344,7 +1343,7 @@ async fn create_agent_profile_chat(
 ) -> Result<Response, ApiProblem> {
     let context = require_app_context(context)?;
     let tenant_id = context.tenant_id;
-    ok_json(
+    created_json(
         state
             .api
             .create_agent_chat(
@@ -1419,7 +1418,7 @@ async fn create_space_context_binding(
             "spaceId in body must match spaceId in path",
         ));
     }
-    ok_json(
+    created_json(
         state
             .api
             .create_space_context_binding(context, space_id, request)
@@ -1527,13 +1526,14 @@ where
         .map_err(ApiProblem::from)
 }
 
-fn command_json(
+/// Command response that creates an addressable resource (`201` + `SdkWorkCommandData`).
+fn created_command_json(
     result: ApiResult<sdkwork_utils_rust::SdkWorkCommandData>,
 ) -> Result<Response, ApiProblem> {
     result
         .map(|value| {
             sdkwork_knowledgebase_observability::request_correlation::success_command_json_response(
-                StatusCode::OK,
+                StatusCode::CREATED,
                 value,
             )
         })

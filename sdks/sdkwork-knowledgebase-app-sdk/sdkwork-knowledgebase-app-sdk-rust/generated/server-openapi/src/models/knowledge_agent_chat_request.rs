@@ -4,10 +4,6 @@ use crate::models::{KnowledgeAgentChatMessage};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct KnowledgeAgentChatRequest {
-    #[serde(rename = "actorId")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub actor_id: Option<String>,
-
     pub message: String,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]

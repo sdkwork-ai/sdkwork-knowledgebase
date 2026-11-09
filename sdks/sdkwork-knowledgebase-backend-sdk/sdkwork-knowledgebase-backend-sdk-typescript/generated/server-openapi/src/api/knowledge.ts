@@ -1,7 +1,7 @@
 import { backendApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AnonymizeKnowledgeAuditSubjectRequest, AnonymizeKnowledgeAuditSubjectResult, CreateKnowledgeEngineProviderBindingRequest, CreateKnowledgeEngineProviderCredentialReferenceRequest, CreateKnowledgeEngineProviderMigrationOperationRequest, CreateKnowledgeSourceRequest, ExportKnowledgeAuditEventsRequest, GroupKnowledgebaseLaunchCapability, IngestionJob, KnowledgeAuditEventExport, KnowledgeEngineProviderBinding, KnowledgeEngineProviderBindingPage, KnowledgeEngineProviderBindingState, KnowledgeEngineProviderCredentialReference, KnowledgeEngineProviderCredentialReferencePage, KnowledgeEngineProviderCredentialRotationState, KnowledgeEngineProviderMigrationOperation, KnowledgeEngineProviderMigrationOperationPage, KnowledgeEngineProviderMigrationState, KnowledgeIndex, KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfProfileRequest, KnowledgeProviderHealth, KnowledgeRetrievalProfile, KnowledgeRetrievalProfileRequest, KnowledgeRetrievalTrace, KnowledgeSource, KnowledgeSpace, KnowledgeSpaceMember, KnowledgeTenantStatus, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfBundleIndexRebuildRequest, OkfCandidateResult, OkfCandidateReviewRequest, OkfCompileJobRequest, OkfConceptPublishRequest, OkfConceptSummary, OkfIndexDocument, OkfLogEntry, OkfQualityRun, OkfQualityRunRequest, PageInfo, ProviderBindingVersionCommandRequest, ProviderMigrationVersionCommandRequest, RevokeKnowledgeEngineProviderCredentialReferenceRequest, RotateKnowledgeEngineProviderCredentialReferenceRequest, SdkWorkCommandData, UpdateKnowledgeEngineProviderBindingRequest } from '../types';
+import type { AnonymizeKnowledgeAuditSubjectRequest, AnonymizeKnowledgeAuditSubjectResult, CreateKnowledgeAuditLegalHoldRequest, CreateKnowledgeEngineProviderBindingRequest, CreateKnowledgeEngineProviderCredentialReferenceRequest, CreateKnowledgeEngineProviderMigrationOperationRequest, CreateKnowledgeSourceRequest, ExportKnowledgeAuditEventsRequest, GroupKnowledgebaseLaunchCapability, IngestionJob, KnowledgeAuditEventExport, KnowledgeAuditLegalHoldItem, KnowledgeAuditLegalHoldReleaseCommand, KnowledgeEngineProviderBinding, KnowledgeEngineProviderBindingPage, KnowledgeEngineProviderBindingState, KnowledgeEngineProviderCredentialReference, KnowledgeEngineProviderCredentialReferencePage, KnowledgeEngineProviderCredentialRotationState, KnowledgeEngineProviderMigrationOperation, KnowledgeEngineProviderMigrationOperationPage, KnowledgeEngineProviderMigrationState, KnowledgeIndex, KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfProfileRequest, KnowledgeProviderHealth, KnowledgeRetrievalProfile, KnowledgeRetrievalProfileRequest, KnowledgeRetrievalTrace, KnowledgeSource, KnowledgeSpace, KnowledgeSpaceMember, KnowledgeTenantStatus, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfBundleIndexRebuildRequest, OkfCandidateResult, OkfCandidateReviewRequest, OkfCompileJobRequest, OkfConceptPublishRequest, OkfLogEntry, OkfQualityRun, OkfQualityRunRequest, PageInfo, ProviderBindingVersionCommandRequest, ProviderMigrationVersionCommandRequest, RevokeKnowledgeEngineProviderCredentialReferenceRequest, RotateKnowledgeEngineProviderCredentialReferenceRequest, SdkWorkCommandData, UpdateKnowledgeEngineProviderBindingRequest } from '../types';
 
 
 export class KnowledgeTenantsCurrentApi {
@@ -394,8 +394,8 @@ export class KnowledgeOkfConceptsApi {
 
 
 /** Publish an OKF concept */
-  async publish(conceptId: number, body: OkfConceptPublishRequest, requestOptions?: ApiRequestOptions): Promise<OkfConceptSummary> {
-    return this.client.request<OkfConceptSummary>(backendApiPath(`/knowledge/okf/concepts/${serializePathParameter(conceptId, { name: 'conceptId', style: 'simple', explode: false })}/publish`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  async publish(conceptId: number, body: OkfConceptPublishRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/okf/concepts/${serializePathParameter(conceptId, { name: 'conceptId', style: 'simple', explode: false })}/publish`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 }
 
@@ -438,13 +438,13 @@ export class KnowledgeOkfCandidatesApi {
   }
 
 /** Approve an OKF candidate */
-  async approve(candidateId: number, body: OkfCandidateReviewRequest, requestOptions?: ApiRequestOptions): Promise<OkfCandidateResult> {
-    return this.client.request<OkfCandidateResult>(backendApiPath(`/knowledge/okf/candidates/${serializePathParameter(candidateId, { name: 'candidateId', style: 'simple', explode: false })}/approve`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  async approve(candidateId: number, body: OkfCandidateReviewRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/okf/candidates/${serializePathParameter(candidateId, { name: 'candidateId', style: 'simple', explode: false })}/approve`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 
 /** Reject an OKF candidate */
-  async reject(candidateId: number, body: OkfCandidateReviewRequest, requestOptions?: ApiRequestOptions): Promise<OkfCandidateResult> {
-    return this.client.request<OkfCandidateResult>(backendApiPath(`/knowledge/okf/candidates/${serializePathParameter(candidateId, { name: 'candidateId', style: 'simple', explode: false })}/reject`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  async reject(candidateId: number, body: OkfCandidateReviewRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/okf/candidates/${serializePathParameter(candidateId, { name: 'candidateId', style: 'simple', explode: false })}/reject`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 }
 
@@ -457,8 +457,8 @@ export class KnowledgeOkfBundleIndexApi {
 
 
 /** Rebuild the OKF bundle index */
-  async rebuild(body: OkfBundleIndexRebuildRequest, requestOptions?: ApiRequestOptions): Promise<OkfIndexDocument> {
-    return this.client.request<OkfIndexDocument>(backendApiPath(`/knowledge/okf/index/rebuild`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  async rebuild(body: OkfBundleIndexRebuildRequest, requestOptions?: ApiRequestOptions): Promise<SdkWorkCommandData> {
+    return this.client.request<SdkWorkCommandData>(backendApiPath(`/knowledge/okf/index/rebuild`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'command' });
   }
 }
 
@@ -617,6 +617,50 @@ export class KnowledgeGroupApi {
 
 }
 
+export class KnowledgeComplianceAuditLegalHoldsReleaseApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Release an audit legal hold */
+  async create(holdId: string, body: KnowledgeAuditLegalHoldReleaseCommand, requestOptions?: ApiRequestOptions): Promise<KnowledgeAuditLegalHoldItem> {
+    return this.client.request<KnowledgeAuditLegalHoldItem>(backendApiPath(`/knowledge/compliance/audit_legal_holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/release`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
+export interface KnowledgeComplianceAuditLegalHoldsListParams {
+  cursor?: string;
+  pageSize?: number;
+}
+
+export class KnowledgeComplianceAuditLegalHoldsApi {
+  private client: HttpClient;
+  public readonly release: KnowledgeComplianceAuditLegalHoldsReleaseApi;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+    this.release = new KnowledgeComplianceAuditLegalHoldsReleaseApi(client);
+  }
+
+
+/** List active audit legal holds */
+  async list(params?: KnowledgeComplianceAuditLegalHoldsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: KnowledgeAuditLegalHoldItem[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: KnowledgeAuditLegalHoldItem[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/knowledge/compliance/audit_legal_holds`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Create an audit legal hold */
+  async create(body: CreateKnowledgeAuditLegalHoldRequest, requestOptions?: ApiRequestOptions): Promise<KnowledgeAuditLegalHoldItem> {
+    return this.client.request<KnowledgeAuditLegalHoldItem>(backendApiPath(`/knowledge/compliance/audit_legal_holds`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
+
 export class KnowledgeComplianceAuditEventsExportApi {
   private client: HttpClient;
 
@@ -658,9 +702,11 @@ export class KnowledgeComplianceAuditEventsApi {
 
 export class KnowledgeComplianceApi {
   public readonly auditEvents: KnowledgeComplianceAuditEventsApi;
+  public readonly auditLegalHolds: KnowledgeComplianceAuditLegalHoldsApi;
 
   constructor(client: HttpClient) {
     this.auditEvents = new KnowledgeComplianceAuditEventsApi(client);
+    this.auditLegalHolds = new KnowledgeComplianceAuditLegalHoldsApi(client);
   }
 
 }

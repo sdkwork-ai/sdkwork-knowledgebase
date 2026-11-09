@@ -232,7 +232,7 @@
     },
     {
       "path": "src/models/knowledge_agent_chat_request.rs",
-      "sha256": "498f1112561042b40c03116452a75e8f156c4ce0e7d0b9c4cd8cdef4ce8402a9"
+      "sha256": "db42c1c7599ece39485f99e793759cf32a73a6e082605b2a8b606326205b330f"
     },
     {
       "path": "src/models/knowledge_agent_chat_response.rs",
@@ -268,7 +268,7 @@
     },
     {
       "path": "src/models/knowledge_context_pack_request.rs",
-      "sha256": "0abb5ba48dc89988185835af2b3926162a72efb86e1fe277eaf1e2b1d7e2e0e5"
+      "sha256": "e54fb54fa71c8c4c40a4f01e4c444095bb779409a833f02d5d45b60949f183f0"
     },
     {
       "path": "src/models/knowledge_context_pack.rs",
@@ -364,7 +364,7 @@
     },
     {
       "path": "src/models/knowledge_retrieval_request.rs",
-      "sha256": "4b365e5eca07b0878ced02e45190c53e3baeacba2e4cda3b9de92434003b5c6d"
+      "sha256": "ee46f9618b3925b1f10ed4404546adb01bdd52ffbefc176c64db89de18dd9868"
     },
     {
       "path": "src/models/knowledge_retrieval_result.rs",
@@ -516,7 +516,7 @@
     },
     {
       "path": "src/models/okf_concept_upsert_request.rs",
-      "sha256": "39a184eaa06b906e2481f87c1682954f7e199bd0700d68e3e114245efe6dfef8"
+      "sha256": "5f0f9873297d4d57e22d38f229744aa19867c45ed3ec87b949ecab6545280222"
     },
     {
       "path": "src/models/okf_concepts_list_response.rs",

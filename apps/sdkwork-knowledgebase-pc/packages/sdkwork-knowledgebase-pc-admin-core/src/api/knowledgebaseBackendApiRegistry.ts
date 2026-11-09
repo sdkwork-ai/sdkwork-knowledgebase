@@ -44,9 +44,11 @@ export function requireKnowledgebaseBackendApi(operation: string): void {
   }
 }
 
+// The backend-api policy accepts the exact platform permission only. Wildcard or
+// domain-level grants must not open the admin console, because the server rejects them
+// and the UI would render a console whose every call 403s.
 const KNOWLEDGE_PLATFORM_MANAGE_SCOPES = new Set([
   'knowledge.platform.manage',
-  'knowledge.*',
 ]);
 
 export function canAccessKnowledgebaseAdminConsole(permissionScope?: string[]): boolean {

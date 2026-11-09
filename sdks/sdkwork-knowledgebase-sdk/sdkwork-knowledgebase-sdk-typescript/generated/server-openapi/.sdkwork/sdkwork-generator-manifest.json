@@ -156,7 +156,7 @@
     },
     {
       "path": "src/types/knowledge-context-pack-request.ts",
-      "sha256": "7ed56c554be03537524c7e035e3300eb32d260a7a2ccdc864850092a2b40ef19"
+      "sha256": "d607ff9b3dda00af3239baa503d374ba3a42d258509f1fe50237ecaca520d00e"
     },
     {
       "path": "src/types/knowledge-context-pack.ts",
@@ -200,7 +200,7 @@
     },
     {
       "path": "src/types/knowledge-retrieval-request.ts",
-      "sha256": "d7ba9db7ccc753b524c9b0ab542e4be33f282682039522c7fe98426737919585"
+      "sha256": "08d501d0c8aa44543d3a1d094ed663781ed5b2fc89a6c0130a9a4d135a3d1dc5"
     },
     {
       "path": "src/types/knowledge-retrieval-result.ts",

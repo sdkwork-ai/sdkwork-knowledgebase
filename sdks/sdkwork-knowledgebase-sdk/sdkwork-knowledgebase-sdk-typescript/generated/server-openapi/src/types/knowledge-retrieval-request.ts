@@ -3,7 +3,6 @@ import type { KnowledgeRetrievalBinding } from './knowledge-retrieval-binding';
 import type { KnowledgeRetrievalMethod } from './knowledge-retrieval-method';
 
 export interface KnowledgeRetrievalRequest {
-  actorId?: string | null;
   query: string;
   retrievalProfileId?: string | null;
   bindings: KnowledgeRetrievalBinding[];

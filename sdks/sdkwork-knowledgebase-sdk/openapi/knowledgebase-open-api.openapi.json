@@ -178,12 +178,12 @@
         "x-sdkwork-api-surface": "open-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-open-api",
         "summary": "Create a knowledge retrieval",
-        "x-sdkwork-rate-limit-tier": "write-heavy",
+        "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "api-key",
-        "x-sdkwork-permission": "knowledge.retrievals.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization",
-        "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
+        "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs",
+        "x-sdkwork-permission": "knowledge.retrievals.write"
       }
     },
     "/knowledge/v3/api/retrievals/{retrievalId}": {
@@ -530,12 +530,12 @@
         "x-sdkwork-api-surface": "open-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-open-api",
         "summary": "Create a knowledge context pack",
-        "x-sdkwork-rate-limit-tier": "write-heavy",
+        "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "api-key",
-        "x-sdkwork-permission": "knowledge.context_packs.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization",
-        "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
+        "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs",
+        "x-sdkwork-permission": "knowledge.context_packs.write"
       }
     },
     "/knowledge/v3/api/ingests": {
@@ -706,12 +706,12 @@
         "x-sdkwork-api-surface": "open-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-open-api",
         "summary": "Create an ingestion job",
-        "x-sdkwork-rate-limit-tier": "write-heavy",
+        "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "api-key",
-        "x-sdkwork-permission": "knowledge.ingests.write",
         "x-sdkwork-tenant-scope": "tenant",
         "x-sdkwork-data-scope": "organization",
-        "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs"
+        "x-sdkwork-source": "sdks/standardize-knowledgebase-sdk-family.mjs",
+        "x-sdkwork-permission": "knowledge.ingests.write"
       }
     },
     "/knowledge/v3/api/ingests/{ingestId}": {
@@ -1892,18 +1892,6 @@
           "includeTrace"
         ],
         "properties": {
-          "actorId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "query": {
             "type": "string"
           },
@@ -2190,18 +2178,6 @@
           "includeCitations"
         ],
         "properties": {
-          "actorId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "query": {
             "type": "string"
           },

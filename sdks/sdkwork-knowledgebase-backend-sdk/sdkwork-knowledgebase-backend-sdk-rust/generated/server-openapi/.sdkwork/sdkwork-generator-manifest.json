@@ -48,7 +48,7 @@
     },
     {
       "path": "src/api/knowledge.rs",
-      "sha256": "5cb9482edfe0c4ab8ef914d3faecc009171017a975932f9710582e4264a3063e"
+      "sha256": "d76fcb0151e00056ebfcba377987151fda73c95b81e433cb4cdbd0c3c55ea7c6"
     },
     {
       "path": "src/api/mod.rs",
@@ -93,6 +93,22 @@
     {
       "path": "src/models/compliance_audit_events_export_create_response201.rs",
       "sha256": "36d50dd26664b038a0234efdee64f94499ae8f709250f3b8c259e6058b6ffffe"
+    },
+    {
+      "path": "src/models/compliance_audit_legal_holds_create_response201.rs",
+      "sha256": "0973f16eb10543cc92c100bc1db39e2a65224d77bc27cec36486b4d8c3a1bedd"
+    },
+    {
+      "path": "src/models/compliance_audit_legal_holds_list_response.rs",
+      "sha256": "8803dc9f9326b4c0855b68a71e4642bde42ac89548568576942cda1559710d3b"
+    },
+    {
+      "path": "src/models/compliance_audit_legal_holds_release_create_response201.rs",
+      "sha256": "7f372ae6968d009f83cf53e9a5c289801bb4fcbb339e10020a04737b3ecea781"
+    },
+    {
+      "path": "src/models/create_knowledge_audit_legal_hold_request.rs",
+      "sha256": "3050514c935daa57662108aa83ef6065ffa22584d899a270d27b526e6dbe50ba"
     },
     {
       "path": "src/models/create_knowledge_document_request.rs",
@@ -187,6 +203,14 @@
       "sha256": "c56d67d86de2243de3ba9d925e0c4ce2e6fbe4d5d1637a95cbe07b068136990e"
     },
     {
+      "path": "src/models/knowledge_audit_legal_hold_item.rs",
+      "sha256": "8f9c16c79535f4731188747087d151c6271b8e6688bb74c8160474008d84a815"
+    },
+    {
+      "path": "src/models/knowledge_audit_legal_hold_release_command.rs",
+      "sha256": "af5225ad7174ba9c00e91db614e49657109af4365d98548f6e37bf9e2218d7f3"
+    },
+    {
       "path": "src/models/knowledge_citation.rs",
       "sha256": "030be62a7f1fdc74255802556b14feb360372e23482097285553fa979ade27f0"
     },
@@ -196,7 +220,7 @@
     },
     {
       "path": "src/models/knowledge_context_pack_request.rs",
-      "sha256": "0abb5ba48dc89988185835af2b3926162a72efb86e1fe277eaf1e2b1d7e2e0e5"
+      "sha256": "e54fb54fa71c8c4c40a4f01e4c444095bb779409a833f02d5d45b60949f183f0"
     },
     {
       "path": "src/models/knowledge_context_pack.rs",
@@ -312,7 +336,7 @@
     },
     {
       "path": "src/models/knowledge_retrieval_request.rs",
-      "sha256": "4b365e5eca07b0878ced02e45190c53e3baeacba2e4cda3b9de92434003b5c6d"
+      "sha256": "ee46f9618b3925b1f10ed4404546adb01bdd52ffbefc176c64db89de18dd9868"
     },
     {
       "path": "src/models/knowledge_retrieval_result.rs",
@@ -356,7 +380,7 @@
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "4461dab7b853ceffcd1c35e796e5f5594fb0bae4dda5fbb8409802c071589314"
+      "sha256": "1a95904ca22685689f9d1bf9c64609bbaec427f03e212ee92e91f005789f7cdb"
     },
     {
       "path": "src/models/okf_bundle_export_create_response201.rs",

@@ -155,7 +155,7 @@
   "adminConsoleLoading": "正在加载管理数据…",
   "adminConsoleApiUnavailable": "当前运行环境未配置 Backend API。",
   "adminConsoleForbiddenTitle": "需要管理员权限",
-  "adminConsoleForbiddenBody": "账号需具备 knowledge.platform.manage 或 knowledge.* 权限。",
+  "adminConsoleForbiddenBody": "账号需具备 knowledge.platform.manage 权限。",
   "adminConsoleTenantStatus": "租户状态",
   "adminConsoleSpaceCount": "知识空间",
   "adminConsoleDocumentCount": "文档数量",

@@ -4,7 +4,7 @@
   "back": "Admin overview",
   "refresh": "Refresh",
   "forbiddenTitle": "Provider administration permission required",
-  "forbiddenBody": "This route requires knowledge.platform.manage or knowledge.*.",
+  "forbiddenBody": "This route requires the knowledge.platform.manage permission.",
   "apiUnavailable": "The Backend API is not configured for this runtime.",
   "credentials": "Credential references",
   "bindings": "Bindings",

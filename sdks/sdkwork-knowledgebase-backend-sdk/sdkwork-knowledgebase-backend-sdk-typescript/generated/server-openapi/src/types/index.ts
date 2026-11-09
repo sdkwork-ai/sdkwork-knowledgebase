@@ -116,6 +116,9 @@ export type { CreateKnowledgeEngineProviderMigrationOperationRequest } from './c
 export type { KnowledgeEngineProviderMigrationOperation } from './knowledge-engine-provider-migration-operation';
 export type { KnowledgeEngineProviderMigrationOperationPage } from './knowledge-engine-provider-migration-operation-page';
 export type { GroupKnowledgebaseLaunchCapability } from './group-knowledgebase-launch-capability';
+export type { CreateKnowledgeAuditLegalHoldRequest } from './create-knowledge-audit-legal-hold-request';
+export type { KnowledgeAuditLegalHoldItem } from './knowledge-audit-legal-hold-item';
+export type { KnowledgeAuditLegalHoldReleaseCommand } from './knowledge-audit-legal-hold-release-command';
 export type { ComplianceAuditEventsAnonymizeActorCreateResponse201 } from './compliance-audit-events-anonymize-actor-create-response201';
 export type { ComplianceAuditEventsExportCreateResponse201 } from './compliance-audit-events-export-create-response201';
 export type { GroupLaunchListResponse } from './group-launch-list-response';
@@ -165,3 +168,6 @@ export type { SpacesProviderMigrationsCreateResponse201 } from './spaces-provide
 export type { SpacesProviderMigrationsRetrieveResponse } from './spaces-provider-migrations-retrieve-response';
 export type { SpacesProviderMigrationsRollbackResponse } from './spaces-provider-migrations-rollback-response';
 export type { TenantsCurrentListResponse } from './tenants-current-list-response';
+export type { ComplianceAuditLegalHoldsListResponse } from './compliance-audit-legal-holds-list-response';
+export type { ComplianceAuditLegalHoldsCreateResponse201 } from './compliance-audit-legal-holds-create-response201';
+export type { ComplianceAuditLegalHoldsReleaseCreateResponse201 } from './compliance-audit-legal-holds-release-create-response201';

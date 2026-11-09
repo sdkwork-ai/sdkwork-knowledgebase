@@ -1708,15 +1708,7 @@
                       ],
                       "properties": {
                         "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/OkfCandidateResult"
-                            }
-                          }
+                          "$ref": "#/components/schemas/SdkWorkCommandData"
                         }
                       }
                     }
@@ -1895,15 +1887,7 @@
                       ],
                       "properties": {
                         "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/OkfCandidateResult"
-                            }
-                          }
+                          "$ref": "#/components/schemas/SdkWorkCommandData"
                         }
                       }
                     }
@@ -2259,15 +2243,7 @@
                       ],
                       "properties": {
                         "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/OkfConceptSummary"
-                            }
-                          }
+                          "$ref": "#/components/schemas/SdkWorkCommandData"
                         }
                       }
                     }
@@ -2758,7 +2734,7 @@
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-backend-api",
         "summary": "Create an OKF bundle export",
-        "x-sdkwork-rate-limit-tier": "write-heavy",
+        "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "dual-token",
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
@@ -3113,7 +3089,7 @@
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-source-route-crate": "sdkwork-routes-knowledgebase-backend-api",
         "summary": "Import an OKF bundle from drive staging",
-        "x-sdkwork-rate-limit-tier": "write-heavy",
+        "x-sdkwork-rate-limit-tier": "auth-critical",
         "x-sdkwork-auth-mode": "dual-token",
         "x-sdkwork-permission": "knowledge.platform.manage",
         "x-sdkwork-audit-event": "knowledge.backend.admin_operation",
@@ -3145,15 +3121,7 @@
                       ],
                       "properties": {
                         "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/OkfIndexDocument"
-                            }
-                          }
+                          "$ref": "#/components/schemas/SdkWorkCommandData"
                         }
                       }
                     }
@@ -10976,18 +10944,6 @@
           "includeTrace"
         ],
         "properties": {
-          "actorId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "query": {
             "type": "string"
           },
@@ -11285,18 +11241,6 @@
           "includeCitations"
         ],
         "properties": {
-          "actorId": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[0-9]+$",
-                "x-sdkwork-int64-string": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "query": {
             "type": "string"
           },

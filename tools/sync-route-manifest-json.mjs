@@ -138,7 +138,7 @@ function buildRoute(route, manifest, apiSurface, publicOperationIds) {
     };
   }
   const authMode = apiSurface === 'open-api'
-    ? 'bearer'
+    ? 'api-key'
     : apiSurface === 'internal-api'
       ? 'ingress-token'
       : 'dual-token';

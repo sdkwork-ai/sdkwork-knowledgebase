@@ -40,25 +40,23 @@ const sdkworkExtensions = {
   'x-sdkwork-auth-mode': 'dual-token',
 };
 
-// Commerce paths are applied after permission materialization, so each operation must
-// carry the same authorization metadata as the authored manifest routes.
+// Commerce paths are applied after permission materialization. App-api is a consumer
+// surface (tier 0-2), so these operations carry tenant/data scope metadata only — never a
+// per-route RBAC permission (PERMISSION_STANDARD_SPEC §Surface Authorization Tiers).
 const commercePermissionExtensions = {
   'market.listings.list': {
     'x-sdkwork-tenant-scope': 'tenant',
     'x-sdkwork-data-scope': 'organization',
   },
   'market.subscriptions.create': {
-    'x-sdkwork-permission': 'knowledge.market.write',
     'x-sdkwork-tenant-scope': 'tenant',
     'x-sdkwork-data-scope': 'organization',
   },
   'market.subscriptions.delete': {
-    'x-sdkwork-permission': 'knowledge.market.write',
     'x-sdkwork-tenant-scope': 'tenant',
     'x-sdkwork-data-scope': 'organization',
   },
   'mediaTasks.create': {
-    'x-sdkwork-permission': 'knowledge.media.write',
     'x-sdkwork-tenant-scope': 'tenant',
     'x-sdkwork-data-scope': 'organization',
   },

@@ -15,7 +15,14 @@
     }
   },
   "dependencies": {
-    "@sdkwork/sdk-common": "^1.0.8"
+    "@sdkwork/sdk-common": "^1.0.8",
+    "@sdkwork/utils": "^0.11.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
   },
   "publishConfig": {
     "access": "public",

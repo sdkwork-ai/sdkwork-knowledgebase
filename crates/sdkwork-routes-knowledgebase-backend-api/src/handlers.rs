@@ -153,7 +153,8 @@ fn backend_audit_operator_id(
     context: &KnowledgeBackendRequestContext,
 ) -> Result<u64, BackendApiProblem> {
     context.operator_id.ok_or_else(|| {
-        BackendApiProblem::from_internal(
+        BackendApiProblem::new(
+            axum::http::StatusCode::UNAUTHORIZED,
             "knowledge_audit_actor_missing",
             "authenticated backend operator is required for mutation audit",
         )

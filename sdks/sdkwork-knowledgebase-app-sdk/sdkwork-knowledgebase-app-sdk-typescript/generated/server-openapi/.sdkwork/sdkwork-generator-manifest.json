@@ -260,7 +260,7 @@
     },
     {
       "path": "src/types/knowledge-agent-chat-request.ts",
-      "sha256": "06773a3d8745736476a228db8d161e0f59dc5a9d2e437053736641311523f18b"
+      "sha256": "fd5854e68d35e742ecef4555cea878c862130a585ecf393436ee39c11e15dc3f"
     },
     {
       "path": "src/types/knowledge-agent-chat-response.ts",
@@ -316,7 +316,7 @@
     },
     {
       "path": "src/types/knowledge-context-pack-request.ts",
-      "sha256": "7ed56c554be03537524c7e035e3300eb32d260a7a2ccdc864850092a2b40ef19"
+      "sha256": "d607ff9b3dda00af3239baa503d374ba3a42d258509f1fe50237ecaca520d00e"
     },
     {
       "path": "src/types/knowledge-context-pack.ts",
@@ -436,7 +436,7 @@
     },
     {
       "path": "src/types/knowledge-retrieval-request.ts",
-      "sha256": "d7ba9db7ccc753b524c9b0ab542e4be33f282682039522c7fe98426737919585"
+      "sha256": "08d501d0c8aa44543d3a1d094ed663781ed5b2fc89a6c0130a9a4d135a3d1dc5"
     },
     {
       "path": "src/types/knowledge-retrieval-result.ts",
@@ -636,7 +636,7 @@
     },
     {
       "path": "src/types/okf-concept-upsert-request.ts",
-      "sha256": "ffeab5dc1f90ec58b9dfdf6675d1ca26218d81f0f7849c1f6e80674c56711013"
+      "sha256": "ac930e6f44a13ef256615204054d8b79d4b9725a7b5bd30bf2e41106e9066f4c"
     },
     {
       "path": "src/types/okf-concepts-list-response.ts",

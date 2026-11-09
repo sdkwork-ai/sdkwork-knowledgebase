@@ -26,16 +26,16 @@ const problemResponse = {
 const standardErrorStatuses = ['400', '401', '403', '404', '409', '429', '500'];
 
 const rateLimitTierByOperationId = {
-  'retrievals.create': 'write-heavy',
-  'contextPacks.create': 'write-heavy',
-  'ingests.create': 'write-heavy',
-  'driveImports.create': 'write-heavy',
-  'agentProfiles.chat.create': 'write-heavy',
-  'agentProfiles.retrievalPreview.create': 'write-heavy',
-  'okf.bundle.import.create': 'write-heavy',
-  'okf.bundle.export.create': 'write-heavy',
-  'spaces.delete': 'write-heavy',
-  'documents.delete': 'write-heavy',
+  'retrievals.create': 'auth-critical',
+  'contextPacks.create': 'auth-critical',
+  'ingests.create': 'auth-critical',
+  'driveImports.create': 'auth-critical',
+  'agentProfiles.chat.create': 'auth-critical',
+  'agentProfiles.retrievalPreview.create': 'auth-critical',
+  'okf.bundle.import.create': 'auth-critical',
+  'okf.bundle.export.create': 'auth-critical',
+  'spaces.delete': 'auth-critical',
+  'documents.delete': 'auth-critical',
 };
 
 function humanizeOperationId(operationId) {

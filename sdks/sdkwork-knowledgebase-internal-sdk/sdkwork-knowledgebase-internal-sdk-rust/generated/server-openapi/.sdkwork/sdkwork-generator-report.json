@@ -48,7 +48,7 @@
     "language": "rust",
     "sdkType": "custom",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-internal-sdk\\sdkwork-knowledgebase-internal-sdk-rust\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-internal-sdk\\sdkwork-knowledgebase-internal-sdk-rust\\generated\\server-openapi",
     "packageName": "sdkwork-knowledgebase-internal-sdk-generated-rust"
   },
   "versioning": {

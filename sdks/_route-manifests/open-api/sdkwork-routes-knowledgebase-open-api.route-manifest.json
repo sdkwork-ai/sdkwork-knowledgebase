@@ -23,7 +23,7 @@
         "knowledge"
       ],
       "auth": {
-        "mode": "bearer",
+        "mode": "api-key",
         "required": true
       },
       "handler": {
@@ -45,7 +45,7 @@
         "knowledge"
       ],
       "auth": {
-        "mode": "bearer",
+        "mode": "api-key",
         "required": true
       },
       "handler": {
@@ -67,7 +67,7 @@
         "knowledge"
       ],
       "auth": {
-        "mode": "bearer",
+        "mode": "api-key",
         "required": true
       },
       "handler": {
@@ -89,7 +89,7 @@
         "knowledge"
       ],
       "auth": {
-        "mode": "bearer",
+        "mode": "api-key",
         "required": true
       },
       "handler": {
@@ -111,7 +111,7 @@
         "knowledge"
       ],
       "auth": {
-        "mode": "bearer",
+        "mode": "api-key",
         "required": true
       },
       "handler": {
@@ -133,7 +133,7 @@
         "knowledge"
       ],
       "auth": {
-        "mode": "bearer",
+        "mode": "api-key",
         "required": true
       },
       "handler": {
@@ -155,7 +155,7 @@
         "knowledge"
       ],
       "auth": {
-        "mode": "bearer",
+        "mode": "api-key",
         "required": true
       },
       "handler": {
@@ -177,7 +177,7 @@
         "knowledge"
       ],
       "auth": {
-        "mode": "bearer",
+        "mode": "api-key",
         "required": true
       },
       "handler": {

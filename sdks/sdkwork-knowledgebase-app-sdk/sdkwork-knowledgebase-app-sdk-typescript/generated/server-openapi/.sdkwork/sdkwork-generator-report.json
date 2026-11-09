@@ -11,56 +11,32 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": true,
-  "changeFingerprint": "a50bc735aa922b22e0858995d69755e21b71f1ad8ec865592b43c2a5f8c0b42c",
+  "hasDestructiveChanges": false,
+  "changeFingerprint": "4afc17248bf0f97c0916ad65c7de59854e97af9240618c497c4b8bca3ddda667",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
-      "api-surface",
       "models"
     ],
     "details": [
       {
-        "area": "api-surface",
-        "paths": [
-          "src/api/knowledge.d.ts",
-          "src/api/knowledge.ts"
-        ]
-      },
-      {
         "area": "models",
         "paths": [
-          "src/types/agent-profiles-bindings-list-response.d.ts",
-          "src/types/agent-profiles-bindings-list-response.ts",
-          "src/types/index.d.ts",
-          "src/types/index.ts",
-          "src/types/knowledge-agent-binding-list.d.ts",
-          "src/types/knowledge-agent-binding-list.ts",
-          "src/types/knowledge-agent-chat-message.d.ts",
-          "src/types/knowledge-agent-chat-request.d.ts",
-          "src/types/okf-bundle-index-list-response.ts",
-          "src/types/okf-bundle-index-retrieve-response.ts",
-          "src/types/okf-bundle-log-list-response.ts",
-          "src/types/okf-bundle-log-retrieve-response.ts",
-          "src/types/okf-bundle-profile-list-response.ts",
-          "src/types/okf-bundle-profile-retrieve-response.ts"
+          "src/types/okf-concept-upsert-request.ts"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models. Verification is required."
+    "summary": "Detected impact areas: models. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
+    "riskLevel": "medium",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
-      "backed-up-generated-files",
-      "deleted-generated-files",
-      "manual-review-required",
       "verification-required"
     ]
   },
@@ -72,7 +48,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -90,7 +66,7 @@
         "id": "verify-build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -109,13 +85,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -133,7 +109,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
         "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -172,22 +148,16 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 6,
+    "writtenFiles": 1,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 203,
-    "deletedGeneratedFiles": 10,
+    "skippedUnchangedGeneratedFiles": 208,
+    "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "a50bc735aa922b22e0858995d69755e21b71f1ad8ec865592b43c2a5f8c0b42c",
+    "changeFingerprint": "4afc17248bf0f97c0916ad65c7de59854e97af9240618c497c4b8bca3ddda667",
     "changes": {
-      "createdGeneratedFiles": [
-        "src/types/okf-bundle-index-retrieve-response.ts",
-        "src/types/okf-bundle-log-retrieve-response.ts",
-        "src/types/okf-bundle-profile-retrieve-response.ts"
-      ],
+      "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "src/api/knowledge.ts",
-        "src/types/agent-profiles-bindings-list-response.ts",
-        "src/types/index.ts"
+        "src/types/okf-concept-upsert-request.ts"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -202,6 +172,7 @@
         "sdkwork-sdk.json",
         "src/api/base.ts",
         "src/api/index.ts",
+        "src/api/knowledge.ts",
         "src/api/paths.ts",
         "src/auth/index.ts",
         "src/http/client.ts",
@@ -209,6 +180,7 @@
         "src/index.ts",
         "src/sdk.ts",
         "src/types/agent-profiles-bindings-create-response201.ts",
+        "src/types/agent-profiles-bindings-list-response.ts",
         "src/types/agent-profiles-bindings-update-response.ts",
         "src/types/agent-profiles-chat-create-response201.ts",
         "src/types/agent-profiles-create-response201.ts",
@@ -240,6 +212,7 @@
         "src/types/group-knowledge-space-lifecycle-state.ts",
         "src/types/group-knowledgebase-launch-target.ts",
         "src/types/group-launches-consume-response.ts",
+        "src/types/index.ts",
         "src/types/ingestion-job-state.ts",
         "src/types/ingestion-job.ts",
         "src/types/ingests-create-response201.ts",
@@ -338,9 +311,11 @@
         "src/types/okf-bundle-import-create-response201.ts",
         "src/types/okf-bundle-import-request.ts",
         "src/types/okf-bundle-import-result.ts",
+        "src/types/okf-bundle-index-retrieve-response.ts",
+        "src/types/okf-bundle-log-retrieve-response.ts",
+        "src/types/okf-bundle-profile-retrieve-response.ts",
         "src/types/okf-concept-summary-list.ts",
         "src/types/okf-concept-summary.ts",
-        "src/types/okf-concept-upsert-request.ts",
         "src/types/okf-concepts-list-response.ts",
         "src/types/okf-concepts-retrieve-response.ts",
         "src/types/okf-concepts-revisions-list-response.ts",
@@ -394,79 +369,40 @@
         "src/types/wiki-source-files-visibility-update-response.ts",
         "tsconfig.json"
       ],
-      "deletedGeneratedFiles": [
-        "src/api/knowledge.d.ts",
-        "src/types/agent-profiles-bindings-list-response.d.ts",
-        "src/types/index.d.ts",
-        "src/types/knowledge-agent-binding-list.d.ts",
-        "src/types/knowledge-agent-binding-list.ts",
-        "src/types/knowledge-agent-chat-message.d.ts",
-        "src/types/knowledge-agent-chat-request.d.ts",
-        "src/types/okf-bundle-index-list-response.ts",
-        "src/types/okf-bundle-log-list-response.ts",
-        "src/types/okf-bundle-profile-list-response.ts"
-      ],
+      "deletedGeneratedFiles": [],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
         "custom/README.md"
       ],
-      "backedUpFiles": [
-        "src/api/knowledge.d.ts",
-        "src/types/agent-profiles-bindings-list-response.d.ts",
-        "src/types/index.d.ts",
-        "src/types/knowledge-agent-binding-list.d.ts",
-        "src/types/knowledge-agent-chat-message.d.ts",
-        "src/types/knowledge-agent-chat-request.d.ts"
-      ]
+      "backedUpFiles": []
     },
     "impact": {
       "schemaVersion": 1,
       "areas": [
-        "api-surface",
         "models"
       ],
       "details": [
         {
-          "area": "api-surface",
-          "paths": [
-            "src/api/knowledge.d.ts",
-            "src/api/knowledge.ts"
-          ]
-        },
-        {
           "area": "models",
           "paths": [
-            "src/types/agent-profiles-bindings-list-response.d.ts",
-            "src/types/agent-profiles-bindings-list-response.ts",
-            "src/types/index.d.ts",
-            "src/types/index.ts",
-            "src/types/knowledge-agent-binding-list.d.ts",
-            "src/types/knowledge-agent-binding-list.ts",
-            "src/types/knowledge-agent-chat-message.d.ts",
-            "src/types/knowledge-agent-chat-request.d.ts",
-            "src/types/okf-bundle-index-list-response.ts",
-            "src/types/okf-bundle-index-retrieve-response.ts",
-            "src/types/okf-bundle-log-list-response.ts",
-            "src/types/okf-bundle-log-retrieve-response.ts",
-            "src/types/okf-bundle-profile-list-response.ts",
-            "src/types/okf-bundle-profile-retrieve-response.ts"
+            "src/types/okf-concept-upsert-request.ts"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models. Verification is required."
+      "summary": "Detected impact areas: models. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: models. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -484,7 +420,7 @@
           "id": "build",
           "title": "Unified package build",
           "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models.",
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: models.",
           "workingDirectory": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-app-sdk\\sdkwork-knowledgebase-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -502,26 +438,16 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
-        "backed-up-generated-files",
-        "deleted-generated-files",
-        "manual-review-required",
         "verification-required"
       ]
     },
-    "backedUpFiles": [
-      "src/api/knowledge.d.ts",
-      "src/types/agent-profiles-bindings-list-response.d.ts",
-      "src/types/index.d.ts",
-      "src/types/knowledge-agent-binding-list.d.ts",
-      "src/types/knowledge-agent-chat-message.d.ts",
-      "src/types/knowledge-agent-chat-request.d.ts"
-    ],
+    "backedUpFiles": [],
     "preservedLegacyFiles": false
   }
 }

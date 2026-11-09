@@ -1,5 +1,13 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
+// DEPRECATED — superseded by PERMISSION_STANDARD_SPEC §Surface Authorization Tiers.
+//
+// First-party app-api is a consumer surface (tier 0–2): per-route RBAC scopes are a
+// contract violation there, and access is enforced by the service layer's ownership/ACL
+// checks. `tools/apply-knowledgebase-openapi-permissions.mjs` now strips every
+// `x-sdkwork-permission`/`x-sdkwork-auth-tier` from the app-api contract, and
+// `crates/sdkwork-routes-knowledgebase-app-api/src/http_route_manifest.rs` carries no
+// `required_permission`. This script therefore refuses to run; the table below is kept
+// only to explain the retired mapping.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,6 +16,12 @@ const target = path.join(
   repoRoot,
   'crates/sdkwork-routes-knowledgebase-app-api/src/http_route_manifest.rs',
 );
+
+console.error(
+  'patch-app-route-permissions.mjs is retired: app-api carries no per-route permissions ' +
+    '(tier 0-2 policy). Use `pnpm api:materialize` to regenerate contract metadata.',
+);
+process.exit(0);
 
 export const APP_API_PERMISSION_BY_OPERATION = {
   // `null` marks an operation any authenticated principal may call: the route

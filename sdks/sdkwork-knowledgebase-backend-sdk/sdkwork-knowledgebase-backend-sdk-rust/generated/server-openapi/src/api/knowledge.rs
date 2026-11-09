@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::api::paths::backend_path;
 use crate::api::paths::append_query_string;
 use crate::http::{SdkworkError, SdkworkHttpClient};
-use crate::models::{AnonymizeKnowledgeAuditSubjectRequest, AnonymizeKnowledgeAuditSubjectResult, CreateKnowledgeEngineProviderBindingRequest, CreateKnowledgeEngineProviderCredentialReferenceRequest, CreateKnowledgeEngineProviderMigrationOperationRequest, CreateKnowledgeSourceRequest, ExportKnowledgeAuditEventsRequest, GroupKnowledgebaseLaunchCapability, IngestionJob, KnowledgeAuditEventExport, KnowledgeEngineProviderBinding, KnowledgeEngineProviderBindingPage, KnowledgeEngineProviderCredentialReference, KnowledgeEngineProviderCredentialReferencePage, KnowledgeEngineProviderMigrationOperation, KnowledgeEngineProviderMigrationOperationPage, KnowledgeIndex, KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfProfileRequest, KnowledgeProviderHealth, KnowledgeRetrievalProfile, KnowledgeRetrievalProfileRequest, KnowledgeRetrievalTrace, KnowledgeSource, KnowledgeTenantStatus, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfBundleIndexRebuildRequest, OkfCandidateResult, OkfCandidateReviewRequest, OkfCompileJobRequest, OkfConceptPublishRequest, OkfConceptSummary, OkfIndexDocument, OkfLogEntry, OkfQualityRun, OkfQualityRunRequest, ProviderBindingVersionCommandRequest, ProviderMigrationVersionCommandRequest, RevokeKnowledgeEngineProviderCredentialReferenceRequest, RotateKnowledgeEngineProviderCredentialReferenceRequest, SdkWorkCommandData, UpdateKnowledgeEngineProviderBindingRequest};
+use crate::models::{AnonymizeKnowledgeAuditSubjectRequest, AnonymizeKnowledgeAuditSubjectResult, CreateKnowledgeAuditLegalHoldRequest, CreateKnowledgeEngineProviderBindingRequest, CreateKnowledgeEngineProviderCredentialReferenceRequest, CreateKnowledgeEngineProviderMigrationOperationRequest, CreateKnowledgeSourceRequest, ExportKnowledgeAuditEventsRequest, GroupKnowledgebaseLaunchCapability, IngestionJob, KnowledgeAuditEventExport, KnowledgeAuditLegalHoldItem, KnowledgeAuditLegalHoldReleaseCommand, KnowledgeEngineProviderBinding, KnowledgeEngineProviderBindingPage, KnowledgeEngineProviderCredentialReference, KnowledgeEngineProviderCredentialReferencePage, KnowledgeEngineProviderMigrationOperation, KnowledgeEngineProviderMigrationOperationPage, KnowledgeIndex, KnowledgeIndexRequest, KnowledgeOkfBundleFile, KnowledgeOkfProfileRequest, KnowledgeProviderHealth, KnowledgeRetrievalProfile, KnowledgeRetrievalProfileRequest, KnowledgeRetrievalTrace, KnowledgeSource, KnowledgeTenantStatus, OkfBundleExportRequest, OkfBundleImportRequest, OkfBundleImportResult, OkfBundleIndexRebuildRequest, OkfCandidateReviewRequest, OkfCompileJobRequest, OkfConceptPublishRequest, OkfLogEntry, OkfQualityRun, OkfQualityRunRequest, ProviderBindingVersionCommandRequest, ProviderMigrationVersionCommandRequest, RevokeKnowledgeEngineProviderCredentialReferenceRequest, RotateKnowledgeEngineProviderCredentialReferenceRequest, SdkWorkCommandData, UpdateKnowledgeEngineProviderBindingRequest};
 
 #[derive(Clone)]
 pub struct KnowledgeApi {
@@ -83,13 +83,13 @@ impl KnowledgeApi {
     }
 
     /// Approve an OKF candidate
-    pub async fn okf_candidates_approve(&self, candidate_id: i64, body: &OkfCandidateReviewRequest) -> Result<OkfCandidateResult, SdkworkError> {
+    pub async fn okf_candidates_approve(&self, candidate_id: i64, body: &OkfCandidateReviewRequest) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&format!("/knowledge/okf/candidates/{}/approve", serialize_path_parameter(candidate_id, PathParameterSpec::new("candidateId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
     /// Reject an OKF candidate
-    pub async fn okf_candidates_reject(&self, candidate_id: i64, body: &OkfCandidateReviewRequest) -> Result<OkfCandidateResult, SdkworkError> {
+    pub async fn okf_candidates_reject(&self, candidate_id: i64, body: &OkfCandidateReviewRequest) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&format!("/knowledge/okf/candidates/{}/reject", serialize_path_parameter(candidate_id, PathParameterSpec::new("candidateId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
@@ -101,7 +101,7 @@ impl KnowledgeApi {
     }
 
     /// Publish an OKF concept
-    pub async fn okf_concepts_publish(&self, concept_id: i64, body: &OkfConceptPublishRequest) -> Result<OkfConceptSummary, SdkworkError> {
+    pub async fn okf_concepts_publish(&self, concept_id: i64, body: &OkfConceptPublishRequest) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&format!("/knowledge/okf/concepts/{}/publish", serialize_path_parameter(concept_id, PathParameterSpec::new("conceptId", "simple", false))));
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
@@ -131,7 +131,7 @@ impl KnowledgeApi {
     }
 
     /// Rebuild the OKF bundle index
-    pub async fn okf_bundle_index_rebuild(&self, body: &OkfBundleIndexRebuildRequest) -> Result<OkfIndexDocument, SdkworkError> {
+    pub async fn okf_bundle_index_rebuild(&self, body: &OkfBundleIndexRebuildRequest) -> Result<SdkWorkCommandData, SdkworkError> {
         let path = backend_path(&"/knowledge/okf/index/rebuild".to_string());
         self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
@@ -352,6 +352,28 @@ impl KnowledgeApi {
     pub async fn tenants_current_list(&self) -> Result<KnowledgeTenantStatus, SdkworkError> {
         let path = backend_path(&"/knowledge/tenants/current".to_string());
         self.client.get(&path, None, None).await
+    }
+
+    /// List active audit legal holds
+    pub async fn compliance_audit_legal_holds_list(&self, cursor: Option<&str>, page_size: Option<i64>) -> Result<serde_json::Value, SdkworkError> {
+        let query = build_query_string(&[
+            QueryParameterSpec::new("cursor", cursor, "form", true, false, None),
+            QueryParameterSpec::new("page_size", page_size, "form", true, false, None),
+        ]);
+        let path = append_query_string(backend_path(&"/knowledge/compliance/audit_legal_holds".to_string()), &query);
+        self.client.get(&path, None, None).await
+    }
+
+    /// Create an audit legal hold
+    pub async fn compliance_audit_legal_holds_create(&self, body: &CreateKnowledgeAuditLegalHoldRequest) -> Result<KnowledgeAuditLegalHoldItem, SdkworkError> {
+        let path = backend_path(&"/knowledge/compliance/audit_legal_holds".to_string());
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
+    }
+
+    /// Release an audit legal hold
+    pub async fn compliance_audit_legal_holds_release_create(&self, hold_id: &str, body: &KnowledgeAuditLegalHoldReleaseCommand) -> Result<KnowledgeAuditLegalHoldItem, SdkworkError> {
+        let path = backend_path(&format!("/knowledge/compliance/audit_legal_holds/{}/release", serialize_path_parameter(hold_id, PathParameterSpec::new("holdId", "simple", false))));
+        self.client.post(&path, Some(body), None, None, Some("application/json")).await
     }
 
 }

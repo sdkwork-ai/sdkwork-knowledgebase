@@ -83,7 +83,7 @@ const families = [
     packageName: "@sdkwork/knowledgebase-sdk",
     generatedPath: "sdkwork-knowledgebase-sdk-typescript/generated/server-openapi",
     generatedWorkspace: "sdkwork-knowledgebase-sdk-typescript",
-    primaryClient: "SdkworkKnowledgebaseClient",
+    primaryClient: "SdkworkKnowledgebaseOpenClient",
     dependencies: [],
     materializeFrom: {
       sourceFamilyRoot: "sdkwork-knowledgebase-app-sdk",
@@ -478,7 +478,9 @@ function removeCurrentTenantRequestInputs(openapi) {
     }
 
     if (Array.isArray(schema.required)) {
-      schema.required = schema.required.filter((field) => field !== "tenantId" && field !== "tenant_id");
+      schema.required = schema.required.filter(
+        (field) => field !== "tenantId" && field !== "tenant_id" && field !== "actorId" && field !== "actor_id",
+      );
       if (schema.required.length === 0) {
         delete schema.required;
       }
@@ -487,9 +489,41 @@ function removeCurrentTenantRequestInputs(openapi) {
     if (schema.properties && typeof schema.properties === "object") {
       delete schema.properties.tenantId;
       delete schema.properties.tenant_id;
+      // The authenticated credential owns actor identity. Exposing `actorId` in a request
+      // body invites impersonation: the runtime always overwrites it from the principal.
+      delete schema.properties.actorId;
+      delete schema.properties.actor_id;
+    }
+  }
+
+  // OKF upsert attribution is server-owned: the runtime writes the authenticated actor
+  // into the concept revision and only falls back to a body value when no principal
+  // exists. Keep the legacy field optional in Rust, but do not advertise it to clients.
+  const okfUpsert = schemas.OkfConceptUpsertRequest;
+  if (okfUpsert && typeof okfUpsert === "object") {
+    if (Array.isArray(okfUpsert.required)) {
+      okfUpsert.required = okfUpsert.required.filter((field) => field !== "actor");
+      if (okfUpsert.required.length === 0) {
+        delete okfUpsert.required;
+      }
+    }
+    if (okfUpsert.properties && typeof okfUpsert.properties === "object") {
+      delete okfUpsert.properties.actor;
     }
   }
 }
+
+/**
+ * Open-api authorization is scope-based (API_SPEC §4.2.1): each mutating operation owns
+ * an OAuth-style scope, and the runtime route manifest enforces it through
+ * `ManifestAuthorizationPolicy`. The app-api source operations are tier 0-2 and carry no
+ * RBAC permission, so the open-api projection must declare its own scope explicitly.
+ */
+const openApiPermissionByOperation = new Map([
+  ["retrievals.create", "knowledge.retrievals.write"],
+  ["contextPacks.create", "knowledge.context_packs.write"],
+  ["ingests.create", "knowledge.ingests.write"],
+]);
 
 async function materializeFamilyOpenApi(family) {
   if (!family.materializeFrom) {
@@ -545,6 +579,12 @@ async function materializeFamilyOpenApi(family) {
     operation["x-sdkwork-api-surface"] = `${family.sdkTarget}-api`;
     operation["x-sdkwork-source"] = "sdks/standardize-knowledgebase-sdk-family.mjs";
     operation["x-sdkwork-source-route-crate"] = routeCrateFor(family);
+    const permission = openApiPermissionByOperation.get(operation.operationId);
+    if (permission) {
+      operation["x-sdkwork-permission"] = permission;
+    } else {
+      delete operation["x-sdkwork-permission"];
+    }
 
     target.paths[operationMapping.targetPath] = {
       ...(target.paths[operationMapping.targetPath] || {}),

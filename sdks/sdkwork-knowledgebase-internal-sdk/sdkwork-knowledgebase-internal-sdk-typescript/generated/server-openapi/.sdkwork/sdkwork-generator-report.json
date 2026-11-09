@@ -48,7 +48,7 @@
     "language": "typescript",
     "sdkType": "custom",
     "protocol": "http",
-    "outputPath": "E:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-internal-sdk\\sdkwork-knowledgebase-internal-sdk-typescript\\generated\\server-openapi",
+    "outputPath": "D:\\sdkwork-space\\sdkwork-knowledgebase\\sdks\\sdkwork-knowledgebase-internal-sdk\\sdkwork-knowledgebase-internal-sdk-typescript\\generated\\server-openapi",
     "packageName": "sdkwork-knowledgebase-internal-sdk-generated-typescript"
   },
   "versioning": {
