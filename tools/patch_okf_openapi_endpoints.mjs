@@ -35,10 +35,10 @@ const backendImportOperation = {
         description: "Error",
         content: {
           "application/json": {
-            schema: { $ref: "#/components/schemas/ProblemDetails" },
+            schema: { $ref: "#/components/schemas/ProblemDetail" },
           },
           "application/problem+json": {
-            schema: { $ref: "#/components/schemas/ProblemDetails" },
+            schema: { $ref: "#/components/schemas/ProblemDetail" },
           },
         },
       },
@@ -46,10 +46,10 @@ const backendImportOperation = {
         description: "Error",
         content: {
           "application/json": {
-            schema: { $ref: "#/components/schemas/ProblemDetails" },
+            schema: { $ref: "#/components/schemas/ProblemDetail" },
           },
           "application/problem+json": {
-            schema: { $ref: "#/components/schemas/ProblemDetails" },
+            schema: { $ref: "#/components/schemas/ProblemDetail" },
           },
         },
       },
@@ -90,10 +90,10 @@ const appUpsertOperation = {
         description: "Error",
         content: {
           "application/json": {
-            schema: { $ref: "#/components/schemas/ProblemDetails" },
+            schema: { $ref: "#/components/schemas/ProblemDetail" },
           },
           "application/problem+json": {
-            schema: { $ref: "#/components/schemas/ProblemDetails" },
+            schema: { $ref: "#/components/schemas/ProblemDetail" },
           },
         },
       },
@@ -101,10 +101,10 @@ const appUpsertOperation = {
         description: "Error",
         content: {
           "application/json": {
-            schema: { $ref: "#/components/schemas/ProblemDetails" },
+            schema: { $ref: "#/components/schemas/ProblemDetail" },
           },
           "application/problem+json": {
-            schema: { $ref: "#/components/schemas/ProblemDetails" },
+            schema: { $ref: "#/components/schemas/ProblemDetail" },
           },
         },
       },
@@ -167,15 +167,15 @@ const problemResponses = {
   "400": {
     description: "Error",
     content: {
-      "application/json": { schema: { $ref: "#/components/schemas/ProblemDetails" } },
-      "application/problem+json": { schema: { $ref: "#/components/schemas/ProblemDetails" } },
+      "application/json": { schema: { $ref: "#/components/schemas/ProblemDetail" } },
+      "application/problem+json": { schema: { $ref: "#/components/schemas/ProblemDetail" } },
     },
   },
   "404": {
     description: "Error",
     content: {
-      "application/json": { schema: { $ref: "#/components/schemas/ProblemDetails" } },
-      "application/problem+json": { schema: { $ref: "#/components/schemas/ProblemDetails" } },
+      "application/json": { schema: { $ref: "#/components/schemas/ProblemDetail" } },
+      "application/problem+json": { schema: { $ref: "#/components/schemas/ProblemDetail" } },
     },
   },
 };

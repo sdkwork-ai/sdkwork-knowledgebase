@@ -13,15 +13,15 @@ const targets = [
   path.join(root, 'apis/app-api/knowledgebase-app-api.openapi.json'),
 ];
 
-const problemRef = { $ref: '#/components/schemas/ProblemDetails' };
+const problemRef = { $ref: '#/components/schemas/ProblemDetail' };
 const errorResponses = {
-  400: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  401: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  403: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  404: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  409: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  429: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  500: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
+  400: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  401: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  403: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  404: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  409: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  429: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  500: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
 };
 
 const int64StringSchema = {

@@ -11,8 +11,8 @@
   "status": "ok",
   "mode": "apply",
   "hasChanges": true,
-  "hasDestructiveChanges": false,
-  "changeFingerprint": "4afc17248bf0f97c0916ad65c7de59854e97af9240618c497c4b8bca3ddda667",
+  "hasDestructiveChanges": true,
+  "changeFingerprint": "3be5c51a4574b9a03748eccba845eb8654d69fca45a768d59106532690a825da",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
@@ -22,7 +22,12 @@
       {
         "area": "models",
         "paths": [
-          "src/types/okf-concept-upsert-request.ts"
+          "src/types/index.ts",
+          "src/types/knowledge-agent-chat-request.d.ts",
+          "src/types/knowledge-context-pack-request.d.ts",
+          "src/types/knowledge-retrieval-request.d.ts",
+          "src/types/okf-concept-upsert-request.d.ts",
+          "src/types/problem-details.ts"
         ]
       }
     ],
@@ -31,12 +36,15 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "backed-up-generated-files",
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },
@@ -139,10 +147,10 @@
     "localVersions": []
   },
   "stats": {
-    "totalFiles": 211,
-    "models": 187,
+    "totalFiles": 210,
+    "models": 186,
     "apis": 1,
-    "types": 189
+    "types": 188
   },
   "warnings": [],
   "syncSummary": {
@@ -150,14 +158,14 @@
     "controlPlaneEnabled": true,
     "writtenFiles": 1,
     "skippedScaffoldFiles": 2,
-    "skippedUnchangedGeneratedFiles": 208,
-    "deletedGeneratedFiles": 0,
+    "skippedUnchangedGeneratedFiles": 207,
+    "deletedGeneratedFiles": 5,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "4afc17248bf0f97c0916ad65c7de59854e97af9240618c497c4b8bca3ddda667",
+    "changeFingerprint": "3be5c51a4574b9a03748eccba845eb8654d69fca45a768d59106532690a825da",
     "changes": {
       "createdGeneratedFiles": [],
       "updatedGeneratedFiles": [
-        "src/types/okf-concept-upsert-request.ts"
+        "src/types/index.ts"
       ],
       "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
@@ -212,7 +220,6 @@
         "src/types/group-knowledge-space-lifecycle-state.ts",
         "src/types/group-knowledgebase-launch-target.ts",
         "src/types/group-launches-consume-response.ts",
-        "src/types/index.ts",
         "src/types/ingestion-job-state.ts",
         "src/types/ingestion-job.ts",
         "src/types/ingests-create-response201.ts",
@@ -316,6 +323,7 @@
         "src/types/okf-bundle-profile-retrieve-response.ts",
         "src/types/okf-concept-summary-list.ts",
         "src/types/okf-concept-summary.ts",
+        "src/types/okf-concept-upsert-request.ts",
         "src/types/okf-concepts-list-response.ts",
         "src/types/okf-concepts-retrieve-response.ts",
         "src/types/okf-concepts-revisions-list-response.ts",
@@ -336,7 +344,6 @@
         "src/types/okf-revision-review-state.ts",
         "src/types/page-info.ts",
         "src/types/problem-detail.ts",
-        "src/types/problem-details.ts",
         "src/types/publish-knowledge-wiki-source-file-request.ts",
         "src/types/retrievals-create-response201.ts",
         "src/types/retrievals-retrieve-response.ts",
@@ -369,13 +376,24 @@
         "src/types/wiki-source-files-visibility-update-response.ts",
         "tsconfig.json"
       ],
-      "deletedGeneratedFiles": [],
+      "deletedGeneratedFiles": [
+        "src/types/knowledge-agent-chat-request.d.ts",
+        "src/types/knowledge-context-pack-request.d.ts",
+        "src/types/knowledge-retrieval-request.d.ts",
+        "src/types/okf-concept-upsert-request.d.ts",
+        "src/types/problem-details.ts"
+      ],
       "scaffoldedFiles": [],
       "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
         "custom/README.md"
       ],
-      "backedUpFiles": []
+      "backedUpFiles": [
+        "src/types/knowledge-agent-chat-request.d.ts",
+        "src/types/knowledge-context-pack-request.d.ts",
+        "src/types/knowledge-retrieval-request.d.ts",
+        "src/types/okf-concept-upsert-request.d.ts"
+      ]
     },
     "impact": {
       "schemaVersion": 1,
@@ -386,7 +404,12 @@
         {
           "area": "models",
           "paths": [
-            "src/types/okf-concept-upsert-request.ts"
+            "src/types/index.ts",
+            "src/types/knowledge-agent-chat-request.d.ts",
+            "src/types/knowledge-context-pack-request.d.ts",
+            "src/types/knowledge-retrieval-request.d.ts",
+            "src/types/okf-concept-upsert-request.d.ts",
+            "src/types/problem-details.ts"
           ]
         }
       ],
@@ -438,16 +461,24 @@
     },
     "executionDecision": {
       "schemaVersion": 1,
-      "riskLevel": "medium",
+      "riskLevel": "high",
       "nextAction": "verify",
       "requiresManualReview": false,
       "applyRequiresExpectedFingerprint": false,
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
+        "backed-up-generated-files",
+        "deleted-generated-files",
+        "manual-review-required",
         "verification-required"
       ]
     },
-    "backedUpFiles": [],
+    "backedUpFiles": [
+      "src/types/knowledge-agent-chat-request.d.ts",
+      "src/types/knowledge-context-pack-request.d.ts",
+      "src/types/knowledge-retrieval-request.d.ts",
+      "src/types/okf-concept-upsert-request.d.ts"
+    ],
     "preservedLegacyFiles": false
   }
 }

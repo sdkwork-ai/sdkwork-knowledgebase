@@ -13,11 +13,11 @@ const openapiPath = path.join(
   'sdks/sdkwork-knowledgebase-app-sdk/openapi/knowledgebase-app-api.openapi.json',
 );
 
-const problemRef = { $ref: '#/components/schemas/ProblemDetails' };
+const problemRef = { $ref: '#/components/schemas/ProblemDetail' };
 const errorResponses = {
-  400: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  401: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  403: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
+  400: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  401: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  403: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
 };
 
 function op(id, summary, methodExtras) {

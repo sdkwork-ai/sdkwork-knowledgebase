@@ -380,7 +380,7 @@
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "1a95904ca22685689f9d1bf9c64609bbaec427f03e212ee92e91f005789f7cdb"
+      "sha256": "2c952379fb3e0c30f7fd29f9b0f00c10e155988e68087d6d5dd2c8bc4d3d72b7"
     },
     {
       "path": "src/models/okf_bundle_export_create_response201.rs",
@@ -533,10 +533,6 @@
     {
       "path": "src/models/problem_detail.rs",
       "sha256": "da504e3bda4a51de0ef6611283e5e708596bb5861bd71e0cd46e37a29734d452"
-    },
-    {
-      "path": "src/models/problem_details.rs",
-      "sha256": "6f505604886a73c4643c17ec6b063fd0ba0254cc950493428f1f14bd90e5a7ae"
     },
     {
       "path": "src/models/provider_binding_version_command_request.rs",

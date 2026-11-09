@@ -9,11 +9,11 @@
     "protocol": "http",
     "packageName": "sdkwork-knowledgebase-app-sdk-generated-rust"
   },
-  "changeFingerprint": "1456166d40ca9c2d351a0198fdad4340ff5d419178be2d638b942b8910472d94",
+  "changeFingerprint": "d3286100f5058f726fa47e6c4326e2467c10e4aab34aa8a33de5e638e8a16ad6",
   "changes": {
     "createdGeneratedFiles": [],
     "updatedGeneratedFiles": [
-      "src/models/okf_concept_upsert_request.rs"
+      "src/models/mod.rs"
     ],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
@@ -130,7 +130,6 @@
       "src/models/market_listings_list_response.rs",
       "src/models/market_subscriptions_create_response201.rs",
       "src/models/media_tasks_create_response201.rs",
-      "src/models/mod.rs",
       "src/models/okf_bundle_export_create_response201.rs",
       "src/models/okf_bundle_export_request.rs",
       "src/models/okf_bundle_export_retrieve_response.rs",
@@ -142,6 +141,7 @@
       "src/models/okf_bundle_profile_retrieve_response.rs",
       "src/models/okf_concept_summary_list.rs",
       "src/models/okf_concept_summary.rs",
+      "src/models/okf_concept_upsert_request.rs",
       "src/models/okf_concepts_list_response.rs",
       "src/models/okf_concepts_retrieve_response.rs",
       "src/models/okf_concepts_revisions_list_response.rs",
@@ -161,7 +161,6 @@
       "src/models/okf_query_result.rs",
       "src/models/page_info.rs",
       "src/models/problem_detail.rs",
-      "src/models/problem_details.rs",
       "src/models/publish_knowledge_wiki_source_file_request.rs",
       "src/models/retrievals_create_response201.rs",
       "src/models/retrievals_retrieve_response.rs",
@@ -192,7 +191,9 @@
       "src/models/wiki_source_files_unpublish_response.rs",
       "src/models/wiki_source_files_visibility_update_response.rs"
     ],
-    "deletedGeneratedFiles": [],
+    "deletedGeneratedFiles": [
+      "src/models/problem_details.rs"
+    ],
     "scaffoldedFiles": [],
     "preservedScaffoldFiles": [
       "custom/README.md"
@@ -208,7 +209,8 @@
       {
         "area": "models",
         "paths": [
-          "src/models/okf_concept_upsert_request.rs"
+          "src/models/mod.rs",
+          "src/models/problem_details.rs"
         ]
       }
     ],
@@ -260,12 +262,14 @@
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "medium",
+    "riskLevel": "high",
     "nextAction": "verify",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
+      "deleted-generated-files",
+      "manual-review-required",
       "verification-required"
     ]
   },

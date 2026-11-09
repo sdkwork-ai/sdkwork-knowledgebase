@@ -26,8 +26,6 @@ pub mod knowledge_document_version;
 pub use knowledge_document_version::KnowledgeDocumentVersion;
 pub mod knowledge_okf_bundle_file;
 pub use knowledge_okf_bundle_file::KnowledgeOkfBundleFile;
-pub mod problem_details;
-pub use problem_details::ProblemDetails;
 pub mod knowledge_drive_import_result;
 pub use knowledge_drive_import_result::KnowledgeDriveImportResult;
 pub mod knowledge_drive_object_ref;

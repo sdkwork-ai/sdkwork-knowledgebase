@@ -5,7 +5,6 @@ export type { KnowledgeRetrievalTrace } from './knowledge-retrieval-trace';
 export type { KnowledgeContextFragment } from './knowledge-context-fragment';
 export type { KnowledgeRetrievalMethod } from './knowledge-retrieval-method';
 export type { KnowledgeCitation } from './knowledge-citation';
-export type { ProblemDetails } from './problem-details';
 export type { ProblemDetail } from './problem-detail';
 export type { SdkWorkPlatformErrorCode } from './sdk-work-platform-error-code';
 export type { FieldError } from './field-error';

@@ -108,7 +108,7 @@
     },
     {
       "path": "src/types/index.ts",
-      "sha256": "fc94c29568221ca9908a06fb87711b6c25c64bb78f35fce40dcbfcf228fac551"
+      "sha256": "c875ed4f35bf8ef800d970e57d731995ac9153ce6c7b461876a7523b8eaeac23"
     },
     {
       "path": "src/types/ingestion-job-state.ts",
@@ -217,10 +217,6 @@
     {
       "path": "src/types/problem-detail.ts",
       "sha256": "deca621176487754cbfa2012aa3eab046131ced5829ddf7cff64de692f8bcb0e"
-    },
-    {
-      "path": "src/types/problem-details.ts",
-      "sha256": "1b080835b11fe8a05291e841dd864a0eb901bc819255ea159b46afdd1cc76c42"
     },
     {
       "path": "src/types/retrievals-create-response201.ts",

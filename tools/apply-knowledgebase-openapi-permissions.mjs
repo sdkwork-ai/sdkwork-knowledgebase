@@ -65,8 +65,15 @@ function applyPermissions(document, target) {
           operation['x-sdkwork-permission'] = target.permission;
           changed = true;
         }
-        if (target.auditEvent && operation['x-sdkwork-audit-event'] !== target.auditEvent) {
-          operation['x-sdkwork-audit-event'] = target.auditEvent;
+        // Only mutations are emitted to the admin audit trail; declaring an audit event
+        // on a read operation would promise evidence the runtime never records.
+        if (target.auditEvent && method !== 'get') {
+          if (operation['x-sdkwork-audit-event'] !== target.auditEvent) {
+            operation['x-sdkwork-audit-event'] = target.auditEvent;
+            changed = true;
+          }
+        } else if (method === 'get' && 'x-sdkwork-audit-event' in operation) {
+          delete operation['x-sdkwork-audit-event'];
           changed = true;
         }
       }

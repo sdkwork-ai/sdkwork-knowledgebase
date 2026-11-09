@@ -15,7 +15,6 @@ export type { KnowledgeDocumentState } from './knowledge-document-state';
 export type { KnowledgeDocumentVersionState } from './knowledge-document-version-state';
 export type { KnowledgeOkfBundleFile } from './knowledge-okf-bundle-file';
 export type { OkfBundleFileKind } from './okf-bundle-file-kind';
-export type { ProblemDetails } from './problem-details';
 export type { KnowledgeDriveImportResult } from './knowledge-drive-import-result';
 export type { KnowledgeDriveObjectRef } from './knowledge-drive-object-ref';
 export type { KnowledgeSourceList } from './knowledge-source-list';

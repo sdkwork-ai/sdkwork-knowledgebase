@@ -468,7 +468,7 @@
     },
     {
       "path": "src/models/mod.rs",
-      "sha256": "f87e997ccaa9ef2840d17ca1107294f4a32c1c01976dbda4d6f6feb2467f0cf9"
+      "sha256": "bc7c09997bf431cc409b396de802e9238fb72aea6d90752674c6fc862d31e5b9"
     },
     {
       "path": "src/models/okf_bundle_export_create_response201.rs",
@@ -593,10 +593,6 @@
     {
       "path": "src/models/problem_detail.rs",
       "sha256": "da504e3bda4a51de0ef6611283e5e708596bb5861bd71e0cd46e37a29734d452"
-    },
-    {
-      "path": "src/models/problem_details.rs",
-      "sha256": "6f505604886a73c4643c17ec6b063fd0ba0254cc950493428f1f14bd90e5a7ae"
     },
     {
       "path": "src/models/publish_knowledge_wiki_source_file_request.rs",

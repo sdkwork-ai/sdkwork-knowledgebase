@@ -19,15 +19,18 @@ const targets = [
   path.join(root, 'apis/app-api/knowledgebase-app-api.openapi.json'),
 ];
 
-const problemRef = { $ref: '#/components/schemas/ProblemDetails' };
+const problemRef = { $ref: '#/components/schemas/ProblemDetail' };
+// API_SPEC §15.2: errors are `application/problem+json` only. The legacy
+// `application/json` + string-code `ProblemDetails` duplicate is not part of the
+// SDKWork v3 wire contract.
 const errorResponses = {
-  400: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  401: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  403: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  404: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  409: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  429: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
-  500: { description: 'Error', content: { 'application/json': { schema: problemRef }, 'application/problem+json': { schema: problemRef } } },
+  400: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  401: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  403: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  404: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  409: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  429: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
+  500: { description: 'Error', content: { 'application/problem+json': { schema: problemRef } } },
 };
 
 const sdkworkExtensions = {

@@ -23,11 +23,8 @@ const routeManifestPath = path.join(
 const problemResponse = {
   description: "Error",
   content: {
-    "application/json": {
-      schema: { $ref: "#/components/schemas/ProblemDetails" },
-    },
     "application/problem+json": {
-      schema: { $ref: "#/components/schemas/ProblemDetails" },
+      schema: { $ref: "#/components/schemas/ProblemDetail" },
     },
   },
 };
