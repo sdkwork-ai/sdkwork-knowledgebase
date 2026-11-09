@@ -401,7 +401,7 @@ async fn open_router_web_framework_accepts_dev_inline_api_key_before_handler() {
                 .header("content-type", "application/json")
                 .header(
                     "x-api-key",
-                    "api_key_id=api-key-001;tenant_id=100001;user_id=30001;app_id=knowledgebase",
+                    "api_key_id=api-key-001;tenant_id=100001;user_id=30001;app_id=knowledgebase;permission_scope=knowledge.retrievals.write",
                 )
                 .body(Body::from(
                     r#"{"actorId":"30001","query":"enterprise renewal support","bindings":[{"spaceId":"7","priority":10}],"methods":["hybrid"],"includeCitations":true,"includeTrace":true}"#,
@@ -415,6 +415,42 @@ async fn open_router_web_framework_accepts_dev_inline_api_key_before_handler() {
     assert_eq!(
         service.contexts(),
         vec![("api-key-001".to_string(), 100001)]
+    );
+}
+
+#[tokio::test]
+async fn open_router_web_framework_rejects_api_key_without_declared_scope() {
+    std::env::set_var("SDKWORK_ENV", "dev");
+    let service = RecordingOpenApi::default();
+    let app = wrap_router_with_web_framework(
+        IamWebRequestContextResolver::new(None),
+        build_router_with_open_api(service.clone()),
+    );
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/knowledge/v3/api/retrievals")
+                .header("content-type", "application/json")
+                // Authenticated key without the operation scope: the manifest gate must
+                // reject it before the handler runs.
+                .header(
+                    "x-api-key",
+                    "api_key_id=api-key-002;tenant_id=100001;user_id=30001;app_id=knowledgebase",
+                )
+                .body(Body::from(
+                    r#"{"query":"enterprise renewal support","bindings":[{"spaceId":"7","priority":10}],"methods":["hybrid"],"includeCitations":true,"includeTrace":true}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    assert!(
+        service.contexts().is_empty(),
+        "an unscoped API key must never reach the handler"
     );
 }
 

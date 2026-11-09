@@ -125,7 +125,7 @@ fn app_openapi_exposes_version_fenced_wiki_publication_contracts() {
     ))
     .unwrap();
 
-    for (operation_id, item_schema_ref, permission, mutation) in [
+    for (operation_id, item_schema_ref, _permission, mutation) in [
         (
             "wikiPublications.retrieve",
             "#/components/schemas/KnowledgeWikiPublication",
@@ -165,15 +165,14 @@ fn app_openapi_exposes_version_fenced_wiki_publication_contracts() {
     ] {
         assert_resource_response_envelope(&spec, operation_id, item_schema_ref);
         let operation = operation_by_id(&spec, operation_id);
-        if mutation {
-            assert_eq!(operation["x-sdkwork-permission"], permission);
-        } else {
-            assert_eq!(
-                operation.get("x-sdkwork-permission"),
-                None,
-                "read operation {operation_id} must not require an RBAC permission"
-            );
-        }
+        // PERMISSION_STANDARD_SPEC §Surface Authorization Tiers: app-api is a consumer
+        // surface (tier 0-2); wiki commands are owner/writer ACL-gated by the service
+        // layer and MUST NOT declare a per-route RBAC permission.
+        assert_eq!(
+            operation.get("x-sdkwork-permission"),
+            None,
+            "{operation_id} must not declare an RBAC permission on app-api"
+        );
         assert_eq!(operation["x-sdkwork-tenant-scope"], "tenant");
         assert_eq!(operation["x-sdkwork-data-scope"], "organization");
         if mutation {

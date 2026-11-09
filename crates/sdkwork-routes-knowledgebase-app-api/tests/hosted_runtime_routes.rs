@@ -2420,7 +2420,7 @@ async fn hosted_external_agent_chat_rejects_unconfigured_external_adapter() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -2727,7 +2727,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_dify_adapter() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -2747,7 +2747,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_dify_adapter() {
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured external engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -2890,7 +2890,7 @@ async fn hosted_external_read_resolves_configured_dify_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -2907,7 +2907,7 @@ async fn hosted_external_read_resolves_configured_dify_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(chat_response.status(), StatusCode::OK);
+    assert_eq!(chat_response.status(), StatusCode::CREATED);
     let chat_body = response_body_json(chat_response).await;
     let logical_path = chat_body["citations"][0]["logicalPath"]
         .as_str()
@@ -3066,7 +3066,7 @@ async fn hosted_external_read_resolves_configured_ragflow_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -3083,7 +3083,7 @@ async fn hosted_external_read_resolves_configured_ragflow_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(chat_response.status(), StatusCode::OK);
+    assert_eq!(chat_response.status(), StatusCode::CREATED);
     let chat_body = response_body_json(chat_response).await;
     let logical_path = chat_body["citations"][0]["logicalPath"]
         .as_str()
@@ -3228,7 +3228,7 @@ async fn hosted_external_read_resolves_configured_open_webui_citation_document()
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -3245,7 +3245,7 @@ async fn hosted_external_read_resolves_configured_open_webui_citation_document()
         )
         .await
         .unwrap();
-    assert_eq!(chat_response.status(), StatusCode::OK);
+    assert_eq!(chat_response.status(), StatusCode::CREATED);
     let chat_body = response_body_json(chat_response).await;
     let logical_path = chat_body["citations"][0]["logicalPath"]
         .as_str()
@@ -3396,7 +3396,7 @@ async fn hosted_external_read_resolves_configured_flowise_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -3413,7 +3413,7 @@ async fn hosted_external_read_resolves_configured_flowise_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(chat_response.status(), StatusCode::OK);
+    assert_eq!(chat_response.status(), StatusCode::CREATED);
     let chat_body = response_body_json(chat_response).await;
     let logical_path = chat_body["citations"][0]["logicalPath"]
         .as_str()
@@ -3586,7 +3586,7 @@ async fn hosted_external_read_resolves_configured_qdrant_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -3603,7 +3603,7 @@ async fn hosted_external_read_resolves_configured_qdrant_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(chat_response.status(), StatusCode::OK);
+    assert_eq!(chat_response.status(), StatusCode::CREATED);
     let chat_body = response_body_json(chat_response).await;
     let logical_path = chat_body["citations"][0]["logicalPath"]
         .as_str()
@@ -3747,7 +3747,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_ragflow_adapter() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -3767,7 +3767,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_ragflow_adapter() {
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured RAGFlow engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -3893,7 +3893,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_onyx_adapter() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -3913,7 +3913,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_onyx_adapter() {
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured Onyx engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -4044,7 +4044,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_anythingllm_adapter
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -4064,7 +4064,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_anythingllm_adapter
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured AnythingLLM engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -4192,7 +4192,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_open_webui_adapter(
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -4212,7 +4212,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_open_webui_adapter(
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured Open WebUI engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -4342,7 +4342,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_flowise_adapter() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -4362,7 +4362,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_flowise_adapter() {
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured Flowise engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -4488,7 +4488,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_chroma_adapter() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -4508,7 +4508,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_chroma_adapter() {
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured Chroma engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -4651,7 +4651,7 @@ async fn hosted_external_read_resolves_configured_chroma_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -4668,7 +4668,7 @@ async fn hosted_external_read_resolves_configured_chroma_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(chat_response.status(), StatusCode::OK);
+    assert_eq!(chat_response.status(), StatusCode::CREATED);
     let chat_body = response_body_json(chat_response).await;
     let logical_path = chat_body["citations"][0]["logicalPath"]
         .as_str()
@@ -4817,7 +4817,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_qdrant_adapter() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -4837,7 +4837,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_qdrant_adapter() {
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured Qdrant engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -4966,7 +4966,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_weaviate_adapter() 
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -4986,7 +4986,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_weaviate_adapter() 
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured Weaviate engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -5131,7 +5131,7 @@ async fn hosted_external_read_resolves_configured_weaviate_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -5148,7 +5148,7 @@ async fn hosted_external_read_resolves_configured_weaviate_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(chat_response.status(), StatusCode::OK);
+    assert_eq!(chat_response.status(), StatusCode::CREATED);
     let chat_body = response_body_json(chat_response).await;
     let logical_path = chat_body["citations"][0]["logicalPath"]
         .as_str()
@@ -5290,7 +5290,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_haystack_adapter() 
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -5310,7 +5310,7 @@ async fn hosted_external_agent_chat_succeeds_with_configured_haystack_adapter() 
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "configured Haystack engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;
@@ -5439,7 +5439,7 @@ async fn hosted_external_read_resolves_configured_haystack_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -5456,7 +5456,7 @@ async fn hosted_external_read_resolves_configured_haystack_citation_document() {
         )
         .await
         .unwrap();
-    assert_eq!(chat_response.status(), StatusCode::OK);
+    assert_eq!(chat_response.status(), StatusCode::CREATED);
     let chat_body = response_body_json(chat_response).await;
     let logical_path = chat_body["citations"][0]["logicalPath"]
         .as_str()
@@ -5538,7 +5538,7 @@ async fn hosted_okf_agent_chat_succeeds_with_published_concept_citations() {
         )
         .await
         .unwrap();
-    assert_eq!(binding_response.status(), StatusCode::OK);
+    assert_eq!(binding_response.status(), StatusCode::CREATED);
 
     let chat_response = app
         .oneshot(
@@ -5558,7 +5558,7 @@ async fn hosted_okf_agent_chat_succeeds_with_published_concept_citations() {
 
     assert_eq!(
         chat_response.status(),
-        StatusCode::OK,
+        StatusCode::CREATED,
         "OKF native engine must complete agent chat"
     );
     let chat_body = response_body_json(chat_response).await;

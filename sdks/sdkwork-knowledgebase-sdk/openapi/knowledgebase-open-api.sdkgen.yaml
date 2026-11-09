@@ -11,5 +11,5 @@ languageTargets:
 ownerOnly: true
 domain: intelligence
 capability: knowledgebase
-prefix: /open/v3/api
+prefix: /knowledge/v3/api
 surface: open-api
