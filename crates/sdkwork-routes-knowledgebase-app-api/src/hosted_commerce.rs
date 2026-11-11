@@ -185,15 +185,34 @@ impl KnowledgeCommerceAppService for HostedCommerceService {
                 let result = client
                     .images()
                     .create_generation(&OpenAiImageGenerationRequest {
+                        // Documented contract defaults: this route exposes no input for
+                        // them and consumes exactly one non-streaming static image.
+                        background: Some("auto".to_string()),
+                        // OpenAI documents `high` as the default planning depth; the
+                        // route exposes no complexity input, so keep that default.
+                        complexity: Some("high".to_string()),
+                        // GIF-only knobs do not apply: the route returns one static image.
+                        frame_count: None,
+                        frame_duration_ms: None,
                         model: media_model(
                             "SDKWORK_KNOWLEDGEBASE_IMAGE_GENERATION_MODEL",
                             "openai/gpt-image-1",
                         ),
+                        moderation: Some("auto".to_string()),
                         n: Some(1),
+                        output_compression: Some(100),
+                        output_format: Some("png".to_string()),
+                        partial_images: Some(0),
                         prompt,
                         quality,
                         response_format: Some("url".to_string()),
+                        // No end-user identifier is forwarded to the media provider.
+                        safety_identifier: None,
                         size: Some(resolution.to_string()),
+                        stream: Some(false),
+                        style: None,
+                        svg: None,
+                        user: None,
                     })
                     .await
                     .map_err(|error| {

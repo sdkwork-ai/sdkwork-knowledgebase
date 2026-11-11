@@ -4073,6 +4073,7 @@ dependencies = [
 name = "sdkwork-drive-object-runtime"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "sdkwork-drive-storage-contract",
  "sdkwork-drive-storage-local",
  "sdkwork-drive-storage-s3",
