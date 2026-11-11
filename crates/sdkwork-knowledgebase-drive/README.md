@@ -11,10 +11,10 @@ This README is the SDKWork module entrypoint for `sdkwork-knowledgebase-drive`. 
 
 - `.`
 
-## Required SDK Surface
+## Required In-Process Surface
 
-- Generated Rust `sdkwork-drive-internal-sdk` for root-scoped metadata and bounded immutable bytes.
-- The adapter receives an already constructed `SdkworkCustomClient`; runtime bootstrap owns Base URL and service credential configuration.
+- Drive service crates (`sdkwork-drive-workspace-service`, `sdkwork-drive-object-runtime`) for root-scoped metadata and bounded immutable bytes.
+- The adapters open the shared authoritative PostgreSQL pool and call Drive's typed services directly; there is no Drive Internal API client and no service credential (MODULE_SPEC.md §4.2).
 
 ## Configuration
 

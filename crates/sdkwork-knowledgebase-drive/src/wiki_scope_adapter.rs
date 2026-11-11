@@ -12,6 +12,7 @@ use sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_drive_sour
     EnsureKnowledgebaseRawScopeRequest, KnowledgeWikiDriveEventDeliveryMode,
     KnowledgeWikiDriveScope, KnowledgeWikiDriveSourceError, KnowledgebaseRawScope,
     KnowledgebaseRawScopeEventDelivery, RenewKnowledgebaseRawScopeEventDeliveryRequest,
+    KNOWLEDGEBASE_RAW_CONSUMER_KIND,
 };
 use sqlx::PgPool;
 
@@ -96,6 +97,17 @@ impl KnowledgeWikiDriveScope for KnowledgebaseDriveRootScopeAdapter {
 fn map_subscription(
     subscription: DriveRootScopeSubscription,
 ) -> Result<KnowledgebaseRawScope, KnowledgeWikiDriveSourceError> {
+    // Drive retrieves a subscription by uuid without filtering its consumer kind,
+    // so the adapter keeps the guard the deleted Internal API transport applied:
+    // a root scope registered for another consumer must never enter the Wiki.
+    if !subscription
+        .consumer_kind
+        .eq_ignore_ascii_case(KNOWLEDGEBASE_RAW_CONSUMER_KIND)
+    {
+        return Err(KnowledgeWikiDriveSourceError::IntegrityFailed(format!(
+            "Drive root scope consumer kind must be {KNOWLEDGEBASE_RAW_CONSUMER_KIND}"
+        )));
+    }
     let version = u64::try_from(subscription.version).map_err(|_| {
         KnowledgeWikiDriveSourceError::IntegrityFailed(
             "Drive root scope version must be nonnegative".to_string(),
@@ -104,7 +116,7 @@ fn map_subscription(
     Ok(KnowledgebaseRawScope {
         subscription_uuid: subscription.uuid,
         drive_space_id: subscription.space_id,
-        consumer_kind: subscription.consumer_kind,
+        consumer_kind: KNOWLEDGEBASE_RAW_CONSUMER_KIND.to_string(),
         knowledgebase_uuid: subscription.consumer_resource_id,
         raw_folder_node_id: subscription.root_node_id,
         scope_status: subscription.scope_status,
@@ -127,5 +139,46 @@ fn map_drive_error(error: DriveServiceError) -> KnowledgeWikiDriveSourceError {
         DriveServiceError::Internal(_) => KnowledgeWikiDriveSourceError::Upstream(
             "Drive could not complete the embedded Knowledgebase scope operation".to_string(),
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn subscription(consumer_kind: &str) -> DriveRootScopeSubscription {
+        DriveRootScopeSubscription {
+            id: "1".to_string(),
+            uuid: "scope-uuid".to_string(),
+            tenant_id: "1".to_string(),
+            space_id: "space-id".to_string(),
+            consumer_kind: consumer_kind.to_string(),
+            consumer_resource_id: "knowledgebase-uuid".to_string(),
+            root_node_id: "raw-folder-node".to_string(),
+            scope_status: "ACTIVE".to_string(),
+            version: 4,
+            created_at: "2026-11-11T00:00:00Z".to_string(),
+            updated_at: "2026-11-11T00:00:00Z".to_string(),
+        }
+    }
+
+    /// The deleted Internal API transport rejected a root scope registered for a
+    /// different consumer. Drive's uuid lookup does not filter on consumer kind,
+    /// so the adapter must keep that guard on both ensure and retrieve.
+    #[test]
+    fn root_scope_must_belong_to_the_canonical_knowledgebase_consumer() {
+        let scope = map_subscription(subscription(KNOWLEDGEBASE_RAW_CONSUMER_KIND))
+            .expect("canonical knowledgebase raw scope maps");
+        assert_eq!(scope.consumer_kind, KNOWLEDGEBASE_RAW_CONSUMER_KIND);
+        assert_eq!(scope.version, "4");
+
+        for foreign in ["drive_webhook", "workspace_publication", ""] {
+            assert_eq!(
+                map_subscription(subscription(foreign))
+                    .expect_err("a foreign consumer kind must fail integrity")
+                    .code(),
+                "wiki_drive_source_integrity_failed"
+            );
+        }
     }
 }

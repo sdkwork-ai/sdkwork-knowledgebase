@@ -129,12 +129,10 @@
                                          "SDKWORK_KNOWLEDGEBASE_PROVIDER_SECRETS_DIR",
                                          "SDKWORK_KNOWLEDGEBASE_DEPLOYMENT_PROFILE",
                                          "SDKWORK_DRIVE_DOMAIN_OUTBOX_EMBEDDED_DISPATCH",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_INTERNAL_API_BASE_URL",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CALLBACK_URL",
+                                         "SDKWORK_KNOWLEDGEBASE_MEMORY_MODE",
+                                         "SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL",
                                          "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_SIGNING_SECRET_FILE",
                                          "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CHANNEL_TTL_SECONDS",
                                          "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CALLER_APP_ID"
                                      ],
                       "sdkDependencies":  [

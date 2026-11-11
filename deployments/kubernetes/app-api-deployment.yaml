@@ -39,14 +39,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-            - name: SDKWORK_KNOWLEDGEBASE_DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE
-              value: /run/secrets/sdkwork/drive-internal-api-ingress-token
-            - name: SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CALLBACK_URL
-              value: https://knowledgebase.sdkwork.com/internal/v3/api/knowledgebase/drive_events
             - name: SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_SIGNING_SECRET_FILE
               value: /run/secrets/sdkwork/drive-event-signing/current
-            - name: SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CHANNEL_TTL_SECONDS
-              value: "86400"
             - name: SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CALLER_APP_ID
               value: sdkwork-drive
           envFrom:
@@ -84,17 +78,10 @@ spec:
               drop:
                 - ALL
           volumeMounts:
-            - name: drive-internal-api-ingress-token
-              mountPath: /run/secrets/sdkwork/drive-internal-api-ingress-token
-              subPath: ingress-token
-              readOnly: true
             - name: drive-event-signing-master
               mountPath: /run/secrets/sdkwork/drive-event-signing
               readOnly: true
       volumes:
-        - name: drive-internal-api-ingress-token
-          secret:
-            secretName: sdkwork-knowledgebase-drive-internal-api
         - name: drive-event-signing-master
           secret:
             secretName: sdkwork-knowledgebase-drive-events

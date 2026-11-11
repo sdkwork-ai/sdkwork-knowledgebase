@@ -124,10 +124,12 @@ retrieval.
   decoded yet (they receive the document upload profile but fail with an
   actionable error instead of indexing garbage).
 - A production memory provider for the Knowledgebase App API chat path supports
-  `SDKWORK_KNOWLEDGEBASE_MEMORY_MODE=in_process` (default) and `http`. In-process
-  calls the memory service in the same process; HTTP calls
-  `SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`. Missing optional configuration keeps
-  the documented no-memory degradation, while invalid configuration fails
+  `SDKWORK_KNOWLEDGEBASE_MEMORY_MODE=in_process` (default) and the explicit
+  split-deployment opt-in `http`. In-process calls the memory service in the same
+  process over the shared PostgreSQL; HTTP calls
+  `SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`, which is required at bootstrap for
+  that mode. In-process keeps the documented no-memory degradation when the
+  memory database is not configured, while invalid configuration fails
   bootstrap.
 - Live end-to-end evidence with a real Drive upload, worker ingestion, embedding
   provider, and model provider in a release environment.

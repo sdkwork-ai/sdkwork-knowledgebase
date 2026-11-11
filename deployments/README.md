@@ -43,7 +43,6 @@ curl -fsS http://127.0.0.1:3904/readyz
    topology; the standalone container image above is the single-deployment-unit
    build, and cloud deploys the same binaries as k8s Deployments:
 2. Apply secrets and config from `etc/topology/cloud.production.env`.
-   - `sdkwork-knowledgebase-drive-internal-api` must contain key `ingress-token`.
    - `sdkwork-knowledgebase-drive-events` must contain key `current`; add key `previous`
      only during a controlled signing-secret rotation overlap and set the previous-secret env key.
    - Follow `runbooks/production-launch.md` for the required paged channel renewal, overlap window,

@@ -58,6 +58,43 @@ fn resolve_memory_mode_value(value: Option<&str>) -> Result<MemoryMode, sqlx::Er
     }
 }
 
+/// The HTTP transport is a deliberate split-deployment opt-in: Memory runs in
+/// its own process, so the App API origin becomes a startup requirement. A
+/// missing or malformed origin — including a path, credentials, query, or
+/// fragment, which the SDK cannot join onto its own route — fails bootstrap
+/// instead of silently degrading memory grounding after the host has already
+/// started serving.
+fn required_memory_base_url() -> Result<String, sqlx::Error> {
+    let value = std::env::var(MEMORY_BASE_URL_ENV).map_err(|_| {
+        configuration_error(format!(
+            "{MEMORY_BASE_URL_ENV} is required when {MEMORY_MODE_ENV}={MEMORY_MODE_HTTP}"
+        ))
+    })?;
+    validate_memory_base_url(&value)
+}
+
+fn validate_memory_base_url(value: &str) -> Result<String, sqlx::Error> {
+    let value = value.trim();
+    let parsed = url::Url::parse(value).map_err(|_| {
+        configuration_error(format!(
+            "{MEMORY_BASE_URL_ENV} must be an absolute HTTP(S) URL"
+        ))
+    })?;
+    if !matches!(parsed.scheme(), "http" | "https")
+        || parsed.host_str().is_none()
+        || parsed.path() != "/"
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+        || parsed.query().is_some()
+        || parsed.fragment().is_some()
+    {
+        return Err(configuration_error(format!(
+            "{MEMORY_BASE_URL_ENV} must be an absolute credential-free HTTP(S) origin"
+        )));
+    }
+    Ok(value.trim_end_matches('/').to_string())
+}
+
 async fn memory_context_provider_from_env(
 ) -> Result<Option<Arc<dyn KnowledgeMemoryContextProvider>>, sqlx::Error> {
     match resolve_memory_mode()? {
@@ -81,20 +118,14 @@ async fn memory_context_provider_from_env(
             )),
         },
         MemoryMode::Http => {
-            let base_url = std::env::var(MEMORY_BASE_URL_ENV)
-                .ok()
-                .map(|value| value.trim().to_string())
-                .filter(|value| !value.is_empty());
-            let Some(base_url) = base_url else {
-                tracing::info!(
-                    mode = MEMORY_MODE_HTTP,
-                    "Knowledgebase memory App API URL is not configured; memory grounding stays disabled"
-                );
-                return Ok(None);
-            };
+            let base_url = required_memory_base_url()?;
             let provider = MemoryAppApiContextProvider::new(base_url)
                 .map_err(|error| sqlx::Error::Configuration(error.into()))?;
             let provider: Arc<dyn KnowledgeMemoryContextProvider> = Arc::new(provider);
+            tracing::info!(
+                mode = MEMORY_MODE_HTTP,
+                "Knowledgebase memory grounding uses the Memory App API (explicit split-deployment opt-in)"
+            );
             Ok(Some(provider))
         }
     }
@@ -140,7 +171,6 @@ use sdkwork_knowledgebase_drive::{
     connect_knowledgebase_drive_pool_with_max_connections, knowledgebase_drive_health_check,
     resolve_cloud_knowledgebase_drive_storage, DomainOutboxDispatchResult,
     KnowledgebaseDriveEmbeddedEventRelay, KnowledgebaseDriveEmbeddedWikiSourceAdapter,
-    KnowledgebaseDriveEventDeliveryConfig, KnowledgebaseDriveInternalSdkAdapter,
     KnowledgebaseDriveNodeTreeAdapter, KnowledgebaseDriveSpaceProvisionerAdapter,
     KnowledgebaseDriveStorageAdapter, KnowledgebaseDriveWorkspaceAdapter,
     KnowledgebaseKnowledgeAccessControlAdapter,
@@ -194,22 +224,14 @@ const DEFAULT_DRIVE_BUCKET: &str = "knowledgebase";
 const KNOWLEDGEBASE_ID_SERVICE_NAME: &str = "sdkwork-knowledgebase";
 const PROVIDER_SECRETS_DIR_ENV: &str = "SDKWORK_KNOWLEDGEBASE_PROVIDER_SECRETS_DIR";
 const DEPLOYMENT_PROFILE_ENV: &str = "SDKWORK_KNOWLEDGEBASE_DEPLOYMENT_PROFILE";
-const DRIVE_INTERNAL_API_BASE_URL_ENV: &str = "SDKWORK_KNOWLEDGEBASE_DRIVE_INTERNAL_API_BASE_URL";
 const DRIVE_STORAGE_PROVIDER_ID_ENV: &str = "SDKWORK_KNOWLEDGEBASE_DRIVE_STORAGE_PROVIDER_ID";
-const DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE_ENV: &str =
-    "SDKWORK_KNOWLEDGEBASE_DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE";
-const DRIVE_EVENT_CALLBACK_URL_ENV: &str = "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CALLBACK_URL";
 const DRIVE_EVENT_SIGNING_SECRET_FILE_ENV: &str =
     "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_SIGNING_SECRET_FILE";
 const DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE_ENV: &str =
     "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE";
-const DRIVE_EVENT_CHANNEL_TTL_SECONDS_ENV: &str =
-    "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CHANNEL_TTL_SECONDS";
 const DRIVE_EVENT_CALLER_APP_ID_ENV: &str = "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CALLER_APP_ID";
 const WIKI_PROVIDER_CALLER_APP_ID_ENV: &str = "SDKWORK_KNOWLEDGEBASE_WIKI_PROVIDER_CALLER_APP_ID";
-const MAX_INGRESS_TOKEN_FILE_BYTES: u64 = 16 * 1024;
 const MAX_WEBHOOK_SECRET_FILE_BYTES: u64 = 4 * 1024;
-const DEFAULT_DRIVE_EVENT_CHANNEL_TTL_SECONDS: u64 = 86_400;
 
 static RUNTIME_NODE_LEASE: OnceCell<Option<NodeLease>> = OnceCell::const_new();
 
@@ -257,7 +279,7 @@ pub struct KnowledgebaseRuntime {
     drive_workspace: Arc<KnowledgebaseDriveWorkspaceAdapter>,
     wiki_drive_scope: Arc<dyn KnowledgeWikiDriveScope>,
     wiki_drive_source: Arc<dyn KnowledgeWikiDriveSource>,
-    embedded_wiki_drive_event_relay: Option<Arc<KnowledgebaseDriveEmbeddedEventRelay>>,
+    embedded_wiki_drive_event_relay: Arc<KnowledgebaseDriveEmbeddedEventRelay>,
     wiki_webhook_signing_secrets: Arc<Vec<String>>,
     wiki_event_caller_app_id: Arc<str>,
     wiki_provider_caller_app_id: Arc<str>,
@@ -425,61 +447,41 @@ fn required_cloud_drive_storage_provider_id() -> Result<String, sqlx::Error> {
     Ok(value.to_string())
 }
 
+/// Builds the Drive root-scope ports over the shared authoritative PostgreSQL
+/// pool. Drive's typed services own scope resolution, subscription writes and
+/// object reads, so both the standalone and cloud profiles reach Drive
+/// in-process (MODULE_SPEC.md §4.2) instead of its Internal API.
 fn build_wiki_drive_ports(
     drive_pool: PgPool,
     tenant_id: &str,
     operator_id: &str,
-    deployment_profile: KnowledgebaseDeploymentProfile,
-    event_delivery: Option<KnowledgebaseDriveEventDeliveryConfig>,
-) -> Result<KnowledgeWikiDrivePorts, sqlx::Error> {
-    match deployment_profile {
-        KnowledgebaseDeploymentProfile::Standalone => {
-            let adapter = Arc::new(KnowledgebaseDriveEmbeddedWikiSourceAdapter::new(
-                drive_pool,
-                tenant_id,
-                operator_id,
-            ));
-            let scope: Arc<dyn KnowledgeWikiDriveScope> = adapter.clone();
-            let source: Arc<dyn KnowledgeWikiDriveSource> = adapter;
-            Ok((scope, source))
-        }
-        KnowledgebaseDeploymentProfile::Cloud => {
-            let base_url = required_drive_internal_api_base_url()?;
-            let ingress_token = read_drive_internal_api_ingress_token()?;
-            let adapter = Arc::new(
-                KnowledgebaseDriveInternalSdkAdapter::from_ingress_token(base_url, ingress_token)
-                    .and_then(|adapter| {
-                        adapter.with_event_delivery(event_delivery.ok_or_else(|| {
-                            sdkwork_intelligence_knowledgebase_service::ports::knowledge_wiki_drive_source::KnowledgeWikiDriveSourceError::InvalidRequest(
-                                "Drive event delivery config is required for cloud deployment".to_string(),
-                            )
-                        })?)
-                    })
-                    .map_err(|error| configuration_error(error.to_string()))?,
-            );
-            let scope: Arc<dyn KnowledgeWikiDriveScope> = adapter.clone();
-            let source: Arc<dyn KnowledgeWikiDriveSource> = adapter;
-            Ok((scope, source))
-        }
-    }
+) -> KnowledgeWikiDrivePorts {
+    let adapter = Arc::new(KnowledgebaseDriveEmbeddedWikiSourceAdapter::new(
+        drive_pool,
+        tenant_id,
+        operator_id,
+    ));
+    let scope: Arc<dyn KnowledgeWikiDriveScope> = adapter.clone();
+    let source: Arc<dyn KnowledgeWikiDriveSource> = adapter;
+    (scope, source)
 }
 
 #[derive(Debug, Clone)]
 struct ResolvedWikiDriveEventConfig {
-    delivery: Option<KnowledgebaseDriveEventDeliveryConfig>,
     signing_secrets: Vec<String>,
     expected_caller_app_id: String,
 }
 
-fn resolve_wiki_drive_event_config(
-    deployment_profile: KnowledgebaseDeploymentProfile,
-) -> Result<ResolvedWikiDriveEventConfig, sqlx::Error> {
-    let current_secret = read_optional_bounded_secret_file(
-        DRIVE_EVENT_SIGNING_SECRET_FILE_ENV,
-        deployment_profile == KnowledgebaseDeploymentProfile::Cloud,
-    )?;
+/// Resolves the inbound Drive event verification material.
+///
+/// Drive events are delivered by the embedded trusted relay, which does not
+/// cross a process boundary. The signing secrets only configure verification for
+/// an inbound webhook that an externally managed split deployment may still
+/// push, so they stay optional: no outbound Drive HTTP call is ever made.
+fn resolve_wiki_drive_event_config() -> Result<ResolvedWikiDriveEventConfig, sqlx::Error> {
+    let current_secret = read_optional_bounded_secret_file(DRIVE_EVENT_SIGNING_SECRET_FILE_ENV)?;
     let previous_secret =
-        read_optional_bounded_secret_file(DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE_ENV, false)?;
+        read_optional_bounded_secret_file(DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE_ENV)?;
     if previous_secret.is_some() && current_secret.is_none() {
         return Err(configuration_error(format!(
             "{DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE_ENV} requires {DRIVE_EVENT_SIGNING_SECRET_FILE_ENV}"
@@ -495,7 +497,7 @@ fn resolve_wiki_drive_event_config(
         ));
     }
     let mut signing_secrets = Vec::new();
-    if let Some(current) = current_secret.clone() {
+    if let Some(current) = current_secret {
         signing_secrets.push(current);
     }
     if let Some(previous) = previous_secret {
@@ -503,41 +505,7 @@ fn resolve_wiki_drive_event_config(
     }
     let expected_caller_app_id =
         resolve_internal_caller_app_id(DRIVE_EVENT_CALLER_APP_ID_ENV, "sdkwork-drive")?;
-    let delivery = match deployment_profile {
-        KnowledgebaseDeploymentProfile::Standalone => None,
-        KnowledgebaseDeploymentProfile::Cloud => {
-            let callback_url = std::env::var(DRIVE_EVENT_CALLBACK_URL_ENV).map_err(|_| {
-                configuration_error(format!(
-                    "{DRIVE_EVENT_CALLBACK_URL_ENV} is required for cloud deployment"
-                ))
-            })?;
-            let ttl = match std::env::var(DRIVE_EVENT_CHANNEL_TTL_SECONDS_ENV) {
-                Ok(value) => value.parse::<u64>().map_err(|_| {
-                    configuration_error(format!(
-                        "{DRIVE_EVENT_CHANNEL_TTL_SECONDS_ENV} must be an unsigned integer"
-                    ))
-                })?,
-                Err(std::env::VarError::NotPresent) => DEFAULT_DRIVE_EVENT_CHANNEL_TTL_SECONDS,
-                Err(error) => {
-                    return Err(configuration_error(format!(
-                        "{DRIVE_EVENT_CHANNEL_TTL_SECONDS_ENV} could not be read: {error}"
-                    )))
-                }
-            };
-            let Some(current_secret) = current_secret else {
-                return Err(configuration_error(format!(
-                    "{DRIVE_EVENT_SIGNING_SECRET_FILE_ENV} is required for cloud deployment"
-                )));
-            };
-            Some(KnowledgebaseDriveEventDeliveryConfig {
-                callback_url,
-                signing_master_secret: current_secret,
-                channel_ttl_seconds: ttl,
-            })
-        }
-    };
     Ok(ResolvedWikiDriveEventConfig {
-        delivery,
         signing_secrets,
         expected_caller_app_id,
     })
@@ -559,18 +527,10 @@ fn resolve_internal_caller_app_id(
     Ok(app_id)
 }
 
-fn read_optional_bounded_secret_file(
-    environment_key: &str,
-    required: bool,
-) -> Result<Option<String>, sqlx::Error> {
+fn read_optional_bounded_secret_file(environment_key: &str) -> Result<Option<String>, sqlx::Error> {
     let value = match std::env::var(environment_key) {
         Ok(value) => value,
-        Err(std::env::VarError::NotPresent) if !required => return Ok(None),
-        Err(std::env::VarError::NotPresent) => {
-            return Err(configuration_error(format!(
-                "{environment_key} is required for cloud deployment"
-            )))
-        }
+        Err(std::env::VarError::NotPresent) => return Ok(None),
         Err(error) => {
             return Err(configuration_error(format!(
                 "{environment_key} could not be read: {error}"
@@ -578,13 +538,7 @@ fn read_optional_bounded_secret_file(
         }
     };
     if is_blank(Some(&value)) {
-        return if required {
-            Err(configuration_error(format!(
-                "{environment_key} must not be blank"
-            )))
-        } else {
-            Ok(None)
-        };
+        return Ok(None);
     }
     let path = PathBuf::from(value.trim());
     let secret = read_bounded_utf8_file(&path, MAX_WEBHOOK_SECRET_FILE_BYTES).map_err(|_| {
@@ -603,76 +557,6 @@ fn read_optional_bounded_secret_file(
         )));
     }
     Ok(Some(secret))
-}
-
-fn required_drive_internal_api_base_url() -> Result<String, sqlx::Error> {
-    let value = std::env::var(DRIVE_INTERNAL_API_BASE_URL_ENV).map_err(|_| {
-        configuration_error(format!(
-            "{DRIVE_INTERNAL_API_BASE_URL_ENV} is required for cloud deployment"
-        ))
-    })?;
-    validate_drive_internal_api_base_url(
-        &value,
-        sdkwork_knowledgebase_observability::is_production_like_environment(),
-    )
-}
-
-fn validate_drive_internal_api_base_url(
-    value: &str,
-    production_like: bool,
-) -> Result<String, sqlx::Error> {
-    let value = value.trim();
-    let parsed = url::Url::parse(value).map_err(|_| {
-        configuration_error(format!(
-            "{DRIVE_INTERNAL_API_BASE_URL_ENV} must be an absolute HTTP(S) URL"
-        ))
-    })?;
-    if !matches!(parsed.scheme(), "http" | "https")
-        || parsed.host_str().is_none()
-        || !parsed.username().is_empty()
-        || parsed.password().is_some()
-        || parsed.query().is_some()
-        || parsed.fragment().is_some()
-        || parsed.path() != "/"
-    {
-        return Err(configuration_error(format!(
-            "{DRIVE_INTERNAL_API_BASE_URL_ENV} must be an absolute credential-free HTTP(S) URL"
-        )));
-    }
-    if production_like && parsed.scheme() != "https" {
-        return Err(configuration_error(format!(
-            "{DRIVE_INTERNAL_API_BASE_URL_ENV} must use HTTPS in production-like environments"
-        )));
-    }
-    Ok(value.trim_end_matches('/').to_string())
-}
-
-fn read_drive_internal_api_ingress_token() -> Result<String, sqlx::Error> {
-    let path = std::env::var(DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE_ENV).map_err(|_| {
-        configuration_error(format!(
-            "{DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE_ENV} is required for cloud deployment"
-        ))
-    })?;
-    read_drive_internal_api_ingress_token_file(PathBuf::from(path.trim()))
-}
-
-fn read_drive_internal_api_ingress_token_file(path: PathBuf) -> Result<String, sqlx::Error> {
-    if path.as_os_str().is_empty() {
-        return Err(configuration_error(format!(
-            "{DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE_ENV} must not be blank"
-        )));
-    }
-    let token = read_bounded_utf8_file(&path, MAX_INGRESS_TOKEN_FILE_BYTES).map_err(|_| {
-        configuration_error(format!(
-            "{DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE_ENV} must reference a readable bounded UTF-8 secret file"
-        ))
-    })?;
-    if token.len() < 16 || token.len() > 4_096 || token.chars().any(char::is_whitespace) {
-        return Err(configuration_error(format!(
-            "{DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE_ENV} contains an invalid ingress token"
-        )));
-    }
-    Ok(token.to_string())
 }
 
 fn read_bounded_utf8_file(path: &Path, max_bytes: u64) -> std::io::Result<String> {
@@ -750,71 +634,6 @@ mod provider_credential_resolver_tests {
         assert!(error
             .to_string()
             .contains("require an injected managed Knowledgebase Provider credential resolver"));
-    }
-}
-
-#[cfg(test)]
-mod wiki_drive_runtime_config_tests {
-    use super::*;
-    use std::sync::atomic::{AtomicU64, Ordering};
-
-    #[test]
-    fn drive_internal_api_url_is_an_origin_and_requires_tls_in_production() {
-        assert_eq!(
-            validate_drive_internal_api_base_url("http://127.0.0.1:18080/", false).unwrap(),
-            "http://127.0.0.1:18080"
-        );
-        assert!(validate_drive_internal_api_base_url("http://drive.internal", true).is_err());
-        assert!(
-            validate_drive_internal_api_base_url("https://user:secret@drive.internal", true)
-                .is_err()
-        );
-        assert!(validate_drive_internal_api_base_url(
-            "https://drive.internal/internal/v3/api",
-            true
-        )
-        .is_err());
-        assert!(
-            validate_drive_internal_api_base_url("https://drive.internal?token=secret", true)
-                .is_err()
-        );
-        assert!(
-            validate_drive_internal_api_base_url("https://drive.internal#fragment", true).is_err()
-        );
-    }
-
-    #[test]
-    fn drive_internal_api_token_file_is_utf8_bounded_and_whitespace_free() {
-        static COUNTER: AtomicU64 = AtomicU64::new(0);
-        let root = std::env::temp_dir().join(format!(
-            "sdkwork-kb-drive-token-{}-{}",
-            std::process::id(),
-            COUNTER.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&root).unwrap();
-        let token_path = root.join("token");
-        std::fs::write(&token_path, "test-drive-internal-key").unwrap();
-        assert_eq!(
-            read_drive_internal_api_ingress_token_file(token_path.clone()).unwrap(),
-            "test-drive-internal-key"
-        );
-
-        for invalid in [
-            "",
-            "short",
-            "test-drive-internal-key\n",
-            "token with spaces",
-        ] {
-            std::fs::write(&token_path, invalid).unwrap();
-            assert!(read_drive_internal_api_ingress_token_file(token_path.clone()).is_err());
-        }
-        std::fs::write(
-            &token_path,
-            vec![b'x'; MAX_INGRESS_TOKEN_FILE_BYTES as usize + 1],
-        )
-        .unwrap();
-        assert!(read_drive_internal_api_ingress_token_file(token_path).is_err());
-        std::fs::remove_dir_all(root).unwrap();
     }
 }
 
@@ -921,7 +740,7 @@ impl KnowledgebaseRuntime {
     ) -> Result<Self, sqlx::Error> {
         let tenant_id_str = tenant_id.to_string();
         let deployment_profile = KnowledgebaseDeploymentProfile::resolve()?;
-        let wiki_event_config = resolve_wiki_drive_event_config(deployment_profile)?;
+        let wiki_event_config = resolve_wiki_drive_event_config()?;
         let wiki_provider_caller_app_id =
             resolve_internal_caller_app_id(WIKI_PROVIDER_CALLER_APP_ID_ENV, "sdkwork-web")?;
         let quota_limits =
@@ -970,13 +789,8 @@ impl KnowledgebaseRuntime {
             tenant_id_str.clone(),
             operator_id.clone(),
         ));
-        let (wiki_drive_scope, wiki_drive_source) = build_wiki_drive_ports(
-            drive_pool.clone(),
-            &tenant_id_str,
-            &operator_id,
-            deployment_profile,
-            wiki_event_config.delivery.clone(),
-        )?;
+        let (wiki_drive_scope, wiki_drive_source) =
+            build_wiki_drive_ports(drive_pool.clone(), &tenant_id_str, &operator_id);
         let access_control = Arc::new(KnowledgebaseKnowledgeAccessControlAdapter::new(
             drive_pool.clone(),
         ));
@@ -1033,15 +847,15 @@ impl KnowledgebaseRuntime {
         let wiki_store = Arc::new(
             SqlxWikiPersistenceStore::new(pool.clone()).with_database_engine(database_engine),
         );
-        let embedded_wiki_drive_event_relay =
-            (deployment_profile == KnowledgebaseDeploymentProfile::Standalone).then(|| {
-                Arc::new(KnowledgebaseDriveEmbeddedEventRelay::new(
-                    wiki_store.clone(),
-                    wiki_store.clone(),
-                    wiki_store.clone(),
-                    wiki_drive_source.clone(),
-                ))
-            });
+        // The trusted embedded relay is the only Drive event path: it dispatches
+        // Drive's transactional outbox into the Wiki consumer in-process, over the
+        // shared PostgreSQL, in every deployment profile.
+        let embedded_wiki_drive_event_relay = Arc::new(KnowledgebaseDriveEmbeddedEventRelay::new(
+            wiki_store.clone(),
+            wiki_store.clone(),
+            wiki_store.clone(),
+            wiki_drive_source.clone(),
+        ));
         let provider_binding_store = Arc::new(
             SqlxKnowledgeEngineProviderBindingStore::new(pool.clone())
                 .with_database_engine(database_engine),
@@ -2104,10 +1918,9 @@ impl KnowledgebaseRuntime {
     pub async fn relay_embedded_wiki_drive_outbox_events(
         &self,
     ) -> Result<DomainOutboxDispatchResult, String> {
-        let Some(relay) = self.embedded_wiki_drive_event_relay.as_deref() else {
-            return Ok(Default::default());
-        };
-        relay.relay_pending_outbox_events(&self.drive_pool).await
+        self.embedded_wiki_drive_event_relay
+            .relay_pending_outbox_events(&self.drive_pool)
+            .await
     }
 
     pub async fn process_wiki_drive_event_checkpoint_page(
@@ -3030,7 +2843,7 @@ impl crate::KnowledgeAppApi for AgentAndRetrievalHostedApi {
 
 #[cfg(test)]
 mod memory_mode_tests {
-    use super::{resolve_memory_mode_value, MemoryMode};
+    use super::{resolve_memory_mode_value, validate_memory_base_url, MemoryMode};
 
     #[test]
     fn absent_and_blank_values_default_to_in_process() {
@@ -3062,5 +2875,25 @@ mod memory_mode_tests {
         assert!(error
             .to_string()
             .contains("SDKWORK_KNOWLEDGEBASE_MEMORY_MODE"));
+    }
+
+    #[test]
+    fn http_memory_base_url_is_a_validated_absolute_origin() {
+        assert_eq!(
+            validate_memory_base_url("https://memory.internal/").expect("origin"),
+            "https://memory.internal"
+        );
+        for invalid in [
+            "",
+            "memory.internal",
+            "ftp://memory.internal",
+            "https://memory.internal/app/v3/api",
+            "https://memory.internal/app/",
+            "https://user:secret@memory.internal",
+            "https://memory.internal?token=secret",
+            "https://memory.internal#fragment",
+        ] {
+            assert!(validate_memory_base_url(invalid).is_err());
+        }
     }
 }

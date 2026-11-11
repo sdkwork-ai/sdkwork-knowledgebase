@@ -5,7 +5,6 @@ mod adapter;
 mod bootstrap;
 mod embedded_event_relay;
 mod embedded_wiki_source_adapter;
-mod internal_sdk_adapter;
 mod object_store;
 mod permission_adapter;
 mod wiki_scope_adapter;
@@ -24,9 +23,6 @@ pub use embedded_event_relay::{
     KnowledgebaseDriveEmbeddedEventRelay,
 };
 pub use embedded_wiki_source_adapter::KnowledgebaseDriveEmbeddedWikiSourceAdapter;
-pub use internal_sdk_adapter::{
-    KnowledgebaseDriveEventDeliveryConfig, KnowledgebaseDriveInternalSdkAdapter,
-};
 pub use object_store::resolve_cloud_knowledgebase_drive_storage;
 pub use permission_adapter::KnowledgebaseDrivePermissionAdapter;
 pub use wiki_scope_adapter::KnowledgebaseDriveRootScopeAdapter;

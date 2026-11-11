@@ -4070,17 +4070,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sdkwork-drive-internal-sdk-generated-rust"
-version = "0.1.0"
-dependencies = [
- "http",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "sdkwork-drive-object-runtime"
 version = "0.1.0"
 dependencies = [
@@ -4169,13 +4158,6 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
-]
-
-[[package]]
-name = "sdkwork-drive-uploader-service"
-version = "0.1.0"
-dependencies = [
- "sdkwork-drive-workspace-service",
 ]
 
 [[package]]
@@ -4603,24 +4585,17 @@ dependencies = [
  "async-trait",
  "sdkwork-database-config",
  "sdkwork-drive-config",
- "sdkwork-drive-internal-sdk-generated-rust",
  "sdkwork-drive-object-runtime",
  "sdkwork-drive-storage-contract",
  "sdkwork-drive-test-support",
- "sdkwork-drive-uploader-service",
  "sdkwork-drive-workspace-service",
  "sdkwork-intelligence-knowledgebase-object-key-service",
  "sdkwork-intelligence-knowledgebase-service",
  "sdkwork-knowledgebase-database-host",
  "sdkwork-utils-rust",
- "serde_json",
  "sqlx",
- "time",
  "tokio",
  "tracing",
- "url",
- "uuid",
- "wiremock",
 ]
 
 [[package]]

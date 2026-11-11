@@ -301,11 +301,177 @@ fn map_object_error(
         DriveObjectStoreErrorKind::InvalidRequest => {
             KnowledgeWikiDriveSourceError::InvalidRequest(error.message)
         }
+        DriveObjectStoreErrorKind::Conflict => {
+            KnowledgeWikiDriveSourceError::Conflict(error.message)
+        }
         DriveObjectStoreErrorKind::IntegrityFailed => {
             KnowledgeWikiDriveSourceError::IntegrityFailed(error.message)
         }
         _ => KnowledgeWikiDriveSourceError::Upstream(
             "embedded Drive content provider is unavailable".to_string(),
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sdkwork_drive_storage_contract::{DriveObjectStoreError, DriveObjectStoreErrorKind};
+    use sdkwork_drive_workspace_service::domain::resource_resolution::DriveResourceContentLocator;
+    use sdkwork_drive_workspace_service::DriveServiceError;
+
+    fn resolved_resource() -> ResolvedDriveResource {
+        ResolvedDriveResource {
+            scope_kind: DriveResourceScopeKind::RootScopeSubscription,
+            scope_uuid: "scope-uuid".to_string(),
+            scope_generation: 3,
+            relative_path: "sources/raw/page.md".to_string(),
+            resource_type: "file".to_string(),
+            node_id: "node-id".to_string(),
+            node_version_id: "node-version-id".to_string(),
+            version_no: 2,
+            checksum_sha256_hex: format!("sha256:{}", "a".repeat(64)),
+            content_type: "text/markdown".to_string(),
+            content_length: 4,
+            last_modified: "2026-11-11T00:00:00Z".to_string(),
+            scope_status: "ACTIVE".to_string(),
+            node_status: "ACTIVE".to_string(),
+            eligibility: "ELIGIBLE".to_string(),
+            content_locator: DriveResourceContentLocator {
+                storage_provider_id: "local".to_string(),
+                bucket: "knowledgebase".to_string(),
+                object_key: "object-key".to_string(),
+            },
+        }
+    }
+
+    fn pinned_resource() -> KnowledgeWikiSourceResource {
+        map_resource(resolved_resource()).expect("canonical resolved resource maps")
+    }
+
+    fn read_request(
+        resource: KnowledgeWikiSourceResource,
+        maximum_bytes: u64,
+    ) -> ReadKnowledgeWikiSourceRequest {
+        ReadKnowledgeWikiSourceRequest {
+            resource,
+            maximum_bytes,
+        }
+    }
+
+    /// The deleted Internal API transport turned Drive's HTTP 409 into `Conflict`.
+    /// The embedded port must keep that kind so a permanent conflict is neither
+    /// reported as a retryable upstream outage nor as a new failure class.
+    #[test]
+    fn object_store_errors_keep_the_http_transport_error_kinds() {
+        use DriveObjectStoreErrorKind::{
+            Conflict, IntegrityFailed, InvalidRequest, NotFound, PermissionDenied, RateLimited,
+            Timeout, Unavailable,
+        };
+        for (kind, expected_code) in [
+            (NotFound, "wiki_drive_source_not_found"),
+            (InvalidRequest, "wiki_drive_source_request_invalid"),
+            (Conflict, "wiki_drive_source_conflict"),
+            (IntegrityFailed, "wiki_drive_source_integrity_failed"),
+            (PermissionDenied, "wiki_drive_source_upstream_failed"),
+            (RateLimited, "wiki_drive_source_upstream_failed"),
+            (Timeout, "wiki_drive_source_upstream_failed"),
+            (Unavailable, "wiki_drive_source_upstream_failed"),
+        ] {
+            let mapped = map_object_error(DriveObjectStoreError::new(kind, "provider detail"));
+            assert_eq!(mapped.code(), expected_code, "unexpected kind for {kind:?}");
+        }
+    }
+
+    /// Drive's typed service still answers over the same status contract
+    /// (400/422, 404, 409, 403, 500) the deleted transport mapped, so the kinds
+    /// and public HTTP statuses must not drift.
+    #[test]
+    fn drive_service_errors_keep_the_http_transport_error_kinds() {
+        for (error, expected_code) in [
+            (
+                DriveServiceError::Validation("detail".to_string()),
+                "wiki_drive_source_request_invalid",
+            ),
+            (
+                DriveServiceError::NotFound("detail".to_string()),
+                "wiki_drive_source_not_found",
+            ),
+            (
+                DriveServiceError::Conflict("detail".to_string()),
+                "wiki_drive_source_conflict",
+            ),
+            (
+                DriveServiceError::PermissionDenied("detail".to_string()),
+                "wiki_drive_source_upstream_failed",
+            ),
+            (
+                DriveServiceError::Internal("detail".to_string()),
+                "wiki_drive_source_upstream_failed",
+            ),
+        ] {
+            assert_eq!(map_drive_error(error).code(), expected_code);
+        }
+    }
+
+    #[test]
+    fn read_request_keeps_the_bounded_size_and_checksum_contract() {
+        assert!(validate_read_request(&read_request(pinned_resource(), 4)).is_ok());
+        for maximum_bytes in [0, MAX_WIKI_SOURCE_READ_BYTES + 1] {
+            let error = validate_read_request(&read_request(pinned_resource(), maximum_bytes))
+                .expect_err("maximum_bytes outside the bounded read limit must fail");
+            assert_eq!(error.code(), "wiki_drive_source_request_invalid");
+        }
+
+        let oversized = read_request(pinned_resource(), 3);
+        assert_eq!(
+            validate_read_request(&oversized)
+                .expect_err("content above the read limit must fail")
+                .code(),
+            "wiki_drive_source_request_invalid"
+        );
+
+        let mut foreign_scope = pinned_resource();
+        foreign_scope.scope_type = "DRIVE_SPACE".to_string();
+        assert_eq!(
+            validate_read_request(&read_request(foreign_scope, 4))
+                .expect_err("a non root-scope resource must fail")
+                .code(),
+            "wiki_drive_source_request_invalid"
+        );
+
+        let mut bad_checksum = pinned_resource();
+        bad_checksum.checksum_sha256_hex = "sha256:NOT-HEX".to_string();
+        assert_eq!(
+            validate_read_request(&read_request(bad_checksum, 4))
+                .expect_err("a non canonical checksum must fail")
+                .code(),
+            "wiki_drive_source_integrity_failed"
+        );
+    }
+
+    fn assert_integrity_failure(mutate: impl FnOnce(&mut ResolvedDriveResource)) {
+        let mut resource = resolved_resource();
+        mutate(&mut resource);
+        assert_eq!(
+            map_resource(resource)
+                .expect_err("an ineligible Drive resource must fail integrity")
+                .code(),
+            "wiki_drive_source_integrity_failed"
+        );
+    }
+
+    #[test]
+    fn resolved_resource_must_be_an_active_eligible_root_scope() {
+        assert_eq!(
+            map_resource(resolved_resource())
+                .expect("canonical")
+                .version_no,
+            "2"
+        );
+        assert_integrity_failure(|resource| resource.scope_status = "REVOKED".to_string());
+        assert_integrity_failure(|resource| resource.node_status = "DELETED".to_string());
+        assert_integrity_failure(|resource| resource.eligibility = "QUARANTINED".to_string());
+        assert_integrity_failure(|resource| resource.content_length = -1);
     }
 }

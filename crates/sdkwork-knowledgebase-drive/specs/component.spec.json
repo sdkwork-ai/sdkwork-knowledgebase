@@ -55,7 +55,6 @@
                       "publicExports":  [
                                             ".",
                                             "DomainOutboxDispatchResult",
-                                            "KnowledgebaseDriveInternalSdkAdapter",
                                             "KnowledgebaseDriveEmbeddedEventRelay",
                                             "KnowledgebaseDriveEmbeddedWikiSourceAdapter",
                                             "KnowledgebaseDriveRootScopeAdapter"
@@ -66,7 +65,7 @@
                       "providedPorts":  [
                                             {
                                                 "name":  "knowledgeWikiDriveSource",
-                                                "export":  "KnowledgebaseDriveInternalSdkAdapter"
+                                                "export":  "KnowledgebaseDriveEmbeddedWikiSourceAdapter"
                                             },
                                             {
                                                 "name":  "knowledgeWikiDriveScopeEmbedded",
@@ -78,27 +77,15 @@
                                             }
                                         ],
                       "requiredPorts":  [
-                                            {
-                                                "name":  "driveInternalSdk",
-                                                "export":  ".",
-                                                "target":  "sdkwork_drive_internal_sdk_generated_rust::SdkworkCustomClient"
-                                            }
                                         ],
                       "routeManifest":  null,
                       "sdkClients":  [
-                                         "SdkworkCustomClient"
+
                                      ],
                       "sdkDependencies":  [
                                               {
                                                   "workspace":  "sdkwork-drive-storage-contract",
                                                   "role":  "drive-storage-contract",
-                                                  "required":  true
-                                              },
-                                              {
-                                                  "workspace":  "sdkwork-drive-internal-sdk",
-                                                  "role":  "drive-root-scoped-resource-provider",
-                                                  "surface":  "internal-api",
-                                                  "credentialMode":  "internal-service",
                                                   "required":  true
                                               }
                                           ],
@@ -106,13 +93,7 @@
 
                                                ],
                       "dependencyApiSurfaces":  [
-                                                    {
-                                                        "sdkFamily":  "sdkwork-drive-internal-sdk",
-                                                        "apiSurface":  "internal-api",
-                                                        "runtimeMode":  "external-service",
-                                                        "sameOriginAllowed":  false,
-                                                        "requiredBaseUrlKey":  "SDKWORK_KNOWLEDGEBASE_DRIVE_INTERNAL_API_BASE_URL"
-                                                    }
+
                                                 ],
                       "events":  [
                                      "drive.node.version.committed.v1",
@@ -123,12 +104,8 @@
                       "configKeys":  [
                                          "SDKWORK_KNOWLEDGEBASE_DEPLOYMENT_PROFILE",
                                          "SDKWORK_DRIVE_DOMAIN_OUTBOX_EMBEDDED_DISPATCH",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_INTERNAL_API_BASE_URL",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CALLBACK_URL",
                                          "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_SIGNING_SECRET_FILE",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE",
-                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_CHANNEL_TTL_SECONDS"
+                                         "SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE"
                                      ]
                   },
     "verification":  {

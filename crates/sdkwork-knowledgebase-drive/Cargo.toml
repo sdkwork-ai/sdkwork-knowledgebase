@@ -15,9 +15,7 @@ workspace = true
 async-trait.workspace = true
 sdkwork-drive-workspace-service.workspace = true
 sdkwork-drive-object-runtime.workspace = true
-sdkwork-drive-uploader-service.workspace = true
 sdkwork-drive-config.workspace = true
-sdkwork-drive-internal-sdk-generated-rust.workspace = true
 sdkwork-drive-storage-contract.workspace = true
 sdkwork-database-config.workspace = true
 sdkwork-knowledgebase-database-host.workspace = true
@@ -25,13 +23,8 @@ sdkwork-intelligence-knowledgebase-service.workspace = true
 sdkwork-intelligence-knowledgebase-object-key-service.workspace = true
 sdkwork-utils-rust.workspace = true
 tracing = "0.1"
-uuid.workspace = true
-time.workspace = true
-url = "2"
 sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "postgres", "any"] }
 
 [dev-dependencies]
 sdkwork-drive-test-support.workspace = true
-serde_json.workspace = true
 tokio.workspace = true
-wiremock.workspace = true

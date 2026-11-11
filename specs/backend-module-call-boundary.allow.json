@@ -1,0 +1,11 @@
+{
+  "comment": "Deliberate exceptions to MODULE_SPEC.md \u00a74.2. Every entry needs a written reason. Knowledgebase reaches Memory and Drive in-process by default; only a deliberate split deployment may opt into HTTP.",
+  "allow": [
+    {
+      "file": "crates/sdkwork-routes-knowledgebase-app-api/src/runtime.rs",
+      "envVar": "SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL",
+      "module": "memory",
+      "reason": "Opt-in split deployment only: SDKWORK_KNOWLEDGEBASE_MEMORY_MODE=http selects the Memory App API provider; the default is the in-process memory runtime over the shared PostgreSQL, and bootstrap fails when the base URL is missing or malformed."
+    }
+  ]
+}

@@ -15,13 +15,12 @@ Operational checklist for launching SDKWork Knowledgebase in a tenant-scoped pro
    - Database password (`SDKWORK_DATABASE_PASSWORD_FILE`)
    - Secrets encryption key (`SDKWORK_KNOWLEDGEBASE_SECRETS_ENCRYPTION_KEY_FILE`)
    - Outbox webhook URL and signing secret
-   - Drive Internal API ingress token (`sdkwork-knowledgebase-drive-internal-api/ingress-token`)
-   - Drive event signing master secret (`sdkwork-knowledgebase-drive-events/current`)
+   - Drive event signing master secret (`sdkwork-knowledgebase-drive-events/current`) only when a split deployment pushes signed webhook events; the default deployment delivers Drive events through the embedded trusted relay and needs no Drive Internal API ingress token
    - Database-backed Snowflake node lease identity for every ingress/worker replica
    - No static `SDKWORK_KNOWLEDGEBASE_SNOWFLAKE_NODE_ID` unless an emergency change record explicitly enables the override
    - A dedicated tenant-local service actor matching `SDKWORK_KNOWLEDGEBASE_WORKER_WIKI_ACTOR_ID`; it must not be a human administrator account
 2. Apply topology from `etc/topology/cloud.production.env`.
-3. Ensure public ingress exposes the app/backend/open paths and the single protected Drive callback at `/internal/v3/api/knowledgebase/drive_events`. The callback requires both application ingress authentication and the Drive signature contract and must not be re-exported by `platform.api-gateway`. **Do not expose `/metrics` on ingress**; Prometheus scrapes in-cluster via ServiceMonitor.
+3. Ensure public ingress exposes the app/backend/open paths and the single protected Drive callback at `/internal/v3/api/knowledgebase/drive_events`. The callback requires both application ingress authentication and the Drive signature contract and must not be re-exported by `platform.api-gateway`; it only receives events from a split deployment that is configured to push them, because the default deployment consumes Drive's outbox in-process. **Do not expose `/metrics` on ingress**; Prometheus scrapes in-cluster via ServiceMonitor.
 4. Run repository gates:
    ```bash
    pnpm verify
@@ -76,46 +75,32 @@ Operational checklist for launching SDKWork Knowledgebase in a tenant-scoped pro
 6. Confirm worker `/readyz` returns 200, queued ingestion jobs drain, and Wiki source counters do
    not show a growing retry/quarantine backlog after a test ingest.
 
-## Drive event delivery and signing-secret rotation
+## Drive event delivery
 
-Normal operation mounts only `/run/secrets/sdkwork/drive-event-signing/current`. The optional
-`previous` key and `SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE` exist only
-during a controlled overlap. Manage secret values through the approved secret manager or GitOps
-workflow; do not place them in shell history, manifests, tickets, or logs.
+Normal operation delivers Drive events through the embedded trusted relay: the worker dispatches
+Drive's transactional outbox into the Wiki event consumer in-process, over the shared PostgreSQL.
+There is no Drive Internal API call, no webhook channel to register, and no channel renewal to
+operate.
 
-1. Record the active Wiki checkpoint count for the tenant and calculate the renewal pages as
-   `ceil(active_checkpoint_count / renewal_page_size)`. Use a page size no greater than 200.
-2. Atomically publish `current = new secret` and `previous = old secret` in
-   `sdkwork-knowledgebase-drive-events`.
-3. Set `SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE` to
-   `/run/secrets/sdkwork/drive-event-signing/previous` on both the app API and worker Deployments,
-   then perform a rolling restart. The app API now verifies events signed from either master;
-   the worker derives all new channel tokens from `current`.
-4. Temporarily set
-   `SDKWORK_KNOWLEDGEBASE_WORKER_WIKI_EVENT_DELIVERY_RENEWAL_INTERVAL_SECONDS=60` and
-   `SDKWORK_KNOWLEDGEBASE_WORKER_WIKI_EVENT_DELIVERY_RENEWAL_PAGE_SIZE=200`, if the normal values
-   would not complete every renewal page inside the change window. Roll the worker once so the
-   first bounded renewal starts immediately.
-5. Observe at least the calculated number of successful renewal pages. Treat every structured
-   `knowledgebase.wiki.drive_event_delivery_renewal_failed` event as a failed rotation gate; its
+1. Confirm the worker's bounded renewal scan reports `embedded_relays_verified` for the tenant's
+   Wiki checkpoints. Treat every structured
+   `knowledgebase.wiki.drive_event_delivery_renewal_failed` event as a failed gate; its
    `checkpoint_id`, `source_scope_uuid`, and stable `error_code` identify the retry target.
-6. Restore the normal renewal interval/page size and wait for the greater of the operational
-   webhook retry window and one complete Drive outbox retry cycle. Drive currently performs at
-   most 10 delivery attempts; use the deployed Drive dispatch interval when calculating the
-   window, with additional rollout and queue-drain margin.
-7. Remove `SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE` from both Deployments,
-   roll the app API and worker, then remove the `previous` Secret key. A missing file must never be
-   referenced by the environment.
-8. Upload a Markdown file under a Wiki `sources/raw` root and verify: Drive outbox status is
+2. Upload a Markdown file under a Wiki `sources/raw` root and verify: Drive outbox status is
    delivered, the Knowledgebase inbox event is applied, its checkpoint advances, the source moves
    `DISCOVERED -> PROCESSING -> READY`, and an auto-public Wiki moves the page to `PUBLISHED`.
    Resolve the public route and verify the response is sanitized `text/html; charset=utf-8` pinned
    to the uploaded Drive version. Delete the same file and verify the public route is revoked
    immediately. Neither operation may create a Deploy Release, Deployment, or SiteRevision.
 
-Rollback before step 7 by restoring the old secret as `current`, retaining the new value as
-`previous`, rolling both Deployments, and renewing all pages again. After step 7, use the same
-two-secret overlap procedure; never perform an uncoordinated single-secret rollback.
+A deliberately separated deployment that pushes signed Drive events to the inbound
+`/internal/v3/api/knowledgebase/drive_events` receiver keeps the two-secret overlap procedure:
+mount only `/run/secrets/sdkwork/drive-event-signing/current` normally; during a controlled
+rotation publish `current = new` and `previous = old`, set
+`SDKWORK_KNOWLEDGEBASE_DRIVE_EVENT_PREVIOUS_SIGNING_SECRET_FILE` on both the app API and worker
+Deployments, roll both, wait for the Drive webhook retry window to drain, then remove the
+`previous` Secret key and environment entry. Never perform an uncoordinated single-secret
+rollback.
 
 ## Observability
 
@@ -167,6 +152,6 @@ Before traffic cutover, exercise `deployments/runbooks/backup-restore.md` in sta
 | Architecture (`pnpm check`) | App team | CI run URL |
 | DB bootstrap/drift | DBA | `pnpm db:status` output |
 | API smoke | SRE | `pnpm test:smoke` output |
-| Drive event delivery and signing rotation | SRE | renewal page evidence + outbox/inbox/checkpoint smoke |
+| Drive event delivery (embedded relay) | SRE | renewal page evidence + outbox/inbox/checkpoint smoke |
 | PC author/search E2E | Frontend | Playwright CI job |
 | Release artifacts | Release | Workflow run + checksum + signature + SBOM + provenance + attestation + rollout/rollback + live smoke record |

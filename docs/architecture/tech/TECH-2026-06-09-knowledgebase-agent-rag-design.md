@@ -164,13 +164,15 @@ avoids an extra network hop but requires co-deployment and memory database
 access. When the memory database is not configured the capability stays
 disabled and profiles with `memory_policy_ref` degrade without memory.
 
-**HTTP.** `MemoryAppApiContextProvider` calls the Memory App API through the
+**HTTP (explicit split-deployment opt-in).** `MemoryAppApiContextProvider` calls the Memory App API through the
 generator-owned Rust SDK. The chat route extracts `Authorization` and
 `Access-Token`, passes them through `AgentChatCredentials` into
 `KnowledgeAgentChatService::chat_with_credentials`, and the provider forwards
 them unchanged; the memory backend derives actor, tenant, and owner scope from
 the token, so a service token is never substituted. Configure
-`SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`; unset disables the capability.
+`SDKWORK_KNOWLEDGEBASE_MEMORY_BASE_URL`; it is required at bootstrap when
+`SDKWORK_KNOWLEDGEBASE_MEMORY_MODE=http`, and a missing or malformed value fails
+startup instead of silently disabling the capability.
 
 Both modes resolve `memory_policy_ref` as a numeric Memory space id (`4242` or
 `space:4242`) and use the same retrieval contract (`top_k`, context budget,

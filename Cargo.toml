@@ -151,7 +151,6 @@ sdkwork-drive-workspace-service = { path = "../sdkwork-drive/crates/sdkwork-driv
 sdkwork-drive-uploader-service = { path = "../sdkwork-drive/crates/sdkwork-drive-uploader-service" }
 sdkwork-drive-config = { path = "../sdkwork-drive/crates/sdkwork-drive-config" }
 sdkwork-drive-test-support = { path = "../sdkwork-drive/crates/sdkwork-drive-test-support" }
-sdkwork-drive-internal-sdk-generated-rust = { path = "../sdkwork-drive/sdks/sdkwork-drive-internal-sdk/sdkwork-drive-internal-sdk-rust/generated/server-openapi" }
 sdkwork-memory-spi = { path = "../sdkwork-memory/crates/sdkwork-memory-spi" }
 sdkwork-memory-inprocess = { path = "../sdkwork-memory/crates/sdkwork-memory-inprocess" }
 sdkwork-memory-contract = { path = "../sdkwork-memory/crates/sdkwork-memory-contract" }

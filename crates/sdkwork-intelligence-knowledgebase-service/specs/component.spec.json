@@ -160,7 +160,7 @@
                                             {
                                                 "name":  "knowledgeWikiDriveSource",
                                                 "export":  "ports::knowledge_wiki_drive_source::KnowledgeWikiDriveSource",
-                                                "target":  "sdkwork_knowledgebase_drive::KnowledgebaseDriveInternalSdkAdapter"
+                                                "target":  "sdkwork_knowledgebase_drive::KnowledgebaseDriveEmbeddedWikiSourceAdapter"
                                             }
                                         ],
                       "runtimeEntrypoints":  [
