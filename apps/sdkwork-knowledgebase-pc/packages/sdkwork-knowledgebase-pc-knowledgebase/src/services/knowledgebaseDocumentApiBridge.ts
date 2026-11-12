@@ -942,7 +942,6 @@ export async function saveDocumentContent(
       spaceId: okfRef.spaceId,
       conceptId: concept.conceptId,
       markdown: content,
-      actor: 'pc-knowledgebase',
       publish: true,
     });
     invalidateKnowledgeBrowserNodeCacheForSpaceIds(okfRef.spaceId);

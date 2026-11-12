@@ -1,7 +1,7 @@
-import { completeAgentTurnStream } from '@sdkwork/agents-app-sdk';
 import { isBlank, sha256Hash, uuid } from '@sdkwork/utils';
 import {
   KnowledgebaseErrorCodes,
+  completeAgentTurnStream,
   getKnowledgebaseAgentsAppSdkClient,
   isKnowledgebaseAgentsApiAvailable,
   throwKnowledgebaseError,

@@ -54,6 +54,9 @@ export interface AiAssistantPanelProps {
 const WRITING_AGENT_STORAGE_KEY = 'sdkwork.kb.writing-agent.v1';
 
 function readStoredWritingAgent(): WritingAgent | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     const raw = window.localStorage.getItem(WRITING_AGENT_STORAGE_KEY);
     if (!raw) {
@@ -84,6 +87,9 @@ function readStoredWritingAgent(): WritingAgent | null {
 }
 
 function persistWritingAgent(agent: WritingAgent | null): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     if (!agent) {
       window.localStorage.removeItem(WRITING_AGENT_STORAGE_KEY);
@@ -123,6 +129,19 @@ export function AiAssistantPanel({
   useEffect(() => {
     persistWritingAgent(selectedAgent);
   }, [selectedAgent]);
+
+  useEffect(() => {
+    // One agent session is scoped to the open note; switching documents starts a
+    // clean agent thread so note A's context never leaks into note B's draft.
+    if (!selectedAgent) {
+      return;
+    }
+    agentSessionRef.current = null;
+    setMessages([]);
+    // `selectedAgent` is intentionally omitted: switching agents already resets
+    // the thread, and this effect only reacts to the open document changing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDoc?.id]);
 
   useEffect(() => {
     if (scrollRef.current) {

@@ -26,6 +26,7 @@ export type { KnowledgebaseFeatureFlags } from './config/knowledgebaseFeatureFla
 export * from './sdk/knowledgebaseAppSdkClient';
 export * from './sdk/driveAppSdkClient';
 export * from './sdk/agentsAppSdkClient';
+export * from './sdk/agentsAppSdkTurns';
 export * from './sdk/sdkTokenManager';
 export * from './sdk/groupKnowledgebaseLaunch';
 export * from './sdk/sdkContractTypes';

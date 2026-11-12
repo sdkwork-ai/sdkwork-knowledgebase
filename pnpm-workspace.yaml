@@ -9,7 +9,6 @@ packages:
   - "sdks/sdkwork-knowledgebase-app-sdk/sdkwork-knowledgebase-app-sdk-typescript"
   - "sdks/sdkwork-knowledgebase-backend-sdk/sdkwork-knowledgebase-backend-sdk-typescript"
   - "sdks/sdkwork-knowledgebase-internal-sdk/sdkwork-knowledgebase-internal-sdk-typescript"
-  - "../sdkwork-agents/sdks/sdkwork-agents-app-sdk/sdkwork-agents-app-sdk-typescript"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-contracts"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-runtime"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-ports"
@@ -41,6 +40,7 @@ packages:
   - "../sdkwork-iam/sdks/sdkwork-iam-backend-sdk/sdkwork-iam-backend-sdk-typescript/src/index.ts"
   - "../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript/src/index.ts"
   - "../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript"
+  - "../sdkwork-agents/sdks/sdkwork-agents-app-sdk/sdkwork-agents-app-sdk-typescript"
   - "../sdkwork-drive/apps/sdkwork-drive-common/packages/sdkwork-drive-upload-image-core"
 
 catalog:

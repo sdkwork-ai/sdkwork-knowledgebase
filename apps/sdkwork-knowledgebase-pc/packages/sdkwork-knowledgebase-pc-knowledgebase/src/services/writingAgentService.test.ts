@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { completeAgentTurnStream } from '@sdkwork/agents-app-sdk';
-import type {
-  AgentRecord,
-  AgentSessionRecord,
-  SdkworkAgentsAppClient,
+import {
+  completeAgentTurnStream,
+  type AgentRecord,
+  type AgentSessionRecord,
+  type SdkworkAgentsAppClient,
 } from 'sdkwork-knowledgebase-pc-core';
 
 import {
