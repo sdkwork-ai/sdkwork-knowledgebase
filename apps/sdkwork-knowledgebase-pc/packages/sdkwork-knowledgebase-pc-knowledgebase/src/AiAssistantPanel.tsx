@@ -7,6 +7,8 @@ import { DocumentMeta, FolderNode } from './services/document';
 import { AIService } from './services/ai';
 import type { McpToolCall } from './services/mcpAgent';
 import {
+  accountScopedStorageKey,
+  KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS,
   resolveUserFacingErrorMessage,
   type ErrorTranslateFn,
   type KnowledgeAgentChatCitation,
@@ -50,15 +52,24 @@ export interface AiAssistantPanelProps {
   workspaceMode?: KnowledgebaseWorkspaceMode;
 }
 
-/** Persisted per-browser choice so the notes panel remembers the writing agent. */
-const WRITING_AGENT_STORAGE_KEY = 'sdkwork.kb.writing-agent.v1';
+/**
+ * Persisted per-browser choice so the notes panel remembers the writing agent.
+ *
+ * Agents are tenant-owned server rows, so the choice is account-scoped: the next
+ * account must not address an agent (or read its name) from the previous one.
+ */
+const WRITING_AGENT_STORAGE_KEY = KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.writingAgent;
+
+function writingAgentStorageKey(): string {
+  return accountScopedStorageKey(WRITING_AGENT_STORAGE_KEY);
+}
 
 function readStoredWritingAgent(): WritingAgent | null {
   if (typeof window === 'undefined') {
     return null;
   }
   try {
-    const raw = window.localStorage.getItem(WRITING_AGENT_STORAGE_KEY);
+    const raw = window.localStorage.getItem(writingAgentStorageKey());
     if (!raw) {
       return null;
     }
@@ -92,10 +103,10 @@ function persistWritingAgent(agent: WritingAgent | null): void {
   }
   try {
     if (!agent) {
-      window.localStorage.removeItem(WRITING_AGENT_STORAGE_KEY);
+      window.localStorage.removeItem(writingAgentStorageKey());
       return;
     }
-    window.localStorage.setItem(WRITING_AGENT_STORAGE_KEY, JSON.stringify(agent));
+    window.localStorage.setItem(writingAgentStorageKey(), JSON.stringify(agent));
   } catch {
     // Storage can be unavailable in hardened browsers; the in-memory choice still works.
   }

@@ -1,3 +1,5 @@
+import { clearAccountScopedStorageKey } from 'sdkwork-knowledgebase-pc-core';
+
 import {
   DEFAULT_ACCENT_COLOR,
   SETTINGS_NAV_ITEMS,
@@ -218,8 +220,12 @@ export function clearLocalPreferenceData(): void {
     return;
   }
 
+  // The search history row is account-scoped, so the scoped key is the one that
+  // holds the sessions; removing only the base key would report success while
+  // leaving the history in place.
+  clearAccountScopedStorageKey(SETTINGS_STORAGE_KEYS.searchSessions);
+
   const keysToClear = [
-    SETTINGS_STORAGE_KEYS.searchSessions,
     SETTINGS_STORAGE_KEYS.settingsTab,
   ];
 

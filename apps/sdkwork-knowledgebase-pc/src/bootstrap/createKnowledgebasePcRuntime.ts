@@ -27,6 +27,7 @@ import {
 
 import { createKnowledgebaseIamRuntime } from './knowledgebaseIamRuntime';
 import { primePcReactRuntimeSessionCache } from './sdkworkCorePcReactShim';
+import { installKnowledgebaseDerivedCacheCleanup } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
 
 export function createKnowledgebasePcRuntime(): KnowledgebasePcRuntime {
   const config = createRuntimeConfig(import.meta.env);
@@ -68,6 +69,10 @@ export function createKnowledgebasePcRuntime(): KnowledgebasePcRuntime {
   });
 
   bindKnowledgebaseSessionStore(session);
+  // Before any surface can read or write an account-scoped cache: the first
+  // identity the IAM runtime publishes invalidates the derived caches (browser
+  // nodes, knowledge modes, agent-profile provisioning, persisted tab rows).
+  installKnowledgebaseDerivedCacheCleanup();
   configureKnowledgebaseAppSdk(appSdkClient);
   configureKnowledgebaseBackendSdk(backendSdkClient);
   configureKnowledgebaseDriveAppSdk(driveSdkClient);

@@ -1,4 +1,10 @@
-import { withCrossTabStorageUpdate } from 'sdkwork-knowledgebase-pc-core';
+import {
+  accountScopedStorageKey,
+  clearAccountScopedStorageKey,
+  KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS,
+  withCrossTabStorageUpdate,
+  type KnowledgebaseIdentity,
+} from 'sdkwork-knowledgebase-pc-core';
 
 import { DocumentMeta } from './document';
 
@@ -23,10 +29,16 @@ export interface KnowledgebaseTabCache {
   getOpenDocs(kbId: string): DocumentMeta[];
   initKb(kbId: string): void;
   openDoc(kbId: string, doc: DocumentMeta): void;
+  /** Replace the persisted open-tab list, e.g. after pruning unreadable rows. */
+  saveOpenDocs(kbId: string, docs: DocumentMeta[]): void;
 }
 
 export class TabCacheService {
-  private static STORAGE_KEY = 'app-tabs-cache-v2';
+  /**
+   * Base key; the value is scoped as `.<tenantId>.<userId>` so one account's open
+   * tabs (which carry document titles) never render for the next account.
+   */
+  private static STORAGE_KEY = KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.tabCache;
   /** Bounded open-tab window per Knowledge Base so the localStorage payload cannot grow
    *  without limit; the oldest tab is evicted when the window overflows. */
   private static MAX_TABS_PER_KB = 50;
@@ -37,16 +49,21 @@ export class TabCacheService {
    * Caches the list of opened tabs and the currently active tab for each Knowledge Base.
    */
 
-  private static loadCache(): Record<string, TabCacheEntry> {
+  /** Storage key of the account the read or write is issued for. */
+  private static storageKey(): string {
+    return accountScopedStorageKey(this.STORAGE_KEY);
+  }
+
+  private static loadCache(storageKey: string): Record<string, TabCacheEntry> {
     try {
-      const data = localStorage.getItem(this.STORAGE_KEY);
+      const data = localStorage.getItem(storageKey);
       return data ? JSON.parse(data) : {};
     } catch {
       return {};
     }
   }
 
-  private static saveCache(data: Record<string, TabCacheEntry>) {
+  private static saveCache(storageKey: string, data: Record<string, TabCacheEntry>) {
     // Bound the total persisted window across Knowledge Bases.
     const keys = Object.keys(data);
     if (keys.length > this.MAX_CACHED_KBS) {
@@ -54,7 +71,7 @@ export class TabCacheService {
         delete data[key];
       }
     }
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(storageKey, JSON.stringify(data));
   }
 
   /**
@@ -66,14 +83,18 @@ export class TabCacheService {
   private static updateCache(
     mutate: (cache: Record<string, TabCacheEntry>) => Record<string, TabCacheEntry>,
   ): void {
+    // One key for the whole cycle: resolving it per read and per write could
+    // straddle an account switch and write the previous account's rows under the
+    // next account's key.
+    const storageKey = this.storageKey();
     // Snapshot the JSON at read time: the mutate closures revise the cache in
     // place, so a reference held until the write would compare the mutated
     // object against itself and always look unchanged.
     let originalJson: string | null = null;
     withCrossTabStorageUpdate(
-      this.STORAGE_KEY,
+      storageKey,
       () => {
-        const cache = this.loadCache();
+        const cache = this.loadCache(storageKey);
         originalJson = JSON.stringify(cache);
         return cache;
       },
@@ -82,7 +103,7 @@ export class TabCacheService {
         if (originalJson !== null && JSON.stringify(next) === originalJson) {
           return;
         }
-        this.saveCache(next);
+        this.saveCache(storageKey, next);
       },
     );
   }
@@ -116,12 +137,12 @@ export class TabCacheService {
   }
 
   public static getOpenDocs(kbId: string): DocumentMeta[] {
-    const cache = this.loadCache();
+    const cache = this.loadCache(this.storageKey());
     return cache[kbId]?.docs || [];
   }
 
   public static getActiveDocId(kbId: string): string | null {
-    const cache = this.loadCache();
+    const cache = this.loadCache(this.storageKey());
     return cache[kbId]?.activeId || null;
   }
 
@@ -268,6 +289,22 @@ export class TabCacheService {
   }
 }
 
+/**
+ * Drop one account's persisted tab rows.
+ *
+ * Called when the signed-in account changes: the rows carry document titles, so
+ * the previous account's tabs must not survive a switch even though the new
+ * account reads a different key.
+ *
+ * @param identity - account whose rows are removed; defaults to the bound one.
+ */
+export function clearKnowledgebaseTabCacheForIdentity(identity?: KnowledgebaseIdentity): void {
+  clearAccountScopedStorageKey(
+    KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.tabCache,
+    identity,
+  );
+}
+
 /** Keeps fixed group-workspace tab metadata in process memory only. */
 export class EphemeralTabCacheService implements KnowledgebaseTabCache {
   private readonly cache = new Map<string, TabCacheEntry>();
@@ -299,6 +336,14 @@ export class EphemeralTabCacheService implements KnowledgebaseTabCache {
       entry.docs.push(doc);
     }
     entry.activeId = doc.id;
+  }
+
+  public saveOpenDocs(kbId: string, docs: DocumentMeta[]): void {
+    const entry = this.getOrCreateEntry(kbId);
+    entry.docs = docs;
+    if (entry.activeId !== null && !docs.some((doc) => doc.id === entry.activeId)) {
+      entry.activeId = docs[0]?.id ?? null;
+    }
   }
 
   public closeDoc(kbId: string, docId: string): {

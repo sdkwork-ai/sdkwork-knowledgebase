@@ -34,6 +34,8 @@ export * from './sdk/uploadDeclaration';
 export * from './session/sessionStore';
 export * from './session/sessionTokenManager';
 export * from './session/sessionTokenClaims';
+export * from './session/accountScopedStorage';
+export * from './session/identityChange';
 export {
   signOutKnowledgebaseAccount,
   signOutKnowledgebaseSession,

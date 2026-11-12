@@ -267,4 +267,140 @@ describe('knowledge space agent profile defaults', () => {
     expect(getItem).not.toHaveBeenCalled();
     expect(setItem).not.toHaveBeenCalled();
   });
+
+  it('does not provision an agent profile for a space this account may not open', async () => {
+    const storage = new Map<string, string>();
+    const createProfile = vi.fn(async () => ({ profileId: 'orphan-profile' }));
+    const createBinding = vi.fn(async () => ({ accepted: true }));
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => storage.get(key) ?? null,
+          setItem: (key: string, value: string) => storage.set(key, value),
+          removeItem: (key: string) => storage.delete(key),
+        },
+      },
+    });
+    bindKnowledgebaseSessionStore(
+      createStaticSessionStore({ context: { tenantId: 'tenant-1', userId: 'user-1' } }),
+    );
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          spaces: {
+            retrieve: async () => {
+              throw {
+                status: 403,
+                code: 'knowledge_space_access_denied',
+                detail: 'actor 9 does not have access to space 77',
+              };
+            },
+          },
+          agentProfiles: {
+            create: createProfile,
+            bindings: { create: createBinding },
+          },
+        },
+      } as never,
+      setTokenManager() {},
+    });
+
+    await expect(ensureSpaceAgentProfile('77')).rejects.toMatchObject({ status: 403 });
+    expect(createProfile).not.toHaveBeenCalled();
+    expect(createBinding).not.toHaveBeenCalled();
+  });
+
+  it('drops a cached profile this account may not open, then fails', async () => {
+    const storage = new Map<string, string>();
+    storage.set('sdkwork.knowledgebase.spaceAgentProfile.v1.tenant-1.42', 'cached-profile');
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => storage.get(key) ?? null,
+          setItem: (key: string, value: string) => storage.set(key, value),
+          removeItem: (key: string) => storage.delete(key),
+        },
+      },
+    });
+    bindKnowledgebaseSessionStore(
+      createStaticSessionStore({ context: { tenantId: 'tenant-1', userId: 'user-1' } }),
+    );
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          spaces: {
+            retrieve: async () => ({ id: '42', knowledgeMode: 'rag' }),
+          },
+          agentProfiles: {
+            retrieve: async () => {
+              throw { status: 403, code: 'knowledge_space_access_denied' };
+            },
+            create: vi.fn(),
+          },
+        },
+      } as never,
+      setTokenManager() {},
+    });
+
+    await expect(ensureSpaceAgentProfile('42')).rejects.toMatchObject({ status: 403 });
+
+    // The stale row must not replay the denial on the next round.
+    expect(storage.has('sdkwork.knowledgebase.spaceAgentProfile.v1.tenant-1.42')).toBe(false);
+  });
+
+  it('serializes concurrent ensures per account, not per space alone', async () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => storage.get(key) ?? null,
+          setItem: (key: string, value: string) => storage.set(key, value),
+          removeItem: (key: string) => storage.delete(key),
+        },
+      },
+    });
+    const releases: Array<() => void> = [];
+    let created = 0;
+    const createProfile = vi.fn(async () => {
+      created += 1;
+      const profileId = `profile-${created}`;
+      await new Promise<void>((resolve) => {
+        releases.push(resolve);
+      });
+      return { profileId };
+    });
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          spaces: { retrieve: async () => ({ id: '42', knowledgeMode: 'rag' }) },
+          agentProfiles: {
+            create: createProfile,
+            bindings: { create: async () => ({ accepted: true }) },
+          },
+        },
+      } as never,
+      setTokenManager() {},
+    });
+
+    bindKnowledgebaseSessionStore(
+      createStaticSessionStore({ context: { tenantId: 'tenant-1', userId: 'user-a' } }),
+    );
+    const first = ensureSpaceAgentProfile('42');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    bindKnowledgebaseSessionStore(
+      createStaticSessionStore({ context: { tenantId: 'tenant-1', userId: 'user-b' } }),
+    );
+    const second = ensureSpaceAgentProfile('42');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    releases.forEach((release) => release());
+
+    await expect(first).resolves.toBe('profile-1');
+    await expect(second).resolves.toBe('profile-2');
+    expect(createProfile).toHaveBeenCalledTimes(2);
+  });
 });

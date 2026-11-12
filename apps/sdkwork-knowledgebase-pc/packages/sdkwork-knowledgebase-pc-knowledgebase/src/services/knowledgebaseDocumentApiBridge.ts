@@ -46,6 +46,7 @@ import {
 } from './knowledgeSpaceKnowledgeMode';
 import {
   fetchKnowledgeDocumentContent,
+  getKnowledgebaseActorId,
   getKnowledgebaseTenantId,
   isKnowledgebaseAppError,
   isKnowledgebaseDriveApiAvailable,
@@ -309,7 +310,35 @@ function groupDocumentsByParent(
   return roots;
 }
 
-async function ensureDefaultSpace(tenantId: string): Promise<RegisteredKnowledgebaseSpace> {
+/**
+ * Default-space creations in flight, keyed by `<tenantId>:<userId>`.
+ *
+ * Several surfaces list knowledge bases during first paint (the sidebar, the
+ * notes workspace, the composer catalog) and an account switch empties the
+ * registry, so concurrent callers used to create one "我的知识库" each. The entry
+ * is dropped as soon as the creation settles: it is a request de-duplicator, not
+ * a cache of the created space.
+ */
+const defaultSpaceInFlight = new Map<string, Promise<{ entry: RegisteredKnowledgebaseSpace; name: string }>>();
+
+function defaultSpaceInFlightKey(tenantId: string): string {
+  return `${tenantId}:${getKnowledgebaseActorId() ?? ''}`;
+}
+
+async function ensureDefaultSpace(tenantId: string): Promise<{ entry: RegisteredKnowledgebaseSpace; name: string }> {
+  const inFlightKey = defaultSpaceInFlightKey(tenantId);
+  const existing = defaultSpaceInFlight.get(inFlightKey);
+  if (existing) {
+    return existing;
+  }
+  const promise = createDefaultSpace(tenantId).finally(() => {
+    defaultSpaceInFlight.delete(inFlightKey);
+  });
+  defaultSpaceInFlight.set(inFlightKey, promise);
+  return promise;
+}
+
+async function createDefaultSpace(tenantId: string): Promise<{ entry: RegisteredKnowledgebaseSpace; name: string }> {
   const client = requireSdkClient();
   const created = await client.knowledge.spaces.create({
     name: '我的知识库',
@@ -322,7 +351,7 @@ async function ensureDefaultSpace(tenantId: string): Promise<RegisteredKnowledge
     createdAt: new Date().toISOString(),
   };
   upsertRegisteredSpace(tenantId, entry);
-  return entry;
+  return { entry, name: created.name || '我的知识库' };
 }
 
 export interface KnowledgeBaseGroups {
@@ -330,9 +359,30 @@ export interface KnowledgeBaseGroups {
   personal: KnowledgeBase[];
   public: KnowledgeBase[];
   /** Registry space ids skipped this round because their retrieve failed with a
-   *  transient (non-404) error. They stay registered but are missing from the
-   *  groups above, so callers can surface the degradation. */
+   *  transient error. They stay registered but are missing from the groups
+   *  above, so callers can surface the degradation. */
   unavailableSpaceIds: string[];
+}
+
+/**
+ * Reports whether a failed space read is the gateway refusing this actor, rather
+ * than a transient read or a deployment scope mismatch.
+ *
+ * The shared browser profile can still carry ids the signed-in account cannot
+ * open (adopted legacy registry, an access that was revoked). Those answers are
+ * definitive for the reader, so the reference has to leave the registry; a 5xx
+ * or a tenant mismatch must keep it.
+ */
+function isSpaceAccessDenied(reason: unknown): boolean {
+  const problem = parseSdkProblemDetails(reason);
+  if (problem?.status !== 403) {
+    return false;
+  }
+  const code = problem.code ?? '';
+  return code === 'knowledge_space_access_denied'
+    || code === 'group_knowledge_space_access_denied'
+    || code === '40301'
+    || (problem.detail ?? '').includes('does not have access to space');
 }
 
 export async function getKnowledgeBases(): Promise<KnowledgeBaseGroups> {
@@ -357,7 +407,7 @@ export async function getKnowledgeBases(): Promise<KnowledgeBaseGroups> {
   let registry = readRegisteredSpaces(tenantId);
 
   if (registry.length === 0) {
-    registry = [await ensureDefaultSpace(tenantId)];
+    registry = [(await ensureDefaultSpace(tenantId)).entry];
   }
 
   const grouped: Record<KnowledgebaseSpaceKbType, KnowledgeBase[]> = {
@@ -366,6 +416,7 @@ export async function getKnowledgeBases(): Promise<KnowledgeBaseGroups> {
     public: [],
   };
   const unavailableSpaceIds: string[] = [];
+  let retainedSpaceCount = 0;
 
   // Concurrent resolution keeps the sidebar's first paint independent of the registry
   // size; a serialized loop makes group latency grow linearly with each round trip.
@@ -379,21 +430,32 @@ export async function getKnowledgeBases(): Promise<KnowledgeBaseGroups> {
       return;
     }
     if (result.status === 'fulfilled') {
+      retainedSpaceCount += 1;
       grouped[entry.kbType].push(buildKnowledgeBase(entry, result.value.name));
       return;
     }
     // A failed retrieve is transient by default (gateway restart, network
     // blip, 5xx): permanently deleting the registry reference turned every
     // backend hiccup into silent knowledge-base loss after refresh. Only a
-    // definitive 404 (space deleted server-side) may remove the reference;
-    // everything else keeps the entry and simply skips this round.
+    // definitive answer may remove the reference: 404 (space deleted
+    // server-side) and 403 (this actor may not open the space, so the id was
+    // registered by another account on this device).
     const problem = parseSdkProblemDetails(result.reason);
-    if (problem?.status === 404) {
+    if (problem?.status === 404 || isSpaceAccessDenied(result.reason)) {
       removeRegisteredSpace(tenantId, entry.spaceId);
       return;
     }
+    retainedSpaceCount += 1;
     unavailableSpaceIds.push(entry.spaceId);
   });
+
+  // Nothing here belongs to this account: it has no knowledge base on this
+  // device. Give it its own instead of leaving the sidebar occupied by
+  // references it can never open.
+  if (retainedSpaceCount === 0) {
+    const seeded = await ensureDefaultSpace(tenantId);
+    grouped.personal.push(buildKnowledgeBase(seeded.entry, seeded.name));
+  }
 
   if (unavailableSpaceIds.length > 0) {
     console.warn(
@@ -796,7 +858,17 @@ export async function getDocumentContent(id: string): Promise<string> {
   const numericDocumentId = parseSafeNumericDocumentId(id);
 
   if (numericDocumentId !== null && persistBrowserState) {
-    const authoritative = await fetchKnowledgeDocumentContent(numericDocumentId);
+    let authoritative;
+    try {
+      authoritative = await fetchKnowledgeDocumentContent(numericDocumentId);
+    } catch (error) {
+      // A denial from the authoritative read must never be answered from the
+      // local copy: drop the copy and surface the denial instead.
+      if (tenantId !== null) {
+        removeLocalDocumentContent(tenantId, id);
+      }
+      throw error;
+    }
     if (authoritative?.contentMarkdown !== undefined) {
       const contentVersion = authoritative.contentVersion?.trim()
         || authoritative.contentSource?.trim()

@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  bindKnowledgebaseSessionStore,
+  type SessionSnapshot,
+  type SessionStore,
+} from 'sdkwork-knowledgebase-pc-core';
 
 import type { DocumentMeta } from './document';
-import { EphemeralTabCacheService, TabCacheService } from './tabService';
+import {
+  clearKnowledgebaseTabCacheForIdentity,
+  EphemeralTabCacheService,
+  TabCacheService,
+} from './tabService';
 
 const groupDocument = {
   id: 'group-document-1',
@@ -143,5 +152,70 @@ describe('TabCacheService cross-tab safe writes', () => {
     });
     // No write beyond the seed: the unchanged cache must not be re-persisted.
     expect(fakeStorage.setItemCalls).toBe(writesAfterSeed);
+  });
+});
+
+function createStaticSessionStore(snapshot: SessionSnapshot): SessionStore {
+  return {
+    getSnapshot: () => snapshot,
+    refreshSession: () => snapshot,
+    setSession() {},
+    clearSession() {},
+    subscribe: () => () => {},
+  };
+}
+
+function bindAccount(userId: string): void {
+  bindKnowledgebaseSessionStore(
+    createStaticSessionStore({ context: { tenantId: 'tenant-1', userId } }),
+  );
+}
+
+describe('TabCacheService account scoping', () => {
+  let fakeStorage: ReturnType<typeof createFakeLocalStorage>;
+
+  beforeEach(() => {
+    broadcastMessages.length = 0;
+    fakeStorage = createFakeLocalStorage();
+    vi.stubGlobal('localStorage', fakeStorage);
+    vi.stubGlobal('BroadcastChannel', RecordingBroadcastChannel);
+    vi.stubGlobal('window', globalThis);
+  });
+
+  afterEach(() => {
+    bindKnowledgebaseSessionStore(createStaticSessionStore({}));
+  });
+
+  it('writes under the bound account key and never under the bare key', () => {
+    bindAccount('user-a');
+
+    TabCacheService.openDoc('kb-1', groupDocument);
+
+    expect(fakeStorage.getItem('app-tabs-cache-v2.tenant-1.user-a')).toContain('kb-1');
+    expect(fakeStorage.getItem('app-tabs-cache-v2')).toBeNull();
+    expect(broadcastMessages).toContain('app-tabs-cache-v2.tenant-1.user-a');
+  });
+
+  it('shows the next account an empty tab window', () => {
+    bindAccount('user-a');
+    TabCacheService.openDoc('kb-1', groupDocument);
+
+    bindAccount('user-b');
+
+    expect(TabCacheService.getOpenDocs('kb-1')).toEqual([]);
+    expect(TabCacheService.getActiveDocId('kb-1')).toBeNull();
+  });
+
+  it('drops one account rows without touching another account or the current key', () => {
+    bindAccount('user-a');
+    TabCacheService.openDoc('kb-1', groupDocument);
+    bindAccount('user-b');
+    TabCacheService.openDoc('kb-1', groupDocument);
+
+    clearKnowledgebaseTabCacheForIdentity({ tenantId: 'tenant-1', userId: 'user-a' });
+
+    expect(fakeStorage.getItem('app-tabs-cache-v2.tenant-1.user-a')).toBeNull();
+    expect(fakeStorage.getItem('app-tabs-cache-v2.tenant-1.user-b')).toContain('kb-1');
+    expect(TabCacheService.getOpenDocs('kb-1')).toEqual([groupDocument]);
   });
 });

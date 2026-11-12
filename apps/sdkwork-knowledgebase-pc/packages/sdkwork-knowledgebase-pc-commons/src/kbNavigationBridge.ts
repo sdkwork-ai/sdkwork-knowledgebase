@@ -1,3 +1,9 @@
+/**
+ * Base key of the one-shot search → knowledge-base navigation intent.
+ *
+ * Callers persist it under an account-scoped key so a pending intent cannot
+ * point the next account at a document it may not open.
+ */
 export const KB_NAV_INTENT_KEY = 'app-kb-nav-intent';
 
 export interface KbNavIntent {
@@ -12,13 +18,13 @@ export interface KbNavIntent {
   highlight?: boolean;
 }
 
-export function setKbNavIntent(intent: KbNavIntent) {
-  sessionStorage.setItem(KB_NAV_INTENT_KEY, JSON.stringify(intent));
+export function setKbNavIntent(intent: KbNavIntent, storageKey: string = KB_NAV_INTENT_KEY) {
+  sessionStorage.setItem(storageKey, JSON.stringify(intent));
 }
 
-export function readKbNavIntent(): KbNavIntent | null {
+export function readKbNavIntent(storageKey: string = KB_NAV_INTENT_KEY): KbNavIntent | null {
   try {
-    const raw = sessionStorage.getItem(KB_NAV_INTENT_KEY);
+    const raw = sessionStorage.getItem(storageKey);
     if (!raw) return null;
     return JSON.parse(raw) as KbNavIntent;
   } catch {
@@ -26,8 +32,8 @@ export function readKbNavIntent(): KbNavIntent | null {
   }
 }
 
-export function clearKbNavIntent() {
-  sessionStorage.removeItem(KB_NAV_INTENT_KEY);
+export function clearKbNavIntent(storageKey: string = KB_NAV_INTENT_KEY) {
+  sessionStorage.removeItem(storageKey);
 }
 
 export interface KbLocateFileDetail {

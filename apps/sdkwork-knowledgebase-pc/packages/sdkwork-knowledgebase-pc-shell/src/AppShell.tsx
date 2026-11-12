@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { KnowledgeBaseApp, NotesWorkspace, ToastContainer, TabCacheService } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
+import {
+  clearKnowledgebaseDerivedCachesForIdentity,
+  KnowledgeBaseApp,
+  NotesWorkspace,
+  ToastContainer,
+  TabCacheService,
+} from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
 import { DocumentService } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/services/document';
 import { findDocInTree } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/utils/docTreeUtils';
 import {
@@ -17,7 +23,9 @@ import {
   useLocalStorage
 } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
 import {
+  accountScopedStorageKey,
   createKnowledgebaseAccountViewModel,
+  KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS,
   KNOWLEDGEBASE_POST_AUTH_LANDING_FLAG,
   setKnowledgebaseNetworkOnline,
   signOutKnowledgebaseSession,
@@ -36,6 +44,15 @@ import { useNetworkAvailability } from './useNetworkAvailability';
 
 const APP_ACTIVE_TAB_STORAGE_KEY = 'app-active-tab';
 const APP_SEARCH_VIEW_SESSION_KEY = 'app-search-view-active';
+
+/** Account-scoped keys this shell writes on behalf of the workspace. */
+function activeKnowledgeBaseStorageKey(): string {
+  return accountScopedStorageKey(KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.activeKnowledgeBase);
+}
+
+function navIntentStorageKey(): string {
+  return accountScopedStorageKey(KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.navIntent);
+}
 
 type PersistedAppTab = 'kb' | 'market' | 'notes';
 type AppShellTab = PersistedAppTab | 'search';
@@ -261,6 +278,10 @@ export function AppShell() {
   }, [runtime.config.runtimeTarget]);
 
   const handleSignOut = useCallback(() => {
+    // Drop the derived caches before the session store is cleared: the identity
+    // listener would also do it, but this surface stays mounted across the
+    // sign-out, and it must not keep serving the previous account's titles.
+    clearKnowledgebaseDerivedCachesForIdentity();
     void signOutKnowledgebaseSession(runtime);
   }, [runtime]);
 
@@ -297,7 +318,8 @@ export function AppShell() {
   }, []);
 
   const activateKnowledgeBase = useCallback((kbId: string, kbTitle?: string) => {
-    const prev = localStorage.getItem('app-active-kb');
+    const storageKey = activeKnowledgeBaseStorageKey();
+    const prev = localStorage.getItem(storageKey);
     let newKb: { id: string; title: string };
     if (prev && prev !== 'null') {
       // The stored value may be legacy/corrupt (written by several surfaces);
@@ -312,8 +334,8 @@ export function AppShell() {
     } else {
       newKb = { id: kbId, title: kbTitle ?? '' };
     }
-    localStorage.setItem('app-active-kb', JSON.stringify(newKb));
-    window.dispatchEvent(new CustomEvent('local-storage', { detail: { key: 'app-active-kb', value: newKb } }));
+    localStorage.setItem(storageKey, JSON.stringify(newKb));
+    window.dispatchEvent(new CustomEvent('local-storage', { detail: { key: storageKey, value: newKb } }));
     setActiveTab('kb');
   }, [setActiveTab]);
 
@@ -332,7 +354,7 @@ export function AppShell() {
       author: payload.author,
       updatedAt: payload.updatedAt,
       highlight: true
-    });
+    }, navIntentStorageKey());
 
     let docMeta = {
       id: payload.docId,

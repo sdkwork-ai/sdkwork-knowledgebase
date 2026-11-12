@@ -1,6 +1,11 @@
 import { isBlank, trim } from '@sdkwork/utils';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  accountScopedStorageKey,
+  KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS,
+  onKnowledgebaseIdentityChange,
+} from 'sdkwork-knowledgebase-pc-core';
 import { DocumentService } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase/services/document';
 import { SearchChatHeader } from './components/SearchChatHeader';
 import { SearchChatThread } from './components/SearchChatThread';
@@ -9,8 +14,11 @@ import { SearchComposerDock } from './components/SearchComposerDock';
 import { SearchLandingPage } from './components/SearchLandingPage';
 import { SearchMediaViewerHost } from './components/SearchMediaViewerHost';
 import { SearchSessionSidebar } from './components/SearchSessionSidebar';
-import { SEARCH_SESSIONS_STORAGE_KEY } from './constants';
-import { persistSearchSessions, loadSearchSessions } from './searchSessionStorage';
+import {
+  currentSearchSessionsStorageKey,
+  persistSearchSessions,
+  loadSearchSessions,
+} from './searchSessionStorage';
 import { buildRelatedMedia } from './services/buildRelatedMedia';
 import { generateCitationsAndResults } from './services/searchQueryEngine';
 import type { SearchMessage, SearchModuleProps, SearchSession } from './types';
@@ -117,6 +125,31 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
   // localStorage before the load ran, wiping the user's saved history on
   // every mount.
   const sessionsHydratedRef = useRef(false);
+  // Bumped when the signed-in account changes so the hydration effect below
+  // re-runs against the new account's storage key.
+  const [hydrateToken, setHydrateToken] = useState(0);
+
+  // An account switch can leave this module mounted (the host swaps credentials
+  // without a reload). Drop the previous account's sessions from memory, stop any
+  // in-flight stream from re-persisting them, and re-hydrate from the new
+  // account's key.
+  useEffect(() => {
+    return onKnowledgebaseIdentityChange(() => {
+      generationSeqRef.current += 1;
+      if (streamIntervalRef.current) {
+        clearInterval(streamIntervalRef.current);
+        streamIntervalRef.current = null;
+      }
+      sessionsRef.current = null;
+      sessionsHydratedRef.current = false;
+      mediaMigrationDoneRef.current = false;
+      wasInChatModeRef.current = false;
+      setIsTyping(false);
+      setSessions([]);
+      setActiveSessionId('');
+      setHydrateToken((token) => token + 1);
+    });
+  }, []);
 
   // Single persistence point: every committed sessions change is trimmed and
   // written through the bounded, failure-safe storage helpers. During active
@@ -126,7 +159,7 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
     if (!sessionsHydratedRef.current || streamIntervalRef.current) {
       return;
     }
-    persistSearchSessions(SEARCH_SESSIONS_STORAGE_KEY, sessions);
+    persistSearchSessions(currentSearchSessionsStorageKey(), sessions);
   }, [sessions]);
 
   useEffect(() => {
@@ -134,7 +167,7 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
     // `t` dependency, and re-seeding would reset the active session and the
     // composer toggles mid-use.
     if (sessionsHydratedRef.current) return;
-    const stored = loadSearchSessions(SEARCH_SESSIONS_STORAGE_KEY);
+    const stored = loadSearchSessions(currentSearchSessionsStorageKey());
     if (stored && stored.length > 0) {
       sessionsHydratedRef.current = true;
       setSessions(stored);
@@ -155,8 +188,8 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
     sessionsHydratedRef.current = true;
     setSessions([firstSession]);
     setActiveSessionId(firstSession.id);
-    persistSearchSessions(SEARCH_SESSIONS_STORAGE_KEY, [firstSession]);
-  }, [t]);
+    persistSearchSessions(currentSearchSessionsStorageKey(), [firstSession]);
+  }, [t, hydrateToken]);
 
   useEffect(() => {
     if (mediaMigrationDoneRef.current || sessions.length === 0) return;
@@ -459,7 +492,7 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
       persistedUpTo = index;
       const snapshot = sessionsRef.current;
       if (snapshot) {
-        persistSearchSessions(SEARCH_SESSIONS_STORAGE_KEY, snapshot);
+        persistSearchSessions(currentSearchSessionsStorageKey(), snapshot);
       }
     };
     streamIntervalRef.current = setInterval(() => {
@@ -486,7 +519,7 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
         });
         sessionsRef.current = list;
         if (index % PERSIST_EVERY_CHARS === 0) {
-          persistSearchSessions(SEARCH_SESSIONS_STORAGE_KEY, list);
+          persistSearchSessions(currentSearchSessionsStorageKey(), list);
           persistedUpTo = index;
         }
         return list;
@@ -577,7 +610,12 @@ export function SearchModule({ onGoToKb, onGoToFile, onOpenWebLink }: SearchModu
 
         window.dispatchEvent(
           new CustomEvent('local-storage', {
-            detail: { key: 'app-active-kb', value: kbGroup }
+            detail: {
+              key: accountScopedStorageKey(
+                KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.activeKnowledgeBase,
+              ),
+              value: kbGroup,
+            }
           })
         );
 

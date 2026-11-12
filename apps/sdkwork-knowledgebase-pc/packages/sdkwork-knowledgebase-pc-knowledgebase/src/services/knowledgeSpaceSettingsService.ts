@@ -1,6 +1,7 @@
 import type { KnowledgeAccessLevel, KnowledgeSpaceContextBinding } from 'sdkwork-knowledgebase-pc-core';
 import { isBlank } from '@sdkwork/utils';
 import {
+  getKnowledgebaseActorId,
   getKnowledgebaseAppSdkClient,
   parseSdkProblemDetails,
   requireKnowledgebaseTenantId} from 'sdkwork-knowledgebase-pc-core';
@@ -34,6 +35,17 @@ function readSpaceAgentProfileCache(tenantId: string, spaceId: string): string |
     return null;
   }
   return window.localStorage.getItem(`${SPACE_AGENT_PROFILE_PREFIX}.${tenantId}.${spaceId}`);
+}
+
+function removeSpaceAgentProfileCache(tenantId: string, spaceId: string): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(`${SPACE_AGENT_PROFILE_PREFIX}.${tenantId}.${spaceId}`);
+  } catch {
+    // Best-effort: a failed removal only means the next round re-reads the 403.
+  }
 }
 
 function writeSpaceAgentProfileCache(tenantId: string, spaceId: string, profileId: string): void {
@@ -102,19 +114,37 @@ export async function ensureSpaceAgentProfile(
   options: EnsureSpaceAgentProfileOptions = {},
 ): Promise<string> {
   // Serialize concurrent callers within this tab so two parallel ensures do
-  // not both see a cache miss and create duplicate profiles/bindings.
-  const inFlight = ensureSpaceAgentProfileInFlight.get(spaceId);
+  // not both see a cache miss and create duplicate profiles/bindings. The key
+  // carries the account as well as the space: one tenant's in-flight promise
+  // must never answer another account's (or tenant's) ensure.
+  const inFlightKey = spaceAgentProfileInFlightKey(spaceId);
+  const inFlight = ensureSpaceAgentProfileInFlight.get(inFlightKey);
   if (inFlight) {
     return inFlight;
   }
   const promise = ensureSpaceAgentProfileUncached(spaceId, options).finally(() => {
-    ensureSpaceAgentProfileInFlight.delete(spaceId);
+    ensureSpaceAgentProfileInFlight.delete(inFlightKey);
   });
-  ensureSpaceAgentProfileInFlight.set(spaceId, promise);
+  ensureSpaceAgentProfileInFlight.set(inFlightKey, promise);
   return promise;
 }
 
 const ensureSpaceAgentProfileInFlight = new Map<string, Promise<string>>();
+
+function spaceAgentProfileInFlightKey(spaceId: string): string {
+  return `${requireKnowledgebaseTenantId()}:${getKnowledgebaseActorId() ?? ''}:${spaceId.trim()}`;
+}
+
+/**
+ * Drop every in-flight ensure.
+ *
+ * Called when the signed-in account changes: a promise started by the previous
+ * account resolves to a profile id this account may not read, so it can no
+ * longer be shared with new callers.
+ */
+export function forgetSpaceAgentProfileInFlight(): void {
+  ensureSpaceAgentProfileInFlight.clear();
+}
 
 async function resolveSpaceKnowledgeMode(
   client: ReturnType<typeof getKnowledgebaseAppSdkClient>['client'],
@@ -129,9 +159,16 @@ async function resolveSpaceKnowledgeMode(
     // concept bundle to search. A plain space that received uploaded files must
     // answer from chunk retrieval instead of an empty OKF index.
     return space.okfBundleInitialized ? 'okf_bundle' : 'rag';
-  } catch {
-    // The space read is advisory. A permission or transport failure must not
-    // block the assistant, and the product default for uploaded files is chunk
+  } catch (error) {
+    const status = parseSdkProblemDetails(error)?.status;
+    if (status === 403 || status === 404) {
+      // Provisioning an agent profile for a space this account cannot open only
+      // creates an orphan profile whose binding the gateway then rejects, and
+      // every retry repeats both rows. Fail before creating either.
+      throw error;
+    }
+    // The space read is otherwise advisory. A transport failure must not block
+    // the assistant, and the product default for uploaded files is chunk
     // retrieval rather than an OKF bundle.
     return 'rag';
   }
@@ -176,11 +213,19 @@ async function ensureSpaceAgentProfileUncached(
       }
       return cached;
     } catch (error) {
+      const status = parseSdkProblemDetails(error)?.status;
+      if (status === 403) {
+        // This account may not open the cached profile (the entry was written by
+        // another account on this device, or access was revoked). Drop it so the
+        // next round resolves from scratch instead of replaying the denial.
+        removeSpaceAgentProfileCache(tenantId, spaceId);
+        throw error;
+      }
       // Only a definitive 404 (profile deleted server-side) may recreate the
       // profile: treating transient failures (gateway restart, network blip,
       // 5xx) as "stale cache" manufactured an unbounded stream of orphan
       // profiles and bindings on every flaky request.
-      if (parseSdkProblemDetails(error)?.status !== 404) {
+      if (status !== 404) {
         throw error;
       }
     }

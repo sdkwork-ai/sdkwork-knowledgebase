@@ -1,15 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  bindKnowledgebaseSessionStore,
   readRegisteredSpaces,
   removeRegisteredSpace,
   updateRegisteredSpace,
   upsertRegisteredSpace,
   type RegisteredKnowledgebaseSpace,
 } from './knowledgebaseSpaceRegistry';
+import type { SessionSnapshot, SessionStore } from '../session/sessionStore';
 
 const TENANT_ID = 'tenant-1';
 const REGISTRY_KEY = `sdkwork.knowledgebase.spaces.v1.${TENANT_ID}`;
+
+function createStaticSessionStore(snapshot: SessionSnapshot): SessionStore {
+  return {
+    getSnapshot: () => snapshot,
+    refreshSession: () => snapshot,
+    setSession() {},
+    clearSession() {},
+    subscribe: () => () => {},
+  };
+}
+
+function bindActor(userId: string): void {
+  bindKnowledgebaseSessionStore(
+    createStaticSessionStore({ context: { tenantId: TENANT_ID, userId } }),
+  );
+}
 
 const recorded: { messages: unknown[] } = { messages: [] };
 
@@ -69,6 +87,7 @@ describe('knowledgebaseSpaceRegistry cross-tab updates', () => {
   });
 
   afterEach(() => {
+    bindKnowledgebaseSessionStore(createStaticSessionStore({}));
     vi.unstubAllGlobals();
   });
 
@@ -114,5 +133,44 @@ describe('knowledgebaseSpaceRegistry cross-tab updates', () => {
     expect(next.find((space) => space.spaceId === '22')?.kbType).toBe('public');
     expect(next.find((space) => space.spaceId === '11')?.kbType).toBe('team');
     expect(readStoredSpaces().find((space) => space.spaceId === '22')?.icon).toBe('📘');
+  });
+
+  it('keeps each account of one tenant on its own registry', () => {
+    bindActor('user-a');
+    upsertRegisteredSpace(TENANT_ID, {
+      spaceId: '11',
+      kbType: 'personal',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    expect(readRegisteredSpaces(TENANT_ID).map((space) => space.spaceId)).toEqual(['11']);
+
+    bindActor('user-b');
+    expect(readRegisteredSpaces(TENANT_ID)).toEqual([]);
+    upsertRegisteredSpace(TENANT_ID, {
+      spaceId: '22',
+      kbType: 'personal',
+      createdAt: '2026-01-02T00:00:00.000Z',
+    });
+
+    bindActor('user-a');
+    expect(readRegisteredSpaces(TENANT_ID).map((space) => space.spaceId)).toEqual(['11']);
+  });
+
+  it('adopts the tenant-only registry once so a pre-upgrade account keeps its spaces', () => {
+    seedSpaces([
+      { spaceId: '11', kbType: 'personal', createdAt: '2026-01-01T00:00:00.000Z' },
+    ]);
+    bindActor('user-a');
+
+    expect(readRegisteredSpaces(TENANT_ID).map((space) => space.spaceId)).toEqual(['11']);
+    expect(
+      JSON.parse(fakeStorage().get(`${REGISTRY_KEY}.user-a`) ?? 'null'),
+    ).toHaveLength(1);
+
+    // An account that already has its own registry never reads the adopted copy again.
+    removeRegisteredSpace(TENANT_ID, '11');
+    expect(readRegisteredSpaces(TENANT_ID)).toEqual([]);
+    expect(JSON.parse(fakeStorage().get(`${REGISTRY_KEY}.user-a`) ?? 'null')).toEqual([]);
   });
 });

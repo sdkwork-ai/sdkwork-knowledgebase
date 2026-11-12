@@ -143,7 +143,7 @@ export function requireDriveNodeId(
   return normalized;
 }
 
-/** Ensure kbId refers to a space registered for the current tenant. */
+/** Ensure kbId refers to a space registered for the current account. */
 export function requireRegisteredSpaceId(kbId: string): string {
   const spaceId = parseKnowledgeSpaceId(kbId);
   const tenantId = requireKnowledgebaseTenantId();

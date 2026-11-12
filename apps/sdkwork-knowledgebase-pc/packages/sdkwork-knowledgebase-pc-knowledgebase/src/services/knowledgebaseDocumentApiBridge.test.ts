@@ -7,12 +7,14 @@ import {
   setKnowledgebaseApiEnabled,
   type SessionSnapshot,
   type SessionStore,
+  writeLocalDocumentContent,
 } from 'sdkwork-knowledgebase-pc-core';
 
 import {
   createDocument,
   getDocumentContent,
   getDocuments,
+  getKnowledgeBases,
   saveDocumentContent,
 } from './knowledgebaseDocumentApiBridge';
 import type { DocumentMeta } from './document';
@@ -39,19 +41,21 @@ function createStaticSessionStore(snapshot: SessionSnapshot): SessionStore {
   };
 }
 
-function installWindowStorage(tenantId: string, spaceId: string): void {
+function installWindowStorage(tenantId: string, spaceId: string | null): void {
   const localStorage = new Map<string, string>();
   const sessionStorage = new Map<string, string>();
-  localStorage.set(
-    `sdkwork.knowledgebase.spaces.v1.${tenantId}`,
-    JSON.stringify([
-      {
-        spaceId,
-        kbType: 'team',
-        createdAt: '2026-07-09T00:00:00.000Z',
-      },
-    ]),
-  );
+  if (spaceId !== null) {
+    localStorage.set(
+      `sdkwork.knowledgebase.spaces.v1.${tenantId}`,
+      JSON.stringify([
+        {
+          spaceId,
+          kbType: 'team',
+          createdAt: '2026-07-09T00:00:00.000Z',
+        },
+      ]),
+    );
+  }
 
   Object.defineProperty(globalThis, 'window', {
     configurable: true,
@@ -663,5 +667,160 @@ describe('KnowledgebaseDocumentApiBridge content reads honour the space knowledg
         bindings: [expect.objectContaining({ spaceId: '42' })],
       }),
     );
+  });
+});
+
+describe('KnowledgebaseDocumentApiBridge.getDocumentContent', () => {
+  it('refuses a cached body when the authoritative read is denied', async () => {
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '42');
+    writeLocalDocumentContent('tenant-1', '99', '# Cached secret', 'v1');
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          documents: {
+            content: {
+              list: async () => {
+                throw { status: 403, code: 'knowledge_space_access_denied' };
+              },
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    setKnowledgebaseApiEnabled(true);
+
+    await expect(getDocumentContent('99')).rejects.toMatchObject({ status: 403 });
+    // The denied copy is evicted so a later offline read cannot resurrect it.
+    expect(readLocalDocumentContent('tenant-1', '99')).toBeUndefined();
+  });
+
+  it('serves the cached body when the authoritative read is transiently unavailable', async () => {
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '42');
+    writeLocalDocumentContent('tenant-1', '99', '# Offline copy', 'v1');
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          documents: {
+            content: {
+              list: async () => {
+                throw { status: 503 };
+              },
+            },
+          },
+        },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    setKnowledgebaseApiEnabled(true);
+
+    await expect(getDocumentContent('99')).resolves.toBe('# Offline copy');
+  });
+});
+
+describe('KnowledgebaseDocumentApiBridge.getKnowledgeBases', () => {
+  function configureSpaceSdk(
+    retrieve: (spaceId: string) => Promise<{ id: string; name: string }>,
+    create: () => Promise<{ id: string; name: string }>,
+  ): void {
+    configureKnowledgebaseAppSdk({
+      client: {
+        knowledge: {
+          spaces: { retrieve, create },
+        },
+      } as never,
+      setTokenManager() {
+        // Test fake; token propagation is covered by pc-core SDK bootstrap tests.
+      },
+    });
+    setKnowledgebaseApiEnabled(true);
+  }
+
+  it('drops a space this account may not open and provisions its own', async () => {
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '77');
+    const retrieve = vi.fn(async (spaceId: string) => {
+      if (spaceId === '77') {
+        throw {
+          status: 403,
+          code: 'knowledge_space_access_denied',
+          detail: 'actor 9 does not have access to space 77',
+        };
+      }
+      return { id: spaceId, name: '我的知识库' };
+    });
+    const create = vi.fn(async () => ({ id: '501', name: '我的知识库' }));
+    configureSpaceSdk(retrieve, create);
+
+    const grouped = await getKnowledgeBases();
+
+    expect(create).toHaveBeenCalledWith({
+      name: '我的知识库',
+      description: 'Default knowledge space',
+    });
+    expect(grouped.personal.map((kb) => kb.id)).toEqual(['501']);
+    expect(grouped.unavailableSpaceIds).toEqual([]);
+
+    // The denied reference is gone: the next round reads only the account's own space.
+    const nextRetrieve = vi.fn(async (spaceId: string) => ({ id: spaceId, name: '我的知识库' }));
+    configureSpaceSdk(nextRetrieve, create);
+    await getKnowledgeBases();
+    expect(nextRetrieve).not.toHaveBeenCalledWith('77');
+  });
+
+  it('keeps a space reference through a transient read failure', async () => {
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', '77');
+    const retrieve = vi.fn(async () => {
+      throw { status: 503, code: 'service_unavailable' };
+    });
+    const create = vi.fn(async () => ({ id: '501', name: '我的知识库' }));
+    configureSpaceSdk(retrieve, create);
+
+    const grouped = await getKnowledgeBases();
+
+    expect(grouped.unavailableSpaceIds).toEqual(['77']);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('creates one default space for concurrent first listings', async () => {
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', null);
+    let created = 0;
+    const create = vi.fn(async () => {
+      created += 1;
+      const id = `50${created}`;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return { id, name: '我的知识库' };
+    });
+    const retrieve = vi.fn(async (spaceId: string) => ({ id: spaceId, name: '我的知识库' }));
+    configureSpaceSdk(retrieve, create);
+
+    const [first, second] = await Promise.all([getKnowledgeBases(), getKnowledgeBases()]);
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(first.personal.map((kb) => kb.id)).toEqual(['501']);
+    expect(second.personal.map((kb) => kb.id)).toEqual(['501']);
+  });
+
+  it('retries a failed default-space creation on the next round', async () => {
+    bindTenantContext('tenant-1');
+    installWindowStorage('tenant-1', null);
+    const create = vi.fn(async () => {
+      throw { status: 503, code: 'service_unavailable' };
+    });
+    configureSpaceSdk(vi.fn(async (spaceId: string) => ({ id: spaceId, name: 'x' })), create);
+
+    await expect(getKnowledgeBases()).rejects.toMatchObject({ status: 503 });
+    await expect(getKnowledgeBases()).rejects.toMatchObject({ status: 503 });
+
+    // The single-flight entry is a request de-duplicator, not a cached failure.
+    expect(create).toHaveBeenCalledTimes(2);
   });
 });

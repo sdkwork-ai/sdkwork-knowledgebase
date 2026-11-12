@@ -20,6 +20,7 @@ import {
   isKnowledgebaseBackendApiConfigured,
   setKnowledgebaseBackendApiEnabled,
 } from 'sdkwork-knowledgebase-pc-admin-core';
+import { installKnowledgebaseDerivedCacheCleanup } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
 
 import { getKnowledgebasePcSdkPorts } from './sdkPorts';
 import { syncHostSessionIntoKnowledgebaseStore } from './sessionBridge';
@@ -73,6 +74,11 @@ export function createHostManagedKnowledgebaseRuntime(): KnowledgebasePcRuntime 
   });
 
   bindKnowledgebaseSessionStore(session);
+  // Installed before the host session is mirrored into the store so the first
+  // identity the host publishes already invalidates the previous account's
+  // derived caches (browser nodes, knowledge modes, agent-profile provisioning,
+  // persisted tab rows).
+  installKnowledgebaseDerivedCacheCleanup();
   configureKnowledgebaseAppSdk(appSdkClient);
   configureKnowledgebaseBackendSdk(backendSdkClient);
   configureKnowledgebaseDriveAppSdk(driveSdkClient);

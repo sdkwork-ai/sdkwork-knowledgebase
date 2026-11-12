@@ -10,7 +10,13 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
-import type { ErrorTranslateFn } from 'sdkwork-knowledgebase-pc-core';
+import {
+  accountScopedStorageKey,
+  getKnowledgebaseTenantId,
+  KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS,
+  readRegisteredSpaces,
+  type ErrorTranslateFn,
+} from 'sdkwork-knowledgebase-pc-core';
 
 import { DocumentService } from './services/document';
 import { getDocumentContent } from './services/knowledgebaseDocumentApiBridge';
@@ -34,6 +40,51 @@ interface NoteEditorState {
 }
 
 type NoteContentLoadState = 'empty' | 'loading' | 'ready' | 'error';
+
+/**
+ * Knowledge base the notes workspace should open, or `null` when the stored one
+ * cannot be proven to belong to this account.
+ *
+ * The selection is account-scoped, but it is re-validated against the account's
+ * own registry: a row can name a space the account was removed from, or a row the
+ * pre-scoping build wrote. An unprovable id is dropped instead of opening a
+ * workspace the server will answer with `403`.
+ */
+function readStoredActiveKnowledgeBaseId(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const storageKey = accountScopedStorageKey(
+    KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.activeKnowledgeBase,
+  );
+  let storedId: string | null = null;
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as { id?: unknown } | null;
+    storedId = typeof parsed?.id === 'string' && parsed.id.trim() ? parsed.id.trim() : null;
+  } catch {
+    return null;
+  }
+  if (!storedId) {
+    return null;
+  }
+
+  const tenantId = getKnowledgebaseTenantId();
+  const registeredSpaceIds = (tenantId ? readRegisteredSpaces(tenantId) : [])
+    .map((entry) => String(entry.spaceId));
+  if (!registeredSpaceIds.includes(storedId)) {
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // Best-effort: a failed removal only means the next mount repeats the check.
+    }
+    return null;
+  }
+  return storedId;
+}
 
 /**
  * Full notes workspace: notes list on the left, the shared TiptapEditor on the
@@ -65,18 +116,11 @@ export function NotesWorkspace() {
     let resolvedKbId: string | null = null;
     (async () => {
       try {
-        const stored = window.localStorage.getItem('app-active-kb');
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored) as { id?: string };
-            if (parsed.id && parsed.id.trim()) {
-              resolvedKbId = parsed.id.trim();
-              if (!cancelled) setKbId(resolvedKbId);
-              return;
-            }
-          } catch {
-            // Fall through to KB discovery.
-          }
+        const storedKbId = readStoredActiveKnowledgeBaseId();
+        if (storedKbId) {
+          resolvedKbId = storedKbId;
+          if (!cancelled) setKbId(storedKbId);
+          return;
         }
         const grouped = await DocumentService.getKnowledgeBases();
         const first = grouped.personal[0] ?? grouped.team[0] ?? grouped.public[0];
