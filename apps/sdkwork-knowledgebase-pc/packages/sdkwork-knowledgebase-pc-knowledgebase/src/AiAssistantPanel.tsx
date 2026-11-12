@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { isBlank } from '@sdkwork/utils';
-import { Sparkles, X, Loader2, File, Check, CheckCircle2, CircleAlert, BookOpen } from 'lucide-react';
+import { Sparkles, X, Loader2, File, Check, CheckCircle2, CircleAlert, BookOpen, ChevronDown, PenTool } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AiModelSelector } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
 import { DocumentMeta, FolderNode } from './services/document';
@@ -14,6 +14,13 @@ import {
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { AiAssistantInput } from './AiAssistantInput';
+import { AgentSelectorModal } from './AgentSelectorModal';
+import {
+  ensureWritingAgentSession,
+  reduceWritingAgentToolEvent,
+  streamWritingAgentTurn,
+  type WritingAgent,
+} from './services/writingAgentService';
 import {
   isKnowledgebaseWorkspaceAiEnabled,
   resolveKnowledgebaseWorkspaceAiScope,
@@ -43,11 +50,56 @@ export interface AiAssistantPanelProps {
   workspaceMode?: KnowledgebaseWorkspaceMode;
 }
 
+/** Persisted per-browser choice so the notes panel remembers the writing agent. */
+const WRITING_AGENT_STORAGE_KEY = 'sdkwork.kb.writing-agent.v1';
+
+function readStoredWritingAgent(): WritingAgent | null {
+  try {
+    const raw = window.localStorage.getItem(WRITING_AGENT_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as Partial<WritingAgent>;
+    if (!parsed || typeof parsed.agentId !== 'string' || typeof parsed.name !== 'string') {
+      return null;
+    }
+    return {
+      agentId: parsed.agentId,
+      code: typeof parsed.code === 'string' ? parsed.code : parsed.agentId,
+      name: parsed.name,
+      description: typeof parsed.description === 'string' ? parsed.description : '',
+      ...(typeof parsed.iconName === 'string' ? { iconName: parsed.iconName } : {}),
+      ...(typeof parsed.color === 'string' ? { color: parsed.color } : {}),
+      suggestedPrompts: Array.isArray(parsed.suggestedPrompts)
+        ? parsed.suggestedPrompts.filter((value): value is string => typeof value === 'string')
+        : [],
+      ...(typeof parsed.welcomeMessage === 'string' ? { welcomeMessage: parsed.welcomeMessage } : {}),
+      tags: Array.isArray(parsed.tags)
+        ? parsed.tags.filter((value): value is string => typeof value === 'string')
+        : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistWritingAgent(agent: WritingAgent | null): void {
+  try {
+    if (!agent) {
+      window.localStorage.removeItem(WRITING_AGENT_STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(WRITING_AGENT_STORAGE_KEY, JSON.stringify(agent));
+  } catch {
+    // Storage can be unavailable in hardened browsers; the in-memory choice still works.
+  }
+}
+
 export function AiAssistantPanel({
   aiWidth, isDraggingAi, onMouseDownDrag, onClose, docContent, docs = [], activeDoc, activeKbId,
   headerHeightClass = 'h-[40px]', onSendMessage, workspaceMode = 'standard',
 }: AiAssistantPanelProps) {
-  const { t } = useTranslation(['editor', 'mcp']);
+  const { t } = useTranslation(['editor', 'mcp', 'errors']);
   const aiEnabled = isKnowledgebaseWorkspaceAiEnabled(workspaceMode);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -55,9 +107,13 @@ export function AiAssistantPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDocSelectorOpen, setIsDocSelectorOpen] = useState(false);
   const [selectedReferences, setSelectedReferences] = useState<DocumentMeta[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<WritingAgent | null>(() => readStoredWritingAgent());
+  const [isAgentPickerOpen, setIsAgentPickerOpen] = useState(false);
   // Monotonic generation id: bumping it invalidates any in-flight generation so "stop"
   // really stops the streamed reply from appending stale content.
   const generationSeqRef = useRef(0);
+  // The Agents app-api owns the durable session; the panel only keeps its id.
+  const agentSessionRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Clear references when switching knowledge base
@@ -65,9 +121,8 @@ export function AiAssistantPanel({
   }, [activeKbId]);
 
   useEffect(() => {
-    // If there's an active doc, we could automatically suggest referencing it, 
-    // or we can allow manual referencing. Let's just update references when user explicitly chooses.
-  }, [activeDoc]);
+    persistWritingAgent(selectedAgent);
+  }, [selectedAgent]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -87,7 +142,116 @@ export function AiAssistantPanel({
     setMessages(prev => [...prev, { role: 'assistant', content }]);
   };
 
+  const selectAgent = (agent: WritingAgent) => {
+    setSelectedAgent(agent);
+    setIsAgentPickerOpen(false);
+    // A transcript and session belong to one agent; switching starts clean.
+    agentSessionRef.current = null;
+    setMessages([]);
+  };
+
+  const updateLastAssistantMessage = (
+    updater: (message: ChatMessage) => ChatMessage,
+  ) => {
+    setMessages(prev => {
+      if (prev.length === 0) {
+        return prev;
+      }
+      const last = prev[prev.length - 1];
+      if (last.role !== 'assistant') {
+        return prev;
+      }
+      const copy = prev.slice();
+      copy[copy.length - 1] = updater(last);
+      return copy;
+    });
+  };
+
+  const sendToWritingAgent = async (userMessage: string) => {
+    const agent = selectedAgent;
+    if (!agent) {
+      return;
+    }
+    const generation = ++generationSeqRef.current;
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    try {
+      const sessionId = await ensureWritingAgentSession({
+        agentId: agent.agentId,
+        ...(agentSessionRef.current ? { sessionId: agentSessionRef.current } : {}),
+        ...(activeDoc?.title ? { title: activeDoc.title } : {}),
+        sourceContextKind: activeDoc ? 'note' : 'document',
+        ...(activeDoc?.id ? { sourceContextId: activeDoc.id } : {}),
+      });
+      if (generation !== generationSeqRef.current) {
+        return;
+      }
+      agentSessionRef.current = sessionId;
+
+      const result = await streamWritingAgentTurn({
+        agentId: agent.agentId,
+        sessionId,
+        message: userMessage,
+        ...(docContent || activeDoc?.title
+          ? {
+              context: {
+                ...(activeDoc?.title ? { title: activeDoc.title } : {}),
+                ...(docContent ? { content: docContent } : {}),
+              },
+            }
+          : {}),
+      }, {
+        onDelta: (delta) => {
+          if (generation !== generationSeqRef.current) {
+            return;
+          }
+          updateLastAssistantMessage(message => ({
+            ...message,
+            content: message.content + delta,
+          }));
+        },
+        onToolEvent: (event) => {
+          if (generation !== generationSeqRef.current) {
+            return;
+          }
+          updateLastAssistantMessage(message => ({
+            ...message,
+            toolCalls: reduceWritingAgentToolEvent(message.toolCalls ?? [], event),
+          }));
+        },
+      });
+      if (generation !== generationSeqRef.current) {
+        return;
+      }
+      updateLastAssistantMessage(message => ({
+        ...message,
+        content: result.content || message.content,
+        toolCalls: result.toolCalls,
+        citations: result.citations,
+      }));
+    } catch (error) {
+      if (generation !== generationSeqRef.current) {
+        return;
+      }
+      updateLastAssistantMessage(message => ({
+        ...message,
+        content: message.content || resolveUserFacingErrorMessage(
+          error,
+          t as unknown as ErrorTranslateFn,
+        ),
+      }));
+    } finally {
+      if (generation === generationSeqRef.current) {
+        setIsTyping(false);
+      }
+    }
+  };
+
   const handleDefaultSend = async (userMessage: string, currentRefs: DocumentMeta[]) => {
+    if (selectedAgent) {
+      await sendToWritingAgent(userMessage);
+      return;
+    }
+
     if (onSendMessage && workspaceMode === 'standard') {
        onSendMessage(userMessage, currentRefs, setMessages, setIsTyping);
        return;
@@ -132,6 +296,16 @@ export function AiAssistantPanel({
     }
   };
 
+  const dispatchSend = (userMessage: string, currentRefs: DocumentMeta[]) => {
+    const trimmed = userMessage.trim();
+    if (isBlank(trimmed)) {
+      return;
+    }
+    setMessages(prev => [...prev, { role: 'user', content: trimmed, references: currentRefs }]);
+    setIsTyping(true);
+    void handleDefaultSend(trimmed, currentRefs);
+  };
+
   const handleAbort = () => {
     // Invalidate the in-flight generation; the completed response is discarded so the
     // assistant reply really stops instead of resuming after the user pressed stop.
@@ -146,10 +320,14 @@ export function AiAssistantPanel({
     const currentRefs = [...selectedReferences];
     setInputValue('');
     setSelectedReferences([]);
-    setMessages(prev => [...prev, { role: 'user', content: userMessage, references: currentRefs }]);
-    setIsTyping(true);
+    dispatchSend(userMessage, currentRefs);
+  };
 
-    void handleDefaultSend(userMessage, currentRefs);
+  const handleSuggestion = (prompt: string) => {
+    if (isTyping) {
+      return;
+    }
+    dispatchSend(prompt, []);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -194,6 +372,10 @@ export function AiAssistantPanel({
     }
   };
 
+  const agentWelcomeText = selectedAgent
+    ? (selectedAgent.welcomeMessage || selectedAgent.description)
+    : null;
+
   return (
     <div 
       className="flex flex-col bg-[#fafafa] dark:bg-[var(--color-kb-editor)] border-l border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] relative flex-shrink-0 shadow-[-8px_0_24px_-12px_rgba(0,0,0,0.08)] z-30"
@@ -207,17 +389,40 @@ export function AiAssistantPanel({
         <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[3px] h-12 rounded-full transition-colors opacity-0 group-hover:opacity-100 ${isDraggingAi ? 'bg-[var(--color-kb-accent)] opacity-100' : 'bg-[var(--color-kb-accent)]/80'}`}></div>
       </div>
       
-      <div className={`${headerHeightClass} border-b border-[var(--color-kb-panel-border)]/80 bg-[var(--color-kb-editor)]/95 dark:bg-[var(--color-kb-panel)] flex items-center justify-between px-4 shrink-0 select-none backdrop-blur-md z-30 shadow-sm relative`}>
-        <AiModelSelector variant="header" fallbackLabel={t('aiAssistant')} popoverPlacement="bottom" />
-
+      <div className={`${headerHeightClass} border-b border-[var(--color-kb-panel-border)]/80 bg-[var(--color-kb-editor)]/95 dark:bg-[var(--color-kb-panel)] flex items-center justify-between px-3 shrink-0 select-none backdrop-blur-md z-30 shadow-sm relative gap-2`}>
         <button
           type="button"
-          onClick={onClose} 
-          className="text-zinc-400 dark:text-[var(--color-kb-text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:text-red-500 dark:hover:bg-red-500/10 p-1 rounded-md transition-all active:scale-95 border border-transparent"
-          title={t('closeAiAssistant', { ns: 'mcp' }) || '关闭AI助手'}
+          onClick={() => setIsAgentPickerOpen(true)}
+          title={t('selectWritingAgent', { defaultValue: '选择写作智能体' })}
+          className="flex min-w-0 items-center gap-1.5 rounded-md border border-transparent px-1.5 py-1 text-[var(--color-kb-text)] transition-colors hover:border-[var(--color-kb-panel-border)] hover:bg-[var(--color-kb-panel-hover)]"
         >
-          <X size={14} strokeWidth={2.5} />
+          {selectedAgent ? (
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: selectedAgent.color ?? 'var(--color-kb-accent)' }}
+            />
+          ) : (
+            <Sparkles size={12} className="shrink-0 text-[var(--color-kb-accent)]" />
+          )}
+          <span className="max-w-[150px] truncate text-[12px] font-semibold">
+            {selectedAgent?.name ?? t('selectWritingAgent', { defaultValue: '选择写作智能体' })}
+          </span>
+          <ChevronDown size={12} className="shrink-0 text-[var(--color-kb-text-muted)]" />
         </button>
+
+        <div className="flex items-center gap-1">
+          {!selectedAgent && (
+            <AiModelSelector variant="header" fallbackLabel={t('aiAssistant')} popoverPlacement="bottom" />
+          )}
+          <button
+            type="button"
+            onClick={onClose} 
+            className="text-zinc-400 dark:text-[var(--color-kb-text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:text-red-500 dark:hover:bg-red-500/10 p-1 rounded-md transition-all active:scale-95 border border-transparent"
+            title={t('closeAiAssistant', { ns: 'mcp' }) || '关闭AI助手'}
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
       </div>
       
       <div className="flex-1 min-h-0 search-theme-scrollbar p-4 space-y-4" ref={scrollRef}>
@@ -229,40 +434,79 @@ export function AiAssistantPanel({
                 <div className="absolute top-0 right-0 -mr-6 -mt-6 w-24 h-24 bg-indigo-50 dark:bg-indigo-500/5 rounded-full blur-[20px] transition-all group-hover:bg-indigo-100/80 dark:group-hover:bg-indigo-500/10"></div>
                 
                 <div className="relative z-10">
-                  <div className="markdown-body font-medium leading-relaxed" dangerouslySetInnerHTML={formatMessageContent(t('aiGreetingText'))} />
-                  <ul className="list-disc pl-5 mt-3 space-y-2 text-[13px] font-medium text-zinc-500 dark:text-[var(--color-kb-text-muted)] mb-4 marker:text-indigo-300 dark:marker:text-indigo-600">
-                    <li>{t('aiHelpSummarize')}</li>
-                    <li>{t('aiHelpWrite')}</li>
-                    <li>{t('aiHelpAsk')}</li>
-                    <li>{t('aiHelpGenerate')}</li>
-                  </ul>
+                  {selectedAgent ? (
+                    <>
+                      <div className="mb-2 flex items-center gap-2">
+                        <span
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--color-kb-panel-border)]"
+                          style={selectedAgent.color ? { color: selectedAgent.color } : undefined}
+                        >
+                          <PenTool size={14} />
+                        </span>
+                        <span className="font-semibold">{selectedAgent.name}</span>
+                      </div>
+                      <div className="markdown-body text-[13px] leading-relaxed" dangerouslySetInnerHTML={formatMessageContent(agentWelcomeText ?? '')} />
+                    </>
+                  ) : (
+                    <>
+                      <div className="markdown-body font-medium leading-relaxed" dangerouslySetInnerHTML={formatMessageContent(t('aiGreetingText'))} />
+                      <ul className="list-disc pl-5 mt-3 space-y-2 text-[13px] font-medium text-zinc-500 dark:text-[var(--color-kb-text-muted)] mb-4 marker:text-indigo-300 dark:marker:text-indigo-600">
+                        <li>{t('aiHelpSummarize')}</li>
+                        <li>{t('aiHelpWrite')}</li>
+                        <li>{t('aiHelpAsk')}</li>
+                        <li>{t('aiHelpGenerate')}</li>
+                      </ul>
+                    </>
+                  )}
                 </div>
 
                 <div className="h-px bg-zinc-100 dark:bg-[var(--color-kb-panel-border)]/50 my-4 relative z-10"></div>
                 <div className="space-y-3 relative z-10">
                   <span className="text-[11px] font-extrabold text-indigo-500 dark:text-[var(--color-kb-text-muted)] tracking-wider flex items-center gap-1">
-                    <Sparkles size={12} strokeWidth={2.5} /> {t('coreSkills', { ns: 'mcp' })}
+                    <Sparkles size={12} strokeWidth={2.5} /> {selectedAgent
+                      ? t('writingAgentSuggestions', { defaultValue: '试试这样问' })
+                      : t('coreSkills', { ns: 'mcp' })}
                   </span>
                   <div className="flex flex-wrap gap-2.5">
-                    {[
-                      { label: t('chipStyles', { ns: 'mcp' }), cmd: t('quickStyles', { ns: 'mcp' }) },
-                      { label: t('chipHeadlines', { ns: 'mcp' }), cmd: t('quickHeadlines', { ns: 'mcp' }) },
-                      { label: t('chipInsert', { ns: 'mcp' }), cmd: t('quickInsert', { ns: 'mcp' }) },
-                      { label: t('chipDiagnose', { ns: 'mcp' }), cmd: t('quickDiagnose', { ns: 'mcp' }) },
-                      { label: t('chipRewrite', { ns: 'mcp' }), cmd: t('quickRewrite', { ns: 'mcp' }) }
-                    ].map((chip, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        // Quick-tool commands are not yet wired to a server capability; keep
-                        // the entry honest and disabled instead of invoking a guaranteed failure.
-                        disabled
-                        title={t('comingSoon', { ns: 'mcp', defaultValue: '即将上线' })}
-                        className="px-3.5 py-1.5 text-[12px] font-bold bg-[#fafafa] dark:bg-[var(--color-kb-editor)] border border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] text-zinc-400 dark:text-[var(--color-kb-text-muted)] rounded-full transition-all cursor-not-allowed opacity-70"
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
+                    {selectedAgent ? (
+                      (selectedAgent.suggestedPrompts.length > 0
+                        ? selectedAgent.suggestedPrompts
+                        : [
+                            t('writingAgentDefaultPrompt', { defaultValue: '帮我续写当前文档' }),
+                            t('writingAgentDefaultPolish', { defaultValue: '润色选中的段落' }),
+                            t('writingAgentDefaultOutline', { defaultValue: '为这篇文档生成大纲' }),
+                          ]).map((prompt) => (
+                        <button
+                          key={prompt}
+                          type="button"
+                          onClick={() => handleSuggestion(prompt)}
+                          disabled={isTyping}
+                          className="px-3.5 py-1.5 text-[12px] font-medium bg-[#fafafa] dark:bg-[var(--color-kb-editor)] border border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] text-zinc-600 dark:text-[var(--color-kb-text)] rounded-full transition-all hover:border-[var(--color-kb-accent)] hover:text-[var(--color-kb-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {prompt}
+                        </button>
+                      ))
+                    ) : (
+                      [
+                        { label: t('chipStyles', { ns: 'mcp' }), cmd: t('quickStyles', { ns: 'mcp' }) },
+                        { label: t('chipHeadlines', { ns: 'mcp' }), cmd: t('quickHeadlines', { ns: 'mcp' }) },
+                        { label: t('chipInsert', { ns: 'mcp' }), cmd: t('quickInsert', { ns: 'mcp' }) },
+                        { label: t('chipDiagnose', { ns: 'mcp' }), cmd: t('quickDiagnose', { ns: 'mcp' }) },
+                        { label: t('chipRewrite', { ns: 'mcp' }), cmd: t('quickRewrite', { ns: 'mcp' }) }
+                      ].map((chip, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          // Quick-tool commands are not yet wired to a server capability; keep
+                          // the entry honest and disabled instead of invoking a guaranteed failure.
+                          disabled
+                          title={t('comingSoon', { ns: 'mcp', defaultValue: '即将上线' })}
+                          className="px-3.5 py-1.5 text-[12px] font-bold bg-[#fafafa] dark:bg-[var(--color-kb-editor)] border border-zinc-200/80 dark:border-[var(--color-kb-panel-border)] text-zinc-400 dark:text-[var(--color-kb-text-muted)] rounded-full transition-all cursor-not-allowed opacity-70"
+                        >
+                          {chip.label}
+                        </button>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -299,6 +543,14 @@ export function AiAssistantPanel({
                         write_to_note: t('tool_write_note', { defaultValue: '提炼结构化信息并写入文档' }),
                         analyze_intent: t('tool_analyze_intent', { defaultValue: '分析上下文与意图' }),
                         insert_content: t('tool_insert_content', { defaultValue: '执行正文内容的追加与修改' }),
+                        search_notes: t('tool_search_notes', { defaultValue: '检索知识库笔记' }),
+                        read_note: t('tool_read_note', { defaultValue: '读取笔记内容' }),
+                        create_note: t('tool_create_note', { defaultValue: '创建知识库笔记' }),
+                        update_note: t('tool_update_note', { defaultValue: '更新知识库笔记' }),
+                        append_note: t('tool_append_note', { defaultValue: '追加笔记内容' }),
+                        lookup_style_guide: t('tool_lookup_style_guide', { defaultValue: '查询编辑规范与文风' }),
+                        verify_fact: t('tool_verify_fact', { defaultValue: '核查事实来源' }),
+                        check_citation: t('tool_check_citation', { defaultValue: '检查引用规范' }),
                       };
                       return (
                         <div key={tcIdx} className="overflow-hidden rounded-xl border border-indigo-100 dark:border-indigo-900/30 bg-gradient-to-r from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-transparent shadow-sm">
@@ -355,7 +607,9 @@ export function AiAssistantPanel({
         {isTyping && (
            <div className="flex items-center space-x-2 text-zinc-400 dark:text-[var(--color-kb-text-muted)] mt-2 font-medium">
               <Loader2 size={14} className="animate-spin text-indigo-500" />
-              <span className="text-xs">{t('aiProcessing')}</span>
+              <span className="text-xs">{selectedAgent
+                ? t('writingAgentProcessing', { defaultValue: '智能体正在写作...' })
+                : t('aiProcessing')}</span>
            </div>
         )}
       </div>
@@ -426,7 +680,13 @@ export function AiAssistantPanel({
         t={t}
       />
 
+      {isAgentPickerOpen && (
+        <AgentSelectorModal
+          onClose={() => setIsAgentPickerOpen(false)}
+          onSelect={selectAgent}
+        />
+      )}
+
     </div>
   );
 }
-

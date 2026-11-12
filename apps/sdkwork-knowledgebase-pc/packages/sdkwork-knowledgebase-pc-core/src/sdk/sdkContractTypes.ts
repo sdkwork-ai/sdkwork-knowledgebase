@@ -38,3 +38,12 @@ export type {
   DriveUploaderProfile,
   SdkworkDriveAppClient,
 } from '@sdkwork/drive-app-sdk';
+
+export type {
+  AgentRecord,
+  AgentSessionRecord,
+  CreateAgentSessionRequest,
+  CreateAgentTurnRequest,
+  SdkworkAppClient as SdkworkAgentsAppClient,
+  TurnRichToolEvent,
+} from '@sdkwork/agents-app-sdk';

@@ -18,6 +18,7 @@
   "api.unavailable.search": "Knowledgebase API is unavailable. Search synthesis requires a connected backend.",
   "api.unavailable.wechat": "Knowledgebase API is unavailable. WeChat features require a connected backend.",
   "api.unavailable.drive": "Drive integration is unavailable. Enterprise drive features require a connected Drive SDK.",
+  "api.unavailable.agents": "Agents integration is unavailable. Sign in and ensure the writing agent service is connected.",
   "api.unavailable.sdk": "Knowledgebase app SDK is not configured.",
   "validation.invalidSpaceId": "Invalid knowledge space id.",
   "validation.spaceRequired": "Create a knowledge space before using this feature.",

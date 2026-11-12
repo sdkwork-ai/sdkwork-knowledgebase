@@ -37,21 +37,21 @@
       }
     }
   },
-  "i18nVersion": "1.2.1",
+  "i18nVersion": "1.3.0",
   "fallbackLocale": "zh-CN",
   "localeSets": {
     "zh-CN": {
-      "version": "1.2.1",
+      "version": "1.3.0",
       "required": true,
-      "checksum": "sha256:012f55bc96e2a02248d28897e3f89caf808dd9677c8802d044210c218f8d5ecf",
+      "checksum": "sha256:943b650bf0de4f8ce817e3d0ccae980817a7bebcdc7735d416f28c93ed3373bf",
       "files": [
         "locales/zh-CN/001_agent_catalog_display.sql"
       ]
     },
     "en-US": {
-      "version": "1.2.1",
+      "version": "1.3.0",
       "required": true,
-      "checksum": "sha256:5454e215bf32a238d79a512c37a1d6e2f0616f5344ff3d452510f559736961f1",
+      "checksum": "sha256:3780c1c4c2186c546248fd6f7cf8edc5a5da218d88c5cc022525e4df7af4c42a",
       "files": [
         "locales/en-US/001_agent_catalog_display.sql"
       ]

@@ -8,6 +8,7 @@ export const KnowledgebaseErrorCodes = {
   API_UNAVAILABLE_SEARCH: 'api.unavailable.search',
   API_UNAVAILABLE_WECHAT: 'api.unavailable.wechat',
   API_UNAVAILABLE_DRIVE: 'api.unavailable.drive',
+  API_UNAVAILABLE_AGENTS: 'api.unavailable.agents',
   API_UNAVAILABLE_SDK: 'api.unavailable.sdk',
   INVALID_SPACE_ID: 'validation.invalidSpaceId',
   SPACE_REQUIRED: 'validation.spaceRequired',

@@ -76,6 +76,7 @@ export interface RuntimeEnv {
   VITE_SDKWORK_KNOWLEDGEBASE_PLATFORM_API_GATEWAY_HTTP_URL?: string;
   VITE_SDKWORK_APPBASE_APP_API_BASE_URL?: string;
   VITE_SDKWORK_DRIVE_APP_API_BASE_URL?: string;
+  VITE_SDKWORK_AGENTS_APP_API_BASE_URL?: string;
   VITE_SDKWORK_KNOWLEDGEBASE_DEV_SAME_ORIGIN_API?: string;
   VITE_SDKWORK_KNOWLEDGEBASE_TOKEN_MANAGER_MODE?: string;
   VITE_SDKWORK_KNOWLEDGEBASE_TOKEN_STORAGE?: string;
@@ -377,6 +378,14 @@ export function createRuntimeConfig(env: RuntimeEnv = import.meta.env): Knowledg
     env.VITE_SDKWORK_DRIVE_APP_API_BASE_URL
     || platformApiGatewayBaseUrl,
   );
+  const agentsAppApiBaseUrl = applyDevSameOriginApiBaseUrl(
+    env,
+    deploymentProfile,
+    runtimeTarget,
+    environment,
+    env.VITE_SDKWORK_AGENTS_APP_API_BASE_URL
+    || platformApiGatewayBaseUrl,
+  );
 
   const resolvedAppApiBaseUrl = applyDevSameOriginApiBaseUrl(
     env,
@@ -422,6 +431,7 @@ export function createRuntimeConfig(env: RuntimeEnv = import.meta.env): Knowledg
         openApiBaseUrl: resolvedOpenApiBaseUrl,
         iamAppApiBaseUrl: appbaseAppApiBaseUrl,
         driveAppApiBaseUrl,
+        agentsAppApiBaseUrl,
       }),
     },
     auth: {

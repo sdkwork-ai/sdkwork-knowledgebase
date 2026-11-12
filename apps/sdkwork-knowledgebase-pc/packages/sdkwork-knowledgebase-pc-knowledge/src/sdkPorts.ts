@@ -1,6 +1,7 @@
 import { KnowledgebaseErrorCodes, throwKnowledgebaseError } from 'sdkwork-knowledgebase-pc-core';
 import type {
   AuthTokenManager,
+  SdkworkAgentsAppClient,
   SessionSnapshot,
   SdkworkKnowledgebaseAppClient,
   SdkworkDriveAppClient,
@@ -13,6 +14,8 @@ export type { HostKnowledgeWindowRequest };
 export interface KnowledgebasePcSdkPorts {
   getKnowledgebaseClient: () => SdkworkKnowledgebaseAppClient;
   getDriveClient: () => SdkworkDriveAppClient;
+  /** Host-owned Agents app SDK client; absent in standalone runtimes that build their own. */
+  getAgentsClient?: () => SdkworkAgentsAppClient;
   /**
    * @returns the embedding host's shared TokenManager. Host-managed surfaces
    * bind it instead of minting a second instance (APP_SDK_INTEGRATION_SPEC
@@ -45,4 +48,12 @@ export function getConfiguredKnowledgebaseAppSdkClient(): SdkworkKnowledgebaseAp
 
 export function getConfiguredKnowledgebaseDriveAppSdkClient(): SdkworkDriveAppClient {
   return getKnowledgebasePcSdkPorts().getDriveClient();
+}
+
+export function getConfiguredKnowledgebaseAgentsAppSdkClient(): SdkworkAgentsAppClient {
+  const getAgentsClient = getKnowledgebasePcSdkPorts().getAgentsClient;
+  if (!getAgentsClient) {
+    throwKnowledgebaseError(KnowledgebaseErrorCodes.API_UNAVAILABLE_AGENTS);
+  }
+  return getAgentsClient();
 }

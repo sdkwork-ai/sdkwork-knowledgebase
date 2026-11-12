@@ -1,11 +1,13 @@
 import {
   createHostAdapter,
+  createKnowledgebaseAgentsAppSdkClient,
   createKnowledgebaseAppSdkClient,
   createKnowledgebaseDriveAppSdkClient,
   createKnowledgebaseSessionTokenManager,
   createRuntimeConfig,
   createSessionStore,
   DEFAULT_SESSION_STORAGE_KEY,
+  configureKnowledgebaseAgentsAppSdk,
   configureKnowledgebaseAppSdk,
   configureKnowledgebaseDriveAppSdk,
   bindKnowledgebaseSessionStore,
@@ -49,9 +51,13 @@ export function createKnowledgebasePcRuntime(): KnowledgebasePcRuntime {
     config,
     tokenManager,
   });
+  const agentsSdkClient = createKnowledgebaseAgentsAppSdkClient({
+    config,
+    tokenManager,
+  });
   const iamRuntime = createKnowledgebaseIamRuntime({
     config,
-    sdkClients: [appSdkClient, backendSdkClient, driveSdkClient],
+    sdkClients: [appSdkClient, backendSdkClient, driveSdkClient, agentsSdkClient],
     session,
     tokenManager,
   });
@@ -65,6 +71,7 @@ export function createKnowledgebasePcRuntime(): KnowledgebasePcRuntime {
   configureKnowledgebaseAppSdk(appSdkClient);
   configureKnowledgebaseBackendSdk(backendSdkClient);
   configureKnowledgebaseDriveAppSdk(driveSdkClient);
+  configureKnowledgebaseAgentsAppSdk(agentsSdkClient);
   setKnowledgebaseApiEnabled(
     config.auth.tokenManagerMode !== 'test'
     && isKnowledgebaseAppApiConfigured(config),
@@ -82,6 +89,7 @@ export function createKnowledgebasePcRuntime(): KnowledgebasePcRuntime {
     sdk: {
       app: appSdkClient,
       drive: driveSdkClient,
+      agents: agentsSdkClient,
     },
     session,
     host: createHostAdapter(),

@@ -9,18 +9,6 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4.3.3
       version: 4.3.3
-    '@testing-library/dom':
-      specifier: 10.4.1
-      version: 10.4.1
-    '@testing-library/jest-dom':
-      specifier: ^7.0.1
-      version: 7.0.1
-    '@testing-library/react':
-      specifier: 16.3.2
-      version: 16.3.2
-    '@types/qrcode':
-      specifier: ^1.5.6
-      version: 1.5.6
     '@types/react':
       specifier: ^19.3.0
       version: 19.3.0
@@ -33,18 +21,12 @@ catalogs:
     clsx:
       specifier: ^2.1.1
       version: 2.1.1
-    jsdom:
-      specifier: 29.1.1
-      version: 29.1.1
     lucide-react:
       specifier: ^1.60.0
       version: 1.60.0
     motion:
       specifier: ^12.43.0
       version: 12.43.0
-    qrcode:
-      specifier: ^1.5.4
-      version: 1.5.4
     react:
       specifier: ^19.3.1
       version: 19.3.1
@@ -69,9 +51,6 @@ catalogs:
     vite:
       specifier: ^8.3.4
       version: 8.3.4
-    vite-plugin-dts:
-      specifier: ^5.1.2
-      version: 5.1.2
     vitest:
       specifier: ^4.1.12
       version: 4.1.12
@@ -86,6 +65,8 @@ importers:
       '@sdkwork/app-topology':
         specifier: workspace:*
         version: link:../sdkwork-app-topology
+
+  ../sdkwork-agents/sdks/sdkwork-agents-app-sdk/sdkwork-agents-app-sdk-typescript: {}
 
   ../sdkwork-app-topology: {}
 
@@ -838,6 +819,12 @@ importers:
         specifier: '>=7.0.0'
         version: 7.18.2(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
     devDependencies:
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
       tsx:
         specifier: 'catalog:'
         version: 4.23.15
@@ -1362,6 +1349,9 @@ importers:
 
   apps/sdkwork-knowledgebase-pc/packages/sdkwork-knowledgebase-pc-core:
     dependencies:
+      '@sdkwork/agents-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-agents/sdks/sdkwork-agents-app-sdk/sdkwork-agents-app-sdk-typescript
       '@sdkwork/drive-app-sdk':
         specifier: workspace:*
         version: link:../../../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript
@@ -1469,6 +1459,9 @@ importers:
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.2.1
         version: 2.2.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@sdkwork/agents-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-agents/sdks/sdkwork-agents-app-sdk/sdkwork-agents-app-sdk-typescript
       '@sdkwork/drive-upload-image-core':
         specifier: workspace:*
         version: link:../../../../../sdkwork-drive/apps/sdkwork-drive-common/packages/sdkwork-drive-upload-image-core

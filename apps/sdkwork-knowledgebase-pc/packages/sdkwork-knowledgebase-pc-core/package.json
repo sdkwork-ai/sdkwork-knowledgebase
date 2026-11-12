@@ -21,6 +21,7 @@
     "react": "^19.0.0"
   },
   "dependencies": {
+    "@sdkwork/agents-app-sdk": "workspace:*",
     "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/iam-credential-entry": "workspace:*",
     "@sdkwork/knowledgebase-app-sdk": "workspace:*",
