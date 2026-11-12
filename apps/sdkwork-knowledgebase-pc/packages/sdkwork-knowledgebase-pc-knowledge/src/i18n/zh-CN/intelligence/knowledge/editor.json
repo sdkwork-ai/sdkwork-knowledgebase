@@ -221,7 +221,7 @@
   "writingAgentPickerTitle": "写作智能体",
   "writingAgentPickerSubtitle": "来自 SDKWork 智能体平台，按写作场景选择专属智能体",
   "writingAgentSearchPlaceholder": "搜索智能体...",
-  "writingAgentCount": "共 {{count}} 个写作智能体",
+  "writingAgentCount": "共 {{total}} 个写作智能体",
   "writingAgentLoading": "正在加载写作智能体...",
   "writingAgentEmpty": "没有找到相关写作智能体",
   "writingAgentProcessing": "智能体正在写作...",

@@ -22,6 +22,7 @@ SDKWork Knowledgebase maintainers.
 | OKF knowledge bundle | [architecture/tech/TECH-2026-06-19-okf-knowledge-bundle-design.md](architecture/tech/TECH-2026-06-19-okf-knowledge-bundle-design.md) |
 | Live Wiki publication PRD | [product/prd/PRD-live-wiki-publication.md](product/prd/PRD-live-wiki-publication.md) |
 | Live Wiki provider architecture | [architecture/tech/TECH-live-wiki-resource-provider.md](architecture/tech/TECH-live-wiki-resource-provider.md) |
+| Writing agent integration | [architecture/tech/TECH-writing-agent-integration.md](architecture/tech/TECH-writing-agent-integration.md) |
 | Agent RAG design | [architecture/tech/TECH-2026-06-09-knowledgebase-agent-rag-design.md](architecture/tech/TECH-2026-06-09-knowledgebase-agent-rag-design.md) |
 | Managed group knowledgebase requirement | [product/requirements/REQ-2026-0713-group-knowledgebase.md](product/requirements/REQ-2026-0713-group-knowledgebase.md) |
 | Managed group knowledgebase decision | [architecture/decisions/ADR-20260713-group-knowledgebase-binding-and-launch.md](architecture/decisions/ADR-20260713-group-knowledgebase-binding-and-launch.md) |

@@ -9,6 +9,7 @@ import Image from '@tiptap/extension-image';
 import { Markdown } from 'tiptap-markdown';
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { isBlank } from '@sdkwork/utils';
 import { WechatAppletModal } from './components/WechatAppletModal';
 import { UniversalToolbar, UniversalToolbarGroup } from './components/UniversalToolbar';
 import { DropdownItem, DropdownDivider } from './components/InsertToolsMenu';
@@ -631,7 +632,7 @@ export function TiptapEditor({
                 titleFocusedRef.current = false;
                 // A cleared title would persist as an empty document name; the
                 // server keys note bodies by title, so keep a usable fallback.
-                if (!title.trim()) {
+                if (isBlank(title)) {
                   const fallback = t('untitledNote');
                   setTitle(fallback);
                   onTitleChange?.(fallback);

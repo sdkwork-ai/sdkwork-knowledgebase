@@ -90,7 +90,7 @@ function agentsClient(): SdkworkAgentsAppClient {
 
 function categoryOf(record: AgentRecord): string | undefined {
   const profileCategory = record.managementProfile?.categoryId;
-  if (typeof profileCategory === 'string' && profileCategory.trim().length > 0) {
+  if (typeof profileCategory === 'string' && !isBlank(profileCategory)) {
     return profileCategory.trim();
   }
   const manifestDomain = record.manifest?.['domain'];
@@ -163,7 +163,9 @@ function isReusableSession(record: AgentSessionRecord): boolean {
 }
 
 function buildSessionCreateRequest(input: WritingAgentSessionInput): CreateAgentSessionRequest {
-  const title = input.title?.trim() || 'Writing session';
+  const title = typeof input.title === 'string' && !isBlank(input.title)
+    ? input.title.trim()
+    : 'Writing session';
   const canonical = {
     agentId: input.agentId,
     sessionKind: 'assistant',
@@ -226,15 +228,15 @@ function buildSystemPrompt(context?: WritingAgentDocumentContext): string | unde
     '你正在 SDKWork 知识库的写作工作台中与用户协作。',
     '用户当前打开的是知识库文档，你的回答要能直接用于该文档：保持与文档一致的语言、人称和文风。',
   ];
-  if (context.title && context.title.trim().length > 0) {
+  if (typeof context.title === 'string' && !isBlank(context.title)) {
     sections.push(`当前文档标题：${context.title.trim()}`);
   }
-  if (context.selectedText && context.selectedText.trim().length > 0) {
+  if (typeof context.selectedText === 'string' && !isBlank(context.selectedText)) {
     sections.push(
       `用户选中的文本（优先处理这段内容）：\n${context.selectedText.trim().slice(0, MAX_CONTEXT_CHARS)}`,
     );
   }
-  if (context.content && context.content.trim().length > 0) {
+  if (typeof context.content === 'string' && !isBlank(context.content)) {
     sections.push(
       `当前文档全文（节选，仅作上下文参考，不要全文复述）：\n${context.content.trim().slice(0, MAX_CONTEXT_CHARS)}`,
     );

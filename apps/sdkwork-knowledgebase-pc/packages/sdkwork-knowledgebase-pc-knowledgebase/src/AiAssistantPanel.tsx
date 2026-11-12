@@ -251,12 +251,15 @@ export function AiAssistantPanel({
       if (generation !== generationSeqRef.current) {
         return;
       }
+      const errorText = resolveUserFacingErrorMessage(
+        error,
+        t as unknown as ErrorTranslateFn,
+      );
       updateLastAssistantMessage(message => ({
         ...message,
-        content: message.content || resolveUserFacingErrorMessage(
-          error,
-          t as unknown as ErrorTranslateFn,
-        ),
+        content: message.content
+          ? `${message.content}\n\n> ${errorText}`
+          : errorText,
       }));
     } finally {
       if (generation === generationSeqRef.current) {

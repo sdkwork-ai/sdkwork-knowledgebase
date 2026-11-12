@@ -221,7 +221,7 @@
   "writingAgentPickerTitle": "Writing agents",
   "writingAgentPickerSubtitle": "Powered by the SDKWork agent platform; pick an agent for your writing scenario.",
   "writingAgentSearchPlaceholder": "Search agents...",
-  "writingAgentCount": "{{count}} writing agents",
+  "writingAgentCount": "{{total}} writing agents",
   "writingAgentLoading": "Loading writing agents...",
   "writingAgentEmpty": "No matching writing agents",
   "writingAgentProcessing": "The agent is writing...",

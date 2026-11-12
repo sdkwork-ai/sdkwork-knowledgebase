@@ -131,8 +131,8 @@ export function AgentSelectorModal({ onClose, onSelect }: AgentSelectorModalProp
           {!loading && !errorMessage && (
             <span className="text-[11px] text-[var(--color-kb-text-muted)]">
               {t('writingAgentCount', {
-                defaultValue: '共 {{count}} 个写作智能体',
-                count: agents.length,
+                defaultValue: '共 {{total}} 个写作智能体',
+                total: agents.length,
               })}
             </span>
           )}

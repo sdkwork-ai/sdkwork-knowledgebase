@@ -378,14 +378,13 @@ export function createRuntimeConfig(env: RuntimeEnv = import.meta.env): Knowledg
     env.VITE_SDKWORK_DRIVE_APP_API_BASE_URL
     || platformApiGatewayBaseUrl,
   );
-  const agentsAppApiBaseUrl = applyDevSameOriginApiBaseUrl(
-    env,
-    deploymentProfile,
-    runtimeTarget,
-    environment,
+  // The Agents app API is a dependency surface served by the platform gateway,
+  // not by this application's ingress. Unlike the application-owned APIs it must
+  // keep the gateway origin in dev same-origin mode; the shared
+  // `SDKWORK_API_BASE_URL` edge still wins inside the SDK client resolver.
+  const agentsAppApiBaseUrl =
     env.VITE_SDKWORK_AGENTS_APP_API_BASE_URL
-    || platformApiGatewayBaseUrl,
-  );
+    || platformApiGatewayBaseUrl;
 
   const resolvedAppApiBaseUrl = applyDevSameOriginApiBaseUrl(
     env,
