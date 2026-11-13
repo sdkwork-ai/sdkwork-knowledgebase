@@ -1,6 +1,6 @@
 -- SDKWork official agent catalog: knowledge-space identities (neutral base).
 
--- Catalog revision: 1.2.1.
+-- Catalog revision: 1.3.0.
 
 BEGIN;
 
@@ -926,6 +926,102 @@ INSERT INTO kb_space (
 ) VALUES (
   533000000000000058, '2a56558f-9f21-49f7-8470-4f33ec67cf43', 100001, 0,
   'knowledge.base.hotel-marketing', NULL,
+  1, 'okf_bundle', 0, 0, TIMESTAMPTZ '2026-11-03T00:00:00+08:00', TIMESTAMPTZ '2026-11-03T00:00:00+08:00', 0, 1
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  status = EXCLUDED.status,
+  knowledge_mode = EXCLUDED.knowledge_mode,
+  updated_at = EXCLUDED.updated_at
+;
+
+INSERT INTO kb_space (
+  id, uuid, tenant_id, organization_id, name, description, status, knowledge_mode,
+  okf_bundle_initialized, okf_log_sequence_counter, created_at, updated_at, version, created_by
+) VALUES (
+  533000000000000059, 'c9bb0bff-eb84-49fe-82ab-c1cbac35c0db', 100001, 0,
+  'knowledge.base.writing-novelist', NULL,
+  1, 'okf_bundle', 0, 0, TIMESTAMPTZ '2026-11-03T00:00:00+08:00', TIMESTAMPTZ '2026-11-03T00:00:00+08:00', 0, 1
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  status = EXCLUDED.status,
+  knowledge_mode = EXCLUDED.knowledge_mode,
+  updated_at = EXCLUDED.updated_at
+;
+
+INSERT INTO kb_space (
+  id, uuid, tenant_id, organization_id, name, description, status, knowledge_mode,
+  okf_bundle_initialized, okf_log_sequence_counter, created_at, updated_at, version, created_by
+) VALUES (
+  533000000000000060, 'a9c7cfe2-e999-48e9-8b17-d15c3810a323', 100001, 0,
+  'knowledge.base.writing-book-author', NULL,
+  1, 'okf_bundle', 0, 0, TIMESTAMPTZ '2026-11-03T00:00:00+08:00', TIMESTAMPTZ '2026-11-03T00:00:00+08:00', 0, 1
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  status = EXCLUDED.status,
+  knowledge_mode = EXCLUDED.knowledge_mode,
+  updated_at = EXCLUDED.updated_at
+;
+
+INSERT INTO kb_space (
+  id, uuid, tenant_id, organization_id, name, description, status, knowledge_mode,
+  okf_bundle_initialized, okf_log_sequence_counter, created_at, updated_at, version, created_by
+) VALUES (
+  533000000000000061, '6e332779-a77a-4189-8906-badd88acfcaa', 100001, 0,
+  'knowledge.base.writing-news-reporter', NULL,
+  1, 'okf_bundle', 0, 0, TIMESTAMPTZ '2026-11-03T00:00:00+08:00', TIMESTAMPTZ '2026-11-03T00:00:00+08:00', 0, 1
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  status = EXCLUDED.status,
+  knowledge_mode = EXCLUDED.knowledge_mode,
+  updated_at = EXCLUDED.updated_at
+;
+
+INSERT INTO kb_space (
+  id, uuid, tenant_id, organization_id, name, description, status, knowledge_mode,
+  okf_bundle_initialized, okf_log_sequence_counter, created_at, updated_at, version, created_by
+) VALUES (
+  533000000000000062, 'f410c043-d488-4965-83c0-7352de7a9e27', 100001, 0,
+  'knowledge.base.writing-article-writer', NULL,
+  1, 'okf_bundle', 0, 0, TIMESTAMPTZ '2026-11-03T00:00:00+08:00', TIMESTAMPTZ '2026-11-03T00:00:00+08:00', 0, 1
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  status = EXCLUDED.status,
+  knowledge_mode = EXCLUDED.knowledge_mode,
+  updated_at = EXCLUDED.updated_at
+;
+
+INSERT INTO kb_space (
+  id, uuid, tenant_id, organization_id, name, description, status, knowledge_mode,
+  okf_bundle_initialized, okf_log_sequence_counter, created_at, updated_at, version, created_by
+) VALUES (
+  533000000000000063, 'c5a01edf-4f4c-4145-87b2-308ee1f11b6b', 100001, 0,
+  'knowledge.base.writing-copywriter', NULL,
+  1, 'okf_bundle', 0, 0, TIMESTAMPTZ '2026-11-03T00:00:00+08:00', TIMESTAMPTZ '2026-11-03T00:00:00+08:00', 0, 1
+)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  status = EXCLUDED.status,
+  knowledge_mode = EXCLUDED.knowledge_mode,
+  updated_at = EXCLUDED.updated_at
+;
+
+INSERT INTO kb_space (
+  id, uuid, tenant_id, organization_id, name, description, status, knowledge_mode,
+  okf_bundle_initialized, okf_log_sequence_counter, created_at, updated_at, version, created_by
+) VALUES (
+  533000000000000064, 'cacf437a-43b0-4474-872b-c465058764f2', 100001, 0,
+  'knowledge.base.writing-editor', NULL,
   1, 'okf_bundle', 0, 0, TIMESTAMPTZ '2026-11-03T00:00:00+08:00', TIMESTAMPTZ '2026-11-03T00:00:00+08:00', 0, 1
 )
 ON CONFLICT (id) DO UPDATE SET

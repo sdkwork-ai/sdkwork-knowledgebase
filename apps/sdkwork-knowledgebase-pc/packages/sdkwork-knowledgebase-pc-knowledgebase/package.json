@@ -44,6 +44,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@sdkwork/agents-app-sdk": "workspace:*",
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-context-menu": "^2.4.1",
     "@radix-ui/react-dropdown-menu": "^2.2.1",

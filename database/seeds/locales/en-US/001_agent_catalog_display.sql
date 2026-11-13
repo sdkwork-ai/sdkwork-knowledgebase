@@ -1,6 +1,6 @@
 -- SDKWork official agent catalog: en-US knowledge-space display.
 
--- Catalog revision: 1.2.1.
+-- Catalog revision: 1.3.0.
 
 BEGIN;
 
@@ -355,5 +355,41 @@ UPDATE kb_space SET
   description = 'Curated scope, standards, templates, and checklists for hotel marketing and OTA distribution advisor. Topics: hospitality, hotel, marketing, ota, distribution.',
   updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
 WHERE id = 533000000000000058 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = 'Novel Writer Knowledge Base',
+  description = 'Curated scope, standards, templates, and checklists for long-form fiction writing advisor. Topics: writing, novel, fiction, story, serial.',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000059 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = 'Book Author Knowledge Base',
+  description = 'Curated scope, standards, templates, and checklists for nonfiction book writing advisor. Topics: writing, book, nonfiction, outline, publishing.',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000060 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = 'News Reporter Knowledge Base',
+  description = 'Curated scope, standards, templates, and checklists for news reporting and fact-checking advisor. Topics: writing, news, reporting, interview, fact-check.',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000061 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = 'Article Writer Knowledge Base',
+  description = 'Curated scope, standards, templates, and checklists for long-form content and WeChat article advisor. Topics: writing, article, blog, wechat, content.',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000062 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = 'Copywriter Knowledge Base',
+  description = 'Curated scope, standards, templates, and checklists for marketing copy and conversion writing advisor. Topics: writing, copywriting, marketing, headline, conversion.',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000063 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = 'Editor Knowledge Base',
+  description = 'Curated scope, standards, templates, and checklists for manuscript editing and proofreading advisor. Topics: writing, editing, revision, proofreading, style.',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000064 AND tenant_id = 100001 AND organization_id = 0;
 
 COMMIT;

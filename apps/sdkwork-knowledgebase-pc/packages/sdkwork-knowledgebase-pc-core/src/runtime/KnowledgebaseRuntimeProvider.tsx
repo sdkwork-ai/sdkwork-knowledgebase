@@ -6,6 +6,7 @@ import { throwKnowledgebaseError } from '../errors/knowledgebaseAppError';
 import { KnowledgebaseErrorCodes } from '../errors/knowledgebaseErrorCodes';
 import type { KnowledgebaseAppSdkClient } from '../sdk/knowledgebaseAppSdkClient';
 import type { KnowledgebaseDriveAppSdkClient } from '../sdk/driveAppSdkClient';
+import type { KnowledgebaseAgentsAppSdkClient } from '../sdk/agentsAppSdkClient';
 import type { SessionStore } from '../session/sessionStore';
 
 export interface KnowledgebaseCoreRuntime {
@@ -16,6 +17,7 @@ export interface KnowledgebaseCoreRuntime {
   sdk: {
     app: KnowledgebaseAppSdkClient;
     drive: KnowledgebaseDriveAppSdkClient;
+    agents: KnowledgebaseAgentsAppSdkClient;
   };
   session: SessionStore;
   host: HostAdapter;

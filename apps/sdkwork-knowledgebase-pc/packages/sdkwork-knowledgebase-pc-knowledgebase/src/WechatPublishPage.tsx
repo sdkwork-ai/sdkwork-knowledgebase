@@ -6,8 +6,10 @@ import { ChevronDown, Plus, Trash2,
   Sparkles, Notebook, ArrowLeft, ArrowUp, ArrowDown, Cloud, Wand2
 } from 'lucide-react';
 import {
+  accountScopedStorageKey,
   getKnowledgebaseTenantId,
   isKnowledgebaseApiAvailable,
+  KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS,
   KnowledgebaseAppError,
   KnowledgebaseErrorCodes,
   readRegisteredSpaces,
@@ -158,7 +160,13 @@ export function WechatPublishPage({ documents: defaultDocuments = [], onClose }:
   const [officialAccounts, setOfficialAccounts] = useState<OfficialAccount[]>([]);
   const [selectedOfficialAccountIds, setSelectedOfficialAccountIds] = useState<string[]>([]);
   const [officialAccountLoadError, setOfficialAccountLoadError] = useState<string | null>(null);
-  const [authorHistory, setAuthorHistory] = useLocalStorage<string[]>('wechat_author_history', []);
+  // Author history names accounts the current publisher writes for; it is scoped
+  // to the signed-in account so the next account never prefills the previous
+  // account's bylines.
+  const authorHistoryStorageKey = accountScopedStorageKey(
+    KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.wechatAuthorHistory,
+  );
+  const [authorHistory, setAuthorHistory] = useLocalStorage<string[]>(authorHistoryStorageKey, []);
   const [isOfficialAccountModalOpen, setIsOfficialAccountModalOpen] = useState(false);
   const [isWechatAppletModalOpen, setIsWechatAppletModalOpen] = useState(false);
   
@@ -168,7 +176,7 @@ export function WechatPublishPage({ documents: defaultDocuments = [], onClose }:
   const getFallbackAuthor = () => {
     let parsedHistory: string[] = [];
     try { 
-      parsedHistory = JSON.parse(window.localStorage.getItem('wechat_author_history') || '[]'); 
+      parsedHistory = JSON.parse(window.localStorage.getItem(authorHistoryStorageKey) || '[]'); 
     } catch(e){}
     return parsedHistory.length > 0 ? parsedHistory[0] : (selectedOfficialAccounts[0]?.name || '');
   };
@@ -192,7 +200,7 @@ export function WechatPublishPage({ documents: defaultDocuments = [], onClose }:
       const oaName = selected[0]?.name || '';
       
       let parsedHistory: string[] = [];
-      try { parsedHistory = JSON.parse(window.localStorage.getItem('wechat_author_history') || '[]'); } catch(e){}
+      try { parsedHistory = JSON.parse(window.localStorage.getItem(authorHistoryStorageKey) || '[]'); } catch(e){}
       const fallbackAuthor = parsedHistory.length > 0 ? parsedHistory[0] : oaName;
 
       setArticles(prev => prev.map(a => {

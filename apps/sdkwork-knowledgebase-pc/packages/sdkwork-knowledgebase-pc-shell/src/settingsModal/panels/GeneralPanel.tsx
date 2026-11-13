@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { clearAccountScopedStorageKey } from 'sdkwork-knowledgebase-pc-core';
 import { toast } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
 
 import {
@@ -82,7 +83,9 @@ export function GeneralPanel({
       return;
     }
     try {
-      localStorage.removeItem(SETTINGS_STORAGE_KEYS.searchSessions);
+      // Removes the signed-in account's scoped row as well as the legacy key; the
+      // scoped key is what the search module actually writes.
+      clearAccountScopedStorageKey(SETTINGS_STORAGE_KEYS.searchSessions);
       toast.success(t('clearSearchDataSuccess'));
     } catch {
       toast.error(t('clearSearchDataFailed'));

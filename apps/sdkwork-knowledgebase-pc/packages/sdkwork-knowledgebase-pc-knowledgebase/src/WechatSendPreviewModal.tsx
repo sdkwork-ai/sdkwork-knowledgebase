@@ -5,6 +5,8 @@ import { X, Trash2, Send, History, Check, UserPlus, Loader2 } from 'lucide-react
 import { toast } from './components/ui/toast-manager';
 import { useTranslation } from 'react-i18next';
 import {
+  accountScopedStorageKey,
+  KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS,
   resolveUserFacingErrorMessage,
   type ErrorTranslateFn,
 } from 'sdkwork-knowledgebase-pc-core';
@@ -30,11 +32,16 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
   const [newIdInput, setNewIdInput] = useState('');
   const [history, setHistory] = useState<string[]>([]);
   const [sendError, setSendError] = useState<string | null>(null);
+  // Preview recipients address the signed-in account's audience; the history is
+  // account-scoped so the next account never offers the previous one's list.
+  const previewHistoryStorageKey = accountScopedStorageKey(
+    KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.wechatPreviewHistory,
+  );
 
   useEffect(() => {
     if (isOpen) {
       try {
-        const stored = localStorage.getItem('wechat_preview_history');
+        const stored = localStorage.getItem(previewHistoryStorageKey);
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) {
@@ -104,7 +111,7 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
     }
     
     try {
-      localStorage.setItem('wechat_preview_history', JSON.stringify(updated));
+      localStorage.setItem(previewHistoryStorageKey, JSON.stringify(updated));
     } catch (err) {
       console.error(err);
     }
@@ -136,7 +143,7 @@ export function WechatSendPreviewModal({ isOpen, onClose, previewWechatId, setPr
       const finalHistory = updatedHistory.slice(0, 15);
       
       try {
-        localStorage.setItem('wechat_preview_history', JSON.stringify(finalHistory));
+        localStorage.setItem(previewHistoryStorageKey, JSON.stringify(finalHistory));
       } catch (e) {
         console.error(e);
       }

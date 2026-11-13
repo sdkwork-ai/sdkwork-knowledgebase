@@ -18,6 +18,7 @@
   "api.unavailable.search": "知识库 API 不可用。检索摘要需要已连接的后端。",
   "api.unavailable.wechat": "知识库 API 不可用。微信功能需要已连接的后端。",
   "api.unavailable.drive": "Drive 集成不可用。企业网盘功能需要已连接的 Drive SDK。",
+  "api.unavailable.agents": "智能体服务暂不可用，请确认已登录且写作智能体服务已连接。",
   "api.unavailable.sdk": "知识库应用 SDK 未配置。",
   "validation.invalidSpaceId": "无效的知识空间 ID。",
   "validation.spaceRequired": "请先创建知识空间后再使用此功能。",

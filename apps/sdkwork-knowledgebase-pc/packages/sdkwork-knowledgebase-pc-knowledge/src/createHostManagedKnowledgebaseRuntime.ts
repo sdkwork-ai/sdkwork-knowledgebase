@@ -1,8 +1,10 @@
 import {
   bindKnowledgebaseSessionStore,
+  configureKnowledgebaseAgentsAppSdk,
   configureKnowledgebaseAppSdk,
   configureKnowledgebaseDriveAppSdk,
   createHostAdapter,
+  createKnowledgebaseAgentsAppSdkClient,
   createKnowledgebaseAppSdkClient,
   createKnowledgebaseDriveAppSdkClient,
   createKnowledgebaseSessionTokenManager,
@@ -18,6 +20,7 @@ import {
   isKnowledgebaseBackendApiConfigured,
   setKnowledgebaseBackendApiEnabled,
 } from 'sdkwork-knowledgebase-pc-admin-core';
+import { installKnowledgebaseDerivedCacheCleanup } from '@sdkwork/sdkwork-knowledgebase-pc-knowledgebase';
 
 import { getKnowledgebasePcSdkPorts } from './sdkPorts';
 import { syncHostSessionIntoKnowledgebaseStore } from './sessionBridge';
@@ -59,6 +62,11 @@ export function createHostManagedKnowledgebaseRuntime(): KnowledgebasePcRuntime 
     sdkClient: ports.getDriveClient(),
     tokenManager,
   });
+  const agentsSdkClient = createKnowledgebaseAgentsAppSdkClient({
+    config,
+    ...(ports.getAgentsClient ? { sdkClient: ports.getAgentsClient() } : {}),
+    tokenManager,
+  });
 
   const backendSdkClient = createKnowledgebaseBackendSdkClient({
     config,
@@ -66,9 +74,15 @@ export function createHostManagedKnowledgebaseRuntime(): KnowledgebasePcRuntime 
   });
 
   bindKnowledgebaseSessionStore(session);
+  // Installed before the host session is mirrored into the store so the first
+  // identity the host publishes already invalidates the previous account's
+  // derived caches (browser nodes, knowledge modes, agent-profile provisioning,
+  // persisted tab rows).
+  installKnowledgebaseDerivedCacheCleanup();
   configureKnowledgebaseAppSdk(appSdkClient);
   configureKnowledgebaseBackendSdk(backendSdkClient);
   configureKnowledgebaseDriveAppSdk(driveSdkClient);
+  configureKnowledgebaseAgentsAppSdk(agentsSdkClient);
   setKnowledgebaseApiEnabled(
     config.auth.tokenManagerMode !== 'test'
     && isKnowledgebaseAppApiConfigured(config),
@@ -84,6 +98,7 @@ export function createHostManagedKnowledgebaseRuntime(): KnowledgebasePcRuntime 
     sdk: {
       app: appSdkClient,
       drive: driveSdkClient,
+      agents: agentsSdkClient,
     },
     session,
     host: createHostAdapter(),

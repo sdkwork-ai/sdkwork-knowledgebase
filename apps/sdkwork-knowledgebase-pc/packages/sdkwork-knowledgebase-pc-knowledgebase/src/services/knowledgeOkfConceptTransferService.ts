@@ -208,7 +208,6 @@ export async function copyOkfConcept(
     spaceId: targetSpaceId,
     conceptId: targetConceptId,
     markdown,
-    actor: 'pc-knowledgebase',
     publish: true,
   });
 
@@ -249,7 +248,6 @@ export async function moveOkfConcept(
     spaceId: targetSpaceId,
     conceptId: sourceConcept.conceptId,
     markdown,
-    actor: 'pc-knowledgebase',
     publish: true,
   });
 

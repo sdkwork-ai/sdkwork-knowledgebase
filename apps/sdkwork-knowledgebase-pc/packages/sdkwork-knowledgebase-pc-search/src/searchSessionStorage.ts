@@ -1,7 +1,24 @@
+import { accountScopedStorageKey } from 'sdkwork-knowledgebase-pc-core';
+
+import { SEARCH_SESSIONS_STORAGE_KEY } from './constants';
 import type { SearchSession } from './types';
 
 export const MAX_SEARCH_SESSIONS = 50;
 export const MAX_MESSAGES_PER_SESSION = 100;
+
+/**
+ * Storage key of the signed-in account's search history.
+ *
+ * Sessions quote the account's own questions, answers and cited knowledge-base
+ * titles, so the key is account-scoped: a shared profile that switches accounts
+ * must not render (or re-persist) the previous account's history.
+ *
+ * @returns `<base>.<tenantId>.<userId>`, or the legacy base key before an
+ *   identity is bound.
+ */
+export function currentSearchSessionsStorageKey(): string {
+  return accountScopedStorageKey(SEARCH_SESSIONS_STORAGE_KEY);
+}
 
 export function trimSearchSessions(sessions: SearchSession[]): SearchSession[] {
   const trimmedSessions = sessions

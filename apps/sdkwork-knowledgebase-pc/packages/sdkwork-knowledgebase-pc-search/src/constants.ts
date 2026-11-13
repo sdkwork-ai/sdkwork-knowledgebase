@@ -1,4 +1,13 @@
-export const SEARCH_SESSIONS_STORAGE_KEY = 'app-search-sessions';
+import { KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS } from 'sdkwork-knowledgebase-pc-core';
+
+/**
+ * Base key of the persisted AI search history.
+ *
+ * The value is written under an account-scoped key derived from this one; the
+ * base key alone is only the legacy layout that older builds wrote and that
+ * logout still removes.
+ */
+export const SEARCH_SESSIONS_STORAGE_KEY = KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.searchSessions;
 
 /** Center column width — shared by thread, composer, and landing prompts */
 export const CHAT_LAYOUT_MAX = 'max-w-4xl';

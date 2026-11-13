@@ -3,6 +3,7 @@ export * from './types';
 export * from './api/knowledgebaseApiRegistry';
 export * from './api/knowledgebaseConnectivity';
 export * from './api/knowledgebaseDriveApiRegistry';
+export * from './api/knowledgebaseAgentsApiRegistry';
 export * from './api/knowledgebaseSpaceRegistry';
 export * from './api/knowledgebaseCrossTabStorage';
 export * from './api/knowledgebaseDocumentContentCache';
@@ -24,6 +25,8 @@ export { resolveKnowledgebaseFeatureFlags } from './config/knowledgebaseFeatureF
 export type { KnowledgebaseFeatureFlags } from './config/knowledgebaseFeatureFlags';
 export * from './sdk/knowledgebaseAppSdkClient';
 export * from './sdk/driveAppSdkClient';
+export * from './sdk/agentsAppSdkClient';
+export * from './sdk/agentsAppSdkTurns';
 export * from './sdk/sdkTokenManager';
 export * from './sdk/groupKnowledgebaseLaunch';
 export * from './sdk/sdkContractTypes';
@@ -31,6 +34,8 @@ export * from './sdk/uploadDeclaration';
 export * from './session/sessionStore';
 export * from './session/sessionTokenManager';
 export * from './session/sessionTokenClaims';
+export * from './session/accountScopedStorage';
+export * from './session/identityChange';
 export {
   signOutKnowledgebaseAccount,
   signOutKnowledgebaseSession,

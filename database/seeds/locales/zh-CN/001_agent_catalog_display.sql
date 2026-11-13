@@ -1,6 +1,6 @@
 -- SDKWork official agent catalog: zh-CN knowledge-space display.
 
--- Catalog revision: 1.2.1.
+-- Catalog revision: 1.3.0.
 
 BEGIN;
 
@@ -355,5 +355,41 @@ UPDATE kb_space SET
   description = '面向酒店营销与 OTA 渠道顾问的范围说明、专业标准、模板与检查清单。主题：hospitality、hotel、marketing、ota、distribution。',
   updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
 WHERE id = 533000000000000058 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = '小说创作家知识库',
+  description = '面向长篇小说创作顾问的范围说明、专业标准、模板与检查清单。主题：writing、novel、fiction、story、serial。',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000059 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = '图书作者知识库',
+  description = '面向非虚构图书写作顾问的范围说明、专业标准、模板与检查清单。主题：writing、book、nonfiction、outline、publishing。',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000060 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = '新闻记者知识库',
+  description = '面向新闻采写与事实核查顾问的范围说明、专业标准、模板与检查清单。主题：writing、news、reporting、interview、fact-check。',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000061 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = '文章作者知识库',
+  description = '面向长篇内容与公众号写作顾问的范围说明、专业标准、模板与检查清单。主题：writing、article、blog、wechat、content。',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000062 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = '文案策划知识库',
+  description = '面向营销文案与转化写作顾问的范围说明、专业标准、模板与检查清单。主题：writing、copywriting、marketing、headline、conversion。',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000063 AND tenant_id = 100001 AND organization_id = 0;
+
+UPDATE kb_space SET
+  name = '责任编辑知识库',
+  description = '面向文稿编辑与审校顾问的范围说明、专业标准、模板与检查清单。主题：writing、editing、revision、proofreading、style。',
+  updated_at = TIMESTAMPTZ '2026-11-03T00:00:00+08:00'
+WHERE id = 533000000000000064 AND tenant_id = 100001 AND organization_id = 0;
 
 COMMIT;

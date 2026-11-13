@@ -57,7 +57,6 @@ export async function updateOkfConceptTags(
     spaceId,
     conceptId: concept.conceptId,
     markdown,
-    actor: 'pc-knowledgebase',
     publish: true,
   });
 }

@@ -106,6 +106,12 @@
     ],
     "sdkDependencies": [
       {
+        "workspace": "sdkwork-agents-app-sdk",
+        "permissionModuleId": "agents",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      },
+      {
         "workspace": "sdkwork-drive-app-sdk",
         "permissionModuleId": "drive",
         "surface": "app-api",
@@ -130,6 +136,12 @@
         "manifestRef": "../../../../specs/iam.module.manifest.json"
       },
       "moduleCatalogRefs": [
+        {
+          "moduleId": "agents",
+          "manifestRef": "../../../../../sdkwork-agents/specs/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        },
         {
           "moduleId": "drive",
           "manifestRef": "../../../../../sdkwork-iam/iam/modules/drive/iam.module.manifest.json",
@@ -168,7 +180,8 @@
     "sdkClients": [
       "@sdkwork/knowledgebase-app-sdk",
       "@sdkwork/iam-app-sdk",
-      "@sdkwork/drive-app-sdk"
+      "@sdkwork/drive-app-sdk",
+      "@sdkwork/agents-app-sdk"
     ],
     "dependencyApiExports": [],
     "dependencyApiSurfaces": [],

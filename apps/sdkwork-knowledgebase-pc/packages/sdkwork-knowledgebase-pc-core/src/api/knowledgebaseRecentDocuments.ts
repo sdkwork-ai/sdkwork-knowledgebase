@@ -1,3 +1,4 @@
+import { getKnowledgebaseActorId } from './knowledgebaseSpaceRegistry';
 import { withCrossTabStorageUpdate } from './knowledgebaseCrossTabStorage';
 
 const RECENT_DOCS_KEY_PREFIX = 'sdkwork.knowledgebase.recent.v1';
@@ -12,8 +13,17 @@ export interface RecentDocumentEntry {
   author?: string;
 }
 
+/**
+ * Recent documents are account-scoped for the same reason the space registry is:
+ * a shared browser profile would otherwise offer the previous account's
+ * documents, and opening one answers a permission error for content the reader
+ * never owned.
+ */
 function recentStorageKey(tenantId: string): string {
-  return `${RECENT_DOCS_KEY_PREFIX}.${tenantId}`;
+  const actorId = getKnowledgebaseActorId();
+  return actorId === undefined
+    ? `${RECENT_DOCS_KEY_PREFIX}.${tenantId}`
+    : `${RECENT_DOCS_KEY_PREFIX}.${tenantId}.${actorId}`;
 }
 
 export function readRecentDocuments(tenantId: string): RecentDocumentEntry[] {

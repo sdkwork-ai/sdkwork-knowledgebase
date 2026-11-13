@@ -8,9 +8,12 @@ import {
   useLocalStorage
 } from '@sdkwork/sdkwork-knowledgebase-pc-commons';
 import {
+  accountScopedStorageKey,
   assertKnowledgebasePreviewFeature,
   getKnowledgebaseTenantId,
+  KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS,
   KnowledgebaseErrorCodes,
+  readRegisteredSpaces,
   shouldUseKnowledgebaseDemoFallback,
   throwKnowledgebaseError,
 } from 'sdkwork-knowledgebase-pc-core';
@@ -44,6 +47,10 @@ import {
   type KnowledgebaseWorkspaceMode,
 } from './workspaceMode';
 import { buildUniqueNoteTitle } from './utils/noteTitle';
+import {
+  isStoredKnowledgeBaseCurrent,
+  selectRenderableTabDocuments,
+} from './utils/workspaceSelection';
 
 /**
  * Every title currently visible in the space tree. A new note's default title
@@ -105,8 +112,14 @@ export function KnowledgeBaseApp({
 
   const { t } = useTranslation(['kb', 'common']);
   const navigate = useNavigate();
+  const activeKbStorageKey = accountScopedStorageKey(
+    KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.activeKnowledgeBase,
+  );
+  const navIntentStorageKey = accountScopedStorageKey(
+    KNOWLEDGEBASE_ACCOUNT_SCOPED_STORAGE_KEYS.navIntent,
+  );
   const [storedActiveKb, setStoredActiveKb] = useLocalStorage<KnowledgeBase | null>(
-    'app-active-kb',
+    activeKbStorageKey,
     null,
     { enabled: persistWorkspaceState },
   );
@@ -332,14 +345,33 @@ export function KnowledgeBaseApp({
 
         const allKbs = [...(data.team || []), ...(data.personal || []), ...(data.public || [])];
 
-        if (activeKb && allKbs.find(k => k.id === activeKb.id)) {
+        // Reuse the stored selection only when this account still owns it: the
+        // local key is account-scoped, but the row can outlive a space the
+        // account was removed from (or one the previous build wrote unscoped).
+        // Both the account's own registry and this round's server answer have to
+        // list the id, otherwise it is dropped instead of retried on every mount.
+        const tenantId = getKnowledgebaseTenantId();
+        const registeredSpaceIds = (tenantId ? readRegisteredSpaces(tenantId) : [])
+          .map(entry => String(entry.spaceId));
+        const storedSelectionIsCurrent = isStoredKnowledgeBaseCurrent(
+          activeKb?.id,
+          registeredSpaceIds,
+          allKbs.map(kb => String(kb.id)),
+        );
+
+        if (storedSelectionIsCurrent && activeKb) {
           handleSelectKb(activeKb, true);
-        } else if (data.team && data.team.length > 0) {
-          handleSelectKb(data.team[0]);
-        } else if (data.personal && data.personal.length > 0) {
-          handleSelectKb(data.personal[0]);
-        } else if (data.public && data.public.length > 0) {
-          handleSelectKb(data.public[0]);
+        } else {
+          if (activeKb) {
+            setActiveKb(null);
+          }
+          if (data.team && data.team.length > 0) {
+            handleSelectKb(data.team[0]);
+          } else if (data.personal && data.personal.length > 0) {
+            handleSelectKb(data.personal[0]);
+          } else if (data.public && data.public.length > 0) {
+            handleSelectKb(data.public[0]);
+          }
         }
       } catch (error) {
         if (cancelled) {
@@ -424,7 +456,10 @@ export function KnowledgeBaseApp({
     
     const cachedDocs = tabCache.getOpenDocs(kb.id);
     const cachedActiveId = tabCache.getActiveDocId(kb.id);
-    setOpenDocs(cachedDocs);
+    // Cached tabs are replayed only after the tree below confirms them: the rows
+    // were written by whichever account owned this profile, so rendering them
+    // first would flash document titles this account may no longer read.
+    setOpenDocs([]);
     setActiveDoc(null);
     setDocContent('');
     // Any in-flight document load for the previous space is now stale.
@@ -452,12 +487,24 @@ export function KnowledgeBaseApp({
       }
       flatten(data);
 
+      // Only tabs whose document this round's tree still lists are rendered, with
+      // the tree's own metadata (a cached row can carry a stale or another
+      // account's title). The pruned list is written back so a later mount cannot
+      // resurrect the rows this round rejected.
+      const visibleOpenDocs = selectRenderableTabDocuments(cachedDocs, flatDocs);
+      if (visibleOpenDocs.length !== cachedDocs.length) {
+        tabCache.saveOpenDocs(kb.id, visibleOpenDocs);
+      }
+      setOpenDocs(visibleOpenDocs);
+
       if (cachedActiveId) {
-        const docToOpen = flatDocs.find(d => d.id === cachedActiveId);
-        if (docToOpen) handleSelectDoc(docToOpen, kb.id);
-      } else if (cachedDocs.length > 0) {
-        const docToOpen = flatDocs.find(d => d.id === cachedDocs[0].id) || cachedDocs[0];
-        handleSelectDoc(docToOpen, kb.id);
+        const activeFromCache = flatDocs.find(d => d.id === cachedActiveId);
+        if (activeFromCache) handleSelectDoc(activeFromCache, kb.id);
+        else if (visibleOpenDocs.length > 0) handleSelectDoc(visibleOpenDocs[0], kb.id);
+      } else if (visibleOpenDocs.length > 0) {
+        // Never fall back to an unvalidated cached row: a tab absent from this
+        // round's tree belongs to another account or to a deleted document.
+        handleSelectDoc(visibleOpenDocs[0], kb.id);
       } else if (!preserveState && data.length > 0) {
         const firstDoc = data.find(item => item.type !== 'folder') as DocumentMeta;
         if (firstDoc) {
@@ -468,13 +515,13 @@ export function KnowledgeBaseApp({
       }
 
       if (persistWorkspaceState) {
-        const intent = readKbNavIntent();
+        const intent = readKbNavIntent(navIntentStorageKey);
         if (intent?.highlight && intent.docId && intent.kbId === kb.id) {
           const located = findDocInTree(data, intent.docId);
           const parentId = located?.parentId ?? intent.parentId ?? null;
           window.setTimeout(() => {
             dispatchLocateKbFile({ docId: intent.docId!, parentId });
-            clearKbNavIntent();
+            clearKbNavIntent(navIntentStorageKey);
           }, 150);
         }
       }

@@ -1,3 +1,5 @@
+import { getKnowledgebaseActorId } from './knowledgebaseSpaceRegistry';
+
 const CONTENT_CACHE_KEY_PREFIX = 'sdkwork.knowledgebase.content.v2';
 const MAX_CACHED_CONTENT_BYTES = 512 * 1024;
 
@@ -7,8 +9,19 @@ interface CachedDocumentContent {
   cachedAt: string;
 }
 
+/**
+ * Document bodies are cached per account as well as per tenant.
+ *
+ * A shared browser profile or Electron window can switch accounts without
+ * reloading the page, and the cache is read before an authoritative fallback in
+ * some paths; keying it by tenant alone let the next account read a body the
+ * previous account had cached.
+ */
 function contentStorageKey(tenantId: string, documentId: string): string {
-  return `${CONTENT_CACHE_KEY_PREFIX}.${tenantId}.${documentId}`;
+  const actorId = getKnowledgebaseActorId();
+  return actorId === undefined
+    ? `${CONTENT_CACHE_KEY_PREFIX}.${tenantId}.${documentId}`
+    : `${CONTENT_CACHE_KEY_PREFIX}.${tenantId}.${actorId}.${documentId}`;
 }
 
 function getSessionStorage(): Storage | null {
