@@ -28,6 +28,7 @@ serde_json.workspace = true
 serde_yaml.workspace = true
 pulldown-cmark.workspace = true
 sdkwork-utils-rust.workspace = true
+sdkwork-web-core.workspace = true
 sha2.workspace = true
 aes = "0.9"
 aes-gcm = "0.11"

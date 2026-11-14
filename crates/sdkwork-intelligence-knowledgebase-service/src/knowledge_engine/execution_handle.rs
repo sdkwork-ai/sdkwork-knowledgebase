@@ -281,13 +281,18 @@ impl KnowledgeEngineExecutionHandle {
                 "authenticated actor is required for Provider execution".to_string(),
             ));
         }
-        let may_read = context.permission_scope.iter().any(|permission| {
-            matches!(
-                permission.as_str(),
-                "knowledge.read"
-                    | "knowledge.retrieval.read"
-                    | "knowledge.platform.manage"
-                    | "knowledge.*"
+        // Wildcard-aware (AUTHORIZATION_STATE_SPEC 3.5): `*`, `knowledge.*`, and
+        // `*.read` grants authorize the read capability without pre-expansion.
+        let may_read = [
+            "knowledge.read",
+            "knowledge.retrieval.read",
+            "knowledge.platform.manage",
+        ]
+        .iter()
+        .any(|required| {
+            sdkwork_web_core::request_context::permission_scope_matches_any(
+                &context.permission_scope,
+                required,
             )
         });
         if !may_read {

@@ -513,13 +513,16 @@ fn validate_management_context(
             ),
         );
     }
-    // Exact permission only. A wildcard grant such as `knowledge.*` must not reach Provider
-    // credential rotation/revocation or binding cutover through any caller that forwards
-    // request scopes directly; the HTTP guard already enforces the exact scope.
+    // Exact permission only, plus the platform break-glass `*`. A domain wildcard
+    // such as `knowledge.*` must not reach Provider credential rotation/revocation
+    // or binding cutover through any caller that forwards request scopes directly;
+    // the HTTP guard already enforces the exact scope. The global `*` is the
+    // documented super-admin grant (PERMISSION_STANDARD_SPEC), so excluding it
+    // would lock the break-glass account out of its own platform.
     let may_manage = context
         .permission_scope
         .iter()
-        .any(|permission| permission == KNOWLEDGE_PLATFORM_MANAGE_PERMISSION);
+        .any(|permission| permission == KNOWLEDGE_PLATFORM_MANAGE_PERMISSION || permission == "*");
     if !may_manage {
         return Err(
             KnowledgeEngineProviderBindingServiceError::PermissionDenied(format!(
