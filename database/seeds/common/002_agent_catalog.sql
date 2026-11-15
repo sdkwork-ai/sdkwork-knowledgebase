@@ -1,6 +1,6 @@
 -- SDKWork official agent catalog: knowledge-space identities (neutral base).
 
--- Catalog revision: 1.3.0.
+-- Catalog revision: 1.5.0.
 
 BEGIN;
 
