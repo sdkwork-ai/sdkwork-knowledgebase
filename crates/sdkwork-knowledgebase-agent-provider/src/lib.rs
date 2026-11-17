@@ -22,8 +22,9 @@ pub use agent_implementation::{
 pub use agent_runtime::{build_knowledge_agent_runtime, KnowledgeAgentRuntimeBuildRequest};
 pub use client::KnowledgebaseRetrievalClient;
 pub use cloud_router::{
-    is_rig_model_provider, resolve_cloud_router_client_from_env, CloudRouterChatModelProvider,
-    CLOUDROUTER_CHAT_COMPLETION_METHOD, CLOUDROUTER_OPEN_HTTP_URL_ENV, CLOUDROUTER_OPEN_SDK_CRATE,
+    is_rig_model_provider, resolve_cloud_router_client, resolve_cloud_router_client_from_env,
+    CloudRouterChatModelProvider, CLOUDROUTER_CHAT_COMPLETION_METHOD,
+    CLOUDROUTER_OPEN_HTTP_URL_ENV, CLOUDROUTER_OPEN_SDK_CRATE,
     DEFAULT_CLOUDROUTER_UPSTREAM_MODEL_ID, RIG_DEFAULT_MODEL_ID, RIG_MODEL_PROVIDER_ID,
 };
 pub use cloud_router_embeddings::{

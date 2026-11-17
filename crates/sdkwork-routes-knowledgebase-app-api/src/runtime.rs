@@ -1328,7 +1328,7 @@ impl KnowledgebaseRuntime {
     pub(crate) fn outbox_dispatcher(
         &self,
     ) -> &dyn sdkwork_intelligence_knowledgebase_service::ports::knowledge_outbox_dispatcher::KnowledgeOutboxDispatcher
-    {
+{
         self.outbox_dispatcher.as_ref()
     }
 
@@ -2655,9 +2655,17 @@ impl KnowledgeAgentAppService for HostedAgentService {
         );
         let okf_client =
             RuntimeOkfKnowledgeClient::new(self.runtime.clone(), execution_context.clone());
-        let cloud_router_client = resolve_cloud_router_client_from_env()
-            .ok()
-            .map(std::sync::Arc::new);
+        // APP_SDK_INTEGRATION_SPEC §5.2.1: the chat turn runs on the caller's
+        // verified dual tokens; the provider is constructed per turn, so the
+        // client carries that identity into the (blocking) kernel invocation.
+        let caller = sdkwork_utils_rust::caller_identity::CallerCredentials::new(
+            credentials.auth_token.clone(),
+            credentials.access_token.clone(),
+        );
+        let cloud_router_client =
+            sdkwork_knowledgebase_agent_provider::resolve_cloud_router_client(&caller)
+                .ok()
+                .map(std::sync::Arc::new);
         let retrieval = self.runtime.retrieval_service();
         let plan_resolver =
             RuntimeRetrievalPlanResolver::new(self.runtime.retrieval_profile_store.clone());
