@@ -1,3 +1,4 @@
+use sdkwork_utils_rust::caller_identity::CallerCredentials;
 use sdkwork_utils_rust::is_blank;
 use sdkwork_utils_rust::service_base_url::registry_base_url_or;
 use std::sync::Arc;
@@ -45,7 +46,28 @@ pub fn is_rig_model_provider(model_provider_id: &str) -> bool {
         || model_provider_id == "provider.model.openai"
 }
 
-pub fn resolve_cloud_router_client_from_env() -> Result<SdkworkAiClient, String> {
+/// The credentials one cloud-router chat call authenticates with.
+///
+/// APP_SDK_INTEGRATION_SPEC.md §5.2.1: a user turn must carry the caller's
+/// verified dual tokens and never the deployment API key; a caller-less
+/// background/worker turn uses the declared service identity
+/// (SDKWORK_CLOUDROUTER_API_KEY). The two never mix.
+fn credential_headers(
+    api_key: Option<&str>,
+    caller: &CallerCredentials,
+) -> Vec<(&'static str, String)> {
+    if !caller.is_empty() {
+        return caller.wire_headers();
+    }
+    api_key
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(|value| vec![("X-Api-Key", value.to_owned())])
+        .unwrap_or_default()
+}
+
+/// Builds the cloud-router client for one caller scope.
+pub fn resolve_cloud_router_client(caller: &CallerCredentials) -> Result<SdkworkAiClient, String> {
     let configured = std::env::var(CLOUDROUTER_OPEN_HTTP_URL_ENV).unwrap_or_default();
     // DISCOVERY_SPEC §12.1: registry-first, configured topology as fallback.
     let base_url = registry_base_url_or("cloudrouter", &configured);
@@ -56,14 +78,16 @@ pub fn resolve_cloud_router_client_from_env() -> Result<SdkworkAiClient, String>
         ));
     }
     let client = SdkworkAiClient::new_with_base_url(base_url).map_err(map_sdk_error)?;
-
-    if let Ok(api_key) = std::env::var("SDKWORK_CLOUDROUTER_API_KEY") {
-        if !is_blank(Some(api_key.as_str())) {
-            client.set_api_key(api_key);
-        }
+    let api_key = std::env::var("SDKWORK_CLOUDROUTER_API_KEY").ok();
+    for (name, value) in credential_headers(api_key.as_deref(), caller) {
+        client.set_header(name, value);
     }
-
     Ok(client)
+}
+
+/// Builds the declared-service-identity client used by background work.
+pub fn resolve_cloud_router_client_from_env() -> Result<SdkworkAiClient, String> {
+    resolve_cloud_router_client(&CallerCredentials::default())
 }
 
 impl ModelProvider for CloudRouterChatModelProvider {
@@ -235,5 +259,36 @@ mod tests {
             ),
             "openai/gpt-4.1"
         );
+    }
+}
+
+#[cfg(test)]
+mod caller_identity_tests {
+    use super::*;
+
+    #[test]
+    fn a_user_turn_sends_only_the_caller_pair() {
+        let caller = CallerCredentials::new(
+            Some("auth-token".to_owned()),
+            Some("access-token".to_owned()),
+        );
+        let headers = credential_headers(Some("service-key"), &caller);
+        assert_eq!(
+            headers,
+            vec![
+                ("Authorization", "Bearer auth-token".to_owned()),
+                ("Access-Token", "access-token".to_owned()),
+            ]
+        );
+        assert!(!headers
+            .iter()
+            .any(|(name, _)| name.eq_ignore_ascii_case("x-api-key")));
+    }
+
+    #[test]
+    fn a_caller_less_turn_uses_the_declared_service_identity() {
+        let headers = credential_headers(Some("service-key"), &CallerCredentials::default());
+        assert_eq!(headers, vec![("X-Api-Key", "service-key".to_owned())]);
+        assert!(credential_headers(None, &CallerCredentials::default()).is_empty());
     }
 }
